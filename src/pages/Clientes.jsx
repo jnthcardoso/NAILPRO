@@ -71,9 +71,11 @@ export default function Clientes() {
               <div style={s.cardName}>
                 {c.nome}
                 {sumida && <span style={s.tagSumida}>Sumida</span>}
-                {c.total_visitas >= 10 && <span style={s.tagVip}>VIP</span>}
+                {c.total_visitas >= 10 && <span style={s.tagVip}>VIP ✨</span>}
               </div>
-              <div style={s.cardSub}>{c.ultimo_atendimento ? `Última vez: ${format(new Date(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida'}</div>
+              <div style={s.cardSub}>
+                {c.ultimo_atendimento ? `Última vez: ${format(new Date(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida'}
+              </div>
             </div>
             <div style={s.cardRight}>
               <div style={s.cardValor}>R$ {(c.total_gasto || 0).toFixed(0)}</div>
@@ -84,9 +86,13 @@ export default function Clientes() {
         )
       })}
 
-      {filtradas.length === 0 && <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma cliente encontrada</p></div>}
+      {filtradas.length === 0 && (
+        <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma cliente encontrada</p></div>
+      )}
 
-      <button style={s.fab} onClick={() => setShowModal(true)} aria-label="Nova cliente"><Plus size={22} color="white" /></button>
+      <button className="fab-btn" onClick={() => setShowModal(true)} aria-label="Nova cliente">
+        <Plus size={22} color="white" />
+      </button>
 
       {showModal && (
         <div style={s.overlay} onClick={() => setShowModal(false)}>
@@ -109,27 +115,26 @@ export default function Clientes() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 8px' },
-  searchBar: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', marginBottom: 16 },
+  searchBar: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', marginBottom: 16, boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   chipsRow: { display: 'flex', flexWrap: 'wrap', gap: 6 },
-  chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '0.5px solid #FFCDD2', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
-  card: { background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
-  avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--pink)', flexShrink: 0 },
-  cardName: { fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
-  cardSub: { fontSize: 12, color: 'var(--text3)', marginTop: 1 },
+  chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
+  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'box-shadow 0.15s' },
+  avatar: { width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, var(--pink-light), var(--pink-mid))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'var(--pink)', flexShrink: 0, boxShadow: '0 2px 6px rgba(190,24,93,0.15)' },
+  cardName: { fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
+  cardSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
   cardRight: { textAlign: 'right', flexShrink: 0 },
-  cardValor: { fontSize: 13, fontWeight: 600, color: 'var(--pink)' },
-  cardVisitas: { fontSize: 11, color: 'var(--text3)' },
-  tagSumida: { fontSize: 10, padding: '1px 7px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 500 },
-  tagVip: { fontSize: 10, padding: '1px 7px', borderRadius: 'var(--radius-pill)', background: 'var(--purple-bg)', color: 'var(--purple)', fontWeight: 500 },
+  cardValor: { fontSize: 13, fontWeight: 700, color: 'var(--pink)' },
+  cardVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
+  tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
+  tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--purple-bg)', color: 'var(--purple)', fontWeight: 600 },
   empty: { padding: '40px 0', textAlign: 'center' },
-  fab: { position: 'fixed', bottom: 76, right: 16, width: 50, height: 50, borderRadius: '50%', background: 'var(--pink)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 10px rgba(194,24,91,0.35)', cursor: 'pointer', zIndex: 99 },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
-  modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 36px', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12 },
-  modalTitle: { fontSize: 16, fontWeight: 600, marginBottom: 4 },
-  field: { display: 'flex', flexDirection: 'column', gap: 4 },
-  label: { fontSize: 12, fontWeight: 500, color: 'var(--text2)' },
-  input: { padding: '9px 12px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, outline: 'none', background: 'var(--surface)', color: 'var(--text)' },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 4 },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text)', border: '0.5px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(26,10,18,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
+  modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4, color: 'var(--text)' },
+  field: { display: 'flex', flexDirection: 'column', gap: 5 },
+  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
+  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
+  btnPrimary: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
+  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
 }

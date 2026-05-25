@@ -1,34 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Playfair+Display:wght@600;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --pink: #C2185B;
-  --pink-dark: #AD1457;
-  --pink-light: #FCE4EC;
-  --pink-mid: #F48FB1;
-  --green: #2E7D32;
-  --green-bg: #E8F5E9;
-  --amber: #E65100;
-  --amber-bg: #FFF3E0;
-  --red: #C62828;
-  --red-bg: #FEECEC;
-  --purple: #6A1B9A;
-  --purple-bg: #F3E5F5;
-  --bg: #FAFAFA;
+  --pink: #BE185D;
+  --pink-dark: #9D174D;
+  --pink-light: #FCE7F3;
+  --pink-mid: #F9A8D4;
+  --green: #15803D;
+  --green-bg: #DCFCE7;
+  --amber: #92400E;
+  --amber-bg: #FEF3C7;
+  --red: #B91C1C;
+  --red-bg: #FEE2E2;
+  --purple: #6D28D9;
+  --purple-bg: #EDE9FE;
+  --bg: #FDF2F8;
   --surface: #FFFFFF;
-  --surface2: #F5F5F5;
-  --border: #EEEEEE;
-  --border2: #E0E0E0;
-  --text: #1A1A1A;
-  --text2: #555555;
-  --text3: #888888;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --surface2: #FDF4FB;
+  --border: #F3C6DF;
+  --border2: #E8A5C8;
+  --text: #1A0A12;
+  --text2: #5B3A4A;
+  --text3: #9B6E82;
+  --radius: 14px;
+  --radius-sm: 10px;
   --radius-pill: 100px;
   --font: 'DM Sans', sans-serif;
   --font-display: 'Playfair Display', serif;
   --nav-height: 64px;
+  --sidebar-width: 244px;
+  --shadow-xs: 0 1px 3px rgba(26,10,18,0.05);
+  --shadow-sm: 0 2px 8px rgba(26,10,18,0.07), 0 1px 3px rgba(26,10,18,0.04);
+  --shadow-md: 0 4px 16px rgba(26,10,18,0.09), 0 2px 6px rgba(26,10,18,0.05);
+  --shadow-pink: 0 4px 18px rgba(190,24,93,0.30);
 }
 
 html, body, #root {
@@ -47,3 +52,129 @@ a { text-decoration: none; color: inherit; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--pink-mid) !important;
+  box-shadow: 0 0 0 3px rgba(249,168,212,0.22) !important;
+}
+
+/* ── App Layout ──────────────────────────── */
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.app-sidebar { display: none; }
+
+.app-mobile-header {
+  background: linear-gradient(135deg, var(--pink) 0%, #DB2777 100%);
+  padding: 16px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(190,24,93,0.22);
+}
+
+.app-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-main {
+  flex: 1;
+  padding-bottom: calc(var(--nav-height) + 8px);
+}
+
+.app-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+  box-shadow: 0 -2px 12px rgba(26,10,18,0.06);
+}
+
+/* ── FAB button ──────────────────────────── */
+
+.fab-btn {
+  position: fixed;
+  bottom: 76px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--pink);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-pink);
+  cursor: pointer;
+  z-index: 99;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fab-btn:hover {
+  transform: scale(1.07);
+  box-shadow: 0 6px 24px rgba(190,24,93,0.42);
+}
+
+.fab-btn:active { transform: scale(0.96); }
+
+/* ── Desktop ─────────────────────────────── */
+
+@media (min-width: 769px) {
+  html, body, #root { overflow: hidden; }
+
+  .app-root {
+    flex-direction: row;
+    height: 100vh;
+    min-height: unset;
+  }
+
+  .app-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: 2px 0 16px rgba(26,10,18,0.05);
+  }
+
+  .app-mobile-header { display: none; }
+
+  .app-content-wrapper {
+    flex: 1;
+    height: 100vh;
+    overflow-y: auto;
+    min-width: 0;
+  }
+
+  .app-main {
+    padding-bottom: 32px !important;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .app-bottom-nav { display: none; }
+
+  .fab-btn {
+    bottom: 32px !important;
+    right: 32px !important;
+  }
+}

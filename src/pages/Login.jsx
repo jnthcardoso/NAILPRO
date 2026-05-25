@@ -28,12 +28,17 @@ export default function Login() {
   return (
     <div style={s.root}>
       <div style={s.card}>
-        <div style={s.logo}>nail<span style={{ color: 'var(--pink)' }}>pro</span></div>
+        <div style={s.logoWrap}>
+          <div style={s.logoIcon}>💅</div>
+          <div style={s.logo}>nail<span style={{ color: 'var(--pink)' }}>pro</span></div>
+        </div>
         <p style={s.sub}>Gestão simples para nail designers</p>
+
         <div style={s.tabs}>
           <button style={{ ...s.tab, ...(mode === 'login' ? s.tabActive : {}) }} onClick={() => setMode('login')}>Entrar</button>
           <button style={{ ...s.tab, ...(mode === 'signup' ? s.tabActive : {}) }} onClick={() => setMode('signup')}>Criar conta</button>
         </div>
+
         <form onSubmit={handle} style={s.form}>
           {mode === 'signup' && (
             <div style={s.field}>
@@ -60,17 +65,19 @@ export default function Login() {
 }
 
 const s = {
-  root: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 50%, #FAFAFA 100%)', padding: 20 },
-  card: { background: 'white', borderRadius: 20, padding: '32px 28px', width: '100%', maxWidth: 380, boxShadow: '0 8px 32px rgba(194,24,91,0.12)' },
-  logo: { fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, textAlign: 'center', color: '#1A1A1A', letterSpacing: '-1px', marginBottom: 6 },
-  sub: { textAlign: 'center', fontSize: 13, color: 'var(--text3)', marginBottom: 24 },
-  tabs: { display: 'flex', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 24, gap: 3 },
-  tab: { flex: 1, padding: '8px 0', borderRadius: 6, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer' },
-  tabActive: { background: 'white', color: 'var(--pink)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
-  form: { display: 'flex', flexDirection: 'column', gap: 14 },
+  root: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #FCE7F3 0%, #FDF2F8 40%, #FDE8F4 100%)', padding: 20 },
+  card: { background: 'white', borderRadius: 22, padding: '36px 28px', width: '100%', maxWidth: 390, boxShadow: '0 8px 40px rgba(190,24,93,0.14), 0 2px 12px rgba(26,10,18,0.06)' },
+  logoWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 4 },
+  logoIcon: { fontSize: 28 },
+  logo: { fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: 'var(--text)', letterSpacing: '-1px' },
+  sub: { textAlign: 'center', fontSize: 13, color: 'var(--text3)', marginBottom: 28 },
+  tabs: { display: 'flex', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 24, gap: 3, border: '1px solid var(--border)' },
+  tab: { flex: 1, padding: '9px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
+  tabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 700 },
+  form: { display: 'flex', flexDirection: 'column', gap: 15 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
-  label: { fontSize: 12, fontWeight: 500, color: 'var(--text2)' },
-  input: { padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', fontSize: 14, color: 'var(--text)', outline: 'none' },
-  error: { background: 'var(--red-bg)', color: 'var(--red)', fontSize: 13, padding: '8px 12px', borderRadius: 'var(--radius-sm)' },
-  btn: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 4 },
+  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
+  input: { padding: '11px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', fontSize: 14, color: 'var(--text)', background: 'var(--surface)' },
+  error: { background: 'var(--red-bg)', color: 'var(--red)', fontSize: 13, padding: '9px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid #FECACA', fontWeight: 500 },
+  btn: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px 0', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'opacity 0.15s' },
 }

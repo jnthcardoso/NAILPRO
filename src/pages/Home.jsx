@@ -49,21 +49,77 @@ export default function Home() {
   return (
     <div style={s.page}>
       <div style={s.grid}>
-        <div style={s.card}><div style={s.cardLabel}>Hoje</div><div style={{ ...s.cardValue, color: 'var(--pink)' }}>{stats.hoje}</div><div style={s.cardSub}>atendimentos</div></div>
-        <div style={s.card}><div style={s.cardLabel}>Receita hoje</div><div style={{ ...s.cardValue, color: 'var(--green)' }}>R$ {stats.receitaHoje}</div><div style={s.cardSub}>{stats.hoje} serviços</div></div>
-        <div style={s.card}><div style={s.cardLabel}>A receber</div><div style={{ ...s.cardValue, color: stats.pendente > 0 ? 'var(--amber)' : 'var(--green)' }}>R$ {stats.pendente}</div><div style={s.cardSub}>em aberto</div></div>
+        <div style={s.card}>
+          <div style={s.cardLabel}>Hoje</div>
+          <div style={{ ...s.cardValue, color: 'var(--pink)' }}>{stats.hoje}</div>
+          <div style={s.cardSub}>atendimentos</div>
+        </div>
+        <div style={s.card}>
+          <div style={s.cardLabel}>Receita hoje</div>
+          <div style={{ ...s.cardValue, color: 'var(--green)', fontSize: 18 }}>R$ {stats.receitaHoje.toFixed(2).replace('.', ',')}</div>
+          <div style={s.cardSub}>{stats.hoje} serviço{stats.hoje !== 1 ? 's' : ''}</div>
+        </div>
+        <div style={s.card}>
+          <div style={s.cardLabel}>A receber</div>
+          <div style={{ ...s.cardValue, color: stats.pendente > 0 ? 'var(--amber)' : 'var(--green)', fontSize: 18 }}>R$ {stats.pendente.toFixed(2).replace('.', ',')}</div>
+          <div style={s.cardSub}>em aberto</div>
+        </div>
         <div style={s.card}>
           <div style={s.cardLabel}>Meta do mês</div>
-          <div style={{ ...s.cardValue, color: 'var(--pink)' }}>R$ {stats.receitaMes}</div>
+          <div style={{ ...s.cardValue, color: 'var(--pink)', fontSize: 18 }}>R$ {stats.receitaMes.toFixed(0)}</div>
           <div style={s.progressBar}><div style={{ ...s.progressFill, width: `${progressoMeta}%` }} /></div>
           <div style={s.cardSub}>{progressoMeta}% da meta</div>
         </div>
       </div>
-      {semConfirmacao.length > 0 && <div style={{ ...s.alert, ...s.alertWarning }}><AlertTriangle size={18} style={{ flexShrink: 0 }} /><div><div style={s.alertTitle}>{semConfirmacao.length} cliente(s) sem confirmação hoje</div><div style={s.alertSub}>{semConfirmacao.map(a => a.clientes?.nome).join(' · ')}</div></div></div>}
-      {clientesSumidas.length > 0 && <div style={{ ...s.alert, ...s.alertDanger }} onClick={() => navigate('/clientes')}><UserX size={18} style={{ flexShrink: 0 }} /><div style={{ flex: 1 }}><div style={s.alertTitle}>{clientesSumidas.length} cliente(s) sumida(s) (+35 dias)</div><div style={s.alertSub}>{clientesSumidas.map(c => c.nome).join(' · ')}</div></div><ChevronRight size={16} style={{ opacity: 0.5 }} /></div>}
-      {aniversarios.map(c => <div key={c.id} style={{ ...s.alert, ...s.alertSuccess }}><Cake size={18} style={{ flexShrink: 0 }} /><div><div style={s.alertTitle}>{c.nome} faz aniversário em breve 🎂</div><div style={s.alertSub}>Ótimo momento para entrar em contato!</div></div></div>)}
-      {proximoAtend && (<><div style={s.sectionTitle}>próximo atendimento</div><div style={s.apptCard} onClick={() => navigate('/agenda')}><div style={s.apptTime}>{proximoAtend.horario?.slice(0, 5)}</div><div style={{ flex: 1 }}><div style={s.apptName}>{proximoAtend.clientes?.nome}</div><div style={s.apptService}>{proximoAtend.servico}</div></div><span style={{ ...s.badge, ...s.badgeConfirmado }}>Confirmada</span></div></>)}
-      <button style={s.fab} onClick={() => navigate('/agenda')} aria-label="Novo agendamento"><Plus size={22} color="white" /></button>
+
+      {semConfirmacao.length > 0 && (
+        <div style={{ ...s.alert, ...s.alertWarning }}>
+          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={s.alertTitle}>{semConfirmacao.length} cliente(s) sem confirmação hoje</div>
+            <div style={s.alertSub}>{semConfirmacao.map(a => a.clientes?.nome).join(' · ')}</div>
+          </div>
+        </div>
+      )}
+
+      {clientesSumidas.length > 0 && (
+        <div style={{ ...s.alert, ...s.alertDanger }} onClick={() => navigate('/clientes')}>
+          <UserX size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <div style={s.alertTitle}>{clientesSumidas.length} cliente(s) sumida(s) (+35 dias)</div>
+            <div style={s.alertSub}>{clientesSumidas.map(c => c.nome).join(' · ')}</div>
+          </div>
+          <ChevronRight size={16} style={{ opacity: 0.5 }} />
+        </div>
+      )}
+
+      {aniversarios.map(c => (
+        <div key={c.id} style={{ ...s.alert, ...s.alertSuccess }}>
+          <Cake size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={s.alertTitle}>{c.nome} faz aniversário em breve 🎂</div>
+            <div style={s.alertSub}>Ótimo momento para entrar em contato!</div>
+          </div>
+        </div>
+      ))}
+
+      {proximoAtend && (
+        <>
+          <div style={s.sectionTitle}>próximo atendimento</div>
+          <div style={s.apptCard} onClick={() => navigate('/agenda')}>
+            <div style={s.apptTimeBadge}>{proximoAtend.horario?.slice(0, 5)}</div>
+            <div style={{ flex: 1 }}>
+              <div style={s.apptName}>{proximoAtend.clientes?.nome}</div>
+              <div style={s.apptService}>{proximoAtend.servico}</div>
+            </div>
+            <span style={{ ...s.badge, ...s.badgeConfirmado }}>Confirmada</span>
+          </div>
+        </>
+      )}
+
+      <button className="fab-btn" onClick={() => navigate('/agenda')} aria-label="Novo agendamento">
+        <Plus size={22} color="white" />
+      </button>
     </div>
   )
 }
@@ -71,24 +127,23 @@ export default function Home() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '16px 0 8px' },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 },
-  card: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' },
-  cardLabel: { fontSize: 11, color: 'var(--text3)', marginBottom: 4 },
-  cardValue: { fontSize: 22, fontWeight: 600, lineHeight: 1 },
-  cardSub: { fontSize: 11, color: 'var(--text3)', marginTop: 4 },
-  progressBar: { height: 4, borderRadius: 2, background: 'var(--border)', marginTop: 6, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 2, background: 'var(--pink)', transition: 'width 0.5s' },
-  alert: { borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' },
-  alertTitle: { fontSize: 13, fontWeight: 500 },
-  alertSub: { fontSize: 12, opacity: 0.75, marginTop: 1 },
-  alertWarning: { background: '#FFF8E1', color: '#6D4C00', border: '0.5px solid #FFB300' },
-  alertDanger: { background: 'var(--red-bg)', color: 'var(--red)', border: '0.5px solid #FFCDD2' },
-  alertSuccess: { background: 'var(--green-bg)', color: '#1B5E20', border: '0.5px solid #A5D6A7' },
-  apptCard: { background: 'var(--surface)', border: '0.5px solid var(--border)', borderLeft: '3px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
-  apptTime: { fontSize: 13, fontWeight: 600, color: 'var(--text)', minWidth: 44 },
-  apptName: { fontSize: 14, fontWeight: 500 },
-  apptService: { fontSize: 12, color: 'var(--text3)' },
-  badge: { fontSize: 11, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 500 },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 },
+  card: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
+  cardLabel: { fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 500 },
+  cardValue: { fontSize: 22, fontWeight: 700, lineHeight: 1 },
+  cardSub: { fontSize: 11, color: 'var(--text3)', marginTop: 5 },
+  progressBar: { height: 5, borderRadius: 3, background: 'var(--border)', marginTop: 7, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, var(--pink), #DB2777)', transition: 'width 0.6s ease' },
+  alert: { borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 9, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', boxShadow: 'var(--shadow-xs)' },
+  alertTitle: { fontSize: 13, fontWeight: 600 },
+  alertSub: { fontSize: 12, opacity: 0.78, marginTop: 2 },
+  alertWarning: { background: '#FFFBEB', color: '#78350F', border: '1px solid #FCD34D' },
+  alertDanger: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA' },
+  alertSuccess: { background: 'var(--green-bg)', color: '#14532D', border: '1px solid #86EFAC' },
+  apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
+  apptTimeBadge: { fontSize: 14, fontWeight: 700, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 8, padding: '4px 8px', textAlign: 'center' },
+  apptName: { fontSize: 14, fontWeight: 600 },
+  apptService: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
+  badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
   badgeConfirmado: { background: 'var(--green-bg)', color: 'var(--green)' },
-  fab: { position: 'fixed', bottom: 76, right: 16, width: 50, height: 50, borderRadius: '50%', background: 'var(--pink)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 10px rgba(194,24,91,0.35)', cursor: 'pointer', zIndex: 99 },
 }

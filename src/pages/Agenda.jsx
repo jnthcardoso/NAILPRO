@@ -10,17 +10,17 @@ import {
 import { ptBR } from 'date-fns/locale'
 
 const STATUS = {
-  confirmado: { label: 'Confirmada', bg: '#E8F5E9', color: '#2E7D32', border: '#43A047' },
-  pendente:   { label: 'Aguardando', bg: '#FFF3E0', color: '#E65100', border: '#FB8C00' },
-  realizado:  { label: 'Realizado',  bg: '#F3E5F5', color: '#6A1B9A', border: '#9C27B0' },
-  cancelado:  { label: 'Cancelado',  bg: '#FEECEC', color: '#C62828', border: '#EF5350' },
+  confirmado: { label: 'Confirmada', bg: '#DCFCE7', color: '#15803D', border: '#4ADE80' },
+  pendente:   { label: 'Aguardando', bg: '#FEF3C7', color: '#92400E', border: '#FCD34D' },
+  realizado:  { label: 'Realizado',  bg: '#EDE9FE', color: '#5B21B6', border: '#A78BFA' },
+  cancelado:  { label: 'Cancelado',  bg: '#FEE2E2', color: '#B91C1C', border: '#FCA5A5' },
 }
 
 const FORMAS = [
-  { value: 'pix', label: '💠 Pix' },
-  { value: 'dinheiro', label: '💵 Dinheiro' },
+  { value: 'pix',           label: '💠 Pix' },
+  { value: 'dinheiro',      label: '💵 Dinheiro' },
   { value: 'cartao_debito', label: '💳 Débito' },
-  { value: 'cartao_credito', label: '💳 Crédito' },
+  { value: 'cartao_credito',label: '💳 Crédito' },
 ]
 
 const VIEWS = ['Dia', 'Semana', 'Mês']
@@ -107,7 +107,11 @@ export default function Agenda() {
     setSavingPag(true)
     const pagExistente = agSelecionado.pagamentos?.[0]
     if (pagExistente) {
-      await supabase.from('pagamentos').update({ forma: formPag.forma, status: formPag.status, valor: parseFloat(formPag.valor) || agSelecionado.valor }).eq('id', pagExistente.id)
+      await supabase.from('pagamentos').update({
+        forma: formPag.forma,
+        status: formPag.status,
+        valor: parseFloat(formPag.valor) || agSelecionado.valor,
+      }).eq('id', pagExistente.id)
     } else {
       await supabase.from('pagamentos').insert({
         user_id: user.id,
@@ -138,7 +142,9 @@ export default function Agenda() {
       return `${format(ini, 'dd MMM', { locale: ptBR })} – ${format(fim, 'dd MMM', { locale: ptBR })}`
     }
     return format(dataSel, "MMMM 'de' yyyy", { locale: ptBR })
-  }function CardAgendamento({ ag }) {
+  }
+
+  function CardAgendamento({ ag }) {
     const st = STATUS[ag.status] || STATUS.pendente
     const pag = ag.pagamentos?.[0]
     return (
@@ -152,10 +158,10 @@ export default function Agenda() {
           <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
         </div>
         {ag.valor > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
             <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>
             {pag && (
-              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#E8F5E9' : '#FFF3E0', color: pag.status === 'pago' ? '#2E7D32' : '#E65100', fontSize: 10 }}>
+              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
                 {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
               </span>
             )}
@@ -163,23 +169,30 @@ export default function Agenda() {
         )}
         <div style={s.cardActions}>
           {ag.status === 'pendente' && (
-            <button style={{ ...s.actionBtn, background: '#E8F5E9', color: '#2E7D32' }} onClick={() => atualizarStatus(ag, 'confirmado')}>
-              <CheckCircle size={14} /> Confirmar
+            <button style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D' }} onClick={() => atualizarStatus(ag, 'confirmado')}>
+              <CheckCircle size={13} /> Confirmar
             </button>
           )}
           {ag.status === 'confirmado' && (
-            <button style={{ ...s.actionBtn, background: '#F3E5F5', color: '#6A1B9A' }} onClick={() => atualizarStatus(ag, 'realizado')}>
-              <CheckCircle size={14} /> Marcar realizado
+            <button style={{ ...s.actionBtn, background: '#EDE9FE', color: '#5B21B6' }} onClick={() => atualizarStatus(ag, 'realizado')}>
+              <CheckCircle size={13} /> Marcar realizado
             </button>
           )}
           {ag.status === 'realizado' && (
-            <button style={{ ...s.actionBtn, background: '#E8F5E9', color: '#2E7D32' }} onClick={() => { setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') }); setShowPagModal(true) }}>
-              <CreditCard size={14} /> {pag ? 'Editar pagamento' : 'Registrar pagamento'}
+            <button
+              style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D' }}
+              onClick={() => {
+                setAgSelecionado(ag)
+                setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') })
+                setShowPagModal(true)
+              }}
+            >
+              <CreditCard size={13} /> {pag ? 'Editar pagamento' : 'Registrar pagamento'}
             </button>
           )}
           {ag.status !== 'realizado' && ag.status !== 'cancelado' && (
-            <button style={{ ...s.actionBtn, background: '#FEECEC', color: '#C62828' }} onClick={() => atualizarStatus(ag, 'cancelado')}>
-              <XCircle size={14} /> Cancelar
+            <button style={{ ...s.actionBtn, background: '#FEE2E2', color: '#B91C1C' }} onClick={() => atualizarStatus(ag, 'cancelado')}>
+              <XCircle size={13} /> Cancelar
             </button>
           )}
         </div>
@@ -191,7 +204,7 @@ export default function Agenda() {
     const dia = agendamentos.filter(a => a.data === format(dataSel, 'yyyy-MM-dd'))
     if (dia.length === 0) return (
       <div style={s.empty}>
-        <Calendar size={32} color="var(--text3)" style={{ marginBottom: 8 }} />
+        <Calendar size={34} color="var(--text3)" style={{ marginBottom: 10 }} />
         <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento neste dia</p>
         <button style={s.emptyBtn} onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }}>+ Adicionar agendamento</button>
       </div>
@@ -224,12 +237,12 @@ export default function Agenda() {
             )
           })}
         </div>
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 14 }}>
           {dias.map(dia => {
             const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
             if (agsDia.length === 0) return null
             return (
-              <div key={dia.toISOString()} style={{ marginBottom: 16 }}>
+              <div key={dia.toISOString()} style={{ marginBottom: 18 }}>
                 <div style={s.sectionTitle}>
                   {format(dia, "EEEE, dd 'de' MMM", { locale: ptBR })}
                   {isToday(dia) && <span style={s.hojeChip}>hoje</span>}
@@ -263,8 +276,11 @@ export default function Agenda() {
               const hoje = isToday(dia)
               const doMes = isSameMonth(dia, dataSel)
               return (
-                <div key={dia.toISOString()} style={{ ...s.calCell, ...(!doMes ? s.calCellOut : {}), ...(hoje ? s.calCellHoje : {}) }}
-                  onClick={() => { setDataSel(dia); setView('Dia') }}>
+                <div
+                  key={dia.toISOString()}
+                  style={{ ...s.calCell, ...(!doMes ? s.calCellOut : {}), ...(hoje ? s.calCellHoje : {}) }}
+                  onClick={() => { setDataSel(dia); setView('Dia') }}
+                >
                   <div style={{ ...s.calNum, ...(hoje ? s.calNumHoje : {}) }}>{format(dia, 'd')}</div>
                   {agsDia.slice(0, 2).map((ag, i) => {
                     const st = STATUS[ag.status] || STATUS.pendente
@@ -278,7 +294,9 @@ export default function Agenda() {
         ))}
       </div>
     )
-  }return (
+  }
+
+  return (
     <div style={s.page}>
       <div style={s.viewTabs}>
         {VIEWS.map(v => (
@@ -294,55 +312,79 @@ export default function Agenda() {
       {view === 'Semana' && <ViewSemana />}
       {view === 'Mês' && <ViewMes />}
 
-      <button style={s.fab} onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }} aria-label="Novo agendamento">
+      <button className="fab-btn" onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
       </button>
 
-      {/* Modal pagamento */}
+      {/* ── Modal de pagamento ──────────────── */}
       {showPagModal && agSelecionado && (
         <div style={s.overlay} onClick={() => setShowPagModal(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
             <div style={s.modalTitle}>💳 Registrar pagamento</div>
+
             <div style={s.pagInfo}>
               <div style={s.pagCliente}>{agSelecionado.clientes?.nome}</div>
               <div style={s.pagServico}>{agSelecionado.servico} · {agSelecionado.data}</div>
             </div>
+
             <div style={s.field}>
               <label style={s.label}>Valor (R$)</label>
-              <input style={s.input} type="number" placeholder="0,00" value={formPag.valor} onChange={e => setFormPag({ ...formPag, valor: e.target.value })} />
+              <input
+                style={s.input}
+                type="number"
+                placeholder="0,00"
+                value={formPag.valor}
+                onChange={e => setFormPag({ ...formPag, valor: e.target.value })}
+              />
             </div>
+
             <div style={s.field}>
               <label style={s.label}>Forma de pagamento</label>
               <div style={s.formasGrid}>
                 {FORMAS.map(f => (
-                  <button key={f.value} style={{ ...s.formaBtn, ...(formPag.forma === f.value ? s.formaBtnActive : {}) }} onClick={() => setFormPag({ ...formPag, forma: f.value })}>
+                  <button
+                    key={f.value}
+                    style={{ ...s.formaBtn, ...(formPag.forma === f.value ? s.formaBtnActive : {}) }}
+                    onClick={() => setFormPag({ ...formPag, forma: f.value })}
+                  >
                     {f.label}
                   </button>
                 ))}
               </div>
             </div>
+
             <div style={s.field}>
               <label style={s.label}>Status do pagamento</label>
               <div style={s.statusGrid}>
-                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }} onClick={() => setFormPag({ ...formPag, status: 'pago' })}>
+                <button
+                  style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }}
+                  onClick={() => setFormPag({ ...formPag, status: 'pago' })}
+                >
                   ✓ Pago
                 </button>
-                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pendente' ? s.statusPendenteActive : {}) }} onClick={() => setFormPag({ ...formPag, status: 'pendente' })}>
+                <button
+                  style={{ ...s.statusBtn2, ...(formPag.status === 'pendente' ? s.statusPendenteActive : {}) }}
+                  onClick={() => setFormPag({ ...formPag, status: 'pendente' })}
+                >
                   ⏳ Pendente
                 </button>
               </div>
             </div>
-            <button style={s.btnPrimary} onClick={salvarPagamento} disabled={savingPag}>{savingPag ? 'Salvando...' : 'Confirmar pagamento'}</button>
+
+            <button style={s.btnPrimary} onClick={salvarPagamento} disabled={savingPag}>
+              {savingPag ? 'Salvando...' : 'Confirmar pagamento'}
+            </button>
             <button style={s.btnSecondary} onClick={() => setShowPagModal(false)}>Fechar</button>
           </div>
         </div>
       )}
 
-      {/* Modal novo agendamento */}
+      {/* ── Modal novo agendamento ──────────── */}
       {showModal && (
         <div style={s.overlay} onClick={() => setShowModal(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
             <div style={s.modalTitle}>Novo agendamento</div>
+
             <div style={s.field}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <label style={s.label}>Cliente</label>
@@ -353,17 +395,19 @@ export default function Agenda() {
                 {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>
+
             {showNovaCliente && (
               <div style={s.miniForm}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--pink)', marginBottom: 8 }}>Nova cliente rápida</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pink)', marginBottom: 8 }}>Nova cliente rápida</div>
                 <input style={s.input} placeholder="Nome *" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} />
                 <input style={{ ...s.input, marginTop: 8 }} placeholder="WhatsApp" value={formCliente.telefone} onChange={e => setFormCliente({ ...formCliente, telefone: e.target.value })} />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button style={{ ...s.btnPrimary, flex: 1, padding: '8px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? '...' : 'Salvar'}</button>
-                  <button style={{ ...s.btnSecondary, flex: 1, padding: '8px' }} onClick={() => setShowNovaCliente(false)}>Cancelar</button>
+                  <button style={{ ...s.btnPrimary, flex: 1, padding: '9px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? '...' : 'Salvar'}</button>
+                  <button style={{ ...s.btnSecondary, flex: 1, padding: '9px' }} onClick={() => setShowNovaCliente(false)}>Cancelar</button>
                 </div>
               </div>
             )}
+
             <div style={s.field}>
               <label style={s.label}>Serviço</label>
               <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
@@ -407,62 +451,61 @@ export default function Agenda() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', textTransform: 'capitalize', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 },
-  hojeChip: { fontSize: 10, background: 'var(--pink)', color: 'white', borderRadius: 20, padding: '1px 8px', fontWeight: 600 },
-  viewTabs: { display: 'flex', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 12, gap: 3 },
-  viewTab: { flex: 1, padding: '7px 0', borderRadius: 6, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
-  viewTabActive: { background: 'white', color: 'var(--pink)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
-  nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px' },
+  hojeChip: { fontSize: 10, background: 'var(--pink)', color: 'white', borderRadius: 20, padding: '2px 9px', fontWeight: 700 },
+  viewTabs: { display: 'flex', background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 12, gap: 3, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
+  viewTab: { flex: 1, padding: '8px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
+  viewTabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 600 },
+  nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)' },
   navBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: 4 },
-  navLabel: { fontSize: 14, fontWeight: 500, color: 'var(--text)', textTransform: 'capitalize' },
+  navLabel: { fontSize: 14, fontWeight: 600, color: 'var(--text)', textTransform: 'capitalize' },
   weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 },
-  weekDay: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 2px', borderRadius: 8, cursor: 'pointer', background: 'var(--surface2)' },
-  weekDayHoje: { background: '#FCE4EC' },
-  weekDayLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 500, textTransform: 'uppercase' },
-  weekDayNum: { fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '2px 0' },
+  weekDay: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 2px', borderRadius: 9, cursor: 'pointer', background: 'var(--surface2)', border: '1px solid var(--border)' },
+  weekDayHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
+  weekDayLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase' },
+  weekDayNum: { fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '2px 0' },
   weekDayNumHoje: { color: 'var(--pink)' },
   weekDots: { display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' },
   weekDot: { width: 5, height: 5, borderRadius: '50%' },
   calHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 2 },
-  calHeaderCell: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', textAlign: 'center', padding: '4px 0', textTransform: 'uppercase' },
+  calHeaderCell: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textAlign: 'center', padding: '4px 0', textTransform: 'uppercase' },
   calRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, marginBottom: 1 },
-  calCell: { minHeight: 52, padding: '3px 4px', background: 'var(--surface)', border: '0.5px solid var(--border)', cursor: 'pointer', borderRadius: 4 },
+  calCell: { minHeight: 54, padding: '3px 4px', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 5 },
   calCellOut: { background: 'var(--surface2)', opacity: 0.5 },
-  calCellHoje: { background: '#FCE4EC', border: '1px solid var(--pink-mid)' },
+  calCellHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
   calNum: { fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 2 },
   calNumHoje: { color: 'var(--pink)', fontWeight: 700 },
   calEvent: { fontSize: 9, borderRadius: 3, padding: '1px 4px', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   calMore: { fontSize: 9, color: 'var(--text3)' },
-  card: { background: 'var(--surface)', border: '0.5px solid var(--border)', borderLeft: '3px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 10 },
-  cardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 },
-  cardTime: { fontSize: 13, fontWeight: 600, color: 'var(--text)', minWidth: 42 },
-  cardName: { fontSize: 14, fontWeight: 500 },
-  cardService: { fontSize: 12, color: 'var(--text3)' },
-  cardValor: { fontSize: 13, fontWeight: 600, color: 'var(--pink)' },
-  cardActions: { display: 'flex', gap: 8, flexWrap: 'wrap' },
-  actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500, padding: '5px 10px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer' },
-  badge: { fontSize: 11, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 500, whiteSpace: 'nowrap' },
+  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' },
+  cardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
+  cardTime: { fontSize: 14, fontWeight: 700, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '3px 7px', textAlign: 'center' },
+  cardName: { fontSize: 14, fontWeight: 600 },
+  cardService: { fontSize: 12, color: 'var(--text3)', marginTop: 1 },
+  cardValor: { fontSize: 14, fontWeight: 700, color: 'var(--pink)' },
+  cardActions: { display: 'flex', gap: 7, flexWrap: 'wrap' },
+  actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', transition: 'opacity 0.15s' },
+  badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600, whiteSpace: 'nowrap' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' },
-  emptyBtn: { marginTop: 12, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 20px', fontSize: 13, fontWeight: 500, cursor: 'pointer' },
-  fab: { position: 'fixed', bottom: 76, right: 16, width: 50, height: 50, borderRadius: '50%', background: 'var(--pink)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 10px rgba(194,24,91,0.35)', cursor: 'pointer', zIndex: 99 },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
-  modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 36px', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
-  modalTitle: { fontSize: 16, fontWeight: 600, marginBottom: 4 },
-  pagInfo: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px' },
-  pagCliente: { fontSize: 14, fontWeight: 600 },
-  pagServico: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
-  formasGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 },
-  formaBtn: { padding: '10px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
-  formaBtnActive: { border: '1.5px solid var(--pink)', background: '#FCE4EC', color: 'var(--pink)' },
-  statusGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 },
-  statusBtn2: { padding: '10px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
-  statusPagoActive: { border: '1.5px solid #43A047', background: '#E8F5E9', color: '#2E7D32' },
-  statusPendenteActive: { border: '1.5px solid #FB8C00', background: '#FFF3E0', color: '#E65100' },
-  field: { display: 'flex', flexDirection: 'column', gap: 4 },
-  label: { fontSize: 12, fontWeight: 500, color: 'var(--text2)' },
-  input: { padding: '9px 12px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, outline: 'none', background: 'var(--surface)', color: 'var(--text)' },
+  emptyBtn: { marginTop: 14, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(26,10,18,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 13, maxHeight: '90vh', overflowY: 'auto' },
+  modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 2 },
+  pagInfo: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', border: '1px solid var(--border)' },
+  pagCliente: { fontSize: 14, fontWeight: 700 },
+  pagServico: { fontSize: 12, color: 'var(--text3)', marginTop: 3 },
+  formasGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginTop: 4 },
+  formaBtn: { padding: '11px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
+  formaBtnActive: { border: '1.5px solid var(--pink)', background: 'var(--pink-light)', color: 'var(--pink)', fontWeight: 700 },
+  statusGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginTop: 4 },
+  statusBtn2: { padding: '11px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
+  statusPagoActive: { border: '1.5px solid #4ADE80', background: '#DCFCE7', color: '#15803D', fontWeight: 700 },
+  statusPendenteActive: { border: '1.5px solid #FCD34D', background: '#FEF3C7', color: '#92400E', fontWeight: 700 },
+  field: { display: 'flex', flexDirection: 'column', gap: 5 },
+  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
+  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
   row: { display: 'flex', gap: 10 },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 4 },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text)', border: '0.5px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
-  linkBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--pink)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 },
-  miniForm: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px', border: '1px solid var(--pink-light)' },
+  btnPrimary: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
+  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  linkBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--pink)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 },
+  miniForm: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '13px', border: '1px solid var(--pink-mid)' },
 }
