@@ -1,19 +1,27 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
-  isSameDay, isSameMonth, isToday, parseISO
+  isSameMonth, isToday
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+
 const STATUS = {
   confirmado: { label: 'Confirmada', bg: '#E8F5E9', color: '#2E7D32', border: '#43A047' },
   pendente:   { label: 'Aguardando', bg: '#FFF3E0', color: '#E65100', border: '#FB8C00' },
   realizado:  { label: 'Realizado',  bg: '#F3E5F5', color: '#6A1B9A', border: '#9C27B0' },
   cancelado:  { label: 'Cancelado',  bg: '#FEECEC', color: '#C62828', border: '#EF5350' },
 }
+
+const FORMAS = [
+  { value: 'pix', label: '💠 Pix' },
+  { value: 'dinheiro', label: '💵 Dinheiro' },
+  { value: 'cartao_debito', label: '💳 Débito' },
+  { value: 'cartao_credito', label: '💳 Crédito' },
+]
 
 const VIEWS = ['Dia', 'Semana', 'Mês']
 
@@ -25,9 +33,13 @@ export default function Agenda() {
   const [clientes, setClientes] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showNovaCliente, setShowNovaCliente] = useState(false)
+  const [showPagModal, setShowPagModal] = useState(false)
+  const [agSelecionado, setAgSelecionado] = useState(null)
+  const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '' })
   const [form, setForm] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(new Date(), 'yyyy-MM-dd') })
   const [formCliente, setFormCliente] = useState({ nome: '', telefone: '' })
   const [saving, setSaving] = useState(false)
+  const [savingPag, setSavingPag] = useState(false)
   const [savingCliente, setSavingCliente] = useState(false)
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
@@ -35,9 +47,8 @@ export default function Agenda() {
 
   async function loadAgendamentos() {
     let inicio, fim
-    if (view === 'Dia') {
-      inicio = fim = format(dataSel, 'yyyy-MM-dd')
-    } else if (view === 'Semana') {
+    if (view === 'Dia') { inicio = fim = format(dataSel, 'yyyy-MM-dd') }
+    else if (view === 'Semana') {
       inicio = format(startOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd')
       fim = format(endOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd')
     } else {
@@ -46,10 +57,9 @@ export default function Agenda() {
     }
     const { data } = await supabase
       .from('agendamentos')
-      .select('*, clientes(nome)')
+      .select('*, clientes(nome), pagamentos(id, status, forma, valor)')
       .eq('user_id', user.id)
-      .gte('data', inicio)
-      .lte('data', fim)
+      .gte('data', inicio).lte('data', fim)
       .order('data').order('horario')
     setAgendamentos(data || [])
   }
@@ -62,9 +72,7 @@ export default function Agenda() {
   async function salvarAgendamento() {
     if (!form.cliente_id || !form.horario || !form.servico || !form.data) return
     setSaving(true)
-    await supabase.from('agendamentos').insert({
-      ...form, user_id: user.id, valor: parseFloat(form.valor) || 0,
-    })
+    await supabase.from('agendamentos').insert({ ...form, user_id: user.id, valor: parseFloat(form.valor) || 0 })
     setSaving(false)
     setShowModal(false)
     setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd') })
@@ -84,8 +92,35 @@ export default function Agenda() {
     }
   }
 
-  async function atualizarStatus(id, status) {
-    await supabase.from('agendamentos').update({ status }).eq('id', id)
+  async function atualizarStatus(ag, novoStatus) {
+    await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id)
+    if (novoStatus === 'realizado') {
+      setAgSelecionado(ag)
+      setFormPag({ forma: 'pix', status: 'pago', valor: String(ag.valor || '') })
+      setShowPagModal(true)
+    }
+    loadAgendamentos()
+  }
+
+  async function salvarPagamento() {
+    if (!agSelecionado) return
+    setSavingPag(true)
+    const pagExistente = agSelecionado.pagamentos?.[0]
+    if (pagExistente) {
+      await supabase.from('pagamentos').update({ forma: formPag.forma, status: formPag.status, valor: parseFloat(formPag.valor) || agSelecionado.valor }).eq('id', pagExistente.id)
+    } else {
+      await supabase.from('pagamentos').insert({
+        user_id: user.id,
+        agendamento_id: agSelecionado.id,
+        valor: parseFloat(formPag.valor) || agSelecionado.valor || 0,
+        forma: formPag.forma,
+        status: formPag.status,
+        data: agSelecionado.data,
+      })
+    }
+    setSavingPag(false)
+    setShowPagModal(false)
+    setAgSelecionado(null)
     loadAgendamentos()
   }
 
@@ -103,7 +138,56 @@ export default function Agenda() {
       return `${format(ini, 'dd MMM', { locale: ptBR })} – ${format(fim, 'dd MMM', { locale: ptBR })}`
     }
     return format(dataSel, "MMMM 'de' yyyy", { locale: ptBR })
-  }function ViewDia() {
+  }function CardAgendamento({ ag }) {
+    const st = STATUS[ag.status] || STATUS.pendente
+    const pag = ag.pagamentos?.[0]
+    return (
+      <div style={{ ...s.card, borderLeftColor: st.border }}>
+        <div style={s.cardHeader}>
+          <div style={s.cardTime}>{ag.horario?.slice(0, 5)}</div>
+          <div style={{ flex: 1 }}>
+            <div style={s.cardName}>{ag.clientes?.nome}</div>
+            <div style={s.cardService}>{ag.servico}</div>
+          </div>
+          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+        </div>
+        {ag.valor > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>
+            {pag && (
+              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#E8F5E9' : '#FFF3E0', color: pag.status === 'pago' ? '#2E7D32' : '#E65100', fontSize: 10 }}>
+                {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
+              </span>
+            )}
+          </div>
+        )}
+        <div style={s.cardActions}>
+          {ag.status === 'pendente' && (
+            <button style={{ ...s.actionBtn, background: '#E8F5E9', color: '#2E7D32' }} onClick={() => atualizarStatus(ag, 'confirmado')}>
+              <CheckCircle size={14} /> Confirmar
+            </button>
+          )}
+          {ag.status === 'confirmado' && (
+            <button style={{ ...s.actionBtn, background: '#F3E5F5', color: '#6A1B9A' }} onClick={() => atualizarStatus(ag, 'realizado')}>
+              <CheckCircle size={14} /> Marcar realizado
+            </button>
+          )}
+          {ag.status === 'realizado' && (
+            <button style={{ ...s.actionBtn, background: '#E8F5E9', color: '#2E7D32' }} onClick={() => { setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') }); setShowPagModal(true) }}>
+              <CreditCard size={14} /> {pag ? 'Editar pagamento' : 'Registrar pagamento'}
+            </button>
+          )}
+          {ag.status !== 'realizado' && ag.status !== 'cancelado' && (
+            <button style={{ ...s.actionBtn, background: '#FEECEC', color: '#C62828' }} onClick={() => atualizarStatus(ag, 'cancelado')}>
+              <XCircle size={14} /> Cancelar
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  function ViewDia() {
     const dia = agendamentos.filter(a => a.data === format(dataSel, 'yyyy-MM-dd'))
     if (dia.length === 0) return (
       <div style={s.empty}>
@@ -125,12 +209,8 @@ export default function Agenda() {
             const hoje = isToday(dia)
             return (
               <div key={dia.toISOString()} style={{ ...s.weekDay, ...(hoje ? s.weekDayHoje : {}) }} onClick={() => { setDataSel(dia); setView('Dia') }}>
-                <div style={{ ...s.weekDayLabel, ...(hoje ? { color: 'var(--pink)' } : {}) }}>
-                  {format(dia, 'EEE', { locale: ptBR })}
-                </div>
-                <div style={{ ...s.weekDayNum, ...(hoje ? s.weekDayNumHoje : {}) }}>
-                  {format(dia, 'd')}
-                </div>
+                <div style={{ ...s.weekDayLabel, ...(hoje ? { color: 'var(--pink)' } : {}) }}>{format(dia, 'EEE', { locale: ptBR })}</div>
+                <div style={{ ...s.weekDayNum, ...(hoje ? s.weekDayNumHoje : {}) }}>{format(dia, 'd')}</div>
                 {agsDia.length > 0 && (
                   <div style={s.weekDots}>
                     {agsDia.slice(0, 3).map((ag, i) => {
@@ -166,10 +246,7 @@ export default function Agenda() {
   function ViewMes() {
     const inicio = startOfMonth(dataSel)
     const fim = endOfMonth(dataSel)
-    const dias = eachDayOfInterval({
-      start: startOfWeek(inicio, { locale: ptBR }),
-      end: endOfWeek(fim, { locale: ptBR })
-    })
+    const dias = eachDayOfInterval({ start: startOfWeek(inicio, { locale: ptBR }), end: endOfWeek(fim, { locale: ptBR }) })
     const semanas = []
     for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7))
     return (
@@ -191,11 +268,7 @@ export default function Agenda() {
                   <div style={{ ...s.calNum, ...(hoje ? s.calNumHoje : {}) }}>{format(dia, 'd')}</div>
                   {agsDia.slice(0, 2).map((ag, i) => {
                     const st = STATUS[ag.status] || STATUS.pendente
-                    return (
-                      <div key={i} style={{ ...s.calEvent, background: st.bg, color: st.color }}>
-                        {ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}
-                      </div>
-                    )
+                    return <div key={i} style={{ ...s.calEvent, background: st.bg, color: st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>
                   })}
                   {agsDia.length > 2 && <div style={s.calMore}>+{agsDia.length - 2}</div>}
                 </div>
@@ -203,28 +276,6 @@ export default function Agenda() {
             })}
           </div>
         ))}
-      </div>
-    )
-  }
-
-  function CardAgendamento({ ag }) {
-    const st = STATUS[ag.status] || STATUS.pendente
-    return (
-      <div style={{ ...s.card, borderLeftColor: st.border }}>
-        <div style={s.cardHeader}>
-          <div style={s.cardTime}>{ag.horario?.slice(0, 5)}</div>
-          <div style={{ flex: 1 }}>
-            <div style={s.cardName}>{ag.clientes?.nome}</div>
-            <div style={s.cardService}>{ag.servico}</div>
-          </div>
-          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
-        </div>
-        {ag.valor > 0 && <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>}
-        <div style={s.cardActions}>
-          {ag.status === 'pendente' && <button style={{ ...s.actionBtn, background: '#E8F5E9', color: '#2E7D32' }} onClick={() => atualizarStatus(ag.id, 'confirmado')}><CheckCircle size={14} /> Confirmar</button>}
-          {ag.status === 'confirmado' && <button style={{ ...s.actionBtn, background: '#F3E5F5', color: '#6A1B9A' }} onClick={() => atualizarStatus(ag.id, 'realizado')}><CheckCircle size={14} /> Realizado</button>}
-          {ag.status !== 'realizado' && ag.status !== 'cancelado' && <button style={{ ...s.actionBtn, background: '#FEECEC', color: '#C62828' }} onClick={() => atualizarStatus(ag.id, 'cancelado')}><XCircle size={14} /> Cancelar</button>}
-        </div>
       </div>
     )
   }return (
@@ -242,9 +293,52 @@ export default function Agenda() {
       {view === 'Dia' && <ViewDia />}
       {view === 'Semana' && <ViewSemana />}
       {view === 'Mês' && <ViewMes />}
+
       <button style={s.fab} onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
       </button>
+
+      {/* Modal pagamento */}
+      {showPagModal && agSelecionado && (
+        <div style={s.overlay} onClick={() => setShowPagModal(false)}>
+          <div style={s.modal} onClick={e => e.stopPropagation()}>
+            <div style={s.modalTitle}>💳 Registrar pagamento</div>
+            <div style={s.pagInfo}>
+              <div style={s.pagCliente}>{agSelecionado.clientes?.nome}</div>
+              <div style={s.pagServico}>{agSelecionado.servico} · {agSelecionado.data}</div>
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Valor (R$)</label>
+              <input style={s.input} type="number" placeholder="0,00" value={formPag.valor} onChange={e => setFormPag({ ...formPag, valor: e.target.value })} />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Forma de pagamento</label>
+              <div style={s.formasGrid}>
+                {FORMAS.map(f => (
+                  <button key={f.value} style={{ ...s.formaBtn, ...(formPag.forma === f.value ? s.formaBtnActive : {}) }} onClick={() => setFormPag({ ...formPag, forma: f.value })}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Status do pagamento</label>
+              <div style={s.statusGrid}>
+                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }} onClick={() => setFormPag({ ...formPag, status: 'pago' })}>
+                  ✓ Pago
+                </button>
+                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pendente' ? s.statusPendenteActive : {}) }} onClick={() => setFormPag({ ...formPag, status: 'pendente' })}>
+                  ⏳ Pendente
+                </button>
+              </div>
+            </div>
+            <button style={s.btnPrimary} onClick={salvarPagamento} disabled={savingPag}>{savingPag ? 'Salvando...' : 'Confirmar pagamento'}</button>
+            <button style={s.btnSecondary} onClick={() => setShowPagModal(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal novo agendamento */}
       {showModal && (
         <div style={s.overlay} onClick={() => setShowModal(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
@@ -252,9 +346,7 @@ export default function Agenda() {
             <div style={s.field}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <label style={s.label}>Cliente</label>
-                <button style={s.linkBtn} onClick={() => setShowNovaCliente(true)}>
-                  <UserPlus size={13} /> Nova cliente
-                </button>
+                <button style={s.linkBtn} onClick={() => setShowNovaCliente(true)}><UserPlus size={13} /> Nova cliente</button>
               </div>
               <select style={s.input} value={form.cliente_id} onChange={e => setForm({ ...form, cliente_id: e.target.value })}>
                 <option value="">Selecionar cliente</option>
@@ -345,7 +437,7 @@ const s = {
   cardTime: { fontSize: 13, fontWeight: 600, color: 'var(--text)', minWidth: 42 },
   cardName: { fontSize: 14, fontWeight: 500 },
   cardService: { fontSize: 12, color: 'var(--text3)' },
-  cardValor: { fontSize: 13, fontWeight: 600, color: 'var(--pink)', marginBottom: 8 },
+  cardValor: { fontSize: 13, fontWeight: 600, color: 'var(--pink)' },
   cardActions: { display: 'flex', gap: 8, flexWrap: 'wrap' },
   actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500, padding: '5px 10px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer' },
   badge: { fontSize: 11, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 500, whiteSpace: 'nowrap' },
@@ -355,6 +447,16 @@ const s = {
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 36px', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 16, fontWeight: 600, marginBottom: 4 },
+  pagInfo: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px' },
+  pagCliente: { fontSize: 14, fontWeight: 600 },
+  pagServico: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
+  formasGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 },
+  formaBtn: { padding: '10px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
+  formaBtnActive: { border: '1.5px solid var(--pink)', background: '#FCE4EC', color: 'var(--pink)' },
+  statusGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 },
+  statusBtn2: { padding: '10px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
+  statusPagoActive: { border: '1.5px solid #43A047', background: '#E8F5E9', color: '#2E7D32' },
+  statusPendenteActive: { border: '1.5px solid #FB8C00', background: '#FFF3E0', color: '#E65100' },
   field: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: { fontSize: 12, fontWeight: 500, color: 'var(--text2)' },
   input: { padding: '9px 12px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, outline: 'none', background: 'var(--surface)', color: 'var(--text)' },
