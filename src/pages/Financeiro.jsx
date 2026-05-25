@@ -55,11 +55,15 @@ export default function Financeiro() {
       <div style={s.grid}>
         <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
           <div style={s.cardLabel}>Recebido</div>
-          <div style={{ ...s.cardValue, color: 'var(--green)' }}>R$ {recebido.toFixed(2).replace('.', ',')}</div>
+          <div style={{ ...s.cardValue, color: 'var(--green)' }}>
+            R$ {recebido.toFixed(2).replace('.', ',')}
+          </div>
         </div>
         <div style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}` }}>
           <div style={s.cardLabel}>A receber</div>
-          <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }}>R$ {pendente.toFixed(2).replace('.', ',')}</div>
+          <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }}>
+            R$ {pendente.toFixed(2).replace('.', ',')}
+          </div>
         </div>
       </div>
 
@@ -85,7 +89,9 @@ export default function Financeiro() {
                 <div style={s.finSub}>{p.agendamentos?.servico || '—'} · {format(new Date(p.data), 'dd/MM', { locale: ptBR })}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>R$ {p.valor.toFixed(2).replace('.', ',')}</div>
+                <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
+                  R$ {p.valor.toFixed(2).replace('.', ',')}
+                </div>
                 <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
                   {pago ? '✓ Pago' : '⏳ Pendente'}
                 </button>
@@ -115,7 +121,7 @@ export default function Financeiro() {
             <div style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Valor (R$) *</label>
-                <input style={s.input} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
+                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
               </div>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Forma</label>
@@ -156,7 +162,7 @@ const s = {
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 },
   card: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
   cardLabel: { fontSize: 11, color: 'var(--text3)', marginBottom: 6, fontWeight: 500 },
-  cardValue: { fontSize: 20, fontWeight: 700 },
+  cardValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 500 },
   filtros: { display: 'flex', gap: 8, marginBottom: 18 },
   filtroBtn: { padding: '7px 16px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' },
   filtroBtnActive: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', boxShadow: 'var(--shadow-pink)' },
@@ -164,18 +170,18 @@ const s = {
   dot: { width: 10, height: 10, borderRadius: '50%', flexShrink: 0 },
   finNome: { fontSize: 14, fontWeight: 600 },
   finSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
-  finValor: { fontSize: 14, fontWeight: 700, marginBottom: 3 },
+  finValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, marginBottom: 3 },
   statusBtn: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600, border: 'none', cursor: 'pointer' },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   empty: { color: 'var(--text3)', fontSize: 14, textAlign: 'center', padding: '28px 0' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(26,10,18,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12 },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
   input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
   row: { display: 'flex', gap: 10 },
-  btnPrimary: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
+  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
 }

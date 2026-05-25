@@ -4,10 +4,12 @@ import { AlertTriangle, UserX, Cake, ChevronRight, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { format, differenceInDays } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const [stats, setStats] = useState({ hoje: 0, receitaHoje: 0, pendente: 0, metaMes: 4000, receitaMes: 0 })
   const [proximoAtend, setProximoAtend] = useState(null)
   const [semConfirmacao, setSemConfirmacao] = useState([])
@@ -48,6 +50,15 @@ export default function Home() {
 
   return (
     <div style={s.page}>
+
+      {/* Saudação humana */}
+      <div style={s.greetingRow}>
+        <span style={s.greetingText}>oi {firstName},</span>
+        <span style={s.greetingDate}>
+          {format(new Date(), "EEEE", { locale: ptBR })}
+        </span>
+      </div>
+
       <div style={s.grid}>
         <div style={s.card}>
           <div style={s.cardLabel}>Hoje</div>
@@ -56,17 +67,23 @@ export default function Home() {
         </div>
         <div style={s.card}>
           <div style={s.cardLabel}>Receita hoje</div>
-          <div style={{ ...s.cardValue, color: 'var(--green)', fontSize: 18 }}>R$ {stats.receitaHoje.toFixed(2).replace('.', ',')}</div>
+          <div style={{ ...s.cardValue, ...s.mono, color: 'var(--green)', fontSize: 17 }}>
+            R$ {stats.receitaHoje.toFixed(2).replace('.', ',')}
+          </div>
           <div style={s.cardSub}>{stats.hoje} serviço{stats.hoje !== 1 ? 's' : ''}</div>
         </div>
         <div style={s.card}>
           <div style={s.cardLabel}>A receber</div>
-          <div style={{ ...s.cardValue, color: stats.pendente > 0 ? 'var(--amber)' : 'var(--green)', fontSize: 18 }}>R$ {stats.pendente.toFixed(2).replace('.', ',')}</div>
+          <div style={{ ...s.cardValue, ...s.mono, color: stats.pendente > 0 ? 'var(--amber)' : 'var(--green)', fontSize: 17 }}>
+            R$ {stats.pendente.toFixed(2).replace('.', ',')}
+          </div>
           <div style={s.cardSub}>em aberto</div>
         </div>
         <div style={s.card}>
           <div style={s.cardLabel}>Meta do mês</div>
-          <div style={{ ...s.cardValue, color: 'var(--pink)', fontSize: 18 }}>R$ {stats.receitaMes.toFixed(0)}</div>
+          <div style={{ ...s.cardValue, ...s.mono, color: 'var(--pink)', fontSize: 17 }}>
+            R$ {stats.receitaMes.toFixed(0)}
+          </div>
           <div style={s.progressBar}><div style={{ ...s.progressFill, width: `${progressoMeta}%` }} /></div>
           <div style={s.cardSub}>{progressoMeta}% da meta</div>
         </div>
@@ -126,6 +143,20 @@ export default function Home() {
 
 const s = {
   page: { padding: 16, paddingBottom: 80 },
+  /* Saudação */
+  greetingRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 18 },
+  greetingText: {
+    fontFamily: "'Instrument Serif', serif",
+    fontStyle: 'italic',
+    fontSize: 24,
+    fontWeight: 400,
+    color: 'var(--text)',
+    letterSpacing: '-0.3px',
+  },
+  greetingDate: { fontSize: 12, color: 'var(--text3)', fontWeight: 500, textTransform: 'capitalize' },
+  /* Mono helper */
+  mono: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 },
+  /* Stats grid */
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '16px 0 8px' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 },
   card: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
@@ -133,15 +164,17 @@ const s = {
   cardValue: { fontSize: 22, fontWeight: 700, lineHeight: 1 },
   cardSub: { fontSize: 11, color: 'var(--text3)', marginTop: 5 },
   progressBar: { height: 5, borderRadius: 3, background: 'var(--border)', marginTop: 7, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, var(--pink), #DB2777)', transition: 'width 0.6s ease' },
+  progressFill: { height: '100%', borderRadius: 3, background: 'var(--pink)', transition: 'width 0.6s ease' },
+  /* Alerts */
   alert: { borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 9, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', boxShadow: 'var(--shadow-xs)' },
   alertTitle: { fontSize: 13, fontWeight: 600 },
   alertSub: { fontSize: 12, opacity: 0.78, marginTop: 2 },
   alertWarning: { background: '#FFFBEB', color: '#78350F', border: '1px solid #FCD34D' },
   alertDanger: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA' },
   alertSuccess: { background: 'var(--green-bg)', color: '#14532D', border: '1px solid #86EFAC' },
+  /* Appointment card */
   apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
-  apptTimeBadge: { fontSize: 14, fontWeight: 700, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 8, padding: '4px 8px', textAlign: 'center' },
+  apptTimeBadge: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, fontSize: 14, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 8, padding: '4px 8px', textAlign: 'center' },
   apptName: { fontSize: 14, fontWeight: 600 },
   apptService: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },

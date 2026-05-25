@@ -17,10 +17,10 @@ const STATUS = {
 }
 
 const FORMAS = [
-  { value: 'pix',           label: '💠 Pix' },
-  { value: 'dinheiro',      label: '💵 Dinheiro' },
-  { value: 'cartao_debito', label: '💳 Débito' },
-  { value: 'cartao_credito',label: '💳 Crédito' },
+  { value: 'pix',            label: '💠 Pix' },
+  { value: 'dinheiro',       label: '💵 Dinheiro' },
+  { value: 'cartao_debito',  label: '💳 Débito' },
+  { value: 'cartao_credito', label: '💳 Crédito' },
 ]
 
 const VIEWS = ['Dia', 'Semana', 'Mês']
@@ -206,7 +206,9 @@ export default function Agenda() {
       <div style={s.empty}>
         <Calendar size={34} color="var(--text3)" style={{ marginBottom: 10 }} />
         <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento neste dia</p>
-        <button style={s.emptyBtn} onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }}>+ Adicionar agendamento</button>
+        <button style={s.emptyBtn} onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }}>
+          + Adicionar agendamento
+        </button>
       </div>
     )
     return dia.map(ag => <CardAgendamento key={ag.id} ag={ag} />)
@@ -330,7 +332,7 @@ export default function Agenda() {
             <div style={s.field}>
               <label style={s.label}>Valor (R$)</label>
               <input
-                style={s.input}
+                style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
                 type="number"
                 placeholder="0,00"
                 value={formPag.valor}
@@ -425,7 +427,7 @@ export default function Agenda() {
             <div style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Valor (R$)</label>
-                <input style={s.input} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
+                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
               </div>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Status</label>
@@ -454,15 +456,15 @@ const s = {
   hojeChip: { fontSize: 10, background: 'var(--pink)', color: 'white', borderRadius: 20, padding: '2px 9px', fontWeight: 700 },
   viewTabs: { display: 'flex', background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 12, gap: 3, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
   viewTab: { flex: 1, padding: '8px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
-  viewTabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 600 },
+  viewTabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 700 },
   nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)' },
   navBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: 4 },
-  navLabel: { fontSize: 14, fontWeight: 600, color: 'var(--text)', textTransform: 'capitalize' },
+  navLabel: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' },
   weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 },
   weekDay: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 2px', borderRadius: 9, cursor: 'pointer', background: 'var(--surface2)', border: '1px solid var(--border)' },
   weekDayHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
   weekDayLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase' },
-  weekDayNum: { fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '2px 0' },
+  weekDayNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 500, color: 'var(--text)', margin: '2px 0' },
   weekDayNumHoje: { color: 'var(--pink)' },
   weekDots: { display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' },
   weekDot: { width: 5, height: 5, borderRadius: '50%' },
@@ -472,22 +474,22 @@ const s = {
   calCell: { minHeight: 54, padding: '3px 4px', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 5 },
   calCellOut: { background: 'var(--surface2)', opacity: 0.5 },
   calCellHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
-  calNum: { fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 2 },
+  calNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 2 },
   calNumHoje: { color: 'var(--pink)', fontWeight: 700 },
   calEvent: { fontSize: 9, borderRadius: 3, padding: '1px 4px', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   calMore: { fontSize: 9, color: 'var(--text3)' },
   card: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' },
   cardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
-  cardTime: { fontSize: 14, fontWeight: 700, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '3px 7px', textAlign: 'center' },
-  cardName: { fontSize: 14, fontWeight: 600 },
+  cardTime: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '3px 7px', textAlign: 'center' },
+  cardName: { fontSize: 14, fontWeight: 700 },
   cardService: { fontSize: 12, color: 'var(--text3)', marginTop: 1 },
-  cardValor: { fontSize: 14, fontWeight: 700, color: 'var(--pink)' },
+  cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, color: 'var(--pink)' },
   cardActions: { display: 'flex', gap: 7, flexWrap: 'wrap' },
   actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', transition: 'opacity 0.15s' },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600, whiteSpace: 'nowrap' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' },
   emptyBtn: { marginTop: 14, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(26,10,18,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 13, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 2 },
   pagInfo: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', border: '1px solid var(--border)' },
@@ -504,8 +506,8 @@ const s = {
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
   input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
   row: { display: 'flex', gap: 10 },
-  btnPrimary: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
+  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
-  linkBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--pink)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 },
+  linkBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--pink)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 },
   miniForm: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '13px', border: '1px solid var(--pink-mid)' },
 }

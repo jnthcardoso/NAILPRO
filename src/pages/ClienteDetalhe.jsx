@@ -42,8 +42,9 @@ export default function ClienteDetalhe() {
       <div style={s.profile}>
         <div style={s.avatar}>{getInitials(cliente.nome)}</div>
         <div style={s.profileName}>{cliente.nome}</div>
+        {/* VIP badge: Gold + Noir */}
         {(cliente.total_visitas || 0) >= 10 && (
-          <span style={s.vipBadge}>✨ VIP</span>
+          <span style={s.vipBadge}>✦ VIP</span>
         )}
         {cliente.telefone && (
           <a href={`https://wa.me/55${cliente.telefone.replace(/\D/g, '')}`} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
@@ -65,7 +66,9 @@ export default function ClienteDetalhe() {
         </div>
         <div style={s.statCard}>
           <Calendar size={18} color="var(--text3)" />
-          <div style={s.statValue}>{cliente.ultimo_atendimento ? format(new Date(cliente.ultimo_atendimento), 'dd/MM') : '—'}</div>
+          <div style={s.statValue}>
+            {cliente.ultimo_atendimento ? format(new Date(cliente.ultimo_atendimento), 'dd/MM') : '—'}
+          </div>
           <div style={s.statLabel}>última vez</div>
         </div>
       </div>
@@ -91,7 +94,9 @@ export default function ClienteDetalhe() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={s.histValor}>R$ {(h.valor || 0).toFixed(2).replace('.', ',')}</div>
-                <span style={{ ...s.badge, ...(pago ? s.badgePago : s.badgePendente) }}>{pago ? '✓ Pago' : '⏳ Pendente'}</span>
+                <span style={{ ...s.badge, ...(pago ? s.badgePago : s.badgePendente) }}>
+                  {pago ? '✓ Pago' : '⏳ Pendente'}
+                </span>
               </div>
             </div>
           )
@@ -106,14 +111,15 @@ const s = {
   topBar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   backBtn: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, cursor: 'pointer', color: 'var(--text)', display: 'flex', padding: '6px 8px' },
   topTitle: { fontSize: 15, fontWeight: 700 },
-  profile: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20, gap: 6 },
-  avatar: { width: 76, height: 76, borderRadius: '50%', background: 'linear-gradient(135deg, var(--pink-light), var(--pink-mid))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--pink)', marginBottom: 4, boxShadow: '0 4px 16px rgba(190,24,93,0.18)' },
+  profile: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20, gap: 7 },
+  avatar: { width: 76, height: 76, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--pink)', marginBottom: 4, boxShadow: '0 4px 16px rgba(139,38,85,0.18)' },
   profileName: { fontSize: 20, fontWeight: 700 },
-  vipBadge: { fontSize: 12, padding: '3px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--purple-bg)', color: 'var(--purple)', fontWeight: 700 },
+  /* VIP badge: Gold + Noir */
+  vipBadge: { fontSize: 12, padding: '3px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   wppBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC', borderRadius: 'var(--radius-pill)', padding: '7px 15px', fontSize: 13, fontWeight: 600 },
   statsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 },
   statCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
-  statValue: { fontSize: 16, fontWeight: 700, color: 'var(--text)' },
+  statValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 500, color: 'var(--text)' },
   statLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 500 },
   obs: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
   obsTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 },
@@ -122,7 +128,7 @@ const s = {
   histCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 10, boxShadow: 'var(--shadow-xs)' },
   histService: { fontSize: 14, fontWeight: 600 },
   histDate: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
-  histValor: { fontSize: 13, fontWeight: 700, color: 'var(--pink)', marginBottom: 3 },
+  histValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)', marginBottom: 3 },
   badge: { fontSize: 11, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
   badgePago: { background: 'var(--green-bg)', color: 'var(--green)' },
   badgePendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },

@@ -71,7 +71,8 @@ export default function Clientes() {
               <div style={s.cardName}>
                 {c.nome}
                 {sumida && <span style={s.tagSumida}>Sumida</span>}
-                {c.total_visitas >= 10 && <span style={s.tagVip}>VIP ✨</span>}
+                {/* Badge VIP: Gold + Noir */}
+                {c.total_visitas >= 10 && <span style={s.tagVip}>✦ VIP</span>}
               </div>
               <div style={s.cardSub}>
                 {c.ultimo_atendimento ? `Última vez: ${format(new Date(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida'}
@@ -119,22 +120,23 @@ const s = {
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   chipsRow: { display: 'flex', flexWrap: 'wrap', gap: 6 },
   chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
-  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'box-shadow 0.15s' },
-  avatar: { width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, var(--pink-light), var(--pink-mid))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'var(--pink)', flexShrink: 0, boxShadow: '0 2px 6px rgba(190,24,93,0.15)' },
+  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
+  avatar: { width: 42, height: 42, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--pink)', flexShrink: 0 },
   cardName: { fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
   cardSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
   cardRight: { textAlign: 'right', flexShrink: 0 },
-  cardValor: { fontSize: 13, fontWeight: 700, color: 'var(--pink)' },
+  cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)' },
   cardVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
-  tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--purple-bg)', color: 'var(--purple)', fontWeight: 600 },
+  /* VIP badge: Gold + Noir */
+  tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   empty: { padding: '40px 0', textAlign: 'center' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(26,10,18,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
-  modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4, color: 'var(--text)' },
+  modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
   input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
-  btnPrimary: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
+  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
 }

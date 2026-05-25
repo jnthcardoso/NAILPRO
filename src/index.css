@@ -1,39 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Playfair+Display:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --pink: #BE185D;
-  --pink-dark: #9D174D;
-  --pink-light: #FCE7F3;
-  --pink-mid: #F9A8D4;
+  /* ── Berry Color System ─────────── */
+  --pink: #8B2655;          /* Berry  – primary */
+  --pink-dark: #5E1839;     /* Wine   – hover / pressed */
+  --pink-light: #F7EFF2;    /* Powder */
+  --pink-mid: #D9A0B8;      /* Petal  */
+  --rose: #B34678;          /* Rosé   */
+  --gold: #E8C66A;          /* Gold   – premium accents */
   --green: #15803D;
   --green-bg: #DCFCE7;
   --amber: #92400E;
   --amber-bg: #FEF3C7;
   --red: #B91C1C;
   --red-bg: #FEE2E2;
-  --purple: #6D28D9;
+  --purple: #5B21B6;
   --purple-bg: #EDE9FE;
-  --bg: #FDF2F8;
+  --bg: #FBF6F8;             /* Cream  – background principal */
   --surface: #FFFFFF;
-  --surface2: #FDF4FB;
-  --border: #F3C6DF;
-  --border2: #E8A5C8;
-  --text: #1A0A12;
-  --text2: #5B3A4A;
-  --text3: #9B6E82;
+  --surface2: #F5EDF2;
+  --border: #EAD5E2;
+  --border2: #D8B5C8;
+  --text: #180712;           /* Noir */
+  --text2: #4A2438;
+  --text3: #8B6070;
+
+  /* ── Typography ─────────────────── */
+  --font: 'Bricolage Grotesque', sans-serif;
+  --font-display: 'Instrument Serif', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ── Spacing & Shape ─────────────── */
   --radius: 14px;
   --radius-sm: 10px;
   --radius-pill: 100px;
-  --font: 'DM Sans', sans-serif;
-  --font-display: 'Playfair Display', serif;
   --nav-height: 64px;
   --sidebar-width: 244px;
-  --shadow-xs: 0 1px 3px rgba(26,10,18,0.05);
-  --shadow-sm: 0 2px 8px rgba(26,10,18,0.07), 0 1px 3px rgba(26,10,18,0.04);
-  --shadow-md: 0 4px 16px rgba(26,10,18,0.09), 0 2px 6px rgba(26,10,18,0.05);
-  --shadow-pink: 0 4px 18px rgba(190,24,93,0.30);
+
+  /* ── Shadows ─────────────────────── */
+  --shadow-xs: 0 1px 3px rgba(24,7,18,0.05);
+  --shadow-sm: 0 2px 8px rgba(24,7,18,0.07), 0 1px 3px rgba(24,7,18,0.04);
+  --shadow-md: 0 4px 16px rgba(24,7,18,0.09), 0 2px 6px rgba(24,7,18,0.05);
+  --shadow-pink: 0 4px 18px rgba(139,38,85,0.30);
 }
 
 html, body, #root {
@@ -56,7 +66,7 @@ a { text-decoration: none; color: inherit; }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--pink-mid) !important;
-  box-shadow: 0 0 0 3px rgba(249,168,212,0.22) !important;
+  box-shadow: 0 0 0 3px rgba(217,160,184,0.25) !important;
 }
 
 /* ── App Layout ──────────────────────────── */
@@ -71,14 +81,14 @@ input:focus, select:focus, textarea:focus {
 .app-sidebar { display: none; }
 
 .app-mobile-header {
-  background: linear-gradient(135deg, var(--pink) 0%, #DB2777 100%);
+  background: var(--pink);
   padding: 16px 20px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 12px rgba(190,24,93,0.22);
+  box-shadow: 0 2px 14px rgba(139,38,85,0.25);
 }
 
 .app-content-wrapper {
@@ -103,7 +113,7 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--border);
   display: flex;
   z-index: 100;
-  box-shadow: 0 -2px 12px rgba(26,10,18,0.06);
+  box-shadow: 0 -2px 12px rgba(24,7,18,0.06);
 }
 
 /* ── FAB button ──────────────────────────── */
@@ -123,12 +133,13 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--shadow-pink);
   cursor: pointer;
   z-index: 99;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .fab-btn:hover {
+  background: var(--pink-dark);
   transform: scale(1.07);
-  box-shadow: 0 6px 24px rgba(190,24,93,0.42);
+  box-shadow: 0 6px 24px rgba(139,38,85,0.42);
 }
 
 .fab-btn:active { transform: scale(0.96); }
@@ -153,7 +164,7 @@ input:focus, select:focus, textarea:focus {
     flex-shrink: 0;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    box-shadow: 2px 0 16px rgba(26,10,18,0.05);
+    box-shadow: 2px 0 16px rgba(24,7,18,0.05);
   }
 
   .app-mobile-header { display: none; }

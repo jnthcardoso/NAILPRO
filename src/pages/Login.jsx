@@ -2,6 +2,22 @@ import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
+/* Logo inline — mesmo estilo do AppLayout */
+function LogoMark() {
+  return (
+    <div style={l.logoWrap}>
+      <svg width={40} height={53} viewBox="0 0 24 32" fill="none">
+        <path d="M12 2 C19 4 22 10 22 20 A10 10 0 1 1 2 20 C2 10 5 4 12 2Z" fill="#8B2655"/>
+        <ellipse cx="9" cy="19" rx="2.2" ry="4.2" fill="#F7EFF2" opacity="0.55" transform="rotate(-10 9 19)"/>
+        <circle cx="9.5" cy="11" r="1.1" fill="#F7EFF2" opacity="0.4"/>
+      </svg>
+      <span style={l.logoText}>
+        nailpro<span style={{ color: '#8B2655' }}>.</span>
+      </span>
+    </div>
+  )
+}
+
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [mode, setMode] = useState('login')
@@ -28,10 +44,7 @@ export default function Login() {
   return (
     <div style={s.root}>
       <div style={s.card}>
-        <div style={s.logoWrap}>
-          <div style={s.logoIcon}>💅</div>
-          <div style={s.logo}>nail<span style={{ color: 'var(--pink)' }}>pro</span></div>
-        </div>
+        <LogoMark />
         <p style={s.sub}>Gestão simples para nail designers</p>
 
         <div style={s.tabs}>
@@ -64,12 +77,36 @@ export default function Login() {
   )
 }
 
+/* LogoMark local styles */
+const l = {
+  logoWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 4 },
+  logoText: {
+    fontFamily: "'Bricolage Grotesque', sans-serif",
+    fontWeight: 800,
+    fontSize: 34,
+    color: '#180712',
+    letterSpacing: '-1px',
+    lineHeight: 1,
+  },
+}
+
 const s = {
-  root: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #FCE7F3 0%, #FDF2F8 40%, #FDE8F4 100%)', padding: 20 },
-  card: { background: 'white', borderRadius: 22, padding: '36px 28px', width: '100%', maxWidth: 390, boxShadow: '0 8px 40px rgba(190,24,93,0.14), 0 2px 12px rgba(26,10,18,0.06)' },
-  logoWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 4 },
-  logoIcon: { fontSize: 28 },
-  logo: { fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: 'var(--text)', letterSpacing: '-1px' },
+  root: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(150deg, #F7EFF2 0%, #FBF6F8 50%, #F0E8EF 100%)',
+    padding: 20,
+  },
+  card: {
+    background: 'white',
+    borderRadius: 22,
+    padding: '36px 28px',
+    width: '100%',
+    maxWidth: 390,
+    boxShadow: '0 8px 40px rgba(139,38,85,0.12), 0 2px 12px rgba(24,7,18,0.06)',
+  },
   sub: { textAlign: 'center', fontSize: 13, color: 'var(--text3)', marginBottom: 28 },
   tabs: { display: 'flex', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 24, gap: 3, border: '1px solid var(--border)' },
   tab: { flex: 1, padding: '9px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
@@ -79,5 +116,19 @@ const s = {
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
   input: { padding: '11px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', fontSize: 14, color: 'var(--text)', background: 'var(--surface)' },
   error: { background: 'var(--red-bg)', color: 'var(--red)', fontSize: 13, padding: '9px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid #FECACA', fontWeight: 500 },
-  btn: { background: 'linear-gradient(135deg, var(--pink) 0%, #DB2777 100%)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px 0', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'opacity 0.15s' },
+  /* Berry sólido, sem gradiente */
+  btn: {
+    background: 'var(--pink)',
+    color: 'white',
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    padding: '13px 0',
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    marginTop: 4,
+    boxShadow: 'var(--shadow-pink)',
+    transition: 'background 0.15s',
+    fontFamily: "'Bricolage Grotesque', sans-serif",
+  },
 }
