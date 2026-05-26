@@ -8,6 +8,7 @@ import {
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
+import { NailProLogo, NailDropIcon } from '../components/common/Brand'
 
 const DIAS_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
@@ -132,19 +133,23 @@ export default function AgendaPublica() {
   )
 
   if (notFound) return (
-    <div style={s.center}>
-      <div style={{ fontSize: 48, marginBottom: 12 }}>💅</div>
-      <div style={s.h2}>Agenda não encontrada</div>
+    <div style={s.center} className="fade-in">
+      <div style={{ marginBottom: 18 }} className="pulse-soft">
+        <NailDropIcon size={64} />
+      </div>
+      <div style={s.h2}>agenda não encontrada</div>
       <div style={s.sub}>Verifique o link com a profissional</div>
     </div>
   )
 
   return (
     <div style={s.page}>
-      <div style={s.header}>
-        <div style={s.headerEmoji}>💅</div>
+      <div style={s.header} className="fade-in">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <NailProLogo size={22} variant="reverso" />
+        </div>
         <div style={s.headerName}>{nomeSalao}</div>
-        <div style={s.headerSub}>Agendamento online</div>
+        <div style={s.headerSub}>agendamento online</div>
       </div>
 
       {step < 4 && (
@@ -161,7 +166,7 @@ export default function AgendaPublica() {
               }}>
                 {step > n ? <CheckCircle size={13} /> : n}
               </div>
-              <span style={{ ...s.stepLabel, ...(step >= n ? { color: '#C2185B' } : {}) }}>{label}</span>
+              <span style={{ ...s.stepLabel, ...(step >= n ? { color: 'var(--pink, #8B2655)' } : {}) }}>{label}</span>
               {n < 3 && <div style={{ ...s.stepLine, ...(step > n ? s.stepLineDone : {}) }} />}
             </div>
           ))}
@@ -393,26 +398,25 @@ export default function AgendaPublica() {
 }
 
 const s = {
-  page: { minHeight: '100vh', background: '#F9F0F4', fontFamily: "'DM Sans', sans-serif", display: 'flex', flexDirection: 'column' },
+  page: { minHeight: '100vh', background: 'var(--bg, #FAF6F6)', fontFamily: 'var(--font)', display: 'flex', flexDirection: 'column' },
   center: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 8, textAlign: 'center', padding: 24 },
   centerMini: { display: 'flex', justifyContent: 'center', padding: '24px 0' },
-  spinner: { width: 28, height: 28, borderRadius: '50%', border: '3px solid #FCE4EC', borderTopColor: '#C2185B', animation: 'spin 0.8s linear infinite' },
-  header: { background: '#C2185B', padding: '28px 20px 22px', color: 'white', textAlign: 'center' },
-  headerEmoji: { fontSize: 32, marginBottom: 6 },
-  headerName: { fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px' },
-  headerSub: { fontSize: 13, opacity: 0.8, marginTop: 2 },
+  spinner: { width: 28, height: 28, borderRadius: '50%', border: '3px solid var(--pink-light, #FAF6F6)', borderTopColor: 'var(--pink, #8B2655)', animation: 'spin 0.8s linear infinite' },
+  header: { background: 'var(--pink, #8B2655)', padding: '28px 20px 22px', color: 'white', textAlign: 'center', boxShadow: '0 4px 20px rgba(139,38,85,0.15)' },
+  headerName: { fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', fontFamily: "'Bricolage Grotesque', sans-serif" },
+  headerSub: { fontSize: 13, opacity: 0.8, marginTop: 2, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic' },
   steps: { display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '14px 20px', gap: 0, boxShadow: '0 1px 8px rgba(0,0,0,0.06)' },
   stepWrap: { display: 'flex', alignItems: 'center', gap: 6 },
   stepDot: { width: 26, height: 26, borderRadius: '50%', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#AAA', flexShrink: 0 },
-  stepDotActive: { background: '#C2185B', color: 'white' },
+  stepDotActive: { background: 'var(--pink, #8B2655)', color: 'white' },
   stepDotDone: { background: '#2E7D32', color: 'white' },
   stepLabel: { fontSize: 12, fontWeight: 500, color: '#AAA', marginRight: 6 },
   stepLine: { width: 28, height: 2, background: '#E0E0E0', borderRadius: 1 },
   stepLineDone: { background: '#2E7D32' },
   content: { flex: 1, padding: '16px 16px 32px', maxWidth: 440, margin: '0 auto', width: '100%' },
-  card: { background: 'white', borderRadius: 18, padding: '22px 18px', boxShadow: '0 4px 24px rgba(194,24,91,0.08)', display: 'flex', flexDirection: 'column', gap: 14 },
+  card: { background: 'white', borderRadius: 18, padding: '22px 18px', boxShadow: '0 4px 24px rgba(139,38,85,0.08)', display: 'flex', flexDirection: 'column', gap: 14, border: '1px solid var(--border)' },
   cardTitle: { fontSize: 17, fontWeight: 700, color: '#1A1A1A' },
-  backBtn: { display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: '#C2185B', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', alignSelf: 'flex-start' },
+  backBtn: { display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: 'var(--pink, #8B2655)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', alignSelf: 'flex-start' },
   calNav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   iconBtn: { background: 'none', border: 'none', cursor: 'pointer', color: '#555', display: 'flex', padding: 4 },
   calNavLabel: { fontSize: 14, fontWeight: 600, textTransform: 'capitalize', color: '#1A1A1A' },
@@ -422,12 +426,12 @@ const s = {
   calCell: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, fontSize: 13, fontWeight: 500, color: '#CCC', cursor: 'default', userSelect: 'none' },
   calCellOff: { color: '#DDD' },
   calCellOn: { color: '#1A1A1A', background: '#F5F5F5', cursor: 'pointer' },
-  calCellHoje: { color: '#C2185B', fontWeight: 700, border: '2px solid #C2185B', background: 'white' },
-  calCellSel: { background: '#C2185B', color: 'white', fontWeight: 700 },
-  dataBadge: { background: '#FCE4EC', borderRadius: 10, padding: '9px 13px', fontSize: 13, fontWeight: 600, color: '#C2185B', textTransform: 'capitalize' },
+  calCellHoje: { color: 'var(--pink, #8B2655)', fontWeight: 700, border: '2px solid var(--pink, #8B2655)', background: 'white' },
+  calCellSel: { background: 'var(--pink, #8B2655)', color: 'white', fontWeight: 700 },
+  dataBadge: { background: 'var(--pink-light, #FAF6F6)', borderRadius: 10, padding: '9px 13px', fontSize: 13, fontWeight: 600, color: 'var(--pink, #8B2655)', textTransform: 'capitalize', border: '1px solid var(--border)' },
   slotsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 },
   slotBtn: { padding: '13px 0', borderRadius: 11, border: '1.5px solid #E0E0E0', background: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#1A1A1A', textAlign: 'center', transition: 'all 0.12s' },
-  slotBtnActive: { background: '#C2185B', border: '1.5px solid #C2185B', color: 'white' },
+  slotBtnActive: { background: 'var(--pink, #8B2655)', border: '1.5px solid var(--pink, #8B2655)', color: 'white' },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: '#555' },
   input: { padding: '11px 13px', border: '1.5px solid #E0E0E0', borderRadius: 10, fontSize: 14, outline: 'none', color: '#1A1A1A', background: 'white', fontFamily: 'inherit' },
@@ -435,15 +439,15 @@ const s = {
   err: { fontSize: 11, color: '#C62828', fontWeight: 500 },
   servGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 },
   servBtn: { padding: '11px 8px', borderRadius: 10, border: '1.5px solid #E0E0E0', background: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: '#555', textAlign: 'center', transition: 'all 0.12s', fontFamily: 'inherit' },
-  servBtnActive: { background: '#C2185B', border: '1.5px solid #C2185B', color: 'white', fontWeight: 700 },
-  btn: { background: '#C2185B', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 14px rgba(194,24,91,0.28)', transition: 'background 0.15s', fontFamily: 'inherit' },
+  servBtnActive: { background: 'var(--pink, #8B2655)', border: '1.5px solid var(--pink, #8B2655)', color: 'white', fontWeight: 700 },
+  btn: { background: 'var(--pink, #8B2655)', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s', fontFamily: 'inherit' },
   btnOff: { background: '#E0E0E0', boxShadow: 'none', cursor: 'not-allowed', color: '#AAA' },
   btnSec: { background: '#F5F5F5', color: '#555', border: 'none', borderRadius: 10, padding: '11px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0', color: '#888', fontSize: 14, textAlign: 'center' },
   successIcon: { fontSize: 56, marginBottom: 4 },
-  h2: { fontSize: 22, fontWeight: 800, color: '#1A1A1A' },
+  h2: { fontSize: 22, fontWeight: 800, color: '#1A1A1A', fontFamily: "'Bricolage Grotesque', sans-serif" },
   sub: { fontSize: 14, color: '#555', lineHeight: 1.6 },
-  summaryBox: { background: '#F9F0F4', border: '1px solid #F8BBD0', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 9, width: '100%' },
+  summaryBox: { background: 'var(--pink-light, #FAF6F6)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 9, width: '100%' },
   summaryRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: '#333' },
   footNote: { fontSize: 12, color: '#AAA', textAlign: 'center' },
   footer: { padding: '16px', textAlign: 'center', fontSize: 12, color: '#AAA' },

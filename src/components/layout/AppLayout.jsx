@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Home, Calendar, Users, DollarSign, Settings, Target } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { NailProLogo } from '../common/Brand'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Início', exact: true },
@@ -10,21 +11,6 @@ const navItems = [
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
 ]
 
-/* Gotinha de esmalte Berry com brilho interno */
-function NailDropIcon({ size = 26, light = false }) {
-  const fill = light ? 'rgba(255,255,255,0.92)' : '#8B2655'
-  const hl   = light ? 'rgba(255,255,255,0.38)' : '#F7EFF2'
-  return (
-    <svg width={size} height={Math.round(size * 1.33)} viewBox="0 0 24 32" fill="none">
-      {/* corpo da gotinha */}
-      <path d="M12 2 C19 4 22 10 22 20 A10 10 0 1 1 2 20 C2 10 5 4 12 2Z" fill={fill}/>
-      {/* oval de brilho interno */}
-      <ellipse cx="9" cy="19" rx="2.2" ry="4.2" fill={hl} opacity="0.55" transform="rotate(-10 9 19)"/>
-      {/* ponto de luz superior */}
-      <circle cx="9.5" cy="11" r="1.1" fill={hl} opacity="0.4"/>
-    </svg>
-  )
-}
 
 export default function AppLayout() {
   const { user } = useAuth()
@@ -40,12 +26,7 @@ export default function AppLayout() {
       {/* ── Sidebar (desktop only) ───────────── */}
       <aside className="app-sidebar">
         <div style={sb.logoArea}>
-          <div style={sb.logoRow}>
-            <NailDropIcon size={28} />
-            <span style={sb.logoText}>
-              nailpro<span style={{ color: 'var(--pink)' }}>.</span>
-            </span>
-          </div>
+          <NailProLogo size={24} style={{ marginBottom: 4 }} />
           <div style={sb.logoTagline}>gestão para nail designers</div>
         </div>
 
@@ -91,8 +72,7 @@ export default function AppLayout() {
         <header className="app-mobile-header">
           <div style={mh.left}>
             <div style={mh.logoRow}>
-              <NailDropIcon size={18} light />
-              <span style={mh.logoText}>nailpro<span style={{ opacity: 0.6 }}>.</span></span>
+              <NailProLogo size={18} variant="reverso" />
             </div>
             <div style={mh.sub}>
               <em>oi {firstName},</em>

@@ -1,22 +1,7 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-
-/* Logo inline — mesmo estilo do AppLayout */
-function LogoMark() {
-  return (
-    <div style={l.logoWrap}>
-      <svg width={40} height={53} viewBox="0 0 24 32" fill="none">
-        <path d="M12 2 C19 4 22 10 22 20 A10 10 0 1 1 2 20 C2 10 5 4 12 2Z" fill="#8B2655"/>
-        <ellipse cx="9" cy="19" rx="2.2" ry="4.2" fill="#F7EFF2" opacity="0.55" transform="rotate(-10 9 19)"/>
-        <circle cx="9.5" cy="11" r="1.1" fill="#F7EFF2" opacity="0.4"/>
-      </svg>
-      <span style={l.logoText}>
-        nailpro<span style={{ color: '#8B2655' }}>.</span>
-      </span>
-    </div>
-  )
-}
+import { NailProLogo } from '../components/common/Brand'
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
@@ -43,32 +28,69 @@ export default function Login() {
 
   return (
     <div style={s.root}>
-      <div style={s.card}>
-        <LogoMark />
-        <p style={s.sub}>Gestão simples para nail designers</p>
+      <div className="fade-in" style={s.card}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <NailProLogo size={36} variant="reverso" layout="horizontal" />
+        </div>
+        <p style={s.sub}>gestão simples para nail designers</p>
 
         <div style={s.tabs}>
-          <button style={{ ...s.tab, ...(mode === 'login' ? s.tabActive : {}) }} onClick={() => setMode('login')}>Entrar</button>
-          <button style={{ ...s.tab, ...(mode === 'signup' ? s.tabActive : {}) }} onClick={() => setMode('signup')}>Criar conta</button>
+          <button 
+            style={{ ...s.tab, ...(mode === 'login' ? s.tabActive : {}) }} 
+            onClick={() => setMode('login')}
+          >
+            Entrar
+          </button>
+          <button 
+            style={{ ...s.tab, ...(mode === 'signup' ? s.tabActive : {}) }} 
+            onClick={() => setMode('signup')}
+          >
+            Criar conta
+          </button>
         </div>
 
         <form onSubmit={handle} style={s.form}>
           {mode === 'signup' && (
             <div style={s.field}>
               <label style={s.label}>Seu nome</label>
-              <input style={s.input} type="text" placeholder="Ex: Camila Souza" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+              <input 
+                style={s.input} 
+                type="text" 
+                placeholder="Ex: Camila Souza" 
+                required 
+                value={form.name} 
+                onChange={e => setForm({ ...form, name: e.target.value })} 
+              />
             </div>
           )}
           <div style={s.field}>
             <label style={s.label}>E-mail</label>
-            <input style={s.input} type="email" placeholder="seu@email.com" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            <input 
+              style={s.input} 
+              type="email" 
+              placeholder="seu@email.com" 
+              required 
+              value={form.email} 
+              onChange={e => setForm({ ...form, email: e.target.value })} 
+            />
           </div>
           <div style={s.field}>
             <label style={s.label}>Senha</label>
-            <input style={s.input} type="password" placeholder="••••••••" required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+            <input 
+              style={s.input} 
+              type="password" 
+              placeholder="••••••••" 
+              required 
+              value={form.password} 
+              onChange={e => setForm({ ...form, password: e.target.value })} 
+            />
           </div>
           {error && <div style={s.error}>{error}</div>}
-          <button style={s.btn} type="submit" disabled={loading}>
+          <button 
+            style={s.btn} 
+            type="submit" 
+            disabled={loading}
+          >
             {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
           </button>
         </form>
@@ -77,58 +99,103 @@ export default function Login() {
   )
 }
 
-/* LogoMark local styles */
-const l = {
-  logoWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 4 },
-  logoText: {
-    fontFamily: "'Bricolage Grotesque', sans-serif",
-    fontWeight: 800,
-    fontSize: 34,
-    color: '#180712',
-    letterSpacing: '-1px',
-    lineHeight: 1,
-  },
-}
-
 const s = {
   root: {
     minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(150deg, #F7EFF2 0%, #FBF6F8 50%, #F0E8EF 100%)',
+    background: 'radial-gradient(circle at top, #2C1422 0%, var(--brand-dark-bg, #170D14) 100%)',
     padding: 20,
   },
   card: {
-    background: 'white',
-    borderRadius: 22,
-    padding: '36px 28px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 24,
+    padding: '40px 32px',
     width: '100%',
     maxWidth: 390,
-    boxShadow: '0 8px 40px rgba(139,38,85,0.12), 0 2px 12px rgba(24,7,18,0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.07)',
+    boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
   },
-  sub: { textAlign: 'center', fontSize: 13, color: 'var(--text3)', marginBottom: 28 },
-  tabs: { display: 'flex', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 24, gap: 3, border: '1px solid var(--border)' },
-  tab: { flex: 1, padding: '9px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
-  tabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 700 },
-  form: { display: 'flex', flexDirection: 'column', gap: 15 },
-  field: { display: 'flex', flexDirection: 'column', gap: 5 },
-  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '11px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', fontSize: 14, color: 'var(--text)', background: 'var(--surface)' },
-  error: { background: 'var(--red-bg)', color: 'var(--red)', fontSize: 13, padding: '9px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid #FECACA', fontWeight: 500 },
-  /* Berry sólido, sem gradiente */
+  sub: { 
+    textAlign: 'center', 
+    fontSize: 13, 
+    color: 'rgba(255, 255, 255, 0.55)', 
+    marginTop: 6,
+    marginBottom: 28,
+    fontFamily: "'Instrument Serif', serif",
+    fontStyle: 'italic',
+    letterSpacing: '0.5px'
+  },
+  tabs: { 
+    display: 'flex', 
+    background: 'rgba(255, 255, 255, 0.04)', 
+    borderRadius: 'var(--radius-sm)', 
+    padding: 3, 
+    marginBottom: 24, 
+    gap: 3, 
+    border: '1px solid rgba(255, 255, 255, 0.06)' 
+  },
+  tab: { 
+    flex: 1, 
+    padding: '10px 0', 
+    borderRadius: 8, 
+    fontSize: 13, 
+    fontWeight: 500, 
+    background: 'transparent', 
+    color: 'rgba(255, 255, 255, 0.6)', 
+    border: 'none', 
+    cursor: 'pointer', 
+    transition: 'all 0.2s ease',
+    fontFamily: "'Bricolage Grotesque', sans-serif"
+  },
+  tabActive: { 
+    background: 'var(--gold, #E6C260)', 
+    color: 'var(--brand-dark-bg, #170D14)', 
+    boxShadow: 'var(--shadow-gold)', 
+    fontWeight: 800 
+  },
+  form: { display: 'flex', flexDirection: 'column', gap: 18 },
+  field: { display: 'flex', flexDirection: 'column', gap: 6 },
+  label: { 
+    fontSize: 12, 
+    fontWeight: 600, 
+    color: 'rgba(255, 255, 255, 0.85)',
+    letterSpacing: '0.3px'
+  },
+  input: { 
+    padding: '12px 16px', 
+    borderRadius: 'var(--radius-sm)', 
+    border: '1px solid rgba(255, 255, 255, 0.1)', 
+    fontSize: 14, 
+    color: '#FFFFFF', 
+    background: 'rgba(255, 255, 255, 0.04)',
+    outline: 'none',
+    transition: 'all 0.22s ease',
+  },
+  error: { 
+    background: 'rgba(185, 28, 28, 0.15)', 
+    color: '#FF8A8A', 
+    fontSize: 13, 
+    padding: '10px 14px', 
+    borderRadius: 'var(--radius-sm)', 
+    border: '1px solid rgba(185, 28, 28, 0.3)', 
+    fontWeight: 500 
+  },
   btn: {
-    background: 'var(--pink)',
-    color: 'white',
+    background: 'var(--gold, #E6C260)',
+    color: 'var(--brand-dark-bg, #170D14)',
     border: 'none',
     borderRadius: 'var(--radius-sm)',
-    padding: '13px 0',
+    padding: '14px 0',
     fontSize: 14,
-    fontWeight: 700,
+    fontWeight: 800,
     cursor: 'pointer',
-    marginTop: 4,
-    boxShadow: 'var(--shadow-pink)',
-    transition: 'background 0.15s',
+    marginTop: 8,
+    boxShadow: 'var(--shadow-gold)',
+    transition: 'all 0.2s ease',
     fontFamily: "'Bricolage Grotesque', sans-serif",
   },
 }
