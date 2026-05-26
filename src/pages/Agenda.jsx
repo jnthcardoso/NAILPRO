@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { initTokenClient, criarEvento, excluirEvento } from '../lib/googleCalendar'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -42,9 +43,11 @@ export default function Agenda() {
   const [savingPag, setSavingPag] = useState(false)
   const [savingCliente, setSavingCliente] = useState(false)
   const [servicosPadrao, setServicosPadrao] = useState([])
+  const [googleConectado, setGoogleConectado] = useState(false)
+  const [duracaoAtend, setDuracaoAtend] = useState(60)
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
-  useEffect(() => { if (user) { loadClientes(); loadServicosPadrao() } }, [user])
+  useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
 
   async function loadAgendamentos() {
     let inicio, fim
@@ -75,10 +78,35 @@ export default function Agenda() {
     if (data?.servicos_padrao?.length) setServicosPadrao(data.servicos_padrao)
   }
 
+  async function loadGoogleConfig() {
+    const { data } = await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('user_id', user.id).single()
+    if (data?.duracao_atendimento) setDuracaoAtend(data.duracao_atendimento)
+    if (data?.google_conectado) {
+      setGoogleConectado(true)
+      const tryInit = () => {
+        if (window.google?.accounts?.oauth2) initTokenClient()
+        else setTimeout(tryInit, 300)
+      }
+      tryInit()
+    }
+  }
+
   async function salvarAgendamento() {
     if (!form.cliente_id || !form.horario || !form.servico || !form.data) return
     setSaving(true)
-    await supabase.from('agendamentos').insert({ ...form, user_id: user.id, valor: parseFloat(form.valor) || 0 })
+    const { data: ag } = await supabase
+      .from('agendamentos')
+      .insert({ ...form, user_id: user.id, valor: parseFloat(form.valor) || 0 })
+      .select('*, clientes(nome)')
+      .single()
+    if (ag && googleConectado) {
+      try {
+        const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
+        await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
+      } catch (e) {
+        console.warn('Google Agenda sync:', e.message)
+      }
+    }
     setSaving(false)
     setShowModal(false)
     setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd') })
@@ -100,6 +128,9 @@ export default function Agenda() {
 
   async function atualizarStatus(ag, novoStatus) {
     await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id)
+    if (novoStatus === 'cancelado' && ag.google_event_id && googleConectado) {
+      try { await excluirEvento(ag.google_event_id) } catch (e) { console.warn('Google Agenda sync:', e.message) }
+    }
     if (novoStatus === 'realizado') {
       setAgSelecionado(ag)
       setFormPag({ forma: 'pix', status: 'pago', valor: String(ag.valor || '') })

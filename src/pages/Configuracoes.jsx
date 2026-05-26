@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, Plus, X, Copy, Check, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -26,6 +27,7 @@ export default function Configuracoes() {
     horario_fim: '18:00',
     duracao_atendimento: 60,
     dias_semana: [1, 2, 3, 4, 5],
+    google_conectado: false,
   })
   const [novoServico, setNovoServico] = useState('')
   const [saving, setSaving] = useState(false)
@@ -49,6 +51,7 @@ export default function Configuracoes() {
         horario_fim: data.horario_fim?.slice(0, 5) || '18:00',
         duracao_atendimento: data.duracao_atendimento || 60,
         dias_semana: data.dias_semana || [1, 2, 3, 4, 5],
+        google_conectado: data.google_conectado || false,
       })
     }
   }
@@ -99,6 +102,41 @@ export default function Configuracoes() {
     navigator.clipboard.writeText(linkPublico)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [googleErro, setGoogleErro] = useState('')
+
+  function waitForGIS() {
+    return new Promise((resolve) => {
+      if (window.google?.accounts?.oauth2) { resolve(); return }
+      const check = setInterval(() => {
+        if (window.google?.accounts?.oauth2) { clearInterval(check); resolve() }
+      }, 200)
+      setTimeout(() => { clearInterval(check); resolve() }, 5000)
+    })
+  }
+
+  async function handleConectarGoogle() {
+    setGoogleLoading(true)
+    setGoogleErro('')
+    try {
+      await waitForGIS()
+      initTokenClient()
+      await conectarGoogle()
+      await supabase.from('configuracoes').upsert({ user_id: user.id, google_conectado: true }, { onConflict: 'user_id' })
+      setForm(f => ({ ...f, google_conectado: true }))
+    } catch (e) {
+      setGoogleErro('Não foi possível conectar. Verifique o Client ID e tente novamente.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
+  async function handleDesconectarGoogle() {
+    desconectarGoogle()
+    await supabase.from('configuracoes').update({ google_conectado: false }).eq('user_id', user.id)
+    setForm(f => ({ ...f, google_conectado: false }))
   }
 
   async function handleLogout() {
@@ -261,6 +299,41 @@ export default function Configuracoes() {
         </div>
       </div>
 
+      {/* ── Google Agenda ───────────────────── */}
+      <div style={s.section}>
+        <div style={s.sectionTitle}>Google Agenda</div>
+        <div style={s.googleCard}>
+          <svg width="22" height="22" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
+            <path fill="#4285F4" d="M45.5 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h12.1c-.5 2.7-2.1 5-4.5 6.5v5.4h7.3c4.3-3.9 6.6-9.7 6.6-15.6z"/>
+            <path fill="#34A853" d="M24 46c6.1 0 11.2-2 14.9-5.5l-7.3-5.4c-2 1.4-4.6 2.2-7.6 2.2-5.8 0-10.8-3.9-12.5-9.2H4v5.6C7.7 41.5 15.3 46 24 46z"/>
+            <path fill="#FBBC04" d="M11.5 28.1c-.5-1.4-.7-2.8-.7-4.1s.2-2.8.7-4.1V14.3H4C2.4 17.4 1.5 20.6 1.5 24s.9 6.6 2.5 9.7l7.5-5.6z"/>
+            <path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.4-6.4C35.2 4.1 30.1 2 24 2 15.3 2 7.7 6.5 4 14.3l7.5 5.6c1.7-5.3 6.7-9.1 12.5-9.1z"/>
+          </svg>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+              {form.google_conectado ? 'Google Agenda conectado ✓' : 'Conectar Google Agenda'}
+            </div>
+            <div style={s.hint}>
+              {form.google_conectado
+                ? 'Agendamentos são sincronizados automaticamente'
+                : 'Ao criar ou cancelar um agendamento, o Google Agenda é atualizado'}
+            </div>
+            {googleErro && <div style={{ ...s.hint, color: 'var(--red)', marginTop: 4 }}>{googleErro}</div>}
+          </div>
+          {form.google_conectado
+            ? <button style={s.googleDesconBtn} onClick={handleDesconectarGoogle}>Desconectar</button>
+            : <button style={s.googleConBtn} onClick={handleConectarGoogle} disabled={googleLoading}>
+                {googleLoading ? '...' : 'Conectar'}
+              </button>
+          }
+        </div>
+        {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+          <div style={{ ...s.hint, color: 'var(--amber, #B45309)', marginTop: 6 }}>
+            ⚠ VITE_GOOGLE_CLIENT_ID não configurado no .env
+          </div>
+        )}
+      </div>
+
       <button
         style={{ ...s.btnPrimary, ...(saved ? s.btnSaved : {}) }}
         onClick={salvar}
@@ -329,4 +402,7 @@ const s = {
   infoLabel: { fontSize: 13, color: 'var(--text3)' },
   infoValue: { fontSize: 13, fontWeight: 500, color: 'var(--text)' },
   logoutBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--red-bg)', color: 'var(--red)', border: '0.5px solid #FFCDD2', borderRadius: 'var(--radius-sm)', padding: '11px 16px', fontSize: 14, fontWeight: 500, cursor: 'pointer', width: '100%', marginTop: 12 },
+  googleCard: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px' },
+  googleConBtn: { background: '#4285F4', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  googleDesconBtn: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FFCDD2', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
 }
