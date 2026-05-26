@@ -36,7 +36,7 @@ export default function AppLayout() {
 
       {/* ── Sidebar (desktop only) ───────────── */}
       <aside className="app-sidebar">
-        <div style={{ ...sb.logoArea, ...(isSidebarCollapsed ? { padding: '24px 0', display: 'flex', justifyContent: 'center' } : {}) }}>
+        <NavLink to="/" style={{ ...sb.logoArea, textDecoration: 'none', display: 'block', cursor: 'pointer', ...(isSidebarCollapsed ? { padding: '24px 0', display: 'flex', justifyContent: 'center' } : {}) }}>
           {isSidebarCollapsed ? (
             <NailDropIcon size={24} variant="reverso" />
           ) : (
@@ -45,7 +45,7 @@ export default function AppLayout() {
               <div style={sb.logoTagline}>gestão para nail designers</div>
             </>
           )}
-        </div>
+        </NavLink>
 
         <div style={{ ...sb.userCard, ...(isSidebarCollapsed ? sb.userCardCollapsed : {}) }}>
           <div style={sb.userAvatar}>
@@ -129,9 +129,9 @@ export default function AppLayout() {
         {/* Mobile header */}
         <header className="app-mobile-header">
           <div style={mh.left}>
-            <div style={mh.logoRow}>
+            <NavLink to="/" style={{ ...mh.logoRow, textDecoration: 'none' }}>
               <NailProLogo size={18} variant="reverso" />
-            </div>
+            </NavLink>
             <div style={mh.sub}>
               <em>oi {firstName},</em>
             </div>
