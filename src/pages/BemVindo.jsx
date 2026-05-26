@@ -45,7 +45,7 @@ export default function BemVindo() {
 
   async function finalizar() {
     setSaving(true)
-    await supabase.from('configuracoes').upsert({
+    const { error } = await supabase.from('configuracoes').upsert({
       user_id: user.id,
       nome_salao: form.nome_salao,
       whatsapp: form.whatsapp.replace(/\D/g, ''),
@@ -54,16 +54,20 @@ export default function BemVindo() {
       onboarding_completo: true,
     })
     setSaving(false)
-    navigate('/')
+    if (error) {
+      alert('Erro ao salvar: ' + error.message)
+      return
+    }
+    navigate('/', { replace: true, state: { onboardingJustCompleted: true } })
   }
 
-  function pularTudo() {
-    if (confirm('Tem certeza? Você pode configurar depois nas Configurações.')) {
-      supabase.from('configuracoes').upsert({
-        user_id: user.id,
-        onboarding_completo: true,
-      }).then(() => navigate('/'))
-    }
+  async function pularTudo() {
+    if (!confirm('Tem certeza? Você pode configurar depois nas Configurações.')) return
+    await supabase.from('configuracoes').upsert({
+      user_id: user.id,
+      onboarding_completo: true,
+    })
+    navigate('/', { replace: true, state: { onboardingJustCompleted: true } })
   }
 
   const totalSteps = 5

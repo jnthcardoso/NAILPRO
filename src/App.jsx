@@ -25,9 +25,15 @@ function OnboardingGuard({ children }) {
   const { user } = useAuth()
   const location = useLocation()
   // status: 'checking' | 'needs' | 'done'
-  const [status, setStatus] = useState('checking')
+  const justCompleted = location.state?.onboardingJustCompleted === true
+  const [status, setStatus] = useState(justCompleted ? 'done' : 'checking')
 
   useEffect(() => {
+    // Se acabou de completar, pula o check do DB (evita race condition)
+    if (justCompleted) {
+      setStatus('done')
+      return
+    }
     if (!user?.id) return
     let cancelled = false
 
@@ -47,7 +53,7 @@ function OnboardingGuard({ children }) {
       })
 
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, justCompleted])
 
   if (status === 'checking') {
     return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--pink)' }}>Carregando...</div>
