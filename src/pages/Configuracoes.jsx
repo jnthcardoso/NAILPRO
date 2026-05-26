@@ -30,6 +30,8 @@ export default function Configuracoes() {
     dias_semana: [1, 2, 3, 4, 5],
     google_conectado: false,
     dias_retorno_alerta: 30,
+    lembretes_ativos: true,
+    mensagem_lembrete: 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
   })
   const [novoServico, setNovoServico] = useState('')
   const [saving, setSaving] = useState(false)
@@ -64,6 +66,8 @@ export default function Configuracoes() {
         dias_semana: data.dias_semana || [1, 2, 3, 4, 5],
         google_conectado: data.google_conectado || false,
         dias_retorno_alerta: data.dias_retorno_alerta || 30,
+        lembretes_ativos: data.lembretes_ativos !== false,
+        mensagem_lembrete: data.mensagem_lembrete || 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
       })
     }
   }
@@ -302,6 +306,51 @@ export default function Configuracoes() {
               {SUGERIDOS.filter(sv => !form.servicos_padrao.includes(sv)).map(sv => (
                 <div key={sv} style={s.chipSug} onClick={() => addServico(sv)}>+ {sv}</div>
               ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Lembretes WhatsApp ──────────────── */}
+      <div style={s.section}>
+        <div style={s.sectionTitle}>lembretes via WhatsApp</div>
+
+        <div style={s.toggleRow} onClick={() => setForm(f => ({ ...f, lembretes_ativos: !f.lembretes_ativos }))}>
+          <div>
+            <div style={s.toggleLabel}>Ativar painel de lembretes</div>
+            <div style={s.hint}>Mostra agendamentos de amanhã no Dashboard com botão para enviar lembretes</div>
+          </div>
+          <div style={{ ...s.toggle, ...(form.lembretes_ativos ? s.toggleOn : {}) }}>
+            <div style={{ ...s.toggleThumb, ...(form.lembretes_ativos ? s.toggleThumbOn : {}) }} />
+          </div>
+        </div>
+
+        {form.lembretes_ativos && (
+          <>
+            <div style={s.field}>
+              <label style={s.label}>Mensagem do lembrete</label>
+              <textarea
+                style={{ ...s.input, minHeight: 90, resize: 'vertical', fontFamily: 'inherit' }}
+                value={form.mensagem_lembrete}
+                onChange={e => setForm({ ...form, mensagem_lembrete: e.target.value })}
+                placeholder="Oi {nome}! Lembrete: amanhã às {horario} - {servico}. Confirma?"
+              />
+              <div style={s.hint}>
+                Use variáveis: <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
+                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{data}'}</code>{' '}
+                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{horario}'}</code>{' '}
+                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
+                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
+              </div>
+            </div>
+
+            <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 'var(--radius-sm)', padding: 12, marginTop: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>📱 Como funciona</div>
+              <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.5 }}>
+                Todo dia, agendamentos de <strong>amanhã</strong> aparecem no Dashboard.
+                Você clica em "Enviar" e abre o WhatsApp Web com a mensagem pronta — só apertar enviar.
+                Quem já recebeu fica marcado para não enviar duas vezes.
+              </div>
             </div>
           </>
         )}

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { format, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import LembretesPanel from '../components/common/LembretesPanel'
 
 export default function Home() {
   const { user } = useAuth()
@@ -97,6 +98,8 @@ export default function Home() {
         <span style={s.greetingText}>{nomeSalao || `oi ${firstName},`}</span>
         <span style={s.greetingDate}>{format(new Date(), "EEEE", { locale: ptBR })}</span>
       </div>
+
+      {!contaNova && <LembretesPanel />}
 
       {contaNova && (
         <div style={s.welcomeCard}>
