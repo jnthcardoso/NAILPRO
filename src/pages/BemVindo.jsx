@@ -270,7 +270,8 @@ export default function BemVindo() {
 
 const s = {
   page: {
-    minHeight: '100vh',
+    height: '100vh',
+    overflowY: 'auto',
     background: 'linear-gradient(135deg, #FBF6F8 0%, #FFF0F5 100%)',
     display: 'flex',
     alignItems: 'center',

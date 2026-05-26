@@ -181,7 +181,7 @@ function FaqItem({ q, a }) {
 }
 
 const s = {
-  page: { padding: 20, paddingBottom: 80, maxWidth: 980, margin: '0 auto' },
+  page: { height: '100vh', overflowY: 'auto', padding: '20px 20px 80px', maxWidth: 980, margin: '0 auto' },
   voltarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 13, cursor: 'pointer', padding: '6px 0', marginBottom: 18, fontFamily: 'inherit' },
   hero: { textAlign: 'center', marginBottom: 28 },
   heroBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--pink-light)', color: 'var(--pink)', borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontSize: 11, fontWeight: 700, marginBottom: 14, letterSpacing: '0.3px' },
