@@ -190,11 +190,9 @@ input:focus, select:focus, textarea:focus {
 
   .app-main {
     padding-bottom: 32px !important;
-    padding-left: 8px;
-    padding-right: 8px;
-    max-width: 960px;
-    width: 100%;
-    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+    max-width: 760px;
   }
 
   .app-bottom-nav { display: none; }
