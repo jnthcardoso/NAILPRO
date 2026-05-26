@@ -45,6 +45,7 @@ export default function Agenda() {
   const [servicosPadrao, setServicosPadrao] = useState([])
   const [googleConectado, setGoogleConectado] = useState(false)
   const [duracaoAtend, setDuracaoAtend] = useState(60)
+  const [googleMsg, setGoogleMsg] = useState(null)
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
   useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
@@ -78,14 +79,22 @@ export default function Agenda() {
     if (data?.servicos_padrao?.length) setServicosPadrao(data.servicos_padrao)
   }
 
+  function showGoogleMsg(msg, tipo = 'info') {
+    setGoogleMsg({ msg, tipo })
+    setTimeout(() => setGoogleMsg(null), 4000)
+  }
+
   async function loadGoogleConfig() {
     const { data } = await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('user_id', user.id).single()
     if (data?.duracao_atendimento) setDuracaoAtend(data.duracao_atendimento)
     if (data?.google_conectado) {
       setGoogleConectado(true)
-      const tryInit = () => {
-        if (window.google?.accounts?.oauth2) initTokenClient()
-        else setTimeout(tryInit, 300)
+      const tryInit = (tentativas = 0) => {
+        if (window.google?.accounts?.oauth2) {
+          initTokenClient()
+        } else if (tentativas < 20) {
+          setTimeout(() => tryInit(tentativas + 1), 300)
+        }
       }
       tryInit()
     }
@@ -103,8 +112,10 @@ export default function Agenda() {
       try {
         const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
         await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
+        showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
       } catch (e) {
-        console.warn('Google Agenda sync:', e.message)
+        console.error('Google Agenda sync erro:', e)
+        showGoogleMsg(`Google Agenda: ${e.message}`, 'error')
       }
     }
     setSaving(false)
@@ -129,7 +140,13 @@ export default function Agenda() {
   async function atualizarStatus(ag, novoStatus) {
     await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id)
     if (novoStatus === 'cancelado' && ag.google_event_id && googleConectado) {
-      try { await excluirEvento(ag.google_event_id) } catch (e) { console.warn('Google Agenda sync:', e.message) }
+      try {
+        await excluirEvento(ag.google_event_id)
+        showGoogleMsg('Evento removido do Google Agenda ✓', 'success')
+      } catch (e) {
+        console.error('Google Agenda excluir erro:', e)
+        showGoogleMsg(`Google Agenda: ${e.message}`, 'error')
+      }
     }
     if (novoStatus === 'realizado') {
       setAgSelecionado(ag)
@@ -350,6 +367,19 @@ export default function Agenda() {
       {view === 'Dia' && <ViewDia />}
       {view === 'Semana' && <ViewSemana />}
       {view === 'Mês' && <ViewMes />}
+
+      {googleMsg && (
+        <div style={{
+          position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+          background: googleMsg.tipo === 'success' ? '#DCFCE7' : googleMsg.tipo === 'error' ? '#FEE2E2' : '#EFF6FF',
+          color: googleMsg.tipo === 'success' ? '#15803D' : googleMsg.tipo === 'error' ? '#B91C1C' : '#1D4ED8',
+          border: `1px solid ${googleMsg.tipo === 'success' ? '#4ADE80' : googleMsg.tipo === 'error' ? '#FCA5A5' : '#93C5FD'}`,
+          borderRadius: 'var(--radius-pill)', padding: '9px 18px', fontSize: 13, fontWeight: 600,
+          zIndex: 300, whiteSpace: 'nowrap', boxShadow: 'var(--shadow-md)',
+        }}>
+          {googleMsg.msg}
+        </div>
+      )}
 
       <button className="fab-btn" onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
