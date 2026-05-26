@@ -18,6 +18,7 @@ export default function Home() {
   const [agendamentosData, setAgendamentosData] = useState([])
   const [dataFiltro, setDataFiltro] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [diasAlerta, setDiasAlerta] = useState(30)
+  const [nomeSalao, setNomeSalao] = useState('')
 
   useEffect(() => { if (user) loadDashboard() }, [user])
   useEffect(() => { if (user) loadAgendamentosData() }, [user, dataFiltro])
@@ -26,8 +27,9 @@ export default function Home() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
 
     const { data: config } = await supabase.from('configuracoes')
-      .select('meta_mensal, dias_retorno_alerta').eq('user_id', user.id).single()
+      .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('user_id', user.id).single()
     if (config?.meta_mensal) setStats(s => ({ ...s, metaMes: config.meta_mensal }))
+    if (config?.nome_salao) setNomeSalao(config.nome_salao)
     const limiteAlerta = config?.dias_retorno_alerta ?? 30
     setDiasAlerta(limiteAlerta)
 
@@ -80,7 +82,7 @@ export default function Home() {
     <div style={s.page}>
 
       <div style={s.greetingRow}>
-        <span style={s.greetingText}>oi {firstName},</span>
+        <span style={s.greetingText}>{nomeSalao || `oi ${firstName},`}</span>
         <span style={s.greetingDate}>{format(new Date(), "EEEE", { locale: ptBR })}</span>
       </div>
 

@@ -16,6 +16,7 @@ export default function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
+  const avatarUrl = user?.user_metadata?.avatar_url
 
   const isActive = (to, exact) =>
     exact ? location.pathname === to : location.pathname.startsWith(to)
@@ -31,7 +32,17 @@ export default function AppLayout() {
         </div>
 
         <div style={sb.userCard}>
-          <div style={sb.userAvatar}>{firstName[0]?.toUpperCase()}</div>
+          <div style={sb.userAvatar}>
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt="Foto de perfil" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+            ) : (
+              firstName[0]?.toUpperCase()
+            )}
+          </div>
           <div>
             <div style={sb.userName}>
               <em>oi {firstName},</em>
@@ -127,7 +138,7 @@ const sb = {
   },
   logoTagline: { fontSize: 11, color: 'var(--text3)', fontWeight: 400, marginLeft: 2 },
   userCard: { display: 'flex', alignItems: 'center', gap: 11, margin: '4px 14px 14px', background: 'var(--pink-light)', borderRadius: 12, padding: '10px 12px' },
-  userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0 },
+  userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, overflow: 'hidden' },
   userName: {
     fontFamily: "'Instrument Serif', serif",
     fontStyle: 'italic',

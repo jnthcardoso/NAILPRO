@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
@@ -16,6 +16,7 @@ function slugify(text) {
 export default function Configuracoes() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
     whatsapp: '',
@@ -40,7 +41,12 @@ export default function Configuracoes() {
   const [senhaSaving, setSenhaSaving] = useState(false)
   const [senhaMsg, setSenhaMsg] = useState(null)
 
-  useEffect(() => { if (user) loadConfig() }, [user])
+  useEffect(() => { 
+    if (user) {
+      loadConfig() 
+      setAvatarUrl(user.user_metadata?.avatar_url || '')
+    }
+  }, [user])
 
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes').select('*').eq('user_id', user.id).single()
@@ -62,21 +68,55 @@ export default function Configuracoes() {
     }
   }
 
+  function handleAvatarChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const size = 150
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+
+        const sourceSize = Math.min(img.width, img.height)
+        const sourceX = (img.width - sourceSize) / 2
+        const sourceY = (img.height - sourceSize) / 2
+
+        ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size)
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
+        setAvatarUrl(dataUrl)
+      }
+      img.src = event.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+
   async function salvar() {
     if (form.agenda_publica_ativa && !form.slug) {
       setSlugErro('Defina um link para ativar a agenda pública')
       return
     }
     setSaving(true)
-    const { error } = await supabase.from('configuracoes').upsert({ user_id: user.id, ...form })
+    
+    const { error: configError } = await supabase.from('configuracoes').upsert({ user_id: user.id, ...form })
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { avatar_url: avatarUrl }
+    })
+    
     setSaving(false)
-    if (error?.code === '23505') {
+    if (configError?.code === '23505') {
       setSlugErro('Este link já está em uso, escolha outro')
       return
     }
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
+
 
   function addServico(nome) {
     const n = nome.trim()
@@ -180,6 +220,31 @@ export default function Configuracoes() {
       {/* ── Perfil ──────────────────────────── */}
       <div style={s.section}>
         <div style={s.sectionTitle}>perfil do salão</div>
+        
+        {/* Foto de Perfil */}
+        <div style={s.avatarUploadRow}>
+          <div className="avatar-preview-container">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Foto de perfil" style={s.avatarPreviewImg} />
+            ) : (
+              <div style={s.avatarPlaceholder}>
+                {form.nome_salao?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || 'J'}
+              </div>
+            )}
+            <label className="avatar-overlay">
+              <Camera size={18} />
+              <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+            </label>
+          </div>
+          <div style={s.avatarInfo}>
+            <div style={s.avatarTitle}>Foto de perfil da manicure</div>
+            <div style={s.hint}>Clique na foto para alterar. Recomendado formato quadrado.</div>
+            {avatarUrl && (
+              <button style={s.avatarRemoveBtn} onClick={() => setAvatarUrl('')}>Remover foto</button>
+            )}
+          </div>
+        </div>
+
         <div style={s.field}>
           <label style={s.label}>Nome do salão / profissional</label>
           <input style={s.input} placeholder="Ex: Studio Nail by Ana" value={form.nome_salao}
@@ -431,6 +496,49 @@ export default function Configuracoes() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   section: { marginBottom: 24 },
+  avatarUploadRow: { 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: 16, 
+    marginBottom: 16, 
+    background: 'var(--surface2)', 
+    padding: '12px 14px', 
+    borderRadius: 'var(--radius-sm)', 
+    border: '1px solid var(--border)' 
+  },
+  avatarPreviewImg: { 
+    width: '100%', 
+    height: '100%', 
+    objectFit: 'cover' 
+  },
+  avatarPlaceholder: { 
+    fontSize: 24, 
+    fontWeight: 800, 
+    color: 'var(--pink)', 
+    fontFamily: "'Bricolage Grotesque', sans-serif" 
+  },
+  avatarInfo: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: 2, 
+    flex: 1 
+  },
+  avatarTitle: { 
+    fontSize: 13, 
+    fontWeight: 600, 
+    color: 'var(--text)' 
+  },
+  avatarRemoveBtn: { 
+    background: 'none', 
+    border: 'none', 
+    color: 'var(--red)', 
+    fontSize: 11, 
+    fontWeight: 600, 
+    cursor: 'pointer', 
+    padding: '4px 0 0', 
+    alignSelf: 'flex-start', 
+    transition: 'opacity 0.2s' 
+  },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 },
   field: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 },
   label: { fontSize: 12, fontWeight: 500, color: 'var(--text2)' },
