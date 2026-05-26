@@ -8,6 +8,7 @@ import Clientes from './pages/Clientes'
 import ClienteDetalhe from './pages/ClienteDetalhe'
 import Financeiro from './pages/Financeiro'
 import Configuracoes from './pages/Configuracoes'
+import AgendaPublica from './pages/AgendaPublica'
 import './index.css'
 
 function PrivateRoute({ children }) {
@@ -22,6 +23,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/agendar/:slug" element={<AgendaPublica />} />
           <Route path="/" element={<PrivateRoute><AppLayout /></PrivateRoute>}>
             <Route index element={<Home />} />
             <Route path="agenda" element={<Agenda />} />
