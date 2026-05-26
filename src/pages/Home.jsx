@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, UserX, Cake, ChevronRight, Plus } from 'lucide-react'
+import { AlertTriangle, UserX, Cake, ChevronRight, Plus, UserPlus, Calendar, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { format, differenceInDays } from 'date-fns'
@@ -19,6 +19,8 @@ export default function Home() {
   const [dataFiltro, setDataFiltro] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [diasAlerta, setDiasAlerta] = useState(30)
   const [nomeSalao, setNomeSalao] = useState('')
+  const [totalClientes, setTotalClientes] = useState(null)
+  const [totalAgendamentos, setTotalAgendamentos] = useState(null)
 
   useEffect(() => { if (user) loadDashboard() }, [user])
   useEffect(() => { if (user) loadAgendamentosData() }, [user, dataFiltro])
@@ -55,6 +57,15 @@ export default function Home() {
     if (clientes)
       setClientesSumidas(clientes.filter(c => differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= limiteAlerta).slice(0, 3))
 
+    // Conta total de clientes e agendamentos para detectar conta nova
+    const { count: countClientes } = await supabase.from('clientes')
+      .select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+    setTotalClientes(countClientes ?? 0)
+
+    const { count: countAgendamentos } = await supabase.from('agendamentos')
+      .select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+    setTotalAgendamentos(countAgendamentos ?? 0)
+
     const { data: todosClientes } = await supabase.from('clientes')
       .select('id, nome, data_nascimento').eq('user_id', user.id).not('data_nascimento', 'is', null)
     if (todosClientes) {
@@ -77,6 +88,7 @@ export default function Home() {
 
   const progressoMeta = Math.min(100, Math.round((stats.receitaMes / stats.metaMes) * 100))
   const isHoje = dataFiltro === format(new Date(), 'yyyy-MM-dd')
+  const contaNova = totalClientes === 0 && totalAgendamentos === 0
 
   return (
     <div style={s.page}>
@@ -85,6 +97,42 @@ export default function Home() {
         <span style={s.greetingText}>{nomeSalao || `oi ${firstName},`}</span>
         <span style={s.greetingDate}>{format(new Date(), "EEEE", { locale: ptBR })}</span>
       </div>
+
+      {contaNova && (
+        <div style={s.welcomeCard}>
+          <div style={s.welcomeHeader}>
+            <Sparkles size={20} color="var(--pink)" />
+            <div style={s.welcomeTitle}>Bem-vinda ao nailpro! 🎉</div>
+          </div>
+          <div style={s.welcomeSub}>Comece dando os primeiros passos abaixo:</div>
+          <div style={s.welcomeSteps}>
+            <button style={s.welcomeStep} onClick={() => navigate('/clientes')}>
+              <div style={s.welcomeStepIcon}><UserPlus size={18} color="var(--pink)" /></div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={s.welcomeStepTitle}>1. Cadastre sua primeira cliente</div>
+                <div style={s.welcomeStepSub}>Nome, WhatsApp e aniversário</div>
+              </div>
+              <ChevronRight size={16} color="var(--text3)" />
+            </button>
+            <button style={s.welcomeStep} onClick={() => navigate('/agenda')}>
+              <div style={s.welcomeStepIcon}><Calendar size={18} color="var(--pink)" /></div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={s.welcomeStepTitle}>2. Crie seu primeiro agendamento</div>
+                <div style={s.welcomeStepSub}>Data, horário e valor</div>
+              </div>
+              <ChevronRight size={16} color="var(--text3)" />
+            </button>
+            <button style={s.welcomeStep} onClick={() => navigate('/configuracoes')}>
+              <div style={s.welcomeStepIcon}><Sparkles size={18} color="var(--pink)" /></div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={s.welcomeStepTitle}>3. Ative sua agenda online</div>
+                <div style={s.welcomeStepSub}>Clientes agendam pelo link sem te chamar</div>
+              </div>
+              <ChevronRight size={16} color="var(--text3)" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={s.grid}>
         <div style={s.card}>
@@ -217,4 +265,13 @@ const s = {
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
   emptyDay: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' },
   emptyBtn: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
+  welcomeCard: { background: 'linear-gradient(135deg, var(--pink-light) 0%, #FFF0F5 100%)', border: '1px solid var(--pink-mid)', borderRadius: 'var(--radius-sm)', padding: '16px', marginBottom: 18, boxShadow: 'var(--shadow-sm)' },
+  welcomeHeader: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 },
+  welcomeTitle: { fontSize: 15, fontWeight: 700, color: 'var(--pink)' },
+  welcomeSub: { fontSize: 12, color: 'var(--text2)', marginBottom: 12 },
+  welcomeSteps: { display: 'flex', flexDirection: 'column', gap: 8 },
+  welcomeStep: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
+  welcomeStepIcon: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  welcomeStepTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
+  welcomeStepSub: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
 }
