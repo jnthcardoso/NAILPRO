@@ -8,11 +8,11 @@ export const PLANOS = {
   starter: {
     id: 'starter',
     nome: 'Starter',
-    precoMensal: 4990, // centavos: R$ 49,90
-    precoAnual: 49900, // centavos: R$ 499,00
+    precoMensal: 9990,  // R$ 99,90
+    precoAnual: 99900,  // R$ 999,00 (~17% off)
     cor: '#8B2655',
     limites: {
-      clientes: 50,
+      clientes: 30,
       agendaPublica: false,
       lembretesWhatsapp: false,
       googleCalendar: false,
@@ -20,10 +20,11 @@ export const PLANOS = {
       relatoriosAvancados: false,
     },
     features: [
-      '✓ Até 50 clientes',
-      '✓ Agenda básica',
-      '✓ Histórico financeiro',
+      '✓ Até 30 clientes',
+      '✓ Agenda completa (dia, semana, mês)',
+      '✓ Controle financeiro',
       '✓ Metas e estimativas',
+      '✓ Foto de perfil + branding',
       '✗ Lembretes WhatsApp',
       '✗ Agenda online (link público)',
       '✗ Google Calendar',
@@ -33,8 +34,8 @@ export const PLANOS = {
   pro: {
     id: 'pro',
     nome: 'Pro',
-    precoMensal: 9990,
-    precoAnual: 99900,
+    precoMensal: 12990, // R$ 129,90
+    precoAnual: 129900, // R$ 1.299,00 (~17% off)
     cor: '#D4AF37',
     limites: {
       clientes: Infinity,
@@ -46,12 +47,14 @@ export const PLANOS = {
     },
     features: [
       '✓ Clientes ilimitadas',
-      '✓ Agenda completa',
+      '✓ Agenda completa (dia, semana, mês)',
+      '✓ Controle financeiro',
+      '✓ Metas e estimativas',
+      '✓ Foto de perfil + branding',
       '✓ Lembretes WhatsApp',
       '✓ Agenda online (link público)',
       '✓ Integração Google Calendar',
       '✓ Exportar relatórios PDF',
-      '✓ Foto de perfil + branding',
       '✓ Suporte prioritário',
     ],
   },
