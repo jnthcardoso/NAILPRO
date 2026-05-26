@@ -80,7 +80,7 @@ export async function excluirEvento(eventId) {
 }
 
 function buildEvento(ag, clienteNome, duracao) {
-  const start = new Date(`${ag.data}T${ag.horario}:00`)
+  const start = new Date(`${ag.data}T${ag.horario.slice(0, 8)}`)
   const end = new Date(start.getTime() + duracao * 60000)
   return {
     summary: `${clienteNome} — ${ag.servico}`,
