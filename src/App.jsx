@@ -7,6 +7,7 @@ import Agenda from './pages/Agenda'
 import Clientes from './pages/Clientes'
 import ClienteDetalhe from './pages/ClienteDetalhe'
 import Financeiro from './pages/Financeiro'
+import Configuracoes from './pages/Configuracoes'
 import './index.css'
 
 function PrivateRoute({ children }) {
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="clientes" element={<Clientes />} />
             <Route path="clientes/:id" element={<ClienteDetalhe />} />
             <Route path="financeiro" element={<Financeiro />} />
+            <Route path="configuracoes" element={<Configuracoes />} />
           </Route>
         </Routes>
       </BrowserRouter>

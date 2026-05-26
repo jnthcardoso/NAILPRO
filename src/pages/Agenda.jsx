@@ -41,9 +41,10 @@ export default function Agenda() {
   const [saving, setSaving] = useState(false)
   const [savingPag, setSavingPag] = useState(false)
   const [savingCliente, setSavingCliente] = useState(false)
+  const [servicosPadrao, setServicosPadrao] = useState([])
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
-  useEffect(() => { if (user) loadClientes() }, [user])
+  useEffect(() => { if (user) { loadClientes(); loadServicosPadrao() } }, [user])
 
   async function loadAgendamentos() {
     let inicio, fim
@@ -67,6 +68,11 @@ export default function Agenda() {
   async function loadClientes() {
     const { data } = await supabase.from('clientes').select('id, nome').eq('user_id', user.id).order('nome')
     setClientes(data || [])
+  }
+
+  async function loadServicosPadrao() {
+    const { data } = await supabase.from('configuracoes').select('servicos_padrao').eq('user_id', user.id).single()
+    if (data?.servicos_padrao?.length) setServicosPadrao(data.servicos_padrao)
   }
 
   async function salvarAgendamento() {
@@ -413,6 +419,15 @@ export default function Agenda() {
             <div style={s.field}>
               <label style={s.label}>Serviço</label>
               <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
+              {servicosPadrao.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 }}>
+                  {servicosPadrao.map(sv => (
+                    <button key={sv} style={{ ...s.actionBtn, background: form.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: form.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (form.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setForm({ ...form, servico: sv })}>
+                      {sv}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>

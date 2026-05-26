@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/clientes', icon: Users, label: 'Clientes' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/configuracoes', icon: Settings, label: 'Config' },
 ]
 
 /* Gotinha de esmalte Berry com brilho interno */

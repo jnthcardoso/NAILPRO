@@ -20,6 +20,8 @@ export default function Home() {
 
   async function loadDashboard() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
+    const { data: config } = await supabase.from('configuracoes').select('meta_mensal').eq('user_id', user.id).single()
+    if (config?.meta_mensal) setStats(s => ({ ...s, metaMes: config.meta_mensal }))
     const { data: agendHoje } = await supabase.from('agendamentos').select('*, clientes(nome)').eq('user_id', user.id).eq('data', hoje).order('horario')
     if (agendHoje) {
       const receita = agendHoje.reduce((s, a) => s + (a.valor || 0), 0)
