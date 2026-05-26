@@ -24,27 +24,39 @@ function PrivateRoute({ children }) {
 function OnboardingGuard({ children }) {
   const { user } = useAuth()
   const location = useLocation()
-  const [checking, setChecking] = useState(true)
-  const [needsOnboarding, setNeedsOnboarding] = useState(false)
+  // status: 'checking' | 'needs' | 'done'
+  const [status, setStatus] = useState('checking')
 
   useEffect(() => {
-    if (!user) { setChecking(false); return }
+    if (!user?.id) return
+    let cancelled = false
+
     supabase.from('configuracoes')
       .select('onboarding_completo')
       .eq('user_id', user.id)
       .maybeSingle()
-      .then(({ data }) => {
-        setNeedsOnboarding(!data?.onboarding_completo)
-        setChecking(false)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.warn('OnboardingGuard:', error.message)
+          setStatus('needs') // pessimista: em caso de erro, mostra onboarding
+          return
+        }
+        // Só pula onboarding se EXPLICITAMENTE marcado como true
+        setStatus(data?.onboarding_completo === true ? 'done' : 'needs')
       })
-  }, [user])
 
-  if (checking) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--pink)' }}>Carregando...</div>
+    return () => { cancelled = true }
+  }, [user?.id])
 
-  if (needsOnboarding && location.pathname !== '/bem-vindo') {
+  if (status === 'checking') {
+    return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--pink)' }}>Carregando...</div>
+  }
+
+  if (status === 'needs' && location.pathname !== '/bem-vindo') {
     return <Navigate to="/bem-vindo" replace />
   }
-  if (!needsOnboarding && location.pathname === '/bem-vindo') {
+  if (status === 'done' && location.pathname === '/bem-vindo') {
     return <Navigate to="/" replace />
   }
 
