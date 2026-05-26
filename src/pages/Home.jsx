@@ -191,7 +191,7 @@ export default function Home() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   greetingRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 18 },
-  greetingText: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 24, fontWeight: 400, color: 'var(--text)', letterSpacing: '-0.3px' },
+  greetingText: { fontFamily: "var(--font-display)", fontStyle: 'italic', fontSize: 32, fontWeight: 400, color: 'var(--text)', letterSpacing: '0.2px' },
   greetingDate: { fontSize: 12, color: 'var(--text3)', fontWeight: 500, textTransform: 'capitalize' },
   mono: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' },
