@@ -140,6 +140,26 @@ export function AssinaturaProvider({ children }) {
 
 export const useAssinatura = () => useContext(AssinaturaContext)
 
+// Hook separado para verificar se o usuário é admin
+export function useIsAdmin() {
+  const { user } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    if (!user?.id) { setChecking(false); return }
+    supabase.rpc('sou_admin').then(({ data }) => {
+      setIsAdmin(data === true)
+      setChecking(false)
+    }).catch(() => {
+      setIsAdmin(false)
+      setChecking(false)
+    })
+  }, [user?.id])
+
+  return { isAdmin, checking }
+}
+
 // Helper pra gerar link WhatsApp de assinatura
 export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo }) {
   const planoNome = PLANOS[planoId]?.nome || 'Pro'

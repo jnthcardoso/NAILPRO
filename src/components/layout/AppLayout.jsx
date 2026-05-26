@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useIsAdmin } from '../../contexts/AssinaturaContext'
 import { NailProLogo, NailDropIcon } from '../common/Brand'
 
 const navItems = [
@@ -17,6 +18,7 @@ const navItems = [
 export default function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
+  const { isAdmin } = useIsAdmin()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
 
@@ -96,11 +98,25 @@ export default function AppLayout() {
 
         <div style={{ flex: 1 }} />
         
-        <div style={{ padding: isSidebarCollapsed ? '0 12px 12px' : '0 10px 12px' }}>
-          <NavLink 
-            to="/configuracoes" 
-            style={{ 
-              ...sb.navItem, 
+        <div style={{ padding: isSidebarCollapsed ? '0 12px 12px' : '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              style={{
+                ...sb.navItem,
+                ...(isActive('/admin') ? sb.navItemActive : {}),
+                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+              }}
+              title={isSidebarCollapsed ? "Admin" : undefined}
+            >
+              <Shield size={19} strokeWidth={isActive('/admin') ? 2.5 : 1.8} />
+              {!isSidebarCollapsed && <span>Admin</span>}
+            </NavLink>
+          )}
+          <NavLink
+            to="/configuracoes"
+            style={{
+              ...sb.navItem,
               ...(isActive('/configuracoes') ? sb.navItemActive : {}),
               ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
             }}

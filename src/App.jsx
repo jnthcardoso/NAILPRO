@@ -14,6 +14,7 @@ import Metas from './pages/Metas'
 import BemVindo from './pages/BemVindo'
 import Lembretes from './pages/Lembretes'
 import Planos from './pages/Planos'
+import Admin from './pages/Admin'
 import { AssinaturaProvider } from './contexts/AssinaturaContext'
 import { supabase } from './lib/supabase'
 import './index.css'
@@ -91,6 +92,7 @@ export default function App() {
               <Route path="clientes/:id" element={<ClienteDetalhe />} />
               <Route path="financeiro" element={<Financeiro />} />
               <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="admin" element={<Admin />} />
             </Route>
           </Routes>
         </BrowserRouter>
