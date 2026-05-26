@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { initTokenClient, criarEvento, excluirEvento } from '../lib/googleCalendar'
+import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -46,6 +46,7 @@ export default function Agenda() {
   const [googleConectado, setGoogleConectado] = useState(false)
   const [duracaoAtend, setDuracaoAtend] = useState(60)
   const [googleMsg, setGoogleMsg] = useState(null)
+  const [googlePronto, setGooglePronto] = useState(false)
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
   useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
@@ -91,12 +92,23 @@ export default function Agenda() {
       setGoogleConectado(true)
       const tryInit = (tentativas = 0) => {
         if (window.google?.accounts?.oauth2) {
-          initTokenClient()
+          initTokenClient((ok) => setGooglePronto(ok))
         } else if (tentativas < 20) {
           setTimeout(() => tryInit(tentativas + 1), 300)
         }
       }
       tryInit()
+    }
+  }
+
+  async function handleReconectarGoogle() {
+    try {
+      initTokenClient((ok) => setGooglePronto(ok))
+      await conectarGoogle()
+      setGooglePronto(true)
+      showGoogleMsg('Google Agenda reconectado ✓', 'success')
+    } catch (e) {
+      showGoogleMsg('Falha ao reconectar Google Agenda', 'error')
     }
   }
 
@@ -358,6 +370,16 @@ export default function Agenda() {
         {VIEWS.map(v => (
           <button key={v} style={{ ...s.viewTab, ...(view === v ? s.viewTabActive : {}) }} onClick={() => setView(v)}>{v}</button>
         ))}
+        {googleConectado && (
+          <button
+            onClick={googlePronto ? undefined : handleReconectarGoogle}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 'var(--radius-pill)', border: 'none', background: googlePronto ? '#DCFCE7' : '#FEF3C7', color: googlePronto ? '#15803D' : '#92400E', fontSize: 11, fontWeight: 600, cursor: googlePronto ? 'default' : 'pointer', flexShrink: 0 }}
+            title={googlePronto ? 'Google Agenda ativo' : 'Clique para reconectar'}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: googlePronto ? '#16A34A' : '#D97706', display: 'inline-block' }} />
+            {googlePronto ? 'Google' : 'Reconectar'}
+          </button>
+        )}
       </div>
       <div style={s.nav}>
         <button style={s.navBtn} onClick={() => navegar(-1)}><ChevronLeft size={18} /></button>
