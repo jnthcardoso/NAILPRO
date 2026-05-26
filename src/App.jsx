@@ -12,6 +12,7 @@ import Configuracoes from './pages/Configuracoes'
 import AgendaPublica from './pages/AgendaPublica'
 import Metas from './pages/Metas'
 import BemVindo from './pages/BemVindo'
+import Lembretes from './pages/Lembretes'
 import { supabase } from './lib/supabase'
 import './index.css'
 
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/" element={<PrivateRoute><OnboardingGuard><AppLayout /></OnboardingGuard></PrivateRoute>}>
             <Route index element={<Home />} />
             <Route path="metas" element={<Metas />} />
+            <Route path="lembretes" element={<Lembretes />} />
             <Route path="agenda" element={<Agenda />} />
             <Route path="clientes" element={<Clientes />} />
             <Route path="clientes/:id" element={<ClienteDetalhe />} />

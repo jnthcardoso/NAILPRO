@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, UserX, Cake, ChevronRight, Plus, UserPlus, Calendar, Sparkles } from 'lucide-react'
+import { AlertTriangle, UserX, Cake, ChevronRight, Plus, UserPlus, Calendar, Sparkles, Bell } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { format, differenceInDays } from 'date-fns'
+import { format, addDays, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import LembretesPanel from '../components/common/LembretesPanel'
 
 export default function Home() {
   const { user } = useAuth()
@@ -22,6 +21,7 @@ export default function Home() {
   const [nomeSalao, setNomeSalao] = useState('')
   const [totalClientes, setTotalClientes] = useState(null)
   const [totalAgendamentos, setTotalAgendamentos] = useState(null)
+  const [lembretesPendentes, setLembretesPendentes] = useState(0)
 
   useEffect(() => { if (user) loadDashboard() }, [user])
   useEffect(() => { if (user) loadAgendamentosData() }, [user, dataFiltro])
@@ -67,6 +67,18 @@ export default function Home() {
       .select('*', { count: 'exact', head: true }).eq('user_id', user.id)
     setTotalAgendamentos(countAgendamentos ?? 0)
 
+    // Conta lembretes pendentes pra amanhã (apenas clientes com telefone)
+    const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+    const { data: ags } = await supabase.from('agendamentos')
+      .select('lembrete_enviado_em, clientes(telefone)')
+      .eq('user_id', user.id)
+      .eq('data', amanha)
+      .in('status', ['pendente', 'confirmado'])
+    if (ags) {
+      const pend = ags.filter(a => !a.lembrete_enviado_em && a.clientes?.telefone).length
+      setLembretesPendentes(pend)
+    }
+
     const { data: todosClientes } = await supabase.from('clientes')
       .select('id, nome, data_nascimento').eq('user_id', user.id).not('data_nascimento', 'is', null)
     if (todosClientes) {
@@ -99,7 +111,18 @@ export default function Home() {
         <span style={s.greetingDate}>{format(new Date(), "EEEE", { locale: ptBR })}</span>
       </div>
 
-      {!contaNova && <LembretesPanel />}
+      {!contaNova && lembretesPendentes > 0 && (
+        <div style={s.lembreteChip} onClick={() => navigate('/lembretes')}>
+          <div style={s.lembreteChipIcon}><Bell size={16} color="white" /></div>
+          <div style={{ flex: 1 }}>
+            <div style={s.lembreteChipTitle}>
+              {lembretesPendentes} lembrete{lembretesPendentes > 1 ? 's' : ''} pra enviar
+            </div>
+            <div style={s.lembreteChipSub}>Agendamentos de amanhã · toque para enviar</div>
+          </div>
+          <ChevronRight size={18} color="#7C2D12" />
+        </div>
+      )}
 
       {contaNova && (
         <div style={s.welcomeCard}>
@@ -125,10 +148,18 @@ export default function Home() {
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
+            <button style={s.welcomeStep} onClick={() => navigate('/lembretes')}>
+              <div style={s.welcomeStepIcon}><Bell size={18} color="var(--pink)" /></div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={s.welcomeStepTitle}>3. Envie lembretes pelo WhatsApp</div>
+                <div style={s.welcomeStepSub}>1 dia antes do atendimento, com 1 clique</div>
+              </div>
+              <ChevronRight size={16} color="var(--text3)" />
+            </button>
             <button style={s.welcomeStep} onClick={() => navigate('/configuracoes')}>
               <div style={s.welcomeStepIcon}><Sparkles size={18} color="var(--pink)" /></div>
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={s.welcomeStepTitle}>3. Ative sua agenda online</div>
+                <div style={s.welcomeStepTitle}>4. Ative sua agenda online</div>
                 <div style={s.welcomeStepSub}>Clientes agendam pelo link sem te chamar</div>
               </div>
               <ChevronRight size={16} color="var(--text3)" />
@@ -277,4 +308,8 @@ const s = {
   welcomeStepIcon: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   welcomeStepTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
   welcomeStepSub: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
+  lembreteChip: { display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
+  lembreteChipIcon: { width: 34, height: 34, borderRadius: '50%', background: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  lembreteChipTitle: { fontSize: 13, fontWeight: 700, color: '#7C2D12' },
+  lembreteChipSub: { fontSize: 11, color: '#9A3412', marginTop: 1 },
 }

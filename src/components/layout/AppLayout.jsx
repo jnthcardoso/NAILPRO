@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { NailProLogo, NailDropIcon } from '../common/Brand'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Início', exact: true },
-  { to: '/metas', icon: Target, label: 'Metas' },
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
+  { to: '/lembretes', icon: Bell, label: 'Lembretes' },
   { to: '/clientes', icon: Users, label: 'Clientes' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/metas', icon: Target, label: 'Metas' },
 ]
 
 
