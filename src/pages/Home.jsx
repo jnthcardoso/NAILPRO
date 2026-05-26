@@ -10,55 +10,78 @@ export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
+
   const [stats, setStats] = useState({ hoje: 0, receitaHoje: 0, pendente: 0, metaMes: 4000, receitaMes: 0 })
-  const [proximoAtend, setProximoAtend] = useState(null)
   const [semConfirmacao, setSemConfirmacao] = useState([])
   const [clientesSumidas, setClientesSumidas] = useState([])
   const [aniversarios, setAniversarios] = useState([])
+  const [agendamentosData, setAgendamentosData] = useState([])
+  const [dataFiltro, setDataFiltro] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [diasAlerta, setDiasAlerta] = useState(30)
 
   useEffect(() => { if (user) loadDashboard() }, [user])
+  useEffect(() => { if (user) loadAgendamentosData() }, [user, dataFiltro])
 
   async function loadDashboard() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
-    const { data: config } = await supabase.from('configuracoes').select('meta_mensal').eq('user_id', user.id).single()
+
+    const { data: config } = await supabase.from('configuracoes')
+      .select('meta_mensal, dias_retorno_alerta').eq('user_id', user.id).single()
     if (config?.meta_mensal) setStats(s => ({ ...s, metaMes: config.meta_mensal }))
-    const { data: agendHoje } = await supabase.from('agendamentos').select('*, clientes(nome)').eq('user_id', user.id).eq('data', hoje).order('horario')
+    const limiteAlerta = config?.dias_retorno_alerta ?? 30
+    setDiasAlerta(limiteAlerta)
+
+    const { data: agendHoje } = await supabase.from('agendamentos')
+      .select('*, clientes(nome)').eq('user_id', user.id).eq('data', hoje).order('horario')
     if (agendHoje) {
       const receita = agendHoje.reduce((s, a) => s + (a.valor || 0), 0)
       setStats(s => ({ ...s, hoje: agendHoje.length, receitaHoje: receita }))
       setSemConfirmacao(agendHoje.filter(a => a.status === 'pendente'))
-      setProximoAtend(agendHoje.find(a => a.status !== 'realizado'))
     }
-    const { data: pagPendentes } = await supabase.from('pagamentos').select('valor').eq('user_id', user.id).eq('status', 'pendente')
+
+    const { data: pagPendentes } = await supabase.from('pagamentos')
+      .select('valor').eq('user_id', user.id).eq('status', 'pendente')
     if (pagPendentes) setStats(s => ({ ...s, pendente: pagPendentes.reduce((s, p) => s + (p.valor || 0), 0) }))
+
     const inicioMes = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')
-    const { data: pagMes } = await supabase.from('pagamentos').select('valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicioMes)
+    const { data: pagMes } = await supabase.from('pagamentos')
+      .select('valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicioMes)
     if (pagMes) setStats(s => ({ ...s, receitaMes: pagMes.reduce((s, p) => s + (p.valor || 0), 0) }))
-    const { data: clientes } = await supabase.from('clientes').select('id, nome, ultimo_atendimento').eq('user_id', user.id).not('ultimo_atendimento', 'is', null)
-    if (clientes) setClientesSumidas(clientes.filter(c => differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= 35).slice(0, 3))
-    const { data: todosClientes } = await supabase.from('clientes').select('id, nome, data_nascimento').eq('user_id', user.id).not('data_nascimento', 'is', null)
+
+    const { data: clientes } = await supabase.from('clientes')
+      .select('id, nome, ultimo_atendimento').eq('user_id', user.id).not('ultimo_atendimento', 'is', null)
+    if (clientes)
+      setClientesSumidas(clientes.filter(c => differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= limiteAlerta).slice(0, 3))
+
+    const { data: todosClientes } = await supabase.from('clientes')
+      .select('id, nome, data_nascimento').eq('user_id', user.id).not('data_nascimento', 'is', null)
     if (todosClientes) {
-      const hoje2 = new Date()
+      const hj = new Date()
       setAniversarios(todosClientes.filter(c => {
         const nasc = new Date(c.data_nascimento)
-        const aniv = new Date(hoje2.getFullYear(), nasc.getMonth(), nasc.getDate())
-        const diff = differenceInDays(aniv, hoje2)
+        const aniv = new Date(hj.getFullYear(), nasc.getMonth(), nasc.getDate())
+        const diff = differenceInDays(aniv, hj)
         return diff >= 0 && diff <= 3
       }))
     }
   }
 
+  async function loadAgendamentosData() {
+    const { data } = await supabase.from('agendamentos')
+      .select('*, clientes(nome)').eq('user_id', user.id).eq('data', dataFiltro)
+      .neq('status', 'cancelado').order('horario')
+    setAgendamentosData(data || [])
+  }
+
   const progressoMeta = Math.min(100, Math.round((stats.receitaMes / stats.metaMes) * 100))
+  const isHoje = dataFiltro === format(new Date(), 'yyyy-MM-dd')
 
   return (
     <div style={s.page}>
 
-      {/* Saudação humana */}
       <div style={s.greetingRow}>
         <span style={s.greetingText}>oi {firstName},</span>
-        <span style={s.greetingDate}>
-          {format(new Date(), "EEEE", { locale: ptBR })}
-        </span>
+        <span style={s.greetingDate}>{format(new Date(), "EEEE", { locale: ptBR })}</span>
       </div>
 
       <div style={s.grid}>
@@ -105,7 +128,7 @@ export default function Home() {
         <div style={{ ...s.alert, ...s.alertDanger }} onClick={() => navigate('/clientes')}>
           <UserX size={18} style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1 }}>
-            <div style={s.alertTitle}>{clientesSumidas.length} cliente(s) sumida(s) (+35 dias)</div>
+            <div style={s.alertTitle}>{clientesSumidas.length} cliente(s) sem visita há +{diasAlerta} dias</div>
             <div style={s.alertSub}>{clientesSumidas.map(c => c.nome).join(' · ')}</div>
           </div>
           <ChevronRight size={16} style={{ opacity: 0.5 }} />
@@ -122,18 +145,38 @@ export default function Home() {
         </div>
       ))}
 
-      {proximoAtend && (
-        <>
-          <div style={s.sectionTitle}>próximo atendimento</div>
-          <div style={s.apptCard} onClick={() => navigate('/agenda')}>
-            <div style={s.apptTimeBadge}>{proximoAtend.horario?.slice(0, 5)}</div>
-            <div style={{ flex: 1 }}>
-              <div style={s.apptName}>{proximoAtend.clientes?.nome}</div>
-              <div style={s.apptService}>{proximoAtend.servico}</div>
+      <div style={s.sectionHeader}>
+        <div style={s.sectionTitle}>{isHoje ? 'atendimentos hoje' : 'atendimentos do dia'}</div>
+        <input type="date" style={s.datePicker} value={dataFiltro} onChange={e => setDataFiltro(e.target.value)} />
+      </div>
+
+      {agendamentosData.length === 0 ? (
+        <div style={s.emptyDay}>
+          <span style={{ color: 'var(--text3)', fontSize: 13 }}>Nenhum atendimento</span>
+          <button style={s.emptyBtn} onClick={() => navigate('/agenda')}>+ Agendar</button>
+        </div>
+      ) : (
+        agendamentosData.map(ag => {
+          const ST = {
+            confirmado: { bg: 'var(--green-bg)', color: 'var(--green)', border: 'var(--green)', label: 'Confirmada' },
+            realizado:  { bg: '#EDE9FE', color: '#5B21B6', border: '#A78BFA', label: 'Realizado' },
+            pendente:   { bg: '#FEF3C7', color: '#92400E', border: '#FCD34D', label: 'Aguardando' },
+          }
+          const st = ST[ag.status] || ST.pendente
+          return (
+            <div key={ag.id} style={{ ...s.apptCard, borderLeftColor: st.border }} onClick={() => navigate('/agenda')}>
+              <div style={s.apptTimeBadge}>{ag.horario?.slice(0, 5)}</div>
+              <div style={{ flex: 1 }}>
+                <div style={s.apptName}>{ag.clientes?.nome}</div>
+                <div style={s.apptService}>{ag.servico}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+                {ag.valor > 0 && <span style={{ ...s.mono, fontSize: 12, color: 'var(--pink)' }}>R$ {ag.valor.toFixed(0)}</span>}
+              </div>
             </div>
-            <span style={{ ...s.badge, ...s.badgeConfirmado }}>Confirmada</span>
-          </div>
-        </>
+          )
+        })
       )}
 
       <button className="fab-btn" onClick={() => navigate('/agenda')} aria-label="Novo agendamento">
@@ -145,21 +188,13 @@ export default function Home() {
 
 const s = {
   page: { padding: 16, paddingBottom: 80 },
-  /* Saudação */
   greetingRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 18 },
-  greetingText: {
-    fontFamily: "'Instrument Serif', serif",
-    fontStyle: 'italic',
-    fontSize: 24,
-    fontWeight: 400,
-    color: 'var(--text)',
-    letterSpacing: '-0.3px',
-  },
+  greetingText: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 24, fontWeight: 400, color: 'var(--text)', letterSpacing: '-0.3px' },
   greetingDate: { fontSize: 12, color: 'var(--text3)', fontWeight: 500, textTransform: 'capitalize' },
-  /* Mono helper */
   mono: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 },
-  /* Stats grid */
-  sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '16px 0 8px' },
+  sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' },
+  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '18px 0 10px' },
+  datePicker: { fontSize: 12, padding: '5px 9px', border: '1px solid var(--border2)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 },
   card: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
   cardLabel: { fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 500 },
@@ -167,18 +202,17 @@ const s = {
   cardSub: { fontSize: 11, color: 'var(--text3)', marginTop: 5 },
   progressBar: { height: 5, borderRadius: 3, background: 'var(--border)', marginTop: 7, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 3, background: 'var(--pink)', transition: 'width 0.6s ease' },
-  /* Alerts */
   alert: { borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 9, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', boxShadow: 'var(--shadow-xs)' },
   alertTitle: { fontSize: 13, fontWeight: 600 },
   alertSub: { fontSize: 12, opacity: 0.78, marginTop: 2 },
   alertWarning: { background: '#FFFBEB', color: '#78350F', border: '1px solid #FCD34D' },
   alertDanger: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA' },
   alertSuccess: { background: 'var(--green-bg)', color: '#14532D', border: '1px solid #86EFAC' },
-  /* Appointment card */
-  apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
+  apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)', marginBottom: 8 },
   apptTimeBadge: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, fontSize: 14, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 8, padding: '4px 8px', textAlign: 'center' },
   apptName: { fontSize: 14, fontWeight: 600 },
   apptService: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
-  badgeConfirmado: { background: 'var(--green-bg)', color: 'var(--green)' },
+  emptyDay: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' },
+  emptyBtn: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
 }

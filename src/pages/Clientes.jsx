@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, ChevronRight } from 'lucide-react'
+import { Search, Plus, AlertCircle, ChevronRight, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { differenceInDays, format } from 'date-fns'
@@ -11,10 +11,16 @@ export default function Clientes() {
   const [clientes, setClientes] = useState([])
   const [busca, setBusca] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [diasAlerta, setDiasAlerta] = useState(30)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { if (user) loadClientes() }, [user])
+  useEffect(() => { if (user) { loadClientes(); loadConfig() } }, [user])
+
+  async function loadConfig() {
+    const { data } = await supabase.from('configuracoes').select('dias_retorno_alerta').eq('user_id', user.id).single()
+    if (data?.dias_retorno_alerta) setDiasAlerta(data.dias_retorno_alerta)
+  }
 
   async function loadClientes() {
     const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto').eq('user_id', user.id).order('nome')
@@ -32,10 +38,16 @@ export default function Clientes() {
   }
 
   const filtradas = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()))
-  const sumidas = clientes.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= 35)
+  const sumidas = clientes.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= diasAlerta)
 
   function getInitials(nome) {
     return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+  }
+
+  function handleWhatsApp(e, telefone) {
+    e.stopPropagation()
+    const tel = (telefone || '').replace(/\D/g, '')
+    if (tel) window.open(`https://wa.me/55${tel}`, '_blank')
   }
 
   return (
@@ -47,7 +59,7 @@ export default function Clientes() {
 
       {sumidas.length > 0 && busca === '' && (
         <div style={{ marginBottom: 16 }}>
-          <div style={s.sectionTitle}>para reativar</div>
+          <div style={s.sectionTitle}>para reativar (+{diasAlerta} dias)</div>
           <div style={s.chipsRow}>
             {sumidas.map(c => (
               <div key={c.id} style={s.chip} onClick={() => navigate(`/clientes/${c.id}`)}>
@@ -63,7 +75,7 @@ export default function Clientes() {
 
       {filtradas.map(c => {
         const diasAusente = c.ultimo_atendimento ? differenceInDays(new Date(), new Date(c.ultimo_atendimento)) : null
-        const sumida = diasAusente && diasAusente >= 35
+        const sumida = diasAusente != null && diasAusente >= diasAlerta
         return (
           <div key={c.id} style={s.card} onClick={() => navigate(`/clientes/${c.id}`)}>
             <div style={s.avatar}>{getInitials(c.nome)}</div>
@@ -71,7 +83,6 @@ export default function Clientes() {
               <div style={s.cardName}>
                 {c.nome}
                 {sumida && <span style={s.tagSumida}>Sumida</span>}
-                {/* Badge VIP: Gold + Noir */}
                 {c.total_visitas >= 10 && <span style={s.tagVip}>✦ VIP</span>}
               </div>
               <div style={s.cardSub}>
@@ -82,6 +93,15 @@ export default function Clientes() {
               <div style={s.cardValor}>R$ {(c.total_gasto || 0).toFixed(0)}</div>
               <div style={s.cardVisitas}>{c.total_visitas || 0} visitas</div>
             </div>
+            {c.telefone && (
+              <button
+                style={s.waBtn}
+                onClick={e => handleWhatsApp(e, c.telefone)}
+                title="Abrir WhatsApp"
+              >
+                <MessageCircle size={15} />
+              </button>
+            )}
             <ChevronRight size={16} color="var(--text3)" />
           </div>
         )
@@ -127,8 +147,8 @@ const s = {
   cardRight: { textAlign: 'right', flexShrink: 0 },
   cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)' },
   cardVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
+  waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
-  /* VIP badge: Gold + Noir */
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   empty: { padding: '40px 0', textAlign: 'center' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
@@ -136,7 +156,7 @@ const s = {
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
+  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
   btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
 }

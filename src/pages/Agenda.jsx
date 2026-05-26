@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard } from 'lucide-react'
+import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard, MessageCircle, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
@@ -28,18 +28,21 @@ const VIEWS = ['Dia', 'Semana', 'Mês']
 
 export default function Agenda() {
   const { user } = useAuth()
-  const [view, setView] = useState('Dia')
+  const [view, setView] = useState('Semana')
   const [dataSel, setDataSel] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState([])
   const [clientes, setClientes] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showNovaCliente, setShowNovaCliente] = useState(false)
   const [showPagModal, setShowPagModal] = useState(false)
+  const [editando, setEditando] = useState(null)
   const [agSelecionado, setAgSelecionado] = useState(null)
   const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '' })
   const [form, setForm] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(new Date(), 'yyyy-MM-dd') })
+  const [formEdit, setFormEdit] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: '' })
   const [formCliente, setFormCliente] = useState({ nome: '', telefone: '' })
   const [saving, setSaving] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
   const [savingPag, setSavingPag] = useState(false)
   const [savingCliente, setSavingCliente] = useState(false)
   const [servicosPadrao, setServicosPadrao] = useState([])
@@ -63,7 +66,7 @@ export default function Agenda() {
     }
     const { data } = await supabase
       .from('agendamentos')
-      .select('*, clientes(nome), pagamentos(id, status, forma, valor)')
+      .select('*, clientes(id, nome, telefone), pagamentos(id, status, forma, valor)')
       .eq('user_id', user.id)
       .gte('data', inicio).lte('data', fim)
       .order('data').order('horario')
@@ -71,7 +74,7 @@ export default function Agenda() {
   }
 
   async function loadClientes() {
-    const { data } = await supabase.from('clientes').select('id, nome').eq('user_id', user.id).order('nome')
+    const { data } = await supabase.from('clientes').select('id, nome, telefone').eq('user_id', user.id).order('nome')
     setClientes(data || [])
   }
 
@@ -133,6 +136,36 @@ export default function Agenda() {
     setSaving(false)
     setShowModal(false)
     setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd') })
+    loadAgendamentos()
+  }
+
+  function abrirEdicao(ag) {
+    setFormEdit({
+      cliente_id: ag.clientes?.id || ag.cliente_id || '',
+      servico: ag.servico || '',
+      data: ag.data || '',
+      horario: ag.horario?.slice(0, 5) || '',
+      valor: ag.valor != null ? String(ag.valor) : '',
+      status: ag.status || 'pendente',
+      observacoes: ag.observacoes || '',
+    })
+    setEditando(ag)
+  }
+
+  async function atualizarAgendamento() {
+    if (!editando) return
+    setSavingEdit(true)
+    await supabase.from('agendamentos').update({
+      cliente_id: formEdit.cliente_id,
+      servico: formEdit.servico,
+      data: formEdit.data,
+      horario: formEdit.horario,
+      valor: parseFloat(formEdit.valor) || 0,
+      status: formEdit.status,
+      observacoes: formEdit.observacoes,
+    }).eq('id', editando.id)
+    setSavingEdit(false)
+    setEditando(null)
     loadAgendamentos()
   }
 
@@ -210,9 +243,23 @@ export default function Agenda() {
     return format(dataSel, "MMMM 'de' yyyy", { locale: ptBR })
   }
 
+  function buildWhatsAppConfirm(ag) {
+    const nome = ag.clientes?.nome || ''
+    const telefone = (ag.clientes?.telefone || '').replace(/\D/g, '')
+    if (!telefone) return null
+    const [y, m, d] = ag.data.split('-')
+    const dataFmt = `${d}/${m}`
+    const horario = ag.horario?.slice(0, 5)
+    const msg = `Olá ${nome}! Confirmando seu horário para ${dataFmt} às ${horario} - ${ag.servico}. Pode confirmar presença? 💅`
+    return `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`
+  }
+
   function CardAgendamento({ ag }) {
     const st = STATUS[ag.status] || STATUS.pendente
     const pag = ag.pagamentos?.[0]
+    const telefone = (ag.clientes?.telefone || '').replace(/\D/g, '')
+    const waLink = telefone ? `https://wa.me/55${telefone}` : null
+    const waConfirm = buildWhatsAppConfirm(ag)
     return (
       <div style={{ ...s.card, borderLeftColor: st.border }}>
         <div style={s.cardHeader}>
@@ -221,7 +268,17 @@ export default function Agenda() {
             <div style={s.cardName}>{ag.clientes?.nome}</div>
             <div style={s.cardService}>{ag.servico}</div>
           </div>
-          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {waLink && (
+              <a href={waLink} target="_blank" rel="noreferrer" style={s.waIconBtn} title="Abrir WhatsApp">
+                <MessageCircle size={15} />
+              </a>
+            )}
+            <button style={s.editIconBtn} onClick={() => abrirEdicao(ag)} title="Editar agendamento">
+              <Pencil size={14} />
+            </button>
+            <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+          </div>
         </div>
         {ag.valor > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
@@ -255,6 +312,11 @@ export default function Agenda() {
             >
               <CreditCard size={13} /> {pag ? 'Editar pagamento' : 'Registrar pagamento'}
             </button>
+          )}
+          {ag.status !== 'realizado' && ag.status !== 'cancelado' && waConfirm && (
+            <a href={waConfirm} target="_blank" rel="noreferrer" style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D', textDecoration: 'none' }}>
+              <MessageCircle size={13} /> Confirmar via WhatsApp
+            </a>
           )}
           {ag.status !== 'realizado' && ag.status !== 'cancelado' && (
             <button style={{ ...s.actionBtn, background: '#FEE2E2', color: '#B91C1C' }} onClick={() => atualizarStatus(ag, 'cancelado')}>
@@ -406,6 +468,72 @@ export default function Agenda() {
       <button className="fab-btn" onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
       </button>
+
+      {/* ── Modal de edição ────────────────────── */}
+      {editando && (
+        <div style={s.overlay} onClick={() => setEditando(null)}>
+          <div style={s.modal} onClick={e => e.stopPropagation()}>
+            <div style={s.modalTitle}>✏️ Editar agendamento</div>
+
+            <div style={s.field}>
+              <label style={s.label}>Cliente</label>
+              <select style={s.input} value={formEdit.cliente_id} onChange={e => setFormEdit({ ...formEdit, cliente_id: e.target.value })}>
+                <option value="">Selecionar cliente</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+
+            <div style={s.field}>
+              <label style={s.label}>Serviço</label>
+              <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={formEdit.servico} onChange={e => setFormEdit({ ...formEdit, servico: e.target.value })} />
+              {servicosPadrao.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 }}>
+                  {servicosPadrao.map(sv => (
+                    <button key={sv} style={{ ...s.actionBtn, background: formEdit.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: formEdit.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (formEdit.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setFormEdit({ ...formEdit, servico: sv })}>
+                      {sv}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={s.row}>
+              <div style={{ ...s.field, flex: 1 }}>
+                <label style={s.label}>Data</label>
+                <input style={s.input} type="date" value={formEdit.data} onChange={e => setFormEdit({ ...formEdit, data: e.target.value })} />
+              </div>
+              <div style={{ ...s.field, flex: 1 }}>
+                <label style={s.label}>Horário</label>
+                <input style={s.input} type="time" value={formEdit.horario} onChange={e => setFormEdit({ ...formEdit, horario: e.target.value })} />
+              </div>
+            </div>
+
+            <div style={s.row}>
+              <div style={{ ...s.field, flex: 1 }}>
+                <label style={s.label}>Valor (R$)</label>
+                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={formEdit.valor} onChange={e => setFormEdit({ ...formEdit, valor: e.target.value })} />
+              </div>
+              <div style={{ ...s.field, flex: 1 }}>
+                <label style={s.label}>Status</label>
+                <select style={s.input} value={formEdit.status} onChange={e => setFormEdit({ ...formEdit, status: e.target.value })}>
+                  <option value="pendente">Aguardando</option>
+                  <option value="confirmado">Confirmada</option>
+                  <option value="realizado">Realizado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={s.field}>
+              <label style={s.label}>Observações</label>
+              <input style={s.input} placeholder="Opcional..." value={formEdit.observacoes} onChange={e => setFormEdit({ ...formEdit, observacoes: e.target.value })} />
+            </div>
+
+            <button style={s.btnPrimary} onClick={atualizarAgendamento} disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
+            <button style={s.btnSecondary} onClick={() => setEditando(null)}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal de pagamento ──────────────── */}
       {showPagModal && agSelecionado && (
@@ -584,6 +712,8 @@ const s = {
   cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, color: 'var(--pink)' },
   cardActions: { display: 'flex', gap: 7, flexWrap: 'wrap' },
   actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', transition: 'opacity 0.15s' },
+  waIconBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', textDecoration: 'none', flexShrink: 0 },
+  editIconBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border)', cursor: 'pointer', flexShrink: 0 },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600, whiteSpace: 'nowrap' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' },
   emptyBtn: { marginTop: 14, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
@@ -602,7 +732,7 @@ const s = {
   statusPendenteActive: { border: '1.5px solid #FCD34D', background: '#FEF3C7', color: '#92400E', fontWeight: 700 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)' },
+  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
   row: { display: 'flex', gap: 10 },
   btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },

@@ -1,13 +1,13 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Início', exact: true },
+  { to: '/metas', icon: Target, label: 'Metas' },
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/clientes', icon: Users, label: 'Clientes' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
-  { to: '/configuracoes', icon: Settings, label: 'Config' },
 ]
 
 /* Gotinha de esmalte Berry com brilho interno */
@@ -67,17 +67,21 @@ export default function AppLayout() {
           {navItems.map(({ to, icon: Icon, label, exact }) => {
             const active = isActive(to, exact)
             return (
-              <NavLink
-                key={to}
-                to={to}
-                style={{ ...sb.navItem, ...(active ? sb.navItemActive : {}) }}
-              >
+              <NavLink key={to} to={to} style={{ ...sb.navItem, ...(active ? sb.navItemActive : {}) }}>
                 <Icon size={19} strokeWidth={active ? 2.5 : 1.8} />
                 <span>{label}</span>
               </NavLink>
             )
           })}
         </nav>
+
+        <div style={{ flex: 1 }} />
+        <div style={{ padding: '0 10px 16px' }}>
+          <NavLink to="/configuracoes" style={{ ...sb.navItem, ...(isActive('/configuracoes') ? sb.navItemActive : {}) }}>
+            <Settings size={19} strokeWidth={isActive('/configuracoes') ? 2.5 : 1.8} />
+            <span>Configurações</span>
+          </NavLink>
+        </div>
       </aside>
 
       {/* ── Content wrapper ───────────────────── */}
@@ -94,8 +98,13 @@ export default function AppLayout() {
               <em>oi {firstName},</em>
             </div>
           </div>
-          <div style={mh.date}>
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={mh.date}>
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+            </div>
+            <NavLink to="/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
+              <Settings size={18} />
+            </NavLink>
           </div>
         </header>
 

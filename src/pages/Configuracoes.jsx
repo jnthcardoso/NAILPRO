@@ -28,12 +28,17 @@ export default function Configuracoes() {
     duracao_atendimento: 60,
     dias_semana: [1, 2, 3, 4, 5],
     google_conectado: false,
+    dias_retorno_alerta: 30,
   })
   const [novoServico, setNovoServico] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
   const [slugErro, setSlugErro] = useState('')
+  const [novaSenha, setNovaSenha] = useState('')
+  const [confirmaSenha, setConfirmaSenha] = useState('')
+  const [senhaSaving, setSenhaSaving] = useState(false)
+  const [senhaMsg, setSenhaMsg] = useState(null)
 
   useEffect(() => { if (user) loadConfig() }, [user])
 
@@ -52,6 +57,7 @@ export default function Configuracoes() {
         duracao_atendimento: data.duracao_atendimento || 60,
         dias_semana: data.dias_semana || [1, 2, 3, 4, 5],
         google_conectado: data.google_conectado || false,
+        dias_retorno_alerta: data.dias_retorno_alerta || 30,
       })
     }
   }
@@ -139,6 +145,28 @@ export default function Configuracoes() {
     setForm(f => ({ ...f, google_conectado: false }))
   }
 
+  async function alterarSenha() {
+    if (!novaSenha || novaSenha.length < 6) {
+      setSenhaMsg({ tipo: 'erro', texto: 'A senha deve ter pelo menos 6 caracteres' })
+      return
+    }
+    if (novaSenha !== confirmaSenha) {
+      setSenhaMsg({ tipo: 'erro', texto: 'As senhas não coincidem' })
+      return
+    }
+    setSenhaSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: novaSenha })
+    setSenhaSaving(false)
+    if (error) {
+      setSenhaMsg({ tipo: 'erro', texto: error.message })
+    } else {
+      setSenhaMsg({ tipo: 'ok', texto: 'Senha alterada com sucesso!' })
+      setNovaSenha('')
+      setConfirmaSenha('')
+      setTimeout(() => setSenhaMsg(null), 3000)
+    }
+  }
+
   async function handleLogout() {
     await signOut()
     navigate('/login', { replace: true })
@@ -165,14 +193,20 @@ export default function Configuracoes() {
         </div>
       </div>
 
-      {/* ── Metas ───────────────────────────── */}
+      {/* ── Metas e Alertas ─────────────────── */}
       <div style={s.section}>
-        <div style={s.sectionTitle}>metas</div>
+        <div style={s.sectionTitle}>metas e alertas</div>
         <div style={s.field}>
           <label style={s.label}>Meta mensal de receita (R$)</label>
           <input style={s.input} type="number" placeholder="4000" value={form.meta_mensal}
             onChange={e => setForm({ ...form, meta_mensal: parseFloat(e.target.value) || 0 })} />
           <div style={s.hint}>Aparece na barra de progresso do Dashboard</div>
+        </div>
+        <div style={s.field}>
+          <label style={s.label}>Alerta de retorno (dias)</label>
+          <input style={s.input} type="number" min="7" max="365" placeholder="30" value={form.dias_retorno_alerta}
+            onChange={e => setForm({ ...form, dias_retorno_alerta: parseInt(e.target.value) || 30 })} />
+          <div style={s.hint}>Clientes sem visita há mais de X dias aparecem como "para reativar"</div>
         </div>
       </div>
 
@@ -351,6 +385,40 @@ export default function Configuracoes() {
           <span style={s.infoLabel}>E-mail</span>
           <span style={s.infoValue}>{user?.email}</span>
         </div>
+
+        {/* Alterar senha */}
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>Alterar senha</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              style={s.input}
+              type="password"
+              placeholder="Nova senha (mín. 6 caracteres)"
+              value={novaSenha}
+              onChange={e => setNovaSenha(e.target.value)}
+            />
+            <input
+              style={s.input}
+              type="password"
+              placeholder="Confirmar nova senha"
+              value={confirmaSenha}
+              onChange={e => setConfirmaSenha(e.target.value)}
+            />
+            {senhaMsg && (
+              <div style={{ fontSize: 12, fontWeight: 600, color: senhaMsg.tipo === 'ok' ? 'var(--green)' : 'var(--red)' }}>
+                {senhaMsg.texto}
+              </div>
+            )}
+            <button
+              style={{ ...s.btnPrimary, marginTop: 0, padding: '10px' }}
+              onClick={alterarSenha}
+              disabled={senhaSaving}
+            >
+              {senhaSaving ? 'Salvando...' : 'Alterar senha'}
+            </button>
+          </div>
+        </div>
+
         <button style={s.logoutBtn} onClick={handleLogout}>
           <LogOut size={15} /> Sair da conta
         </button>
