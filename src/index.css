@@ -192,6 +192,9 @@ input:focus, select:focus, textarea:focus {
     padding-bottom: 32px !important;
     padding-left: 8px;
     padding-right: 8px;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
   }
 
   .app-bottom-nav { display: none; }
