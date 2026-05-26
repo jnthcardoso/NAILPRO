@@ -1,19 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, ChevronRight, MessageCircle } from 'lucide-react'
+import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
+import { UpgradeModal } from '../components/common/UpgradeBlock'
 import { differenceInDays, format } from 'date-fns'
 
 export default function Clientes() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { plano, dentroDoLimite } = useAssinatura()
   const [clientes, setClientes] = useState([])
   const [busca, setBusca] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(false)
   const [diasAlerta, setDiasAlerta] = useState(30)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
   const [saving, setSaving] = useState(false)
+
+  const limiteClientes = plano?.limites?.clientes ?? Infinity
+  const noLimite = limiteClientes !== Infinity && clientes.length >= limiteClientes
+  const perto = limiteClientes !== Infinity && clientes.length >= limiteClientes - 5 && !noLimite
 
   useEffect(() => { if (user) { loadClientes(); loadConfig() } }, [user])
 
@@ -29,12 +37,26 @@ export default function Clientes() {
 
   async function salvarCliente() {
     if (!form.nome) return
+    // 🔒 Bloqueio de limite no Starter
+    if (noLimite) {
+      setShowModal(false)
+      setShowUpgrade(true)
+      return
+    }
     setSaving(true)
     await supabase.from('clientes').insert({ ...form, user_id: user.id })
     setSaving(false)
     setShowModal(false)
     setForm({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
     loadClientes()
+  }
+
+  function abrirModalNova() {
+    if (noLimite) {
+      setShowUpgrade(true)
+      return
+    }
+    setShowModal(true)
   }
 
   const filtradas = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()))
@@ -56,6 +78,32 @@ export default function Clientes() {
         <Search size={16} color="var(--text3)" />
         <input style={s.searchInput} placeholder="Buscar cliente..." value={busca} onChange={e => setBusca(e.target.value)} />
       </div>
+
+      {/* Aviso de limite (Starter) */}
+      {(perto || noLimite) && (
+        <div
+          onClick={() => navigate('/planos')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: noLimite ? 'linear-gradient(135deg, #FEF2F2, #FEE2E2)' : 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+            border: '1px solid ' + (noLimite ? '#FCA5A5' : '#FCD34D'),
+            borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 12,
+            cursor: 'pointer', boxShadow: 'var(--shadow-xs)',
+          }}
+        >
+          <Crown size={18} color={noLimite ? '#B91C1C' : '#D97706'} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 700, color: noLimite ? '#7F1D1D' : '#78350F' }}>
+              {noLimite
+                ? `Você atingiu o limite de ${limiteClientes} clientes do plano ${plano?.nome}`
+                : `${clientes.length} de ${limiteClientes} clientes (${plano?.nome})`}
+            </div>
+            <div style={{ color: noLimite ? '#991B1B' : '#92400E', marginTop: 2 }}>
+              Faça upgrade pro Pro pra cadastrar clientes ilimitadas →
+            </div>
+          </div>
+        </div>
+      )}
 
       {sumidas.length > 0 && busca === '' && (
         <div style={{ marginBottom: 16 }}>
@@ -111,9 +159,16 @@ export default function Clientes() {
         <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma cliente encontrada</p></div>
       )}
 
-      <button className="fab-btn" onClick={() => setShowModal(true)} aria-label="Nova cliente">
+      <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova cliente">
         <Plus size={22} color="white" />
       </button>
+
+      <UpgradeModal
+        aberto={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        titulo="Limite de clientes atingido"
+        descricao={`Você atingiu o limite de ${limiteClientes} clientes do plano ${plano?.nome}. Faça upgrade pro Pro pra cadastrar quantas clientes quiser.`}
+      />
 
       {showModal && (
         <div style={s.overlay} onClick={() => setShowModal(false)}>

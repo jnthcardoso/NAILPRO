@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Plus, FileDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, FileDown, ChevronLeft, ChevronRight, Crown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useAssinatura } from '../contexts/AssinaturaContext'
+import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -45,6 +47,8 @@ async function exportarPDF(pagamentos, periodoLabel) {
 
 export default function Financeiro() {
   const { user } = useAuth()
+  const { temAcesso } = useAssinatura()
+  const [showUpgrade, setShowUpgrade] = useState(false)
   const [pagamentos, setPagamentos] = useState([])
   const [agendamentos, setAgendamentos] = useState([])
   const [showModal, setShowModal] = useState(false)
@@ -84,6 +88,11 @@ export default function Financeiro() {
   }
 
   async function handleExportarPDF() {
+    // 🔒 Bloqueio: PDF é feature Pro
+    if (!temAcesso('exportPDF')) {
+      setShowUpgrade(true)
+      return
+    }
     setExportando(true)
     try {
       await exportarPDF(pagamentos, periodoLabel)
@@ -108,9 +117,10 @@ export default function Financeiro() {
         <button style={s.navBtn} onClick={() => setPeriodoSel(subMonths(periodoSel, 1))}><ChevronLeft size={18} /></button>
         <div style={s.periodoLabel}>{periodoLabel}</div>
         <button style={s.navBtn} onClick={() => setPeriodoSel(addMonths(periodoSel, 1))}><ChevronRight size={18} /></button>
-        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title="Exportar PDF">
+        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title={temAcesso('exportPDF') ? 'Exportar PDF' : 'Disponível no plano Pro'}>
           <FileDown size={16} />
           {exportando ? '...' : 'PDF'}
+          {!temAcesso('exportPDF') && <ProBadge />}
         </button>
       </div>
 
@@ -179,6 +189,13 @@ export default function Financeiro() {
       <button className="fab-btn" onClick={() => setShowModal(true)} aria-label="Registrar pagamento">
         <Plus size={22} color="white" />
       </button>
+
+      <UpgradeModal
+        aberto={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        titulo="Exportação PDF é Pro"
+        descricao="Gere relatórios financeiros profissionais em PDF com 1 clique. Disponível no plano Pro."
+      />
 
       {showModal && (
         <div style={s.overlay} onClick={() => setShowModal(false)}>

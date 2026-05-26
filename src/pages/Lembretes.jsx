@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, MessageCircle, Check, Send, Settings, AlertCircle, Phone } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useAssinatura } from '../contexts/AssinaturaContext'
+import { UpgradeBlock } from '../components/common/UpgradeBlock'
 import { format, addDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -15,6 +17,7 @@ const TABS = [
 export default function Lembretes() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { temAcesso, loading: loadingAssinatura } = useAssinatura()
   const [tab, setTab] = useState('amanha')
   const [config, setConfig] = useState({ mensagem_lembrete: '', nome_salao: '', lembretes_ativos: true })
   const [agendamentos, setAgendamentos] = useState([])
@@ -108,6 +111,18 @@ export default function Lembretes() {
   const pendentes = agendamentos.filter(a => !a.lembrete_enviado_em)
   const enviados = agendamentos.filter(a => a.lembrete_enviado_em)
   const total = agendamentos.length
+
+  // 🔒 Gate: lembretes WhatsApp é feature Pro
+  if (!loadingAssinatura && !temAcesso('lembretesWhatsapp')) {
+    return (
+      <UpgradeBlock
+        titulo="Lembretes WhatsApp são exclusivos do Pro"
+        descricao="Envie lembretes automáticos pras suas clientes com 1 clique, reduza faltas e aumente sua receita."
+        feature="Lembretes via WhatsApp"
+        icon={Bell}
+      />
+    )
+  }
 
   return (
     <div style={s.page}>

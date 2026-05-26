@@ -4,6 +4,7 @@ import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
+import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
@@ -17,7 +18,8 @@ function slugify(text) {
 export default function Configuracoes() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
-  const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial } = useAssinatura()
+  const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial, temAcesso } = useAssinatura()
+  const [showUpgrade, setShowUpgrade] = useState({ aberto: false, feature: '' })
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
@@ -170,6 +172,10 @@ export default function Configuracoes() {
   }
 
   async function handleConectarGoogle() {
+    if (!temAcesso('googleCalendar')) {
+      setShowUpgrade({ aberto: true, feature: 'Google Calendar' })
+      return
+    }
     setGoogleLoading(true)
     setGoogleErro('')
     try {
@@ -373,13 +379,25 @@ export default function Configuracoes() {
       <div style={s.section}>
         <div style={s.sectionTitle}>lembretes via WhatsApp</div>
 
-        <div style={s.toggleRow} onClick={() => setForm(f => ({ ...f, lembretes_ativos: !f.lembretes_ativos }))}>
+        <div
+          style={{ ...s.toggleRow, ...(temAcesso('lembretesWhatsapp') ? {} : { opacity: 0.7 }) }}
+          onClick={() => {
+            if (!temAcesso('lembretesWhatsapp')) {
+              setShowUpgrade({ aberto: true, feature: 'Lembretes WhatsApp' })
+              return
+            }
+            setForm(f => ({ ...f, lembretes_ativos: !f.lembretes_ativos }))
+          }}
+        >
           <div>
-            <div style={s.toggleLabel}>Ativar painel de lembretes</div>
+            <div style={s.toggleLabel}>
+              Ativar painel de lembretes
+              {!temAcesso('lembretesWhatsapp') && <span style={{ marginLeft: 6 }}><ProBadge /></span>}
+            </div>
             <div style={s.hint}>Mostra agendamentos de amanhã no Dashboard com botão para enviar lembretes</div>
           </div>
-          <div style={{ ...s.toggle, ...(form.lembretes_ativos ? s.toggleOn : {}) }}>
-            <div style={{ ...s.toggleThumb, ...(form.lembretes_ativos ? s.toggleThumbOn : {}) }} />
+          <div style={{ ...s.toggle, ...(form.lembretes_ativos && temAcesso('lembretesWhatsapp') ? s.toggleOn : {}) }}>
+            <div style={{ ...s.toggleThumb, ...(form.lembretes_ativos && temAcesso('lembretesWhatsapp') ? s.toggleThumbOn : {}) }} />
           </div>
         </div>
 
@@ -419,13 +437,25 @@ export default function Configuracoes() {
         <div style={s.sectionTitle}>agenda online para clientes</div>
 
         {/* Toggle ativar */}
-        <div style={s.toggleRow} onClick={() => setForm(f => ({ ...f, agenda_publica_ativa: !f.agenda_publica_ativa }))}>
+        <div
+          style={{ ...s.toggleRow, ...(temAcesso('agendaPublica') ? {} : { opacity: 0.7 }) }}
+          onClick={() => {
+            if (!temAcesso('agendaPublica')) {
+              setShowUpgrade({ aberto: true, feature: 'Agenda online' })
+              return
+            }
+            setForm(f => ({ ...f, agenda_publica_ativa: !f.agenda_publica_ativa }))
+          }}
+        >
           <div>
-            <div style={s.toggleLabel}>Ativar agendamento público</div>
+            <div style={s.toggleLabel}>
+              Ativar agendamento público
+              {!temAcesso('agendaPublica') && <span style={{ marginLeft: 6 }}><ProBadge /></span>}
+            </div>
             <div style={s.hint}>Clientes agendam pelo link, sem precisar te chamar</div>
           </div>
-          <div style={{ ...s.toggle, ...(form.agenda_publica_ativa ? s.toggleOn : {}) }}>
-            <div style={{ ...s.toggleThumb, ...(form.agenda_publica_ativa ? s.toggleThumbOn : {}) }} />
+          <div style={{ ...s.toggle, ...(form.agenda_publica_ativa && temAcesso('agendaPublica') ? s.toggleOn : {}) }}>
+            <div style={{ ...s.toggleThumb, ...(form.agenda_publica_ativa && temAcesso('agendaPublica') ? s.toggleThumbOn : {}) }} />
           </div>
         </div>
 
@@ -595,6 +625,13 @@ export default function Configuracoes() {
           <LogOut size={15} /> Sair da conta
         </button>
       </div>
+
+      <UpgradeModal
+        aberto={showUpgrade.aberto}
+        onClose={() => setShowUpgrade({ aberto: false, feature: '' })}
+        titulo={`${showUpgrade.feature} é Pro`}
+        descricao={`Faça upgrade pro plano Pro pra desbloquear ${showUpgrade.feature} e todas as outras features premium.`}
+      />
 
     </div>
   )
