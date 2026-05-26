@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { format, addDays, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import TrialBanner from '../components/common/TrialBanner'
 
 export default function Home() {
   const { user } = useAuth()
@@ -110,6 +111,8 @@ export default function Home() {
         <span style={s.greetingText}>{nomeSalao || `oi ${firstName},`}</span>
         <span style={s.greetingDate}>{format(new Date(), "EEEE", { locale: ptBR })}</span>
       </div>
+
+      <TrialBanner />
 
       {!contaNova && lembretesPendentes > 0 && (
         <div style={s.lembreteChip} onClick={() => navigate('/lembretes')}>

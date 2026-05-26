@@ -13,6 +13,8 @@ import AgendaPublica from './pages/AgendaPublica'
 import Metas from './pages/Metas'
 import BemVindo from './pages/BemVindo'
 import Lembretes from './pages/Lembretes'
+import Planos from './pages/Planos'
+import { AssinaturaProvider } from './contexts/AssinaturaContext'
 import { supabase } from './lib/supabase'
 import './index.css'
 
@@ -73,23 +75,26 @@ function OnboardingGuard({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/agendar/:slug" element={<AgendaPublica />} />
-          <Route path="/bem-vindo" element={<PrivateRoute><OnboardingGuard><BemVindo /></OnboardingGuard></PrivateRoute>} />
-          <Route path="/" element={<PrivateRoute><OnboardingGuard><AppLayout /></OnboardingGuard></PrivateRoute>}>
-            <Route index element={<Home />} />
-            <Route path="metas" element={<Metas />} />
-            <Route path="lembretes" element={<Lembretes />} />
-            <Route path="agenda" element={<Agenda />} />
-            <Route path="clientes" element={<Clientes />} />
-            <Route path="clientes/:id" element={<ClienteDetalhe />} />
-            <Route path="financeiro" element={<Financeiro />} />
-            <Route path="configuracoes" element={<Configuracoes />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AssinaturaProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/agendar/:slug" element={<AgendaPublica />} />
+            <Route path="/bem-vindo" element={<PrivateRoute><OnboardingGuard><BemVindo /></OnboardingGuard></PrivateRoute>} />
+            <Route path="/planos" element={<PrivateRoute><OnboardingGuard><Planos /></OnboardingGuard></PrivateRoute>} />
+            <Route path="/" element={<PrivateRoute><OnboardingGuard><AppLayout /></OnboardingGuard></PrivateRoute>}>
+              <Route index element={<Home />} />
+              <Route path="metas" element={<Metas />} />
+              <Route path="lembretes" element={<Lembretes />} />
+              <Route path="agenda" element={<Agenda />} />
+              <Route path="clientes" element={<Clientes />} />
+              <Route path="clientes/:id" element={<ClienteDetalhe />} />
+              <Route path="financeiro" element={<Financeiro />} />
+              <Route path="configuracoes" element={<Configuracoes />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AssinaturaProvider>
     </AuthProvider>
   )
 }

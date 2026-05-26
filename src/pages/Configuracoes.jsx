@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
@@ -16,6 +17,7 @@ function slugify(text) {
 export default function Configuracoes() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial } = useAssinatura()
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
@@ -220,6 +222,62 @@ export default function Configuracoes() {
 
   return (
     <div style={s.page}>
+
+      {/* ── Minha Assinatura ────────────────── */}
+      <div style={s.section}>
+        <div style={s.sectionTitle}>minha assinatura</div>
+        <div
+          style={{
+            background: isActive
+              ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)'
+              : trialAcabou || isExpired
+                ? 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)'
+                : 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+            border: '1px solid ' + (isActive ? '#86EFAC' : trialAcabou || isExpired ? '#FCA5A5' : '#FCD34D'),
+            borderRadius: 'var(--radius-sm)',
+            padding: '14px 16px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+          onClick={() => navigate('/planos')}
+        >
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: isActive ? '#15803D' : trialAcabou || isExpired ? '#B91C1C' : '#D97706',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Crown size={20} color="white" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+              Plano {plano?.nome || 'Pro'}
+              {isTrialing && !trialAcabou && diasRestantesTrial != null && (
+                <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, padding: '2px 8px', background: 'rgba(0,0,0,0.1)', borderRadius: 'var(--radius-pill)' }}>
+                  Teste • {diasRestantesTrial} {diasRestantesTrial === 1 ? 'dia' : 'dias'}
+                </span>
+              )}
+              {isActive && (
+                <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, padding: '2px 8px', background: '#15803D', color: 'white', borderRadius: 'var(--radius-pill)' }}>
+                  Ativo
+                </span>
+              )}
+              {(trialAcabou || isExpired) && (
+                <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, padding: '2px 8px', background: '#B91C1C', color: 'white', borderRadius: 'var(--radius-pill)' }}>
+                  Expirado
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
+              {isActive && 'Sua assinatura está ativa. Aproveite!'}
+              {isTrialing && !trialAcabou && `Você ainda tem ${diasRestantesTrial} ${diasRestantesTrial === 1 ? 'dia' : 'dias'} de teste grátis`}
+              {(trialAcabou || isExpired) && 'Assine pra continuar usando todas as funcionalidades'}
+            </div>
+          </div>
+          <ChevronRight size={18} color="var(--text2)" />
+        </div>
+      </div>
 
       {/* ── Perfil ──────────────────────────── */}
       <div style={s.section}>
