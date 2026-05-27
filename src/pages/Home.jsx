@@ -115,10 +115,11 @@ export default function Home() {
     const { data: pag7d } = await supabase.from('pagamentos')
       .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicio7d).lte('data', hoje)
     const dias = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() })
+    const ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const receitaDias = dias.map(d => {
       const dStr = format(d, 'yyyy-MM-dd')
       const total = (pag7d || []).filter(p => p.data === dStr).reduce((s, p) => s + (p.valor || 0), 0)
-      return { label: format(d, 'EEE', { locale: ptBR }), valor: total, data: dStr }
+      return { label: ABREV[getDay(d)], valor: total, data: dStr }
     })
     setReceita7Dias(receitaDias)
 
@@ -288,6 +289,7 @@ export default function Home() {
               <input type="date" style={s.datePicker} value={dataFiltro} onChange={e => setDataFiltro(e.target.value)} />
             </div>
 
+            <div style={s.apptList}>
             {agendamentosData.length === 0 ? (
               <div style={s.emptyDay}>
                 <span style={{ color: 'var(--text3)', fontSize: 13 }}>Nenhum atendimento</span>
@@ -316,6 +318,7 @@ export default function Home() {
                 )
               })
             )}
+            </div>
           </div>
 
           {/* ─── INSIGHTS ─── */}
@@ -568,10 +571,11 @@ const s = {
   insightSub: { fontSize: 11, marginTop: 2, opacity: 0.85 },
 
   /* ─── Atendimentos ─── */
-  apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)', marginBottom: 8 },
-  apptTimeBadge: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, fontSize: 14, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 8, padding: '4px 8px', textAlign: 'center' },
-  apptName: { fontSize: 14, fontWeight: 600 },
-  apptService: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
+  apptList: { maxHeight: 'min(70vh, 560px)', overflowY: 'auto', paddingRight: 4 },
+  apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', boxShadow: 'var(--shadow-sm)', marginBottom: 7 },
+  apptTimeBadge: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, fontSize: 13, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '4px 7px', textAlign: 'center', flexShrink: 0 },
+  apptName: { fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  apptService: { fontSize: 11, color: 'var(--text3)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
   emptyDay: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' },
   emptyBtn: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
