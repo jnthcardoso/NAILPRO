@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
+import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
 
 export default function Clientes() {
@@ -17,6 +18,7 @@ export default function Clientes() {
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [diasAlerta, setDiasAlerta] = useState(30)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
+  const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
 
   const limiteClientes = plano?.limites?.clientes ?? Infinity
@@ -36,7 +38,12 @@ export default function Clientes() {
   }
 
   async function salvarCliente() {
-    if (!form.nome) return
+    const novosErros = {}
+    if (!validarNome(form.nome)) novosErros.nome = 'Nome inválido (mín. 2 caracteres)'
+    if (form.telefone && !validarTelefone(form.telefone)) novosErros.telefone = 'WhatsApp deve ter 10 ou 11 dígitos'
+    if (form.email && !validarEmail(form.email)) novosErros.email = 'E-mail inválido'
+    if (Object.keys(novosErros).length > 0) { setErros(novosErros); return }
+
     // 🔒 Bloqueio de limite no Starter
     if (noLimite) {
       setShowModal(false)
@@ -44,10 +51,15 @@ export default function Clientes() {
       return
     }
     setSaving(true)
-    await supabase.from('clientes').insert({ ...form, user_id: user.id })
+    await supabase.from('clientes').insert({
+      ...form,
+      telefone: unformatTelefone(form.telefone),
+      user_id: user.id,
+    })
     setSaving(false)
     setShowModal(false)
     setForm({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
+    setErros({})
     loadClientes()
   }
 
@@ -174,9 +186,38 @@ export default function Clientes() {
         <div style={s.overlay} onClick={() => setShowModal(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
             <div style={s.modalTitle}>Nova cliente</div>
-            <div style={s.field}><label style={s.label}>Nome *</label><input style={s.input} placeholder="Nome completo" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} /></div>
-            <div style={s.field}><label style={s.label}>WhatsApp</label><input style={s.input} placeholder="(51) 99999-9999" value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} /></div>
-            <div style={s.field}><label style={s.label}>E-mail</label><input style={s.input} type="email" placeholder="opcional" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+            <div style={s.field}>
+              <label style={s.label}>Nome *</label>
+              <input
+                style={{ ...s.input, ...(erros.nome ? s.inputErro : {}) }}
+                placeholder="Nome completo"
+                value={form.nome}
+                onChange={e => { setForm({ ...form, nome: e.target.value }); setErros({ ...erros, nome: null }) }}
+              />
+              {erros.nome && <span style={s.erroMsg}>{erros.nome}</span>}
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>WhatsApp</label>
+              <input
+                style={{ ...s.input, ...(erros.telefone ? s.inputErro : {}) }}
+                placeholder="(51) 99999-9999"
+                value={formatTelefone(form.telefone)}
+                onChange={e => { setForm({ ...form, telefone: e.target.value }); setErros({ ...erros, telefone: null }) }}
+                inputMode="numeric"
+              />
+              {erros.telefone && <span style={s.erroMsg}>{erros.telefone}</span>}
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>E-mail</label>
+              <input
+                style={{ ...s.input, ...(erros.email ? s.inputErro : {}) }}
+                type="email"
+                placeholder="opcional"
+                value={form.email}
+                onChange={e => { setForm({ ...form, email: e.target.value }); setErros({ ...erros, email: null }) }}
+              />
+              {erros.email && <span style={s.erroMsg}>{erros.email}</span>}
+            </div>
             <div style={s.field}><label style={s.label}>Data de nascimento</label><input style={s.input} type="date" value={form.data_nascimento} onChange={e => setForm({ ...form, data_nascimento: e.target.value })} /></div>
             <div style={s.field}><label style={s.label}>Observações</label><input style={s.input} placeholder="Preferências, alergias..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} /></div>
             <button style={s.btnPrimary} onClick={salvarCliente} disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar cliente'}</button>
@@ -211,7 +252,9 @@ const s = {
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
+  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', transition: 'border 0.15s' },
+  inputErro: { border: '1.5px solid #FCA5A5', background: '#FEF2F2' },
+  erroMsg: { fontSize: 11, color: '#B91C1C', fontWeight: 600, marginTop: 4 },
   btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
 }

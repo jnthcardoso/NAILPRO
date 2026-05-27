@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check, Sparkles, MessageCircle, Scissors, Target, Users, Calendar, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { formatTelefone, unformatTelefone } from '../lib/formatters'
 
 const SERVICOS_SUGERIDOS = [
   'Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure',
@@ -150,8 +151,8 @@ export default function BemVindo() {
             <input
               style={s.input}
               placeholder="(51) 99999-9999"
-              value={form.whatsapp}
-              onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))}
+              value={formatTelefone(form.whatsapp)}
+              onChange={e => setForm(f => ({ ...f, whatsapp: unformatTelefone(e.target.value) }))}
               autoFocus
               type="tel"
             />

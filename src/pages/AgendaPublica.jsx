@@ -9,6 +9,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 import { NailProLogo, NailDropIcon } from '../components/common/Brand'
+import { formatTelefone, unformatTelefone, validarTelefone } from '../lib/formatters'
 
 const DIAS_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
@@ -73,11 +74,12 @@ export default function AgendaPublica() {
     const errosNovos = {}
     if (!form.nome.trim()) errosNovos.nome = 'Nome obrigatório'
     if (!form.telefone.trim()) errosNovos.telefone = 'WhatsApp obrigatório'
+    else if (!validarTelefone(form.telefone)) errosNovos.telefone = 'WhatsApp inválido (DDD + número)'
     if (!form.servico) errosNovos.servico = 'Selecione um serviço'
     if (Object.keys(errosNovos).length > 0) { setErros(errosNovos); return }
 
     setSaving(true)
-    const telLimpo = form.telefone.replace(/\D/g, '')
+    const telLimpo = unformatTelefone(form.telefone)
 
     // 🔒 RPC seguro: cria cliente (se necessário) + agendamento no contexto do dono do slug
     const { error } = await supabase.rpc('agenda_publica_criar_agendamento', {
@@ -398,8 +400,9 @@ export default function AgendaPublica() {
                 style={{ ...s.input, ...(erros.telefone ? s.inputErr : {}) }}
                 placeholder="(51) 99999-9999"
                 type="tel"
-                value={form.telefone}
-                onChange={e => { setForm(f => ({ ...f, telefone: e.target.value })); setErros(er => ({ ...er, telefone: null })) }}
+                value={formatTelefone(form.telefone)}
+                onChange={e => { setForm(f => ({ ...f, telefone: unformatTelefone(e.target.value) })); setErros(er => ({ ...er, telefone: null })) }}
+                inputMode="numeric"
               />
               {erros.telefone && <span style={s.err}>{erros.telefone}</span>}
             </div>

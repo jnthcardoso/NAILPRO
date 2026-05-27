@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
+import { formatTelefone, unformatTelefone } from '../lib/formatters'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -641,7 +642,7 @@ export default function Agenda() {
               <div style={s.miniForm}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pink)', marginBottom: 8 }}>Nova cliente rápida</div>
                 <input style={s.input} placeholder="Nome *" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} />
-                <input style={{ ...s.input, marginTop: 8 }} placeholder="WhatsApp" value={formCliente.telefone} onChange={e => setFormCliente({ ...formCliente, telefone: e.target.value })} />
+                <input style={{ ...s.input, marginTop: 8 }} placeholder="(51) 99999-9999" value={formatTelefone(formCliente.telefone)} onChange={e => setFormCliente({ ...formCliente, telefone: unformatTelefone(e.target.value) })} inputMode="numeric" />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <button style={{ ...s.btnPrimary, flex: 1, padding: '9px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? '...' : 'Salvar'}</button>
                   <button style={{ ...s.btnSecondary, flex: 1, padding: '9px' }} onClick={() => setShowNovaCliente(false)}>Cancelar</button>

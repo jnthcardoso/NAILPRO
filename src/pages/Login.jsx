@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { NailProLogo } from '../components/common/Brand'
+import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
@@ -16,9 +17,25 @@ export default function Login() {
   const handle = async (e) => {
     e.preventDefault()
     setError('')
-    if (mode === 'signup' && !aceitouTermos) {
-      setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade.')
+
+    // Validações
+    if (!validarEmail(form.email)) {
+      setError('Digite um e-mail válido.')
       return
+    }
+    if (!validarSenha(form.password)) {
+      setError('A senha deve ter no mínimo 6 caracteres.')
+      return
+    }
+    if (mode === 'signup') {
+      if (!validarNome(form.name)) {
+        setError('Digite seu nome completo.')
+        return
+      }
+      if (!aceitouTermos) {
+        setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade.')
+        return
+      }
     }
     setLoading(true)
     if (mode === 'login') {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
 import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
+import { formatTelefone, unformatTelefone } from '../lib/formatters'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -392,9 +393,14 @@ export default function Configuracoes() {
             onChange={e => setForm({ ...form, nome_salao: e.target.value })} />
         </div>
         <div style={s.field}>
-          <label style={s.label}>WhatsApp (com DDD, sem espaços)</label>
-          <input style={s.input} placeholder="51999999999" value={form.whatsapp}
-            onChange={e => setForm({ ...form, whatsapp: e.target.value })} />
+          <label style={s.label}>WhatsApp</label>
+          <input
+            style={s.input}
+            placeholder="(51) 99999-9999"
+            value={formatTelefone(form.whatsapp)}
+            onChange={e => setForm({ ...form, whatsapp: unformatTelefone(e.target.value) })}
+            inputMode="numeric"
+          />
           <div style={s.hint}>Usado para enviar lembretes às clientes</div>
         </div>
       </div>
