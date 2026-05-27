@@ -19,12 +19,13 @@ import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import { AssinaturaProvider } from './contexts/AssinaturaContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { PageSkeleton } from './components/common/Skeleton'
 import { supabase } from './lib/supabase'
 import './index.css'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--pink)' }}>Carregando...</div>
+  if (loading) return <PageSkeleton />
   return user ? children : <Navigate to="/login" replace />
 }
 
@@ -63,7 +64,7 @@ function OnboardingGuard({ children }) {
   }, [user?.id, justCompleted])
 
   if (status === 'checking') {
-    return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--pink)' }}>Carregando...</div>
+    return <PageSkeleton />
   }
 
   if (status === 'needs' && location.pathname !== '/bem-vindo') {

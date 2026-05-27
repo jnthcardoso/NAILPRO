@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { format, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { CardSkeleton } from '../components/common/Skeleton'
 
 const STATUS_LABELS = {
   trialing: { label: 'Teste', color: '#1E40AF', bg: '#DBEAFE' },
@@ -89,7 +90,11 @@ export default function Admin() {
   }
 
   if (loading) {
-    return <div style={s.loading}>Carregando...</div>
+    return (
+      <div style={s.page}>
+        <CardSkeleton count={5} />
+      </div>
+    )
   }
 
   return (
