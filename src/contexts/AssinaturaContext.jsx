@@ -8,8 +8,8 @@ export const PLANOS = {
   starter: {
     id: 'starter',
     nome: 'Starter',
-    precoMensal: 9990,  // R$ 99,90
-    precoAnual: 99900,  // R$ 999,00 (~17% off)
+    precoMensal: 26990,  // R$ 269,90/mês — sem fidelidade
+    precoAnual: 203880,  // R$ 169,90/mês × 12 = R$ 2.038,80 — fidelidade 12 meses
     cor: '#8B2655',
     limites: {
       clientes: 30,
@@ -22,20 +22,20 @@ export const PLANOS = {
     features: [
       '✓ Até 30 clientes',
       '✓ Agenda completa (dia, semana, mês)',
-      '✓ Controle financeiro',
-      '✓ Metas e estimativas',
-      '✓ Foto de perfil + branding',
-      '✗ Lembretes WhatsApp',
+      '✓ Financeiro completo com DRE',
+      '✓ Controle de despesas por categoria',
+      '✓ Metas mensais e anuais',
+      '✗ Exportar relatórios PDF',
+      '✗ Lembretes WhatsApp automáticos',
       '✗ Agenda online (link público)',
       '✗ Google Calendar',
-      '✗ Exportar relatórios PDF',
     ],
   },
   pro: {
     id: 'pro',
     nome: 'Pro',
-    precoMensal: 12990, // R$ 129,90
-    precoAnual: 129900, // R$ 1.299,00 (~17% off)
+    precoMensal: 29990, // R$ 299,90/mês — sem fidelidade
+    precoAnual: 239880, // R$ 199,90/mês × 12 = R$ 2.398,80 — fidelidade 12 meses
     cor: '#D4AF37',
     limites: {
       clientes: Infinity,
@@ -48,13 +48,13 @@ export const PLANOS = {
     features: [
       '✓ Clientes ilimitadas',
       '✓ Agenda completa (dia, semana, mês)',
-      '✓ Controle financeiro',
-      '✓ Metas e estimativas',
-      '✓ Foto de perfil + branding',
-      '✓ Lembretes WhatsApp',
+      '✓ Financeiro completo com DRE',
+      '✓ Controle de despesas por categoria',
+      '✓ Metas mensais e anuais',
+      '✓ Exportar relatórios PDF (mensal e anual)',
+      '✓ Lembretes WhatsApp automáticos',
       '✓ Agenda online (link público)',
       '✓ Integração Google Calendar',
-      '✓ Exportar relatórios PDF',
       '✓ Suporte prioritário',
     ],
   },
@@ -162,15 +162,16 @@ export function useIsAdmin() {
 
 // Helper pra gerar link WhatsApp de assinatura
 export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo }) {
-  const planoNome = PLANOS[planoId]?.nome || 'Pro'
-  const preco = ciclo === 'anual'
-    ? `R$ ${formatPreco(PLANOS[planoId].precoAnual)}/ano`
-    : `R$ ${formatPreco(PLANOS[planoId].precoMensal)}/mês`
+  const plano = PLANOS[planoId]
+  const planoNome = plano?.nome || 'Pro'
+  const precoMes = ciclo === 'anual'
+    ? `R$ ${formatPreco(plano.precoAnual / 12)}/mês (cobrado anualmente — R$ ${formatPreco(plano.precoAnual)}) — fidelidade 12 meses`
+    : `R$ ${formatPreco(plano.precoMensal)}/mês — sem fidelidade`
 
   const msg = `Olá! Quero assinar o NailPro 💅
 
-📋 Plano: ${planoNome} (${ciclo})
-💰 Valor: ${preco}
+📋 Plano: ${planoNome} (${ciclo === 'anual' ? 'Anual' : 'Mensal'})
+💰 Valor: ${precoMes}
 👤 Nome: ${nomeUsuario || ''}
 📧 E-mail: ${emailUsuario || ''}
 

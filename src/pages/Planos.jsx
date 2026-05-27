@@ -40,7 +40,7 @@ export default function Planos() {
         <p style={s.heroSub}>
           {trialAcabou
             ? 'Assine pra continuar usando todas as funcionalidades.'
-            : 'Escolha o plano ideal pro seu momento. Sem fidelidade, cancela quando quiser.'}
+            : 'Escolha o plano ideal pro seu momento. No mensal, cancela quando quiser.'}
         </p>
       </div>
 
@@ -57,7 +57,7 @@ export default function Planos() {
             style={{ ...s.toggleBtn, ...(ciclo === 'anual' ? s.toggleBtnActive : {}) }}
             onClick={() => setCiclo('anual')}
           >
-            Anual <span style={s.economiaBadge}>economize 17%</span>
+            Anual <span style={s.economiaBadge}>até 37% off</span>
           </button>
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function Planos() {
         />
         <FaqItem
           q="Tem fidelidade?"
-          a="Não. Você pode cancelar a qualquer momento, sem multa."
+          a="Depende do ciclo. No plano mensal não tem fidelidade — você cancela quando quiser, sem multa. No plano anual há fidelidade de 12 meses, por isso o valor é bem mais barato."
         />
         <FaqItem
           q="Meus dados ficam guardados se eu cancelar?"
@@ -115,8 +115,8 @@ export default function Planos() {
 }
 
 function PlanoCard({ plano, ciclo, isAtual, isPopular, onAssinar }) {
-  const preco = ciclo === 'anual' ? plano.precoAnual : plano.precoMensal
-  const precoMensalEq = ciclo === 'anual' ? plano.precoAnual / 12 : plano.precoMensal
+  const precoMensalExibido = ciclo === 'anual' ? plano.precoAnual / 12 : plano.precoMensal
+  const totalAnual = plano.precoAnual
 
   return (
     <div style={{ ...s.planoCard, ...(isPopular ? s.planoCardPro : {}) }}>
@@ -126,13 +126,16 @@ function PlanoCard({ plano, ciclo, isAtual, isPopular, onAssinar }) {
       <div style={s.planoNome}>{plano.nome}</div>
       <div style={s.planoPreco}>
         <span style={s.precoMoeda}>R$</span>
-        <span style={s.precoValor}>{formatPreco(precoMensalEq)}</span>
+        <span style={s.precoValor}>{formatPreco(precoMensalExibido)}</span>
         <span style={s.precoCiclo}>/mês</span>
       </div>
-      {ciclo === 'anual' && (
-        <div style={s.precoAnualNota}>
-          R$ {formatPreco(preco)} cobrados anualmente
+      {ciclo === 'anual' ? (
+        <div style={{ marginBottom: 4 }}>
+          <div style={s.precoAnualNota}>R$ {formatPreco(totalAnual)} cobrados anualmente</div>
+          <div style={s.fidelidadeTag}>📅 Fidelidade de 12 meses</div>
         </div>
+      ) : (
+        <div style={s.semFidelidadeTag}>✓ Sem fidelidade — cancela quando quiser</div>
       )}
 
       <button
@@ -202,7 +205,9 @@ const s = {
   precoMoeda: { fontSize: 14, fontWeight: 600, color: 'var(--text2)' },
   precoValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 38, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
   precoCiclo: { fontSize: 13, color: 'var(--text3)', fontWeight: 500 },
-  precoAnualNota: { fontSize: 11, color: 'var(--text3)', marginBottom: 12 },
+  precoAnualNota: { fontSize: 11, color: 'var(--text3)', marginBottom: 3 },
+  fidelidadeTag: { fontSize: 11, fontWeight: 600, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 6, padding: '3px 8px', display: 'inline-block', marginBottom: 10 },
+  semFidelidadeTag: { fontSize: 11, fontWeight: 600, color: '#15803D', background: '#DCFCE7', border: '1px solid #4ADE80', borderRadius: 6, padding: '3px 8px', display: 'inline-block', marginBottom: 10 },
   btnAssinar: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--surface2)', color: 'var(--text)', border: '1.5px solid var(--border2)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 14, marginBottom: 18, fontFamily: 'inherit', transition: 'all 0.15s' },
   btnAssinarPro: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', border: 'none', boxShadow: '0 6px 16px rgba(139,38,85,0.3)' },
   btnAssinarAtual: { background: 'var(--green-bg)', color: 'var(--green)', border: '1.5px solid var(--green)', cursor: 'default', boxShadow: 'none' },
