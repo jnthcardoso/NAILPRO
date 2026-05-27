@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
 import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
 import { supabase } from '../lib/supabase'
@@ -27,6 +27,7 @@ export default function Configuracoes() {
   const [excluindo, setExcluindo] = useState(false)
   const [exportando, setExportando] = useState(false)
   const [permNotif, setPermNotif] = useState('default')
+  const [tab, setTab] = useState('perfil')
 
   useEffect(() => { setPermNotif(statusPermissao()) }, [])
 
@@ -278,8 +279,31 @@ export default function Configuracoes() {
   return (
     <div style={s.page}>
 
+      {/* ── Tabs ────────────────────────────── */}
+      <div style={tabs.bar}>
+        {[
+          { id: 'perfil', label: 'Perfil', icon: User },
+          { id: 'agenda', label: 'Agenda', icon: Calendar },
+          { id: 'integracoes', label: 'Integrações', icon: Plug },
+          { id: 'conta', label: 'Conta', icon: Briefcase },
+        ].map(t => {
+          const Ico = t.icon
+          const ativo = tab === t.id
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{ ...tabs.btn, ...(ativo ? tabs.btnAtivo : {}) }}
+            >
+              <Ico size={15} />
+              <span>{t.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Minha Assinatura ────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'conta' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>minha assinatura</div>
         <div
           style={{
@@ -335,7 +359,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Perfil ──────────────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'perfil' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>perfil do salão</div>
         
         {/* Foto de Perfil */}
@@ -376,7 +400,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Metas e Alertas ─────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'perfil' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>metas e alertas</div>
         <div style={s.field}>
           <label style={s.label}>Meta mensal de receita (R$)</label>
@@ -393,7 +417,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Serviços padrão ─────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'perfil' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>serviços padrão</div>
         <div style={s.hint}>Aparecem como atalho ao criar agendamentos e na agenda online</div>
         {form.servicos_padrao.length > 0 && (
@@ -425,7 +449,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Lembretes WhatsApp ──────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>lembretes via WhatsApp</div>
 
         <div
@@ -482,7 +506,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Agenda Online ───────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'agenda' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>agenda online para clientes</div>
 
         {/* Card: Usar link externo (Google Calendar, Calendly, etc) */}
@@ -623,7 +647,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Google Agenda ───────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>Google Agenda</div>
         <div style={s.googleCard}>
           <svg width="22" height="22" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
@@ -657,18 +681,57 @@ export default function Configuracoes() {
         )}
       </div>
 
-      <button
-        style={{ ...s.btnPrimary, ...(saved ? s.btnSaved : {}) }}
-        onClick={salvar}
-        disabled={saving || saved}
-      >
-        {saved ? '✓ Configurações salvas!' : saving ? 'Salvando...' : 'Salvar configurações'}
-      </button>
+      {/* ── Notificações ────────────────────── */}
+      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
+        <div style={s.sectionTitle}>notificações do navegador</div>
+        {notificacoesSuportadas() ? (
+          <div style={{ padding: '14px 16px', background: permNotif === 'granted' ? 'linear-gradient(135deg, #F0FDF4, #DCFCE7)' : 'linear-gradient(135deg, #FEF3C7, #FDE68A)', border: '1px solid ' + (permNotif === 'granted' ? '#86EFAC' : '#FCD34D'), borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: permNotif === 'granted' ? '#15803D' : '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {permNotif === 'granted' ? <Bell size={18} color="white" /> : <BellOff size={18} color="white" />}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: permNotif === 'granted' ? '#15803D' : '#78350F' }}>
+                  {permNotif === 'granted' && 'Notificações ativas ✓'}
+                  {permNotif === 'denied' && 'Notificações bloqueadas'}
+                  {permNotif === 'default' && 'Ativar notificações'}
+                </div>
+                <div style={{ fontSize: 11, color: permNotif === 'granted' ? '#166534' : '#92400E', marginTop: 2 }}>
+                  {permNotif === 'granted' && 'Você será avisada dos atendimentos do dia ao abrir o app'}
+                  {permNotif === 'denied' && 'Libere nas configurações do navegador'}
+                  {permNotif === 'default' && 'Receba alertas dos atendimentos e lembretes pendentes'}
+                </div>
+              </div>
+              {permNotif !== 'granted' && permNotif !== 'denied' && (
+                <button
+                  onClick={ativarNotificacoes}
+                  style={{ background: '#D97706', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Ativar
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: 12, fontSize: 12, color: 'var(--text3)' }}>Seu navegador não suporta notificações.</div>
+        )}
+      </div>
 
-      <div style={s.divider} />
+      {/* Botão Salvar aparece apenas nas abas com campos editáveis */}
+      {(tab === 'perfil' || tab === 'agenda' || tab === 'integracoes') && (
+        <button
+          style={{ ...s.btnPrimary, ...(saved ? s.btnSaved : {}) }}
+          onClick={salvar}
+          disabled={saving || saved}
+        >
+          {saved ? '✓ Configurações salvas!' : saving ? 'Salvando...' : 'Salvar configurações'}
+        </button>
+      )}
+
+      <div style={{ ...s.divider, display: tab === 'conta' ? 'none' : 'block' }} />
 
       {/* ── Conta ───────────────────────────── */}
-      <div style={s.section}>
+      <div style={{ ...s.section, display: tab === 'conta' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>conta</div>
         <div style={s.infoRow}>
           <span style={s.infoLabel}>E-mail</span>
@@ -731,37 +794,6 @@ export default function Configuracoes() {
         <button style={s.logoutBtn} onClick={handleLogout}>
           <LogOut size={15} /> Sair da conta
         </button>
-
-        {/* Notificações */}
-        {notificacoesSuportadas() && (
-          <div style={{ marginTop: 18, padding: '14px 16px', background: permNotif === 'granted' ? 'linear-gradient(135deg, #F0FDF4, #DCFCE7)' : 'linear-gradient(135deg, #FEF3C7, #FDE68A)', border: '1px solid ' + (permNotif === 'granted' ? '#86EFAC' : '#FCD34D'), borderRadius: 'var(--radius-sm)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: permNotif === 'granted' ? '#15803D' : '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {permNotif === 'granted' ? <Bell size={18} color="white" /> : <BellOff size={18} color="white" />}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: permNotif === 'granted' ? '#15803D' : '#78350F' }}>
-                  {permNotif === 'granted' && 'Notificações ativas ✓'}
-                  {permNotif === 'denied' && 'Notificações bloqueadas'}
-                  {permNotif === 'default' && 'Ativar notificações'}
-                </div>
-                <div style={{ fontSize: 11, color: permNotif === 'granted' ? '#166534' : '#92400E', marginTop: 2 }}>
-                  {permNotif === 'granted' && 'Você será avisada dos atendimentos do dia ao abrir o app'}
-                  {permNotif === 'denied' && 'Libere nas configurações do navegador'}
-                  {permNotif === 'default' && 'Receba alertas dos atendimentos e lembretes pendentes'}
-                </div>
-              </div>
-              {permNotif !== 'granted' && permNotif !== 'denied' && (
-                <button
-                  onClick={ativarNotificacoes}
-                  style={{ background: '#D97706', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Ativar
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Exportar dados (LGPD Art. 18, IV - direito de portabilidade) */}
         <div style={{ marginTop: 18, padding: '14px 16px', background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #93C5FD', borderRadius: 'var(--radius-sm)' }}>
@@ -951,4 +983,46 @@ const s = {
   overlayDelete: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.75)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' },
   modalDelete: { background: 'var(--surface)', borderRadius: 20, padding: '28px 24px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' },
   iconDelete: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #B91C1C 0%, #DC2626 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 20px rgba(185,28,28,0.3)' },
+}
+
+const tabs = {
+  bar: {
+    display: 'flex',
+    gap: 4,
+    background: 'var(--surface)',
+    borderRadius: 'var(--radius-sm)',
+    padding: 4,
+    marginBottom: 20,
+    boxShadow: 'var(--shadow-xs)',
+    border: '1px solid var(--border)',
+    overflowX: 'auto',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+  },
+  btn: {
+    flex: 1,
+    minWidth: 80,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: '10px 12px',
+    borderRadius: 8,
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text3)',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+  },
+  btnAtivo: {
+    background: 'var(--pink)',
+    color: 'white',
+    boxShadow: 'var(--shadow-pink)',
+    fontWeight: 700,
+  },
 }
