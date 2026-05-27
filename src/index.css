@@ -225,7 +225,7 @@ input:focus, select:focus, textarea:focus {
   100% { background-position: -200% 0; }
 }
 
-/* ── Home Dashboard Grid (2 colunas no desktop) ── */
+/* ── Home Dashboard Grid (3 colunas no desktop largo) ── */
 .home-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -233,17 +233,24 @@ input:focus, select:focus, textarea:focus {
 }
 .home-col-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .home-col-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.home-col-actions { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
-@media (min-width: 900px) {
+/* Em telas medias (900-1199px): 2 colunas - acoes vao pra baixo da side */
+@media (min-width: 900px) and (max-width: 1199px) {
   .home-grid {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    gap: 28px;
+    gap: 24px;
+  }
+  .home-col-actions {
+    grid-column: 2;
   }
 }
 
+/* Em telas grandes (>=1200px): 3 colunas */
 @media (min-width: 1200px) {
   .home-grid {
-    gap: 36px;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.75fr);
+    gap: 28px;
   }
 }
 

@@ -484,31 +484,40 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══════ AÇÕES RÁPIDAS ═══════ */}
-      {!contaNova && (
-        <div style={s.quickActions}>
-          <div style={s.sectionTitle}>⚡ ações rápidas</div>
-          <button style={{ ...s.qaBtn, ...s.qaBtnPink }} onClick={() => navigate('/agenda')}>
-            <div style={{ ...s.qaIcon, background: 'rgba(255,255,255,0.2)' }}><Plus size={16} color="white" /></div>
-            <span>Novo agendamento</span>
-            <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
-          </button>
-          <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/clientes')}>
-            <div style={{ ...s.qaIcon, background: 'var(--pink-light)' }}><UserPlus size={16} color="var(--pink)" /></div>
-            <span>Nova cliente</span>
-            <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
-          </button>
-          <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/lembretes')}>
-            <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><MessageCircle size={16} color="#15803D" /></div>
-            <span>Enviar lembretes</span>
-            <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
-          </button>
         </div>
-      )}
+        {/* Fim coluna 2 (KPIs + chart) */}
 
-        </div>
+        {/* ═══════ COLUNA 3 - AÇÕES RÁPIDAS ═══════ */}
+        {!contaNova && (
+          <div className="home-col-actions">
+            <div style={s.quickActions}>
+              <div style={s.sectionTitle}>⚡ ações rápidas</div>
+              <button style={{ ...s.qaBtn, ...s.qaBtnPink }} onClick={() => navigate('/agenda')}>
+                <div style={{ ...s.qaIcon, background: 'rgba(255,255,255,0.2)' }}><Plus size={16} color="white" /></div>
+                <span>Novo agendamento</span>
+                <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
+              </button>
+              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/clientes')}>
+                <div style={{ ...s.qaIcon, background: 'var(--pink-light)' }}><UserPlus size={16} color="var(--pink)" /></div>
+                <span>Nova cliente</span>
+                <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+              </button>
+              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/lembretes')}>
+                <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><MessageCircle size={16} color="#15803D" /></div>
+                <span>Enviar lembretes</span>
+                <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+              </button>
+              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/financeiro')}>
+                <div style={{ ...s.qaIcon, background: '#FEF3C7' }}><DollarSign size={16} color="#D97706" /></div>
+                <span>Ver financeiro</span>
+                <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
-      {/* ════ Fim do grid 2 colunas ════ */}
+      {/* ════ Fim do grid 3 colunas ════ */}
 
       <button className="fab-btn" onClick={() => navigate('/agenda')} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
