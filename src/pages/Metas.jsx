@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { TrendingUp, Plus, X, Target } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import { format, endOfMonth, endOfYear, startOfMonth, startOfYear, endOfWeek, startOfWeek, subWeeks } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export default function Metas() {
   const { user } = useAuth()
+  const { confirmar, sucesso } = useToast()
   const [metas, setMetas] = useState([])
   const [progressos, setProgressos] = useState({})
   const [estimativas, setEstimativas] = useState({ dia: 0, semana: 0, mes: 0, ano: 0 })
@@ -77,9 +79,29 @@ export default function Metas() {
     loadMetas()
   }
 
-  async function excluirMeta(id) {
-    await supabase.from('metas').delete().eq('id', id)
-    setMetas(m => m.filter(x => x.id !== id))
+  async function excluirMeta(meta) {
+    const ok = await confirmar({
+      titulo: 'Excluir esta meta?',
+      mensagem: `${meta.tipo === 'mes' ? 'Meta mensal' : meta.tipo === 'ano' ? 'Meta anual' : 'Meta semanal'} - R$ ${meta.valor_meta.toFixed(0)}`,
+      confirmarLabel: 'Sim, excluir',
+      cancelarLabel: 'Cancelar',
+      tipo: 'perigo',
+    })
+    if (!ok) return
+
+    const metaAnterior = meta
+    await supabase.from('metas').delete().eq('id', meta.id)
+    setMetas(m => m.filter(x => x.id !== meta.id))
+
+    sucesso('Meta excluída', {
+      duracao: 5000,
+      acaoLabel: 'Desfazer',
+      acao: async () => {
+        const { tipo, periodo, valor_meta } = metaAnterior
+        await supabase.from('metas').insert({ tipo, periodo, valor_meta, user_id: user.id })
+        loadMetas()
+      },
+    })
   }
 
   function labelPeriodo(meta) {
@@ -148,7 +170,7 @@ export default function Metas() {
                 </div>
                 <div style={s.metaPeriodo}>{labelPeriodo(meta)}</div>
               </div>
-              <button style={s.deleteBtn} onClick={() => excluirMeta(meta.id)}><X size={14} /></button>
+              <button style={s.deleteBtn} onClick={() => excluirMeta(meta)}><X size={14} /></button>
             </div>
             <div style={s.metaValores}>
               <span style={s.mono}>R$ {realizado.toFixed(0)} <span style={{ color: 'var(--text3)' }}>/ R$ {meta.valor_meta.toFixed(0)}</span></span>

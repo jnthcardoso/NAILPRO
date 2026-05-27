@@ -18,6 +18,7 @@ import Admin from './pages/Admin'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import { AssinaturaProvider } from './contexts/AssinaturaContext'
+import { ToastProvider } from './contexts/ToastContext'
 import { supabase } from './lib/supabase'
 import './index.css'
 
@@ -79,6 +80,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AssinaturaProvider>
+        <ToastProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -100,6 +102,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+        </ToastProvider>
       </AssinaturaProvider>
     </AuthProvider>
   )

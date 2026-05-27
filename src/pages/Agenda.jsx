@@ -3,6 +3,7 @@ import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calend
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
+import { useToast } from '../contexts/ToastContext'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -28,6 +29,7 @@ const VIEWS = ['Dia', 'Semana', 'Mês']
 
 export default function Agenda() {
   const { user } = useAuth()
+  const { sucesso, erro, confirmar } = useToast()
   const [view, setView] = useState('Semana')
   const [dataSel, setDataSel] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState([])
@@ -183,16 +185,36 @@ export default function Agenda() {
   }
 
   async function atualizarStatus(ag, novoStatus) {
-    await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id)
-    if (novoStatus === 'cancelado' && ag.google_event_id && googleConectado) {
-      try {
-        await excluirEvento(ag.google_event_id)
-        showGoogleMsg('Evento removido do Google Agenda ✓', 'success')
-      } catch (e) {
-        console.error('Google Agenda excluir erro:', e)
-        showGoogleMsg(`Google Agenda: ${e.message}`, 'error')
-      }
+    // 🛡️ Confirmação para cancelamento
+    if (novoStatus === 'cancelado') {
+      const ok = await confirmar({
+        titulo: 'Cancelar agendamento?',
+        mensagem: `${ag.clientes?.nome} - ${ag.servico} em ${ag.data?.split('-').reverse().slice(0, 2).join('/')} às ${ag.horario?.slice(0, 5)}`,
+        confirmarLabel: 'Sim, cancelar',
+        cancelarLabel: 'Voltar',
+        tipo: 'perigo',
+      })
+      if (!ok) return
     }
+
+    const statusAnterior = ag.status
+    await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id)
+
+    if (novoStatus === 'cancelado') {
+      if (ag.google_event_id && googleConectado) {
+        try { await excluirEvento(ag.google_event_id) } catch (e) { console.error(e) }
+      }
+      // Toast com undo
+      sucesso('Agendamento cancelado', {
+        duracao: 5000,
+        acaoLabel: 'Desfazer',
+        acao: async () => {
+          await supabase.from('agendamentos').update({ status: statusAnterior }).eq('id', ag.id)
+          loadAgendamentos()
+        },
+      })
+    }
+
     if (novoStatus === 'realizado') {
       setAgSelecionado(ag)
       setFormPag({ forma: 'pix', status: 'pago', valor: String(ag.valor || '') })
