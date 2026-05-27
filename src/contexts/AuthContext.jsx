@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
 
+const INATIVIDADE_MS = 30 * 60 * 1000 // 30 minutos
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -17,6 +19,22 @@ export function AuthProvider({ children }) {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  // ── Auto-logout por inatividade ───────────────────
+  useEffect(() => {
+    if (!user) return
+    let timer = setTimeout(() => supabase.auth.signOut(), INATIVIDADE_MS)
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => supabase.auth.signOut(), INATIVIDADE_MS)
+    }
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove']
+    events.forEach(ev => document.addEventListener(ev, reset, { passive: true }))
+    return () => {
+      clearTimeout(timer)
+      events.forEach(ev => document.removeEventListener(ev, reset))
+    }
+  }, [user])
 
   const signIn = async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })

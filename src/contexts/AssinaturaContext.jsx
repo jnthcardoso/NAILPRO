@@ -165,6 +165,11 @@ export function useIsAdmin() {
   return { isAdmin, checking }
 }
 
+// Helper pra sanitizar texto pra uso em mensagens externas
+function sanitizarTexto(str) {
+  return (str || '').replace(/[<>'"\\]/g, '').trim().slice(0, 200)
+}
+
 // Helper pra gerar link WhatsApp de assinatura
 export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo }) {
   const plano = PLANOS[planoId]
@@ -173,12 +178,15 @@ export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo 
     ? `R$ ${formatPreco(plano.precoAnual / 12)}/mês (cobrado anualmente — R$ ${formatPreco(plano.precoAnual)}) — fidelidade 12 meses`
     : `R$ ${formatPreco(plano.precoMensal)}/mês — sem fidelidade`
 
+  const nomeSeguro = sanitizarTexto(nomeUsuario)
+  const emailSeguro = sanitizarTexto(emailUsuario)
+
   const msg = `Olá! Quero assinar o NailPro 💅
 
 📋 Plano: ${planoNome} (${ciclo === 'anual' ? 'Anual' : 'Mensal'})
 💰 Valor: ${precoMes}
-👤 Nome: ${nomeUsuario || ''}
-📧 E-mail: ${emailUsuario || ''}
+👤 Nome: ${nomeSeguro}
+📧 E-mail: ${emailSeguro}
 
 Pode me enviar o PIX/link de pagamento? Obrigada!`
 

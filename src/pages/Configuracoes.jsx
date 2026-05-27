@@ -66,6 +66,7 @@ export default function Configuracoes() {
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
   const [slugErro, setSlugErro] = useState('')
+  const [senhaAtual, setSenhaAtual] = useState('')
   const [novaSenha, setNovaSenha] = useState('')
   const [confirmaSenha, setConfirmaSenha] = useState('')
   const [senhaSaving, setSenhaSaving] = useState(false)
@@ -190,7 +191,8 @@ export default function Configuracoes() {
   }
 
   function gerarSlug() {
-    const base = slugify(form.nome_salao || user?.email?.split('@')[0] || 'meu-salao')
+    // Usa apenas o nome do salão — não expõe o e-mail do usuário na URL pública
+    const base = slugify(form.nome_salao || 'meu-salao')
     setForm(f => ({ ...f, slug: base }))
     setSlugErro('')
   }
@@ -241,8 +243,12 @@ export default function Configuracoes() {
   }
 
   async function alterarSenha() {
+    if (!senhaAtual) {
+      setSenhaMsg({ tipo: 'erro', texto: 'Informe sua senha atual' })
+      return
+    }
     if (!novaSenha || novaSenha.length < 6) {
-      setSenhaMsg({ tipo: 'erro', texto: 'A senha deve ter pelo menos 6 caracteres' })
+      setSenhaMsg({ tipo: 'erro', texto: 'A nova senha deve ter pelo menos 6 caracteres' })
       return
     }
     if (novaSenha !== confirmaSenha) {
@@ -250,12 +256,23 @@ export default function Configuracoes() {
       return
     }
     setSenhaSaving(true)
+    // Verificar senha atual antes de alterar
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: senhaAtual,
+    })
+    if (loginError) {
+      setSenhaSaving(false)
+      setSenhaMsg({ tipo: 'erro', texto: 'Senha atual incorreta' })
+      return
+    }
     const { error } = await supabase.auth.updateUser({ password: novaSenha })
     setSenhaSaving(false)
     if (error) {
       setSenhaMsg({ tipo: 'erro', texto: error.message })
     } else {
       setSenhaMsg({ tipo: 'ok', texto: 'Senha alterada com sucesso!' })
+      setSenhaAtual('')
       setNovaSenha('')
       setConfirmaSenha('')
       setTimeout(() => setSenhaMsg(null), 3000)
@@ -770,6 +787,13 @@ export default function Configuracoes() {
         <div style={{ marginTop: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>Alterar senha</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              style={s.input}
+              type="password"
+              placeholder="Senha atual"
+              value={senhaAtual}
+              onChange={e => setSenhaAtual(e.target.value)}
+            />
             <input
               style={s.input}
               type="password"

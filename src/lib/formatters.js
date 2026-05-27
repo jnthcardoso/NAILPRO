@@ -24,7 +24,8 @@ export function formatMoeda(centavosOuValor) {
 
 // ─── Validadores ───
 export function validarEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim())
+  // RFC-compatible: local@domain.tld — rejeita espaços, exige TLD de 2+ letras
+  return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test((email || '').trim())
 }
 
 export function validarTelefone(telefone) {

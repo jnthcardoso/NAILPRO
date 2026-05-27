@@ -45,6 +45,8 @@ export default function AgendaPublica() {
   const [form, setForm] = useState({ nome: '', telefone: '', servico: '', observacoes: '' })
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
+  const [tentativas, setTentativas] = useState(0)
+  const [bloqueadoAte, setBloqueadoAte] = useState(null)
 
   useEffect(() => { loadConfig() }, [slug])
   useEffect(() => { if (dataSel && config) carregarSlotsOcupados() }, [dataSel])
@@ -73,12 +75,26 @@ export default function AgendaPublica() {
   }
 
   async function confirmar() {
+    // Rate limiting: máx 3 tentativas em 5 minutos
+    if (bloqueadoAte && new Date() < bloqueadoAte) {
+      const restante = Math.ceil((bloqueadoAte - new Date()) / 1000 / 60)
+      toastErro(`Muitas tentativas. Aguarde ${restante} minuto(s) para tentar novamente.`)
+      return
+    }
+
     const errosNovos = {}
     if (!form.nome.trim()) errosNovos.nome = 'Nome obrigatório'
     if (!form.telefone.trim()) errosNovos.telefone = 'WhatsApp obrigatório'
     else if (!validarTelefone(form.telefone)) errosNovos.telefone = 'WhatsApp inválido (DDD + número)'
     if (!form.servico) errosNovos.servico = 'Selecione um serviço'
     if (Object.keys(errosNovos).length > 0) { setErros(errosNovos); return }
+
+    const novasTentativas = tentativas + 1
+    setTentativas(novasTentativas)
+    if (novasTentativas >= 3) {
+      setBloqueadoAte(new Date(Date.now() + 5 * 60 * 1000))
+      setTentativas(0)
+    }
 
     setSaving(true)
     const telLimpo = unformatTelefone(form.telefone)
