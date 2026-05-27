@@ -4,8 +4,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import BarChart, { HBarChart } from '../components/charts/BarChart'
+import DonutChart from '../components/charts/DonutChart'
 
 async function exportarPDF(pagamentos, periodoLabel) {
   const { default: jsPDF } = await import('jspdf')
@@ -50,6 +52,8 @@ export default function Financeiro() {
   const { temAcesso } = useAssinatura()
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [pagamentos, setPagamentos] = useState([])
+  const [pagamentos6m, setPagamentos6m] = useState([])
+  const [agendamentosMes, setAgendamentosMes] = useState([])
   const [agendamentos, setAgendamentos] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
@@ -65,6 +69,23 @@ export default function Financeiro() {
     const fim = format(endOfMonth(periodoSel), 'yyyy-MM-dd')
     const { data } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('user_id', user.id).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     setPagamentos(data || [])
+
+    // Últimos 6 meses para gráfico de receita histórica
+    const inicio6m = format(startOfMonth(subMonths(periodoSel, 5)), 'yyyy-MM-dd')
+    const { data: data6m } = await supabase.from('pagamentos')
+      .select('data, valor, status')
+      .eq('user_id', user.id)
+      .eq('status', 'pago')
+      .gte('data', inicio6m).lte('data', fim)
+    setPagamentos6m(data6m || [])
+
+    // Agendamentos do mês para top serviços
+    const { data: ags } = await supabase.from('agendamentos')
+      .select('servico, valor')
+      .eq('user_id', user.id)
+      .gte('data', inicio).lte('data', fim)
+      .neq('status', 'cancelado')
+    setAgendamentosMes(ags || [])
   }
 
   async function loadAgendamentos() {
@@ -110,6 +131,44 @@ export default function Financeiro() {
   const filtrados = filtro === 'todos' ? pagamentos : pagamentos.filter(p => p.status === filtro)
   const periodoLabel = format(periodoSel, "MMMM 'de' yyyy", { locale: ptBR })
 
+  // ─── Dados dos gráficos ───
+  // 1. Receita últimos 6 meses (bar chart)
+  const meses6 = eachMonthOfInterval({ start: subMonths(periodoSel, 5), end: periodoSel })
+  const dadosReceita6m = meses6.map(mes => {
+    const ini = format(startOfMonth(mes), 'yyyy-MM-dd')
+    const fim = format(endOfMonth(mes), 'yyyy-MM-dd')
+    const total = pagamentos6m
+      .filter(p => p.data >= ini && p.data <= fim)
+      .reduce((s, p) => s + (p.valor || 0), 0)
+    return { label: format(mes, 'MMM', { locale: ptBR }), valor: total }
+  })
+
+  // 2. Top 5 serviços do mês (HBar)
+  const servicosMap = {}
+  agendamentosMes.forEach(a => {
+    if (!a.servico) return
+    if (!servicosMap[a.servico]) servicosMap[a.servico] = { qtd: 0, valor: 0 }
+    servicosMap[a.servico].qtd += 1
+    servicosMap[a.servico].valor += a.valor || 0
+  })
+  const topServicos = Object.entries(servicosMap)
+    .map(([nome, v]) => ({ label: nome, valor: v.valor, qtd: v.qtd }))
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 5)
+
+  // 3. Distribuição forma pagamento (donut)
+  const FORMA_LABEL = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito' }
+  const FORMA_COR = { pix: '#15803D', dinheiro: '#D4AF37', cartao_debito: '#3B82F6', cartao_credito: '#8B2655' }
+  const formaMap = {}
+  pagamentos.filter(p => p.status === 'pago').forEach(p => {
+    formaMap[p.forma] = (formaMap[p.forma] || 0) + (p.valor || 0)
+  })
+  const dadosFormas = Object.entries(formaMap).map(([forma, valor]) => ({
+    label: FORMA_LABEL[forma] || forma,
+    valor,
+    cor: FORMA_COR[forma] || '#888',
+  }))
+
   return (
     <div style={s.page}>
       {/* Navegação de período */}
@@ -146,6 +205,43 @@ export default function Financeiro() {
             R$ {ticketMedio.toFixed(0)}
           </div>
           <div style={s.cardSub}>por atendimento</div>
+        </div>
+      </div>
+
+      {/* ── Análises (gráficos) ──────────────── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={s.sectionTitle}>📊 análises do mês</div>
+
+        <div style={s.graficosGrid}>
+          {/* Receita últimos 6 meses */}
+          <div style={s.graficoCard}>
+            <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
+            <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={140} />
+          </div>
+
+          {/* Distribuição formas pagamento */}
+          <div style={s.graficoCard}>
+            <div style={s.graficoTitulo}>Como você recebeu</div>
+            {dadosFormas.length === 0
+              ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
+              : <DonutChart
+                  data={dadosFormas}
+                  size={140}
+                  centerLabel={`R$ ${recebido.toFixed(0)}`}
+                  centerSub="recebido"
+                />
+            }
+          </div>
+
+          {/* Top serviços */}
+          <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
+            <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
+            <HBarChart
+              data={topServicos}
+              cor="var(--pink)"
+              formatValor={(v) => `R$ ${v.toFixed(0)}`}
+            />
+          </div>
         </div>
       </div>
 
@@ -260,6 +356,9 @@ const s = {
   cardValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 600, lineHeight: 1 },
   cardSub: { fontSize: 10, color: 'var(--text3)', marginTop: 4 },
   filtros: { display: 'flex', gap: 8, marginBottom: 18 },
+  graficosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 },
+  graficoCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 14px 10px', boxShadow: 'var(--shadow-xs)' },
+  graficoTitulo: { fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 },
   filtroBtn: { padding: '7px 16px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' },
   filtroBtnActive: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', boxShadow: 'var(--shadow-pink)' },
   finCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 10, boxShadow: 'var(--shadow-xs)' },
