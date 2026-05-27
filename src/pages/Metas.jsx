@@ -1,38 +1,53 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, Calendar, DollarSign, Zap } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   format, endOfMonth, endOfYear, startOfMonth, startOfYear,
-  endOfWeek, startOfWeek, subWeeks, eachDayOfInterval, getDay, parseISO
+  endOfWeek, startOfWeek, subMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-// Dias úteis padrão se não tiver config (seg-sex)
 const DIAS_UTEIS_PADRAO = [1, 2, 3, 4, 5]
 
 export default function Metas() {
   const { user } = useAuth()
   const { confirmar, sucesso, erro: toastErro } = useToast()
+  const [tab, setTab] = useState('metas')
+
+  // ── Metas ───────────────────────────────────────────
   const [metas, setMetas] = useState([])
   const [progressos, setProgressos] = useState({})
-  const [estimativas, setEstimativas] = useState({ dia: 0, semana: 0, mes: 0, ano: 0 })
   const [diasFuncionamento, setDiasFuncionamento] = useState(DIAS_UTEIS_PADRAO)
   const [showModal, setShowModal] = useState(false)
-  const [editando, setEditando] = useState(null) // null = criar, objeto = editar
+  const [editando, setEditando] = useState(null)
   const [form, setForm] = useState({ tipo: 'mes', periodo: format(new Date(), 'yyyy-MM'), valor_meta: '' })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { if (user) { loadConfig(); loadMetas(); loadEstimativas() } }, [user])
+  // ── Previsão ─────────────────────────────────────────
+  const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0 })
 
+  // ── KPIs ─────────────────────────────────────────────
+  const [kpiMeses, setKpiMeses] = useState('3')
+  const [retencaoDias, setRetencaoDias] = useState(45)
+  const [faturServico, setFaturServico] = useState([])
+  const [taxaRetencao, setTaxaRetencao] = useState(null)
+  const [novasClientes, setNovasClientes] = useState([])
+  const [loadingKpi, setLoadingKpi] = useState(false)
+
+  useEffect(() => { if (user) { loadConfig(); loadMetas(); loadPrevisao() } }, [user])
+  useEffect(() => { if (user && tab === 'kpis') loadKpis() }, [user, tab, kpiMeses, retencaoDias])
+
+  // ── Config ────────────────────────────────────────────
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
       .select('dias_semana').eq('user_id', user.id).maybeSingle()
     if (data?.dias_semana?.length) setDiasFuncionamento(data.dias_semana)
   }
 
-  async function loadEstimativas() {
+  // ── Previsão ──────────────────────────────────────────
+  async function loadPrevisao() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const fimSemana = format(endOfWeek(new Date(), { locale: ptBR }), 'yyyy-MM-dd')
     const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
@@ -40,18 +55,23 @@ export default function Metas() {
 
     const { data: ags } = await supabase
       .from('agendamentos').select('data, valor, status')
-      .eq('user_id', user.id).gte('data', hoje).neq('status', 'cancelado')
+      .eq('user_id', user.id)
+      .gte('data', hoje)
+      .neq('status', 'cancelado')
 
-    if (ags) {
-      setEstimativas({
-        dia: ags.filter(a => a.data === hoje).reduce((s, a) => s + (a.valor || 0), 0),
-        semana: ags.filter(a => a.data <= fimSemana).reduce((s, a) => s + (a.valor || 0), 0),
-        mes: ags.filter(a => a.data <= fimMes).reduce((s, a) => s + (a.valor || 0), 0),
-        ano: ags.filter(a => a.data <= fimAno).reduce((s, a) => s + (a.valor || 0), 0),
-      })
-    }
+    if (!ags) return
+    const soma = (arr) => arr.reduce((s, a) => s + (a.valor || 0), 0)
+    setPrevisao({
+      hoje: soma(ags.filter(a => a.data === hoje)),
+      semana: soma(ags.filter(a => a.data > hoje && a.data <= fimSemana)),
+      mes: soma(ags.filter(a => a.data > fimSemana && a.data <= fimMes)),
+      ano: soma(ags.filter(a => a.data > fimMes && a.data <= fimAno)),
+      confirmados: soma(ags.filter(a => a.status === 'confirmado')),
+      pendentes: soma(ags.filter(a => a.status === 'pendente')),
+    })
   }
 
+  // ── Metas ─────────────────────────────────────────────
   async function loadMetas() {
     const { data } = await supabase.from('metas').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     setMetas(data || [])
@@ -79,21 +99,15 @@ export default function Metas() {
     return { inicio: meta.periodo, fim: meta.periodo, inicioDate: new Date(meta.periodo + 'T12:00:00'), fimDate: new Date(meta.periodo + 'T12:00:00') }
   }
 
-  // Calcula projeção baseada em dias úteis trabalhados
   function calcularProjecao(meta, realizado) {
     const { inicioDate, fimDate } = periodoMeta(meta)
     const hoje = new Date()
     const fimReal = hoje > fimDate ? fimDate : hoje
-
-    // Período inteiro
     const todosDias = eachDayOfInterval({ start: inicioDate, end: fimDate })
     const diasUteisTotal = todosDias.filter(d => diasFuncionamento.includes(getDay(d))).length
-
-    // Dias úteis trabalhados até hoje (ou fim, se já passou)
     if (fimReal < inicioDate) return 0
     const diasAteAgora = eachDayOfInterval({ start: inicioDate, end: fimReal })
     const diasUteisTrabalhados = diasAteAgora.filter(d => diasFuncionamento.includes(getDay(d))).length
-
     if (diasUteisTrabalhados === 0 || diasUteisTotal === 0) return 0
     return (realizado / diasUteisTrabalhados) * diasUteisTotal
   }
@@ -110,31 +124,16 @@ export default function Metas() {
   }
 
   async function salvarMeta() {
-    if (!form.valor_meta || parseFloat(form.valor_meta) <= 0) {
-      toastErro('Informe um valor de meta válido')
-      return
-    }
+    if (!form.valor_meta || parseFloat(form.valor_meta) <= 0) { toastErro('Informe um valor válido'); return }
     setSaving(true)
-    const dados = {
-      user_id: user.id,
-      tipo: form.tipo,
-      periodo: form.periodo,
-      valor_meta: parseFloat(form.valor_meta),
-    }
-    let resp
-    if (editando) {
-      resp = await supabase.from('metas').update(dados).eq('id', editando.id)
-    } else {
-      resp = await supabase.from('metas').insert(dados)
-    }
+    const dados = { user_id: user.id, tipo: form.tipo, periodo: form.periodo, valor_meta: parseFloat(form.valor_meta) }
+    const resp = editando
+      ? await supabase.from('metas').update(dados).eq('id', editando.id)
+      : await supabase.from('metas').insert(dados)
     setSaving(false)
-    if (resp.error) {
-      toastErro('Erro ao salvar: ' + resp.error.message)
-      return
-    }
+    if (resp.error) { toastErro('Erro ao salvar'); return }
     sucesso(editando ? 'Meta atualizada ✓' : 'Meta criada ✓')
-    fecharModal()
-    loadMetas()
+    fecharModal(); loadMetas()
   }
 
   function abrirModalNova() {
@@ -145,17 +144,12 @@ export default function Metas() {
 
   function abrirModalEdicao(meta) {
     setEditando(meta)
-    setForm({
-      tipo: meta.tipo,
-      periodo: meta.periodo,
-      valor_meta: String(meta.valor_meta),
-    })
+    setForm({ tipo: meta.tipo, periodo: meta.periodo, valor_meta: String(meta.valor_meta) })
     setShowModal(true)
   }
 
   function fecharModal() {
-    setShowModal(false)
-    setEditando(null)
+    setShowModal(false); setEditando(null)
     setForm({ tipo: 'mes', periodo: format(new Date(), 'yyyy-MM'), valor_meta: '' })
   }
 
@@ -163,19 +157,14 @@ export default function Metas() {
     const ok = await confirmar({
       titulo: 'Excluir esta meta?',
       mensagem: `${labelTipo(meta.tipo)} de ${labelPeriodo(meta)} - R$ ${meta.valor_meta.toFixed(0)}`,
-      confirmarLabel: 'Sim, excluir',
-      cancelarLabel: 'Cancelar',
-      tipo: 'perigo',
+      confirmarLabel: 'Sim, excluir', cancelarLabel: 'Cancelar', tipo: 'perigo',
     })
     if (!ok) return
-
     const metaAnterior = meta
     await supabase.from('metas').delete().eq('id', meta.id)
     setMetas(m => m.filter(x => x.id !== meta.id))
-
     sucesso('Meta excluída', {
-      duracao: 5000,
-      acaoLabel: 'Desfazer',
+      duracao: 5000, acaoLabel: 'Desfazer',
       acao: async () => {
         const { tipo, periodo, valor_meta } = metaAnterior
         await supabase.from('metas').insert({ tipo, periodo, valor_meta, user_id: user.id })
@@ -197,137 +186,385 @@ export default function Metas() {
     return `Semana ${meta.periodo}`
   }
 
-  const ESTIM = [
-    { label: 'Hoje', valor: estimativas.dia },
-    { label: 'Semana', valor: estimativas.semana },
-    { label: 'Mês', valor: estimativas.mes },
-    { label: 'Ano', valor: estimativas.ano },
-  ]
+  // ── KPIs ─────────────────────────────────────────────
+  async function loadKpis() {
+    setLoadingKpi(true)
+    const inicio = format(subMonths(new Date(), parseInt(kpiMeses)), 'yyyy-MM-dd')
+    const hoje = new Date()
+
+    // 1. Faturamento por serviço
+    const { data: agsServ } = await supabase
+      .from('agendamentos')
+      .select('servico, valor, pagamentos(valor, status)')
+      .eq('user_id', user.id)
+      .eq('status', 'realizado')
+      .gte('data', inicio)
+
+    if (agsServ) {
+      const grouped = {}
+      agsServ.forEach(a => {
+        const pag = a.pagamentos?.find(p => p.status === 'pago')
+        const val = pag ? pag.valor : (a.valor || 0)
+        if (val > 0) grouped[a.servico] = (grouped[a.servico] || 0) + val
+      })
+      const sorted = Object.entries(grouped)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([nome, valor]) => ({ nome, valor }))
+      const totalFatur = sorted.reduce((s, x) => s + x.valor, 0)
+      setFaturServico(sorted.map(x => ({ ...x, pct: totalFatur > 0 ? Math.round((x.valor / totalFatur) * 100) : 0 })))
+    }
+
+    // 2. Taxa de retenção
+    const { data: agsRet } = await supabase
+      .from('agendamentos')
+      .select('cliente_id, data')
+      .eq('user_id', user.id)
+      .in('status', ['realizado', 'confirmado'])
+      .order('data')
+
+    if (agsRet) {
+      const byClient = {}
+      agsRet.forEach(a => {
+        if (!byClient[a.cliente_id]) byClient[a.cliente_id] = []
+        byClient[a.cliente_id].push(a.data)
+      })
+      let analisados = 0, retornaram = 0
+      Object.values(byClient).forEach(visitas => {
+        const primeiraVisita = parseISO(visitas[0])
+        if (differenceInDays(hoje, primeiraVisita) < retencaoDias) return // too recent
+        analisados++
+        for (let i = 0; i < visitas.length - 1; i++) {
+          const diff = differenceInDays(parseISO(visitas[i + 1]), parseISO(visitas[i]))
+          if (diff <= retencaoDias) { retornaram++; break }
+        }
+      })
+      setTaxaRetencao({
+        taxa: analisados > 0 ? Math.round((retornaram / analisados) * 100) : 0,
+        retornaram, analisados,
+      })
+    }
+
+    // 3. Novas clientes por mês (últimos 6 meses)
+    const { data: cls } = await supabase
+      .from('clientes')
+      .select('created_at')
+      .eq('user_id', user.id)
+
+    if (cls) {
+      const byMonth = {}
+      cls.forEach(c => {
+        const mes = format(new Date(c.created_at), 'yyyy-MM')
+        byMonth[mes] = (byMonth[mes] || 0) + 1
+      })
+      const months = []
+      for (let i = 5; i >= 0; i--) {
+        const d = subMonths(new Date(), i)
+        const key = format(d, 'yyyy-MM')
+        months.push({ label: format(d, 'MMM/yy', { locale: ptBR }), qtd: byMonth[key] || 0 })
+      }
+      setNovasClientes(months)
+    }
+
+    setLoadingKpi(false)
+  }
+
+  const maxFatur = faturServico.length > 0 ? faturServico[0].valor : 1
+  const maxNovas = novasClientes.length > 0 ? Math.max(...novasClientes.map(m => m.qtd), 1) : 1
 
   return (
     <div style={s.page}>
-
-      <div style={s.sectionTitle}>receita estimada (agendamentos futuros)</div>
-      <div style={s.grid4}>
-        {ESTIM.map(({ label, valor }) => (
-          <div key={label} style={s.estimCard}>
-            <div style={s.estimLabel}>{label}</div>
-            <div style={s.estimValor}>R$ {valor.toFixed(0)}</div>
-          </div>
-        ))}
+      {/* Tab bar */}
+      <div style={tabs.bar}>
+        <button style={{ ...tabs.btn, ...(tab === 'metas' ? tabs.btnAtivo : {}) }} onClick={() => setTab('metas')}>
+          <Target size={14} /> Metas
+        </button>
+        <button style={{ ...tabs.btn, ...(tab === 'previsao' ? tabs.btnAtivo : {}) }} onClick={() => setTab('previsao')}>
+          <TrendingUp size={14} /> Previsão
+        </button>
+        <button style={{ ...tabs.btn, ...(tab === 'kpis' ? tabs.btnAtivo : {}) }} onClick={() => setTab('kpis')}>
+          <BarChart2 size={14} /> KPIs
+        </button>
       </div>
 
-      <div style={{ ...s.sectionTitle, marginTop: 20 }}>metas cadastradas</div>
-
-      {metas.length === 0 && (
-        <div style={s.empty}>
-          <Target size={32} color="var(--text3)" style={{ marginBottom: 10 }} />
-          <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma meta ainda</p>
-          <p style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Clique em + para definir uma meta</p>
-        </div>
+      {/* ── TAB: METAS ─────────────────────────────────── */}
+      {tab === 'metas' && (
+        <>
+          {metas.length === 0 && (
+            <div style={s.empty}>
+              <Target size={32} color="var(--text3)" style={{ marginBottom: 10 }} />
+              <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma meta ainda</p>
+              <p style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Clique em + para definir uma meta</p>
+            </div>
+          )}
+          {metas.map(meta => {
+            const realizado = progressos[meta.id] || 0
+            const projecao = calcularProjecao(meta, realizado)
+            const { diasUteisTotal, diasUteisTrabalhados, diasUteisRestantes } = dadosPeriodoAtual(meta)
+            const pct = Math.min(100, Math.round((realizado / meta.valor_meta) * 100))
+            const projecaoPct = Math.round((projecao / meta.valor_meta) * 100)
+            const cor = pct >= 100 ? 'var(--green)' : pct >= 60 ? '#D97706' : 'var(--pink)'
+            const bgCor = pct >= 100 ? 'var(--green-bg)' : pct >= 60 ? '#FEF3C7' : 'var(--pink-light)'
+            const txtCor = pct >= 100 ? 'var(--green)' : pct >= 60 ? '#92400E' : 'var(--pink)'
+            const projOnTrack = projecao >= meta.valor_meta
+            return (
+              <div key={meta.id} style={s.metaCard}>
+                <div style={s.metaHeader}>
+                  <div style={{ flex: 1 }}>
+                    <div style={s.metaTipo}>{meta.tipo === 'mes' ? '📅' : meta.tipo === 'semana' ? '🗓' : '🎯'} {labelTipo(meta)}</div>
+                    <div style={s.metaPeriodo}>{labelPeriodo(meta)}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button style={s.iconBtn} onClick={() => abrirModalEdicao(meta)}><Pencil size={14} /></button>
+                    <button style={s.iconBtn} onClick={() => excluirMeta(meta)}><X size={14} /></button>
+                  </div>
+                </div>
+                <div style={s.indicadoresGrid}>
+                  <div style={s.indicador}>
+                    <div style={s.indicadorLabel}><Target size={11} /> Meta</div>
+                    <div style={{ ...s.indicadorValor, color: 'var(--text)' }}>R$ {meta.valor_meta.toFixed(0)}</div>
+                  </div>
+                  <div style={s.indicador}>
+                    <div style={s.indicadorLabel}><DollarSign size={11} /> Realizado</div>
+                    <div style={{ ...s.indicadorValor, color: cor }}>R$ {realizado.toFixed(0)}</div>
+                  </div>
+                  <div style={s.indicador}>
+                    <div style={s.indicadorLabel}><Zap size={11} /> Projeção</div>
+                    <div style={{ ...s.indicadorValor, color: projOnTrack ? 'var(--green)' : '#D97706' }}>R$ {projecao.toFixed(0)}</div>
+                  </div>
+                </div>
+                <div style={s.metaValores}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--text3)' }}>
+                    {diasUteisTrabalhados} de {diasUteisTotal} dias úteis · faltam {diasUteisRestantes}d
+                  </span>
+                  <span style={{ ...s.pctBadge, background: bgCor, color: txtCor }}>{pct}%</span>
+                </div>
+                <div style={s.barBg}>
+                  <div style={{ ...s.barFill, width: `${pct}%`, background: cor }} />
+                  {projecao > realizado && (
+                    <div style={{ ...s.barProjFill, width: `${Math.min(100, projecaoPct)}%` }} />
+                  )}
+                </div>
+                <div style={{ ...s.projecaoInsight, color: projOnTrack ? '#15803D' : '#9A3412', background: projOnTrack ? '#F0FDF4' : '#FEF3C7', borderColor: projOnTrack ? '#86EFAC' : '#FCD34D' }}>
+                  <TrendingUp size={13} />
+                  <span>
+                    {projOnTrack
+                      ? `📈 Você está no ritmo de bater a meta! Projetado: R$ ${projecao.toFixed(0)} (${projecaoPct}%)`
+                      : `⚠️ Ritmo abaixo. Precisa de R$ ${((meta.valor_meta - realizado) / Math.max(1, diasUteisRestantes)).toFixed(0)}/dia útil pra bater`}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+          <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova meta">
+            <Plus size={22} color="white" />
+          </button>
+        </>
       )}
 
-      {metas.map(meta => {
-        const realizado = progressos[meta.id] || 0
-        const projecao = calcularProjecao(meta, realizado)
-        const { diasUteisTotal, diasUteisTrabalhados, diasUteisRestantes } = dadosPeriodoAtual(meta)
-        const pct = Math.min(100, Math.round((realizado / meta.valor_meta) * 100))
-        const projecaoPct = Math.round((projecao / meta.valor_meta) * 100)
-        const cor = pct >= 100 ? 'var(--green)' : pct >= 60 ? '#D97706' : 'var(--pink)'
-        const bgCor = pct >= 100 ? 'var(--green-bg)' : pct >= 60 ? '#FEF3C7' : 'var(--pink-light)'
-        const txtCor = pct >= 100 ? 'var(--green)' : pct >= 60 ? '#92400E' : 'var(--pink)'
-        const projOnTrack = projecao >= meta.valor_meta
+      {/* ── TAB: PREVISÃO ──────────────────────────────── */}
+      {tab === 'previsao' && (
+        <>
+          <div style={s.kpiInfo}>
+            💡 Receita dos agendamentos confirmados e pendentes nos próximos períodos
+          </div>
 
-        return (
-          <div key={meta.id} style={s.metaCard}>
-            <div style={s.metaHeader}>
-              <div style={{ flex: 1 }}>
-                <div style={s.metaTipo}>
-                  {meta.tipo === 'mes' ? '📅' : meta.tipo === 'semana' ? '🗓' : '🎯'} {labelTipo(meta)}
-                </div>
-                <div style={s.metaPeriodo}>{labelPeriodo(meta)}</div>
+          {/* Receita futura por período (não cumulativo) */}
+          <div style={s.sectionLabel}>Receita prevista por período</div>
+          <div style={s.grid4}>
+            {[
+              { label: 'Hoje', valor: previsao.hoje, sub: 'agendamentos de hoje' },
+              { label: 'Próx. dias', valor: previsao.semana, sub: 'restante desta semana' },
+              { label: 'Restante do mês', valor: previsao.mes, sub: 'após esta semana' },
+              { label: 'Restante do ano', valor: previsao.ano, sub: 'após este mês' },
+            ].map(({ label, valor, sub }) => (
+              <div key={label} style={s.estimCard}>
+                <div style={s.estimLabel}>{label}</div>
+                <div style={s.estimValor}>R$ {valor.toFixed(0)}</div>
+                <div style={s.estimSub}>{sub}</div>
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button style={s.iconBtn} onClick={() => abrirModalEdicao(meta)} title="Editar">
-                  <Pencil size={14} />
-                </button>
-                <button style={s.iconBtn} onClick={() => excluirMeta(meta)} title="Excluir">
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Grid de indicadores */}
-            <div style={s.indicadoresGrid}>
-              <div style={s.indicador}>
-                <div style={s.indicadorLabel}><Target size={11} /> Meta</div>
-                <div style={{ ...s.indicadorValor, color: 'var(--text)' }}>R$ {meta.valor_meta.toFixed(0)}</div>
+          {/* Pipeline por status */}
+          <div style={{ ...s.sectionLabel, marginTop: 20 }}>Pipeline por status</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ ...s.pipelineCard, borderColor: '#4ADE80', background: '#F0FDF4' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmados</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#15803D' }}>
+                R$ {previsao.confirmados.toFixed(0)}
               </div>
-              <div style={s.indicador}>
-                <div style={s.indicadorLabel}><DollarSign size={11} /> Realizado</div>
-                <div style={{ ...s.indicadorValor, color: cor }}>R$ {realizado.toFixed(0)}</div>
+              <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>já confirmado pela cliente</div>
+            </div>
+            <div style={{ ...s.pipelineCard, borderColor: '#FCD34D', background: '#FFFBEB' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Aguardando</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#D97706' }}>
+                R$ {previsao.pendentes.toFixed(0)}
               </div>
-              <div style={s.indicador}>
-                <div style={s.indicadorLabel}><Zap size={11} /> Projeção</div>
-                <div style={{ ...s.indicadorValor, color: projOnTrack ? 'var(--green)' : '#D97706' }}>R$ {projecao.toFixed(0)}</div>
-              </div>
-            </div>
-
-            {/* Barra de progresso */}
-            <div style={s.metaValores}>
-              <span style={{ ...s.mono, fontSize: 12, color: 'var(--text3)' }}>
-                {diasUteisTrabalhados} de {diasUteisTotal} dias úteis · faltam {diasUteisRestantes}d
-              </span>
-              <span style={{ ...s.pctBadge, background: bgCor, color: txtCor }}>{pct}%</span>
-            </div>
-            <div style={s.barBg}>
-              <div style={{ ...s.barFill, width: `${pct}%`, background: cor }} />
-              {projecao > realizado && (
-                <div style={{ ...s.barProjFill, width: `${Math.min(100, projecaoPct)}%` }} />
-              )}
-            </div>
-
-            {/* Insight de projeção */}
-            <div style={{ ...s.projecaoInsight, color: projOnTrack ? '#15803D' : '#9A3412', background: projOnTrack ? '#F0FDF4' : '#FEF3C7', borderColor: projOnTrack ? '#86EFAC' : '#FCD34D' }}>
-              <TrendingUp size={13} />
-              <span>
-                {projOnTrack
-                  ? `📈 Você está no ritmo de bater a meta! Projetado: R$ ${projecao.toFixed(0)} (${projecaoPct}%)`
-                  : `⚠️ Ritmo abaixo. Precisa de R$ ${((meta.valor_meta - realizado) / Math.max(1, diasUteisRestantes)).toFixed(0)}/dia útil pra bater`}
-              </span>
+              <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>pendente de confirmação</div>
             </div>
           </div>
-        )
-      })}
 
-      <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova meta">
-        <Plus size={22} color="white" />
-      </button>
+          <div style={s.totalPrevisao}>
+            <span style={{ color: 'var(--text2)', fontSize: 13 }}>Total previsto</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' }}>
+              R$ {(previsao.confirmados + previsao.pendentes).toFixed(0)}
+            </span>
+          </div>
+        </>
+      )}
 
+      {/* ── TAB: KPIs ──────────────────────────────────── */}
+      {tab === 'kpis' && (
+        <>
+          {/* Controles globais */}
+          <div style={s.kpiControles}>
+            <div style={{ flex: 1 }}>
+              <div style={s.controlLabel}>Período de análise</div>
+              <div style={s.segmented}>
+                {[['1', '1 mês'], ['3', '3 meses'], ['6', '6 meses'], ['12', '12 meses']].map(([v, l]) => (
+                  <button key={v} style={{ ...s.segBtn, ...(kpiMeses === v ? s.segBtnAtivo : {}) }} onClick={() => setKpiMeses(v)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <button style={s.reloadBtn} onClick={loadKpis} title="Atualizar">
+              <RefreshCw size={14} style={{ animation: loadingKpi ? 'spin 1s linear infinite' : 'none' }} />
+            </button>
+          </div>
+
+          {loadingKpi ? (
+            <div style={s.loading}>Calculando KPIs...</div>
+          ) : (
+            <>
+              {/* 1. Faturamento por serviço */}
+              <div style={s.kpiCard}>
+                <div style={s.kpiCardTitle}><BarChart2 size={15} color="var(--pink)" /> Faturamento por serviço</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Últimos {kpiMeses} {parseInt(kpiMeses) === 1 ? 'mês' : 'meses'}</div>
+                {faturServico.length === 0
+                  ? <div style={s.kpiEmpty}>Sem dados no período selecionado</div>
+                  : faturServico.map((item, i) => (
+                    <div key={i} style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{item.nome}</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--pink)', fontWeight: 600 }}>
+                            R$ {item.valor.toFixed(0)}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text3)', minWidth: 28, textAlign: 'right' }}>{item.pct}%</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 3, background: 'var(--pink)', width: `${(item.valor / maxFatur) * 100}%`, transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+
+              {/* 2. Taxa de retenção */}
+              <div style={s.kpiCard}>
+                <div style={s.kpiCardTitle}><RefreshCw size={15} color="var(--pink)" /> Taxa de retenção</div>
+
+                {/* Configuração do período */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500, whiteSpace: 'nowrap' }}>Retorno esperado em até</span>
+                  <select
+                    style={{ ...s.miniSelect }}
+                    value={retencaoDias}
+                    onChange={e => setRetencaoDias(parseInt(e.target.value))}
+                  >
+                    {[14, 21, 30, 45, 60, 90].map(d => (
+                      <option key={d} value={d}>{d} dias</option>
+                    ))}
+                  </select>
+                </div>
+
+                {taxaRetencao === null ? (
+                  <div style={s.kpiEmpty}>Calculando...</div>
+                ) : (
+                  <>
+                    {/* Indicador principal */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+                      <div style={{
+                        width: 80, height: 80, borderRadius: '50%',
+                        background: `conic-gradient(${taxaRetencao.taxa >= 70 ? 'var(--green)' : taxaRetencao.taxa >= 40 ? '#D97706' : 'var(--pink)'} ${taxaRetencao.taxa * 3.6}deg, var(--border) 0deg)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        boxShadow: 'inset 0 0 0 12px var(--surface)'
+                      }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{taxaRetencao.taxa}%</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                          {taxaRetencao.taxa >= 70 ? '😍 Excelente retenção!' : taxaRetencao.taxa >= 40 ? '😊 Retenção boa' : '⚠️ Retenção baixa'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                          {taxaRetencao.retornaram} de {taxaRetencao.analisados} clientes voltaram dentro de {retencaoDias} dias
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+                          {taxaRetencao.analisados - taxaRetencao.retornaram} não retornaram no prazo
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: 4,
+                        background: taxaRetencao.taxa >= 70 ? 'var(--green)' : taxaRetencao.taxa >= 40 ? '#D97706' : 'var(--pink)',
+                        width: `${taxaRetencao.taxa}%`, transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 3. Novas clientes por mês */}
+              <div style={s.kpiCard}>
+                <div style={s.kpiCardTitle}><Users size={15} color="var(--pink)" /> Novas clientes por mês</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Últimos 6 meses</div>
+                {novasClientes.every(m => m.qtd === 0) ? (
+                  <div style={s.kpiEmpty}>Sem dados suficientes</div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 80 }}>
+                    {novasClientes.map((m, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: m.qtd > 0 ? 'var(--pink)' : 'var(--text3)' }}>
+                          {m.qtd > 0 ? m.qtd : '—'}
+                        </span>
+                        <div style={{ width: '100%', borderRadius: '3px 3px 0 0', background: m.qtd > 0 ? 'var(--pink)' : 'var(--border)', height: `${Math.max(4, (m.qtd / maxNovas) * 52)}px`, transition: 'height 0.4s ease', opacity: i === novasClientes.length - 1 ? 1 : 0.6 + (i * 0.08) }} />
+                        <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{m.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Total nos últimos 6 meses</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: 'var(--pink)' }}>
+                    {novasClientes.reduce((s, m) => s + m.qtd, 0)} clientes
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Modal de meta ──────────────────────────────── */}
       {showModal && (
         <div style={s.overlay} onClick={fecharModal}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
             <div style={s.modalTitle}>{editando ? '✏️ Editar meta' : '🎯 Nova meta'}</div>
-
             <div style={s.field}>
               <label style={s.label}>Tipo</label>
-              <select
-                style={s.input}
-                value={form.tipo}
-                onChange={e => {
-                  const tipo = e.target.value
-                  const periodo = tipo === 'ano' ? format(new Date(), 'yyyy') : format(new Date(), 'yyyy-MM')
-                  setForm(f => ({ ...f, tipo, periodo }))
-                }}
-                disabled={!!editando}
-              >
+              <select style={s.input} value={form.tipo} onChange={e => {
+                const tipo = e.target.value
+                const periodo = tipo === 'ano' ? format(new Date(), 'yyyy') : format(new Date(), 'yyyy-MM')
+                setForm(f => ({ ...f, tipo, periodo }))
+              }} disabled={!!editando}>
                 <option value="mes">Mensal</option>
                 <option value="semana">Semanal</option>
                 <option value="ano">Anual</option>
               </select>
-              {editando && <div style={s.hint}>Tipo não pode ser alterado após criação</div>}
+              {editando && <div style={{ fontSize: 11, color: 'var(--text3)' }}>Tipo não pode ser alterado após criação</div>}
             </div>
-
             <div style={s.field}>
               <label style={s.label}>Período</label>
               {form.tipo === 'ano'
@@ -335,21 +572,11 @@ export default function Metas() {
                 : <input style={s.input} type="month" value={form.periodo} onChange={e => setForm(f => ({ ...f, periodo: e.target.value }))} />
               }
             </div>
-
             <div style={s.field}>
               <label style={s.label}>Valor da meta (R$)</label>
-              <input
-                style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
-                type="number"
-                placeholder="5000"
-                value={form.valor_meta}
-                onChange={e => setForm(f => ({ ...f, valor_meta: e.target.value }))}
-              />
+              <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="5000" value={form.valor_meta} onChange={e => setForm(f => ({ ...f, valor_meta: e.target.value }))} />
             </div>
-
-            <button style={s.btnPrimary} onClick={salvarMeta} disabled={saving}>
-              {saving ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar meta'}
-            </button>
+            <button style={s.btnPrimary} onClick={salvarMeta} disabled={saving}>{saving ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar meta'}</button>
             <button style={s.btnSecondary} onClick={fecharModal}>Cancelar</button>
           </div>
         </div>
@@ -358,13 +585,25 @@ export default function Metas() {
   )
 }
 
+const tabs = {
+  bar: { display: 'flex', gap: 4, background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: 4, marginBottom: 20, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 10 },
+  btn: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 12px', borderRadius: 8, background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  btnAtivo: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)', fontWeight: 700 },
+}
+
 const s = {
   page: { padding: 16, paddingBottom: 80 },
-  sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 },
-  estimCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', boxShadow: 'var(--shadow-xs)' },
-  estimLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 },
-  estimValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 600, color: 'var(--pink)' },
+  sectionLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 },
+  // Previsão
+  kpiInfo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 13px', fontSize: 12, color: 'var(--text2)', marginBottom: 16 },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 14 },
+  estimCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 13px', boxShadow: 'var(--shadow-xs)' },
+  estimLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 },
+  estimValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' },
+  estimSub: { fontSize: 10, color: 'var(--text3)', marginTop: 2 },
+  pipelineCard: { background: 'var(--surface)', border: '1.5px solid', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-xs)' },
+  totalPrevisao: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginTop: 12, boxShadow: 'var(--shadow-xs)' },
+  // Metas
   metaCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 15px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' },
   metaHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, gap: 8 },
   metaTipo: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
@@ -375,19 +614,30 @@ const s = {
   indicadorLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 },
   indicadorValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700 },
   metaValores: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  mono: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13 },
   pctBadge: { fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 'var(--radius-pill)' },
   barBg: { position: 'relative', height: 8, borderRadius: 4, background: 'var(--border)', overflow: 'hidden', marginBottom: 10 },
   barFill: { height: '100%', borderRadius: 4, transition: 'width 0.5s ease', position: 'relative', zIndex: 2 },
   barProjFill: { position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 4, background: 'repeating-linear-gradient(45deg, rgba(217,119,6,0.3) 0px, rgba(217,119,6,0.3) 4px, transparent 4px, transparent 8px)', zIndex: 1 },
   projecaoInsight: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 8, border: '1px solid', fontSize: 11, fontWeight: 600, lineHeight: 1.4 },
+  // KPIs
+  kpiControles: { display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 16 },
+  controlLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6 },
+  segmented: { display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 3 },
+  segBtn: { flex: 1, padding: '6px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
+  segBtnAtivo: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
+  reloadBtn: { width: 36, height: 36, borderRadius: 8, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', marginBottom: 12, boxShadow: 'var(--shadow-sm)' },
+  kpiCardTitle: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
+  kpiEmpty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' },
+  miniSelect: { padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--pink)', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
+  loading: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '40px 0' },
+  // Modal
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', textAlign: 'center' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 13 },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 2 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  hint: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
   input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
   btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
