@@ -417,182 +417,190 @@ export default function Financeiro() {
         </button>
       </div>
 
-      {/* KPIs principais */}
-      <div style={s.grid4}>
-        <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
-          <div style={s.cardLabel}><DollarSign size={11} /> Recebido</div>
-          <div style={{ ...s.cardValue, color: 'var(--green)' }}>R$ {recebido.toFixed(0)}</div>
-          <div style={s.cardSub}>{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
-        </div>
-        <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
-          <div style={s.cardLabel}><Receipt size={11} /> Despesas</div>
-          <div style={{ ...s.cardValue, color: '#B91C1C' }}>R$ {totalDespesas.toFixed(0)}</div>
-          <div style={s.cardSub}>{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
-        </div>
-        <div style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}` }}>
-          <div style={s.cardLabel}>⏰ A receber</div>
-          <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }}>R$ {pendente.toFixed(0)}</div>
-          <div style={s.cardSub}>{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
-        </div>
-        <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }}>
-          <div style={s.cardLabel}>{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
-          <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }}>R$ {lucro.toFixed(0)}</div>
-          <div style={s.cardSub}>{margemLucro.toFixed(0)}% de margem</div>
-        </div>
-      </div>
+      {/* GRID PRINCIPAL: 2 colunas lado a lado */}
+      <div style={s.mainGrid}>
 
-      {/* DRE - Demonstração de Resultado */}
-      <div style={s.dreCard}>
-        <div style={s.dreTitulo}>📊 DRE — {periodoLabel}</div>
-        <div style={s.dreLinha}>
-          <span>(+) Receitas recebidas</span>
-          <span style={{ ...s.mono, color: 'var(--green)' }}>R$ {recebido.toFixed(2)}</span>
-        </div>
-        <div style={s.dreLinha}>
-          <span>(−) Despesas totais</span>
-          <span style={{ ...s.mono, color: '#B91C1C' }}>− R$ {totalDespesas.toFixed(2)}</span>
-        </div>
-        <div style={s.dreDivider} />
-        <div style={{ ...s.dreLinha, ...s.dreTotal }}>
-          <span>(=) Lucro líquido</span>
-          <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>R$ {lucro.toFixed(2)}</span>
-        </div>
-        {recebido > 0 && (
-          <div style={s.dreMargem}>
-            Margem de lucro: <strong>{margemLucro.toFixed(1)}%</strong>
-            {margemLucro >= 30 && ' 🎉 Excelente!'}
-            {margemLucro >= 15 && margemLucro < 30 && ' 👍 Saudável'}
-            {margemLucro >= 0 && margemLucro < 15 && ' ⚠️ Atenção'}
-            {margemLucro < 0 && ' 🚨 Prejuízo'}
-          </div>
-        )}
-      </div>
+        {/* ─── COLUNA ESQUERDA: Relatórios + DRE + Despesas ─── */}
+        <div style={s.coluna}>
 
-      {/* Análises (gráficos) */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={s.sectionTitle}>📊 análises do mês</div>
-        <div style={s.graficosGrid}>
-          <div style={s.graficoCard}>
-            <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
-            <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={140} />
-          </div>
-
-          {dadosDespesas.length > 0 && (
-            <div style={s.graficoCard}>
-              <div style={s.graficoTitulo}>Despesas por categoria</div>
-              <DonutChart data={dadosDespesas} size={140} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
+          {/* KPIs principais */}
+          <div style={s.grid2x2}>
+            <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
+              <div style={s.cardLabel}><DollarSign size={11} /> Recebido</div>
+              <div style={{ ...s.cardValue, color: 'var(--green)' }}>R$ {recebido.toFixed(0)}</div>
+              <div style={s.cardSub}>{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
             </div>
-          )}
+            <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
+              <div style={s.cardLabel}><Receipt size={11} /> Despesas</div>
+              <div style={{ ...s.cardValue, color: '#B91C1C' }}>R$ {totalDespesas.toFixed(0)}</div>
+              <div style={s.cardSub}>{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
+            </div>
+            <div style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}` }}>
+              <div style={s.cardLabel}>⏰ A receber</div>
+              <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }}>R$ {pendente.toFixed(0)}</div>
+              <div style={s.cardSub}>{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
+            </div>
+            <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }}>
+              <div style={s.cardLabel}>{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
+              <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }}>R$ {lucro.toFixed(0)}</div>
+              <div style={s.cardSub}>{margemLucro.toFixed(0)}% de margem</div>
+            </div>
+          </div>
 
-          <div style={s.graficoCard}>
-            <div style={s.graficoTitulo}>Como você recebeu</div>
-            {dadosFormas.length === 0
-              ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
-              : <DonutChart data={dadosFormas} size={140} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
+          {/* DRE - Demonstração de Resultado */}
+          <div style={s.dreCard}>
+            <div style={s.dreTitulo}>📊 DRE — {periodoLabel}</div>
+            <div style={s.dreLinha}>
+              <span>(+) Receitas recebidas</span>
+              <span style={{ ...s.mono, color: 'var(--green)' }}>R$ {recebido.toFixed(2)}</span>
+            </div>
+            <div style={s.dreLinha}>
+              <span>(−) Despesas totais</span>
+              <span style={{ ...s.mono, color: '#B91C1C' }}>− R$ {totalDespesas.toFixed(2)}</span>
+            </div>
+            <div style={s.dreDivider} />
+            <div style={{ ...s.dreLinha, ...s.dreTotal }}>
+              <span>(=) Lucro líquido</span>
+              <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>R$ {lucro.toFixed(2)}</span>
+            </div>
+            {recebido > 0 && (
+              <div style={s.dreMargem}>
+                Margem de lucro: <strong>{margemLucro.toFixed(1)}%</strong>
+                {margemLucro >= 30 && ' 🎉 Excelente!'}
+                {margemLucro >= 15 && margemLucro < 30 && ' 👍 Saudável'}
+                {margemLucro >= 0 && margemLucro < 15 && ' ⚠️ Atenção'}
+                {margemLucro < 0 && ' 🚨 Prejuízo'}
+              </div>
+            )}
+          </div>
+
+          {/* ─── DESPESAS ─── */}
+          <div>
+            <div style={s.colHeader}>
+              <div style={s.colTitulo}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
+                Despesas ({despesas.length})
+              </div>
+              <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
+                <Plus size={13} /> Despesa
+              </button>
+            </div>
+
+            {despesas.length === 0
+              ? <div style={s.empty}>Nenhuma despesa registrada</div>
+              : despesas.map(d => {
+                const cat = CATEGORIAS.find(c => c.id === d.categoria)
+                return (
+                  <div key={d.id} style={s.finCard}>
+                    <div style={{ ...s.catBadge, background: (cat?.cor || '#888') + '22', color: cat?.cor || '#888' }}>
+                      {cat?.icon || '📦'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.finNome}>{d.descricao}</div>
+                      <div style={s.finSub}>
+                        {cat?.label || d.categoria} · {format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                        {d.recorrente && ' · 🔁 mensal'}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {d.valor.toFixed(2).replace('.', ',')}</div>
+                      <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
+                        <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
+                          <Pencil size={11} />
+                        </button>
+                        <button style={{ ...s.miniIconBtn, color: '#B91C1C' }} onClick={() => excluirDespesa(d)} title="Excluir">
+                          <X size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
             }
           </div>
-
-          <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
-            <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
-            <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => `R$ ${v.toFixed(0)}`} />
-          </div>
         </div>
-      </div>
 
-      {/* GRID 2 COLUNAS: Receitas | Despesas */}
-      <div style={s.colunasGrid}>
+        {/* ─── COLUNA DIREITA: Análises + Receitas ─── */}
+        <div style={s.coluna}>
 
-        {/* ─── RECEITAS ─── */}
-        <div>
-          <div style={s.colHeader}>
-            <div style={s.colTitulo}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
-              Receitas ({filtrados.length})
+          {/* Análises (gráficos) */}
+          <div>
+            <div style={s.sectionTitle}>📊 análises do mês</div>
+            <div style={s.graficosGrid}>
+              <div style={s.graficoCard}>
+                <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
+                <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={140} />
+              </div>
+
+              {dadosDespesas.length > 0 && (
+                <div style={s.graficoCard}>
+                  <div style={s.graficoTitulo}>Despesas por categoria</div>
+                  <DonutChart data={dadosDespesas} size={140} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
+                </div>
+              )}
+
+              <div style={s.graficoCard}>
+                <div style={s.graficoTitulo}>Como você recebeu</div>
+                {dadosFormas.length === 0
+                  ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
+                  : <DonutChart data={dadosFormas} size={140} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
+                }
+              </div>
+
+              <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
+                <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
+                <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => `R$ ${v.toFixed(0)}`} />
+              </div>
             </div>
-            <button style={s.addBtnSmall} onClick={() => setShowModal(true)}>
-              <Plus size={13} /> Pagamento
-            </button>
           </div>
 
-          <div style={s.filtros}>
-            {['todos', 'pago', 'pendente'].map(f => (
-              <button key={f} style={{ ...s.filtroBtn, ...(filtro === f ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f)}>
-                {f === 'todos' ? 'Todos' : f === 'pago' ? 'Pagos' : 'Pendentes'}
+          {/* ─── RECEITAS ─── */}
+          <div>
+            <div style={s.colHeader}>
+              <div style={s.colTitulo}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
+                Receitas ({filtrados.length})
+              </div>
+              <button style={s.addBtnSmall} onClick={() => setShowModal(true)}>
+                <Plus size={13} /> Pagamento
               </button>
-            ))}
-          </div>
-
-          {filtrados.length === 0
-            ? <div style={s.empty}>Nenhum lançamento encontrado</div>
-            : filtrados.map(p => {
-              const pago = p.status === 'pago'
-              return (
-                <div key={p.id} style={s.finCard}>
-                  <div style={{ ...s.dot, background: pago ? 'var(--green)' : '#F59E0B' }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={s.finNome}>{p.agendamentos?.clientes?.nome || '—'}</div>
-                    <div style={s.finSub}>
-                      {p.agendamentos?.servico || '—'} · {format(new Date(p.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                      {' · '}{FORMA_LABEL[p.forma] || p.forma}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
-                      R$ {p.valor.toFixed(2).replace('.', ',')}
-                    </div>
-                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
-                      {pago ? '✓ Pago' : '⏳ Pendente'}
-                    </button>
-                  </div>
-                </div>
-              )
-            })
-          }
-        </div>
-
-        {/* ─── DESPESAS ─── */}
-        <div>
-          <div style={s.colHeader}>
-            <div style={s.colTitulo}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
-              Despesas ({despesas.length})
             </div>
-            <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
-              <Plus size={13} /> Despesa
-            </button>
-          </div>
 
-          {despesas.length === 0
-            ? <div style={s.empty}>Nenhuma despesa registrada</div>
-            : despesas.map(d => {
-              const cat = CATEGORIAS.find(c => c.id === d.categoria)
-              return (
-                <div key={d.id} style={s.finCard}>
-                  <div style={{ ...s.catBadge, background: (cat?.cor || '#888') + '22', color: cat?.cor || '#888' }}>
-                    {cat?.icon || '📦'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={s.finNome}>{d.descricao}</div>
-                    <div style={s.finSub}>
-                      {cat?.label || d.categoria} · {format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                      {d.recorrente && ' · 🔁 mensal'}
+            <div style={s.filtros}>
+              {['todos', 'pago', 'pendente'].map(f => (
+                <button key={f} style={{ ...s.filtroBtn, ...(filtro === f ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f)}>
+                  {f === 'todos' ? 'Todos' : f === 'pago' ? 'Pagos' : 'Pendentes'}
+                </button>
+              ))}
+            </div>
+
+            {filtrados.length === 0
+              ? <div style={s.empty}>Nenhum lançamento encontrado</div>
+              : filtrados.map(p => {
+                const pago = p.status === 'pago'
+                return (
+                  <div key={p.id} style={s.finCard}>
+                    <div style={{ ...s.dot, background: pago ? 'var(--green)' : '#F59E0B' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.finNome}>{p.agendamentos?.clientes?.nome || '—'}</div>
+                      <div style={s.finSub}>
+                        {p.agendamentos?.servico || '—'} · {format(new Date(p.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                        {' · '}{FORMA_LABEL[p.forma] || p.forma}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
+                        R$ {p.valor.toFixed(2).replace('.', ',')}
+                      </div>
+                      <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
+                        {pago ? '✓ Pago' : '⏳ Pendente'}
+                      </button>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {d.valor.toFixed(2).replace('.', ',')}</div>
-                    <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
-                      <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
-                        <Pencil size={11} />
-                      </button>
-                      <button style={{ ...s.miniIconBtn, color: '#B91C1C' }} onClick={() => excluirDespesa(d)} title="Excluir">
-                        <X size={11} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          }
+                )
+              })
+            }
+          </div>
         </div>
       </div>
 
@@ -707,14 +715,19 @@ const s = {
   exportBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--pink-light)', color: 'var(--pink)', border: '1px solid var(--pink-mid)', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   exportBtnAnual: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--gold, #D4AF37)', color: '#5C4A0F', border: '1px solid #B7791F', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' },
-  /* KPIs */
+  /* Layout principal 2 colunas */
+  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' },
+  coluna: { display: 'flex', flexDirection: 'column', gap: 16 },
+  /* KPIs em 2x2 dentro da coluna esquerda */
+  grid2x2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  /* KPIs (legado) */
   grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 14 },
   card: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '12px 12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
   cardLabel: { fontSize: 10, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 },
   cardValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, lineHeight: 1 },
   cardSub: { fontSize: 10, color: 'var(--text3)', marginTop: 4 },
   /* DRE */
-  dreCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 18, boxShadow: 'var(--shadow-sm)' },
+  dreCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', boxShadow: 'var(--shadow-sm)' },
   dreTitulo: { fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 10 },
   dreLinha: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', fontSize: 13, color: 'var(--text2)' },
   dreDivider: { height: 1, background: 'var(--border)', margin: '4px 0' },
