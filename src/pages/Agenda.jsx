@@ -53,7 +53,8 @@ export default function Agenda() {
   const [duracaoAtend, setDuracaoAtend] = useState(60)
   const [googleMsg, setGoogleMsg] = useState(null)
   const [googlePronto, setGooglePronto] = useState(false)
-  const [menuAberto, setMenuAberto] = useState(null)
+  const [agDetalhe, setAgDetalhe] = useState(null)
+  const [diaSelecionadoMes, setDiaSelecionadoMes] = useState(null)
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
   useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
@@ -278,66 +279,34 @@ export default function Agenda() {
     return `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`
   }
 
-  function CardAgendamento({ ag, compacto = false }) {
+  // Card compacto para view Semana
+  function CardCompacto({ ag }) {
     const st = STATUS[ag.status] || STATUS.pendente
-    const pag = ag.pagamentos?.[0]
-    const telefone = (ag.clientes?.telefone || '').replace(/\D/g, '')
-    const waConfirm = buildWhatsAppConfirm(ag)
-    const estaAberto = menuAberto === ag.id
-
-    const acoes = []
-    if (ag.status === 'pendente')
-      acoes.push({ label: '✅ Confirmar presença', fn: () => atualizarStatus(ag, 'confirmado') })
-    if (ag.status === 'confirmado')
-      acoes.push({ label: '✅ Marcar como realizado', fn: () => atualizarStatus(ag, 'realizado') })
-    if (ag.status === 'realizado')
-      acoes.push({ label: pag ? '💳 Editar pagamento' : '💳 Registrar pagamento', fn: () => { setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') }); setShowPagModal(true) } })
-    if (waConfirm && ag.status !== 'realizado' && ag.status !== 'cancelado')
-      acoes.push({ label: '💬 Confirmar via WhatsApp', href: waConfirm })
-    if (telefone)
-      acoes.push({ label: '📱 Abrir WhatsApp', href: `https://wa.me/55${telefone}` })
-    acoes.push({ label: '✏️ Editar agendamento', fn: () => abrirEdicao(ag) })
-    if (ag.status !== 'realizado' && ag.status !== 'cancelado')
-      acoes.push({ label: '❌ Cancelar agendamento', fn: () => atualizarStatus(ag, 'cancelado'), danger: true })
-
-    if (compacto) return (
-      <div
-        style={{ ...s.cardCompacto, borderLeftColor: st.border, background: estaAberto ? 'var(--surface2)' : 'var(--surface)' }}
-        onClick={() => setMenuAberto(estaAberto ? null : ag.id)}
-      >
+    return (
+      <div style={{ ...s.cardCompacto, borderLeftColor: st.border }} onClick={() => setAgDetalhe(ag)}>
         <div style={s.cardCompactoHora}>{ag.horario?.slice(0, 5)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={s.cardCompactoNome}>{ag.clientes?.nome?.split(' ')[0]}</div>
           <div style={s.cardCompactoServ}>{ag.servico}</div>
         </div>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: st.border, flexShrink: 0 }} />
-        {estaAberto && (
-          <div style={s.menu} onClick={e => e.stopPropagation()}>
-            {acoes.map((a, i) => a.href
-              ? <a key={i} href={a.href} target="_blank" rel="noreferrer" style={s.menuItem} onClick={() => setMenuAberto(null)}>{a.label}</a>
-              : <button key={i} style={{ ...s.menuItem, color: a.danger ? '#B91C1C' : 'var(--text)' }} onClick={() => { setMenuAberto(null); a.fn() }}>{a.label}</button>
-            )}
-          </div>
-        )}
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: st.border, flexShrink: 0 }} />
       </div>
     )
+  }
 
+  // Card completo para view Dia
+  function CardDia({ ag }) {
+    const st = STATUS[ag.status] || STATUS.pendente
+    const pag = ag.pagamentos?.[0]
     return (
-      <div style={{ ...s.card, borderLeftColor: st.border, position: 'relative' }}>
+      <div style={{ ...s.card, borderLeftColor: st.border, cursor: 'pointer' }} onClick={() => setAgDetalhe(ag)}>
         <div style={s.cardHeader}>
           <div style={s.cardTime}>{ag.horario?.slice(0, 5)}</div>
           <div style={{ flex: 1 }}>
             <div style={s.cardName}>{ag.clientes?.nome}</div>
             <div style={s.cardService}>{ag.servico}</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
-            <button
-              style={s.menuBtn}
-              onClick={e => { e.stopPropagation(); setMenuAberto(estaAberto ? null : ag.id) }}
-              title="Ações"
-            >···</button>
-          </div>
+          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
         </div>
         {ag.valor > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -346,14 +315,6 @@ export default function Agenda() {
               <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
                 {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
               </span>
-            )}
-          </div>
-        )}
-        {estaAberto && (
-          <div style={s.menu} onClick={e => e.stopPropagation()}>
-            {acoes.map((a, i) => a.href
-              ? <a key={i} href={a.href} target="_blank" rel="noreferrer" style={s.menuItem} onClick={() => setMenuAberto(null)}>{a.label}</a>
-              : <button key={i} style={{ ...s.menuItem, color: a.danger ? '#B91C1C' : 'var(--text)' }} onClick={() => { setMenuAberto(null); a.fn() }}>{a.label}</button>
             )}
           </div>
         )}
@@ -372,58 +333,38 @@ export default function Agenda() {
         </button>
       </div>
     )
-    return dia.map(ag => <CardAgendamento key={ag.id} ag={ag} />)
+    return dia.map(ag => <CardDia key={ag.id} ag={ag} />)
   }
 
   function ViewSemana() {
     const dias = eachDayOfInterval({ start: startOfWeek(dataSel, { locale: ptBR }), end: endOfWeek(dataSel, { locale: ptBR }) })
     return (
-      <div>
-        {/* Mini strip de navegação */}
-        <div style={s.weekGrid}>
-          {dias.map(dia => {
-            const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
-            const hoje = isToday(dia)
-            return (
-              <div key={dia.toISOString()} style={{ ...s.weekDay, ...(hoje ? s.weekDayHoje : {}) }} onClick={() => { setDataSel(dia); setView('Dia') }}>
-                <div style={{ ...s.weekDayLabel, ...(hoje ? { color: 'var(--pink)' } : {}) }}>{format(dia, 'EEE', { locale: ptBR })}</div>
-                <div style={{ ...s.weekDayNum, ...(hoje ? s.weekDayNumHoje : {}) }}>{format(dia, 'd')}</div>
+      <div style={s.weekColunas}>
+        {dias.map(dia => {
+          const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
+          const hoje = isToday(dia)
+          return (
+            <div key={dia.toISOString()} style={s.weekColuna}>
+              <div style={{ ...s.weekColunaHeader, ...(hoje ? s.weekColunaHeaderHoje : {}) }}>
+                <span style={{ ...s.weekColunaDia, ...(hoje ? { color: 'var(--pink)' } : {}) }}>
+                  {format(dia, 'EEE', { locale: ptBR })}
+                </span>
+                <span style={{ ...s.weekColunaNum, ...(hoje ? { color: 'var(--pink)', fontWeight: 700 } : {}) }}>
+                  {format(dia, 'd')}
+                </span>
                 {agsDia.length > 0 && (
-                  <div style={s.weekDots}>
-                    {agsDia.slice(0, 3).map((ag, i) => {
-                      const st = STATUS[ag.status] || STATUS.pendente
-                      return <div key={i} style={{ ...s.weekDot, background: st.border }} />
-                    })}
-                    {agsDia.length > 3 && <div style={{ fontSize: 9, color: 'var(--text3)' }}>+{agsDia.length - 3}</div>}
-                  </div>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: hoje ? 'var(--pink)' : 'var(--text3)' }}>
+                    {agsDia.length}
+                  </span>
                 )}
               </div>
-            )
-          })}
-        </div>
-
-        {/* Colunas por dia lado a lado */}
-        <div style={s.weekColunas}>
-          {dias.map(dia => {
-            const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
-            const hoje = isToday(dia)
-            return (
-              <div key={dia.toISOString()} style={s.weekColuna}>
-                <div
-                  style={{ ...s.weekColunaHeader, ...(hoje ? s.weekColunaHeaderHoje : {}) }}
-                  onClick={() => { setDataSel(dia); setView('Dia') }}
-                >
-                  <span style={s.weekColunaDia}>{format(dia, 'EEE', { locale: ptBR })}</span>
-                  <span style={{ ...s.weekColunaNum, ...(hoje ? { color: 'var(--pink)', fontWeight: 700 } : {}) }}>{format(dia, 'd')}</span>
-                </div>
-                {agsDia.length === 0
-                  ? <div style={s.weekColunaSemAg}>—</div>
-                  : agsDia.map(ag => <CardAgendamento key={ag.id} ag={ag} compacto />)
-                }
-              </div>
-            )
-          })}
-        </div>
+              {agsDia.length === 0
+                ? <div style={s.weekColunaSemAg}>—</div>
+                : agsDia.map(ag => <CardCompacto key={ag.id} ag={ag} />)
+              }
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -434,6 +375,7 @@ export default function Agenda() {
     const dias = eachDayOfInterval({ start: startOfWeek(inicio, { locale: ptBR }), end: endOfWeek(fim, { locale: ptBR }) })
     const semanas = []
     for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7))
+    const agsDiaSel = diaSelecionadoMes ? agendamentos.filter(a => a.data === diaSelecionadoMes) : []
     return (
       <div>
         <div style={s.calHeader}>
@@ -447,11 +389,13 @@ export default function Agenda() {
               const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
               const hoje = isToday(dia)
               const doMes = isSameMonth(dia, dataSel)
+              const datStr = format(dia, 'yyyy-MM-dd')
+              const selecionado = diaSelecionadoMes === datStr
               return (
                 <div
                   key={dia.toISOString()}
-                  style={{ ...s.calCell, ...(!doMes ? s.calCellOut : {}), ...(hoje ? s.calCellHoje : {}) }}
-                  onClick={() => { setDataSel(dia); setView('Dia') }}
+                  style={{ ...s.calCell, ...(!doMes ? s.calCellOut : {}), ...(hoje ? s.calCellHoje : {}), ...(selecionado ? s.calCellSel : {}) }}
+                  onClick={() => setDiaSelecionadoMes(selecionado ? null : datStr)}
                 >
                   <div style={{ ...s.calNum, ...(hoje ? s.calNumHoje : {}) }}>{format(dia, 'd')}</div>
                   {agsDia.slice(0, 2).map((ag, i) => {
@@ -464,12 +408,25 @@ export default function Agenda() {
             })}
           </div>
         ))}
+
+        {diaSelecionadoMes && (
+          <div style={{ marginTop: 16 }}>
+            <div style={s.sectionTitle}>
+              {format(new Date(diaSelecionadoMes + 'T12:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              {isToday(new Date(diaSelecionadoMes + 'T12:00')) && <span style={s.hojeChip}>hoje</span>}
+            </div>
+            {agsDiaSel.length === 0
+              ? <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento</p></div>
+              : agsDiaSel.map(ag => <CardDia key={ag.id} ag={ag} />)
+            }
+          </div>
+        )}
       </div>
     )
   }
 
   return (
-    <div style={s.page} onClick={() => setMenuAberto(null)}>
+    <div style={s.page}>
       <div style={s.viewTabs}>
         {VIEWS.map(v => (
           <button key={v} style={{ ...s.viewTab, ...(view === v ? s.viewTabActive : {}) }} onClick={() => setView(v)}>{v}</button>
@@ -483,6 +440,109 @@ export default function Agenda() {
       {view === 'Dia' && <ViewDia />}
       {view === 'Semana' && <ViewSemana />}
       {view === 'Mês' && <ViewMes />}
+
+      {/* ── Drawer de detalhe do agendamento ── */}
+      {agDetalhe && (() => {
+        const ag = agDetalhe
+        const st = STATUS[ag.status] || STATUS.pendente
+        const pag = ag.pagamentos?.[0]
+        const waConfirm = buildWhatsAppConfirm(ag)
+        const tel = (ag.clientes?.telefone || '').replace(/\D/g, '')
+        const waDirectUrl = tel ? `https://wa.me/55${tel}` : null
+        const [y, m, d] = ag.data.split('-')
+        const dataFmt = `${d}/${m}/${y}`
+        return (
+          <div style={s.overlay} onClick={() => setAgDetalhe(null)}>
+            <div style={s.modal} onClick={e => e.stopPropagation()}>
+              {/* Header do drawer */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 700 }}>{ag.clientes?.nome}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 2 }}>{ag.servico}</div>
+                </div>
+                <span style={{ ...s.badge, background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>{st.label}</span>
+              </div>
+
+              {/* Infos */}
+              <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
+                  <Calendar size={14} color="var(--text3)" />
+                  <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{dataFmt} · {ag.horario?.slice(0, 5)}</span>
+                </div>
+                {ag.valor > 0 && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
+                    <CreditCard size={14} color="var(--text3)" />
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: 'var(--pink)' }}>
+                      R$ {ag.valor.toFixed(2).replace('.', ',')}
+                    </span>
+                    {pag && (
+                      <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
+                        {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {ag.observacoes && (
+                  <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>{ag.observacoes}</div>
+                )}
+              </div>
+
+              {/* Ações de status */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {ag.status === 'pendente' && (
+                  <button style={{ ...s.btnPrimary, background: '#15803D', boxShadow: 'none' }} onClick={() => { atualizarStatus(ag, 'confirmado'); setAgDetalhe(null) }}>
+                    <CheckCircle size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />Confirmar agendamento
+                  </button>
+                )}
+                {ag.status !== 'realizado' && ag.status !== 'cancelado' && (
+                  <button style={{ ...s.btnPrimary, background: '#5B21B6', boxShadow: 'none' }} onClick={() => { atualizarStatus(ag, 'realizado'); setAgDetalhe(null) }}>
+                    <CheckCircle size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />Marcar como realizado
+                  </button>
+                )}
+              </div>
+
+              {/* Ações secundárias */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: '1 1 auto' }}
+                  onClick={() => { setAgDetalhe(null); setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') }); setShowPagModal(true) }}>
+                  <CreditCard size={13} />{pag ? 'Editar pagamento' : 'Registrar pagamento'}
+                </button>
+                <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: '1 1 auto' }}
+                  onClick={() => { setAgDetalhe(null); abrirEdicao(ag) }}>
+                  <Pencil size={13} />Editar
+                </button>
+              </div>
+
+              {/* WhatsApp */}
+              {(waConfirm || waDirectUrl) && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {waConfirm && (
+                    <a href={waConfirm} target="_blank" rel="noopener noreferrer"
+                      style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D', border: '1px solid #4ADE80', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
+                      <MessageCircle size={13} />Confirmar via WA
+                    </a>
+                  )}
+                  {waDirectUrl && (
+                    <a href={waDirectUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
+                      <MessageCircle size={13} />Abrir WA
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Cancelar agendamento */}
+              {ag.status !== 'cancelado' && (
+                <button style={{ ...s.btnSecondary, color: '#B91C1C', borderColor: '#FCA5A5' }}
+                  onClick={() => { setAgDetalhe(null); atualizarStatus(ag, 'cancelado') }}>
+                  <XCircle size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />Cancelar agendamento
+                </button>
+              )}
+              <button style={s.btnSecondary} onClick={() => setAgDetalhe(null)}>Fechar</button>
+            </div>
+          </div>
+        )
+      })()}
 
       {googleMsg && (
         <div style={{
@@ -732,6 +792,7 @@ const s = {
   calCell: { minHeight: 54, padding: '3px 4px', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 5 },
   calCellOut: { background: 'var(--surface2)', opacity: 0.5 },
   calCellHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
+  calCellSel: { background: 'var(--pink-light)', border: '2px solid var(--pink)', outline: '2px solid var(--pink-mid)' },
   calNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 2 },
   calNumHoje: { color: 'var(--pink)', fontWeight: 700 },
   calEvent: { fontSize: 9, borderRadius: 3, padding: '1px 4px', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
