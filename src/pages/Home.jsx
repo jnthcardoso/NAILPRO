@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { format, addDays, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import TrialBanner from '../components/common/TrialBanner'
+import { notificarUmaVezPorDia } from '../lib/notificacoes'
 
 export default function Home() {
   const { user } = useAuth()
@@ -43,6 +44,15 @@ export default function Home() {
       const receita = agendHoje.reduce((s, a) => s + (a.valor || 0), 0)
       setStats(s => ({ ...s, hoje: agendHoje.length, receitaHoje: receita }))
       setSemConfirmacao(agendHoje.filter(a => a.status === 'pendente'))
+
+      // 🔔 Notifica sobre atendimentos do dia (1x por dia, ao abrir o app)
+      if (agendHoje.length > 0) {
+        const primeiro = agendHoje[0]
+        notificarUmaVezPorDia('atendimentos-hoje', `Bom dia! ${agendHoje.length} ${agendHoje.length === 1 ? 'atendimento' : 'atendimentos'} hoje ☀️`, {
+          body: `Primeiro: ${primeiro.clientes?.nome} às ${primeiro.horario?.slice(0, 5)} - ${primeiro.servico}`,
+          tag: 'atendimentos-hoje',
+        })
+      }
     }
 
     const { data: pagPendentes } = await supabase.from('pagamentos')
@@ -78,6 +88,14 @@ export default function Home() {
     if (ags) {
       const pend = ags.filter(a => !a.lembrete_enviado_em && a.clientes?.telefone).length
       setLembretesPendentes(pend)
+
+      // 🔔 Notifica sobre lembretes pendentes (1x por dia)
+      if (pend > 0) {
+        notificarUmaVezPorDia('lembretes-pendentes', `${pend} ${pend === 1 ? 'lembrete' : 'lembretes'} pra enviar`, {
+          body: `${pend === 1 ? 'Você tem 1 cliente' : `Você tem ${pend} clientes`} com agendamento amanhã. Toque para enviar lembretes.`,
+          tag: 'lembretes-pendentes',
+        })
+      }
     }
 
     const { data: todosClientes } = await supabase.from('clientes')

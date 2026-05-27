@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
+import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -25,6 +26,20 @@ export default function Configuracoes() {
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState('')
   const [excluindo, setExcluindo] = useState(false)
   const [exportando, setExportando] = useState(false)
+  const [permNotif, setPermNotif] = useState('default')
+
+  useEffect(() => { setPermNotif(statusPermissao()) }, [])
+
+  async function ativarNotificacoes() {
+    const r = await pedirPermissao()
+    setPermNotif(r)
+    if (r === 'granted') {
+      notificar('Notificações ativadas! 🔔', {
+        body: 'Vamos te avisar dos seus atendimentos do dia',
+        tag: 'welcome'
+      })
+    }
+  }
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
@@ -676,6 +691,37 @@ export default function Configuracoes() {
         <button style={s.logoutBtn} onClick={handleLogout}>
           <LogOut size={15} /> Sair da conta
         </button>
+
+        {/* Notificações */}
+        {notificacoesSuportadas() && (
+          <div style={{ marginTop: 18, padding: '14px 16px', background: permNotif === 'granted' ? 'linear-gradient(135deg, #F0FDF4, #DCFCE7)' : 'linear-gradient(135deg, #FEF3C7, #FDE68A)', border: '1px solid ' + (permNotif === 'granted' ? '#86EFAC' : '#FCD34D'), borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: permNotif === 'granted' ? '#15803D' : '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {permNotif === 'granted' ? <Bell size={18} color="white" /> : <BellOff size={18} color="white" />}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: permNotif === 'granted' ? '#15803D' : '#78350F' }}>
+                  {permNotif === 'granted' && 'Notificações ativas ✓'}
+                  {permNotif === 'denied' && 'Notificações bloqueadas'}
+                  {permNotif === 'default' && 'Ativar notificações'}
+                </div>
+                <div style={{ fontSize: 11, color: permNotif === 'granted' ? '#166534' : '#92400E', marginTop: 2 }}>
+                  {permNotif === 'granted' && 'Você será avisada dos atendimentos do dia ao abrir o app'}
+                  {permNotif === 'denied' && 'Libere nas configurações do navegador'}
+                  {permNotif === 'default' && 'Receba alertas dos atendimentos e lembretes pendentes'}
+                </div>
+              </div>
+              {permNotif !== 'granted' && permNotif !== 'denied' && (
+                <button
+                  onClick={ativarNotificacoes}
+                  style={{ background: '#D97706', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Ativar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Exportar dados (LGPD Art. 18, IV - direito de portabilidade) */}
         <div style={{ marginTop: 18, padding: '14px 16px', background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #93C5FD', borderRadius: 'var(--radius-sm)' }}>
