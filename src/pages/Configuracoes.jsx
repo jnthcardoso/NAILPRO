@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download } from 'lucide-react'
+import { exportarTodosDados } from '../lib/exportarDados'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -23,6 +24,7 @@ export default function Configuracoes() {
   const [showExcluir, setShowExcluir] = useState(false)
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState('')
   const [excluindo, setExcluindo] = useState(false)
+  const [exportando, setExportando] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
@@ -225,6 +227,17 @@ export default function Configuracoes() {
   async function handleLogout() {
     await signOut()
     navigate('/login', { replace: true })
+  }
+
+  async function handleExportar() {
+    setExportando(true)
+    try {
+      await exportarTodosDados(user)
+    } catch (e) {
+      console.error('Erro ao exportar:', e)
+      alert('Erro ao exportar dados: ' + (e.message || 'tente novamente'))
+    }
+    setExportando(false)
   }
 
   async function excluirConta() {
@@ -664,8 +677,30 @@ export default function Configuracoes() {
           <LogOut size={15} /> Sair da conta
         </button>
 
+        {/* Exportar dados (LGPD Art. 18, IV - direito de portabilidade) */}
+        <div style={{ marginTop: 18, padding: '14px 16px', background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #93C5FD', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1E40AF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Download size={18} color="white" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1E3A8A' }}>Exportar meus dados</div>
+              <div style={{ fontSize: 11, color: '#1E40AF', marginTop: 2 }}>
+                Baixe um Excel com todos os seus dados (clientes, agendamentos, financeiro). Direito LGPD.
+              </div>
+            </div>
+            <button
+              onClick={handleExportar}
+              disabled={exportando}
+              style={{ background: '#1E40AF', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+            >
+              {exportando ? 'Gerando...' : 'Baixar Excel'}
+            </button>
+          </div>
+        </div>
+
         {/* Zona de perigo */}
-        <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px dashed var(--border)' }}>
+        <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px dashed var(--border)' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#B91C1C', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
             zona de perigo
           </div>
