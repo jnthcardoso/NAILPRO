@@ -59,12 +59,11 @@ export default function AgendaPublica() {
 
   async function carregarSlotsOcupados() {
     setLoadingSlots(true)
-    const { data } = await supabase
-      .from('agendamentos')
-      .select('horario')
-      .eq('user_id', config.user_id)
-      .eq('data', format(dataSel, 'yyyy-MM-dd'))
-      .neq('status', 'cancelado')
+    // 🔒 RPC seguro: retorna apenas horários, sem expor dados de clientes
+    const { data } = await supabase.rpc('agenda_publica_horarios_ocupados', {
+      p_slug: slug,
+      p_data: format(dataSel, 'yyyy-MM-dd'),
+    })
     setSlotsOcupados(data?.map(a => a.horario.slice(0, 5)) || [])
     setLoadingSlots(false)
   }
@@ -79,34 +78,20 @@ export default function AgendaPublica() {
     setSaving(true)
     const telLimpo = form.telefone.replace(/\D/g, '')
 
-    const { data: clienteExist } = await supabase
-      .from('clientes')
-      .select('id')
-      .eq('user_id', config.user_id)
-      .eq('telefone', telLimpo)
-      .maybeSingle()
+    // 🔒 RPC seguro: cria cliente (se necessário) + agendamento no contexto do dono do slug
+    const { error } = await supabase.rpc('agenda_publica_criar_agendamento', {
+      p_slug: slug,
+      p_cliente_nome: form.nome.trim(),
+      p_cliente_telefone: telLimpo,
+      p_servico: form.servico,
+      p_data: format(dataSel, 'yyyy-MM-dd'),
+      p_horario: horarioSel + ':00',
+      p_observacoes: form.observacoes || null,
+    })
 
-    let clienteId = clienteExist?.id
-    if (!clienteId) {
-      const { data: novo } = await supabase
-        .from('clientes')
-        .insert({ user_id: config.user_id, nome: form.nome.trim(), telefone: telLimpo })
-        .select('id')
-        .single()
-      clienteId = novo?.id
-    }
-
-    if (clienteId) {
-      await supabase.from('agendamentos').insert({
-        user_id: config.user_id,
-        cliente_id: clienteId,
-        data: format(dataSel, 'yyyy-MM-dd'),
-        horario: horarioSel + ':00',
-        servico: form.servico,
-        status: 'pendente',
-        observacoes: form.observacoes || null,
-        valor: 0,
-      })
+    if (error) {
+      alert('Erro ao criar agendamento: ' + error.message)
+    } else {
       setStep(4)
     }
     setSaving(false)
