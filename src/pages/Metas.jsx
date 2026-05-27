@@ -34,10 +34,16 @@ export default function Metas() {
   const [faturServico, setFaturServico] = useState([])
   const [taxaRetencao, setTaxaRetencao] = useState(null)
   const [novasClientes, setNovasClientes] = useState([])
-  const [loadingKpi, setLoadingKpi] = useState(false)
+  const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
+  const [loadingFatur, setLoadingFatur] = useState(false) // carga isolada do faturamento
 
   useEffect(() => { if (user) { loadConfig(); loadMetas(); loadPrevisao() } }, [user])
-  useEffect(() => { if (user && tab === 'kpis') loadKpis() }, [user, tab, kpiMeses, retencaoDias])
+  // Carga inicial: carrega TODOS os KPIs quando entra na tab
+  useEffect(() => { if (user && tab === 'kpis') loadKpis() }, [user, tab])
+  // kpiMeses → só recarrega faturamento
+  useEffect(() => { if (user && tab === 'kpis') loadFaturamento() }, [kpiMeses])
+  // retencaoDias → só recarrega retenção
+  useEffect(() => { if (user && tab === 'kpis') loadRetencaoKpi() }, [retencaoDias])
 
   // Fechar modal com Escape
   useEffect(() => {
@@ -193,20 +199,19 @@ export default function Metas() {
     return `Semana ${meta.periodo}`
   }
 
-  // ── KPIs ─────────────────────────────────────────────
-  async function loadKpis() {
-    setLoadingKpi(true)
-    const inicio = format(subMonths(new Date(), parseInt(kpiMeses)), 'yyyy-MM-dd')
-    const hoje = new Date()
+  // ── KPIs — funções isoladas ───────────────────────────
 
-    // 1. Faturamento por serviço
+  // 1. Faturamento por serviço (depende de kpiMeses)
+  async function loadFaturamento(mesesParam) {
+    const m = mesesParam ?? kpiMeses
+    setLoadingFatur(true)
+    const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
     const { data: agsServ } = await supabase
       .from('agendamentos')
       .select('servico, valor, pagamentos(valor, status)')
       .eq('user_id', user.id)
       .eq('status', 'realizado')
       .gte('data', inicio)
-
     if (agsServ) {
       const grouped = {}
       agsServ.forEach(a => {
@@ -221,15 +226,19 @@ export default function Metas() {
       const totalFatur = sorted.reduce((s, x) => s + x.valor, 0)
       setFaturServico(sorted.map(x => ({ ...x, pct: totalFatur > 0 ? Math.round((x.valor / totalFatur) * 100) : 0 })))
     }
+    setLoadingFatur(false)
+  }
 
-    // 2. Taxa de retenção
+  // 2. Taxa de retenção (depende de retencaoDias)
+  async function loadRetencaoKpi(diasParam) {
+    const dias = diasParam ?? retencaoDias
+    const hoje = new Date()
     const { data: agsRet } = await supabase
       .from('agendamentos')
       .select('cliente_id, data')
       .eq('user_id', user.id)
       .in('status', ['realizado', 'confirmado'])
       .order('data')
-
     if (agsRet) {
       const byClient = {}
       agsRet.forEach(a => {
@@ -239,11 +248,11 @@ export default function Metas() {
       let analisados = 0, retornaram = 0
       Object.values(byClient).forEach(visitas => {
         const primeiraVisita = parseISO(visitas[0])
-        if (differenceInDays(hoje, primeiraVisita) < retencaoDias) return // too recent
+        if (differenceInDays(hoje, primeiraVisita) < dias) return
         analisados++
         for (let i = 0; i < visitas.length - 1; i++) {
           const diff = differenceInDays(parseISO(visitas[i + 1]), parseISO(visitas[i]))
-          if (diff <= retencaoDias) { retornaram++; break }
+          if (diff <= dias) { retornaram++; break }
         }
       })
       setTaxaRetencao({
@@ -251,13 +260,14 @@ export default function Metas() {
         retornaram, analisados,
       })
     }
+  }
 
-    // 3. Novas clientes por mês (últimos 6 meses)
+  // 3. Novas clientes por mês (estático — sempre últimos 6 meses)
+  async function loadNovasKpi() {
     const { data: cls } = await supabase
       .from('clientes')
       .select('created_at')
       .eq('user_id', user.id)
-
     if (cls) {
       const byMonth = {}
       cls.forEach(c => {
@@ -272,7 +282,12 @@ export default function Metas() {
       }
       setNovasClientes(months)
     }
+  }
 
+  // Carga completa (entrada na tab)
+  async function loadKpis() {
+    setLoadingKpi(true)
+    await Promise.all([loadFaturamento(), loadRetencaoKpi(), loadNovasKpi()])
     setLoadingKpi(false)
   }
 
@@ -424,21 +439,6 @@ export default function Metas() {
       {/* ── TAB: KPIs ──────────────────────────────────── */}
       {tab === 'kpis' && (
         <>
-          {/* Controles globais */}
-          <div style={s.kpiControles}>
-            <div style={{ flex: 1 }}>
-              <div style={s.controlLabel}>Período de análise</div>
-              <div style={s.segmented}>
-                {[['1', '1 mês'], ['3', '3 meses'], ['6', '6 meses'], ['12', '12 meses']].map(([v, l]) => (
-                  <button key={v} style={{ ...s.segBtn, ...(kpiMeses === v ? s.segBtnAtivo : {}) }} onClick={() => setKpiMeses(v)}>{l}</button>
-                ))}
-              </div>
-            </div>
-            <button style={s.reloadBtn} onClick={loadKpis} title="Atualizar">
-              <RefreshCw size={14} style={{ animation: loadingKpi ? 'spin 1s linear infinite' : 'none' }} />
-            </button>
-          </div>
-
           {loadingKpi ? (
             <div style={s.kpiGrid}>
               {[1, 2, 3].map(i => (
@@ -459,8 +459,31 @@ export default function Metas() {
               {/* 1. Faturamento por serviço */}
               <div style={s.kpiCard}>
                 <div style={s.kpiCardTitle}><BarChart2 size={15} color="var(--pink)" /> Faturamento por serviço</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Últimos {kpiMeses} {parseInt(kpiMeses) === 1 ? 'mês' : 'meses'}</div>
-                {faturServico.length === 0
+                {/* Seletor de período — local ao card de faturamento */}
+                <div style={s.faturControle}>
+                  <div style={s.segmented}>
+                    {[['1', '1m'], ['3', '3m'], ['6', '6m'], ['12', '12m']].map(([v, l]) => (
+                      <button
+                        key={v}
+                        style={{ ...s.segBtn, ...(kpiMeses === v ? s.segBtnAtivo : {}) }}
+                        onClick={() => setKpiMeses(v)}
+                      >{l}</button>
+                    ))}
+                  </div>
+                  <button style={s.reloadBtnSm} onClick={() => loadFaturamento()} title="Atualizar" disabled={loadingFatur}>
+                    <RefreshCw size={12} style={{ animation: loadingFatur ? 'spin 1s linear infinite' : 'none' }} />
+                  </button>
+                </div>
+                {loadingFatur ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                    {[1, 2, 3].map(j => (
+                      <div key={j} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ ...s.skeletonLine, width: `${70 + j * 5}%` }} />
+                        <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', width: `${85 - j * 10}%` }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : faturServico.length === 0
                   ? <div style={s.kpiEmpty}>Sem dados no período selecionado</div>
                   : faturServico.map((item, i) => (
                     <div key={i} style={{ marginBottom: 10 }}>
@@ -640,12 +663,11 @@ const s = {
   barProjFill: { position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 4, background: 'repeating-linear-gradient(45deg, rgba(217,119,6,0.3) 0px, rgba(217,119,6,0.3) 4px, transparent 4px, transparent 8px)', zIndex: 1 },
   projecaoInsight: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 8, border: '1px solid', fontSize: 11, fontWeight: 600, lineHeight: 1.4 },
   // KPIs
-  kpiControles: { display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 16 },
-  controlLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6 },
-  segmented: { display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 3 },
-  segBtn: { flex: 1, padding: '6px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
+  faturControle: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, marginTop: 4 },
+  segmented: { display: 'flex', gap: 3, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, flex: 1 },
+  segBtn: { flex: 1, padding: '5px 6px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
   segBtnAtivo: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
-  reloadBtn: { width: 36, height: 36, borderRadius: 8, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  reloadBtnSm: { width: 28, height: 28, borderRadius: 7, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'opacity 0.15s' },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'start' },
   kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', boxShadow: 'var(--shadow-sm)' },
   kpiCardTitle: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
