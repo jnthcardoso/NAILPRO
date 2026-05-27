@@ -226,6 +226,17 @@ export default function Financeiro() {
 
   useEffect(() => { if (user) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [user, periodoSel])
 
+  // Fechar modais com Escape
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== 'Escape') return
+      if (showDespesaModal) { fecharDespesaModal(); return }
+      if (showModal) { setShowModal(false); return }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [showModal, showDespesaModal])
+
   async function loadPagamentos() {
     const inicio = format(startOfMonth(periodoSel), 'yyyy-MM-dd')
     const fim = format(endOfMonth(periodoSel), 'yyyy-MM-dd')
@@ -582,7 +593,7 @@ export default function Financeiro() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
-                      R$ {p.valor.toFixed(2).replace('.', ',')}
+                      R$ {(p.valor ?? 0).toFixed(2).replace('.', ',')}
                     </div>
                     <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
                       {pago ? '✓ Pago' : '⏳ Pendente'}
@@ -625,7 +636,7 @@ export default function Financeiro() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {d.valor.toFixed(2).replace('.', ',')}</div>
+                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {(d.valor ?? 0).toFixed(2).replace('.', ',')}</div>
                     <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
                       <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
                         <Pencil size={11} />

@@ -9,13 +9,16 @@ export default function Planos() {
   const navigate = useNavigate()
   const { assinatura, plano: planoAtual, isTrialing, diasRestantesTrial, trialAcabou, isActive } = useAssinatura()
   const [ciclo, setCiclo] = useState('mensal')
+  const [assinarLoading, setAssinarLoading] = useState(null)
 
   const nomeUsuario = user?.user_metadata?.full_name || ''
   const emailUsuario = user?.email || ''
 
   function handleAssinar(planoId) {
+    setAssinarLoading(planoId)
     const link = whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo })
     window.open(link, '_blank')
+    setTimeout(() => setAssinarLoading(null), 1500)
   }
 
   return (
@@ -70,6 +73,7 @@ export default function Planos() {
           ciclo={ciclo}
           isAtual={isActive && assinatura?.plano === 'starter'}
           isPopular={false}
+          loading={assinarLoading === 'starter'}
           onAssinar={() => handleAssinar('starter')}
         />
 
@@ -79,6 +83,7 @@ export default function Planos() {
           ciclo={ciclo}
           isAtual={isActive && assinatura?.plano === 'pro'}
           isPopular={true}
+          loading={assinarLoading === 'pro'}
           onAssinar={() => handleAssinar('pro')}
         />
       </div>
@@ -114,7 +119,7 @@ export default function Planos() {
   )
 }
 
-function PlanoCard({ plano, ciclo, isAtual, isPopular, onAssinar }) {
+function PlanoCard({ plano, ciclo, isAtual, isPopular, loading, onAssinar }) {
   const precoMensalExibido = ciclo === 'anual' ? plano.precoAnual / 12 : plano.precoMensal
   const totalAnual = plano.precoAnual
 
@@ -139,12 +144,14 @@ function PlanoCard({ plano, ciclo, isAtual, isPopular, onAssinar }) {
       )}
 
       <button
-        style={{ ...s.btnAssinar, ...(isPopular ? s.btnAssinarPro : {}), ...(isAtual ? s.btnAssinarAtual : {}) }}
+        style={{ ...s.btnAssinar, ...(isPopular ? s.btnAssinarPro : {}), ...(isAtual ? s.btnAssinarAtual : {}), ...(loading ? { opacity: 0.75 } : {}) }}
         onClick={onAssinar}
-        disabled={isAtual}
+        disabled={isAtual || loading}
       >
         {isAtual ? (
           'Seu plano atual'
+        ) : loading ? (
+          '⏳ Abrindo WhatsApp...'
         ) : (
           <>
             <MessageCircle size={15} /> Assinar via WhatsApp

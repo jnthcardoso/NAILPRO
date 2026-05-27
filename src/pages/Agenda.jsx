@@ -59,6 +59,19 @@ export default function Agenda() {
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
   useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
 
+  // ── Fechar modais com Escape ───────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== 'Escape') return
+      if (agDetalhe) { setAgDetalhe(null); return }
+      if (editando) { setEditando(null); return }
+      if (showPagModal) { setShowPagModal(false); return }
+      if (showModal) { setShowModal(false); return }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [agDetalhe, editando, showPagModal, showModal])
+
   async function loadAgendamentos() {
     let inicio, fim
     if (view === 'Dia') { inicio = fim = format(dataSel, 'yyyy-MM-dd') }
@@ -122,6 +135,21 @@ export default function Agenda() {
 
   async function salvarAgendamento() {
     if (!form.cliente_id || !form.horario || !form.servico || !form.data) return
+
+    // ── Detecção de conflito de horário ─────────────
+    const { data: conflito } = await supabase
+      .from('agendamentos')
+      .select('id, clientes(nome)')
+      .eq('user_id', user.id)
+      .eq('data', form.data)
+      .eq('horario', form.horario + ':00')
+      .neq('status', 'cancelado')
+      .maybeSingle()
+    if (conflito) {
+      erro(`Horário já ocupado — ${conflito.clientes?.nome || 'outra cliente'}`)
+      return
+    }
+
     setSaving(true)
     const { data: ag } = await supabase
       .from('agendamentos')
@@ -159,6 +187,22 @@ export default function Agenda() {
 
   async function atualizarAgendamento() {
     if (!editando) return
+
+    // ── Detecção de conflito de horário (excluindo o próprio) ─
+    const { data: conflito } = await supabase
+      .from('agendamentos')
+      .select('id, clientes(nome)')
+      .eq('user_id', user.id)
+      .eq('data', formEdit.data)
+      .eq('horario', formEdit.horario + ':00')
+      .neq('status', 'cancelado')
+      .neq('id', editando.id)
+      .maybeSingle()
+    if (conflito) {
+      erro(`Horário já ocupado — ${conflito.clientes?.nome || 'outra cliente'}`)
+      return
+    }
+
     setSavingEdit(true)
     await supabase.from('agendamentos').update({
       cliente_id: formEdit.cliente_id,

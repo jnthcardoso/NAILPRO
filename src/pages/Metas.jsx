@@ -39,6 +39,13 @@ export default function Metas() {
   useEffect(() => { if (user) { loadConfig(); loadMetas(); loadPrevisao() } }, [user])
   useEffect(() => { if (user && tab === 'kpis') loadKpis() }, [user, tab, kpiMeses, retencaoDias])
 
+  // Fechar modal com Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape' && showModal) fecharModal() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [showModal])
+
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
@@ -433,7 +440,20 @@ export default function Metas() {
           </div>
 
           {loadingKpi ? (
-            <div style={s.loading}>Calculando KPIs...</div>
+            <div style={s.kpiGrid}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ ...s.kpiCard, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={s.skeletonTitle} />
+                  <div style={s.skeletonLine} />
+                  {[1, 2, 3, 4].map(j => (
+                    <div key={j} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ ...s.skeletonLine, width: `${60 + j * 8}%` }} />
+                      <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', width: `${80 - j * 10}%` }} />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           ) : (
             <div style={s.kpiGrid}>
               {/* 1. Faturamento por serviço */}
@@ -632,6 +652,8 @@ const s = {
   kpiEmpty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' },
   miniSelect: { padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--pink)', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
   loading: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '40px 0' },
+  skeletonTitle: { height: 16, borderRadius: 6, background: 'var(--border)', width: '60%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
+  skeletonLine: { height: 12, borderRadius: 6, background: 'var(--border)', width: '80%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
   // Modal
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', textAlign: 'center' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },

@@ -104,6 +104,20 @@ export default function Configuracoes() {
     const file = e.target.files[0]
     if (!file) return
 
+    // ── Validação de tipo e tamanho ──────────────
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    const MAX_MB = 5
+    if (!ALLOWED.includes(file.type)) {
+      toastErro('Formato não suportado. Use JPG, PNG ou WebP.')
+      e.target.value = ''
+      return
+    }
+    if (file.size > MAX_MB * 1024 * 1024) {
+      toastErro(`Imagem muito grande. Máximo ${MAX_MB}MB.`)
+      e.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (event) => {
       const img = new Image()
@@ -145,6 +159,11 @@ export default function Configuracoes() {
       setSlugErro('Este link já está em uso, escolha outro')
       return
     }
+    if (configError) {
+      toastErro('Erro ao salvar: ' + configError.message)
+      return
+    }
+    sucesso('Configurações salvas ✓')
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }

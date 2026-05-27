@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -13,21 +13,41 @@ export default function Clientes() {
   const navigate = useNavigate()
   const { plano, dentroDoLimite } = useAssinatura()
   const [clientes, setClientes] = useState([])
+  const [buscaInput, setBuscaInput] = useState('')
   const [busca, setBusca] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [diasAlerta, setDiasAlerta] = useState(30)
   const [filtro, setFiltro] = useState('todas')
   const [ordenacao, setOrdenacao] = useState('nome')
+  const [pagina, setPagina] = useState(1)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
+
+  const ITENS_POR_PAGINA = 20
 
   const limiteClientes = plano?.limites?.clientes ?? Infinity
   const noLimite = limiteClientes !== Infinity && clientes.length >= limiteClientes
   const perto = limiteClientes !== Infinity && clientes.length >= limiteClientes - 5 && !noLimite
 
   useEffect(() => { if (user) { loadClientes(); loadConfig() } }, [user])
+
+  // Debounce na busca (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => { setBusca(buscaInput); setPagina(1) }, 300)
+    return () => clearTimeout(timer)
+  }, [buscaInput])
+
+  // Reset paginação quando filtro/ordenação muda
+  useEffect(() => { setPagina(1) }, [filtro, ordenacao])
+
+  // Fechar modal com Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape' && showModal) setShowModal(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [showModal])
 
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes').select('dias_retorno_alerta').eq('user_id', user.id).single()
@@ -73,7 +93,10 @@ export default function Clientes() {
     setShowModal(true)
   }
 
-  const sumidas = clientes.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= diasAlerta)
+  // ── UTC-safe date parse ──
+  const parseUADate = (d) => d ? new Date(d + 'T12:00:00') : null
+
+  const sumidas = clientes.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= diasAlerta)
   const vips = clientes.filter(c => c.total_visitas >= 10)
   const semVisita = clientes.filter(c => !c.ultimo_atendimento)
 
@@ -81,7 +104,7 @@ export default function Clientes() {
     .filter(c => {
       if (busca && !c.nome.toLowerCase().includes(busca.toLowerCase())) return false
       if (filtro === 'vip') return c.total_visitas >= 10
-      if (filtro === 'sumidas') return c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= diasAlerta
+      if (filtro === 'sumidas') return c.ultimo_atendimento && differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= diasAlerta
       if (filtro === 'sem_visita') return !c.ultimo_atendimento
       return true
     })
@@ -92,10 +115,13 @@ export default function Clientes() {
         if (!a.ultimo_atendimento && !b.ultimo_atendimento) return 0
         if (!a.ultimo_atendimento) return 1
         if (!b.ultimo_atendimento) return -1
-        return new Date(b.ultimo_atendimento) - new Date(a.ultimo_atendimento)
+        return parseUADate(b.ultimo_atendimento) - parseUADate(a.ultimo_atendimento)
       }
       return a.nome.localeCompare(b.nome)
     })
+
+  const filtradaExibidas = filtradas.slice(0, pagina * ITENS_POR_PAGINA)
+  const temMais = filtradas.length > pagina * ITENS_POR_PAGINA
 
   function getInitials(nome) {
     return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
@@ -111,7 +137,7 @@ export default function Clientes() {
     <div style={s.page}>
       <div style={s.searchBar}>
         <Search size={16} color="var(--text3)" />
-        <input style={s.searchInput} placeholder="Buscar cliente..." value={busca} onChange={e => setBusca(e.target.value)} />
+        <input style={s.searchInput} placeholder="Buscar cliente..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
       </div>
 
       {/* Aviso de limite (Starter) */}
@@ -188,8 +214,8 @@ export default function Clientes() {
 
       <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
 
-      {filtradas.map(c => {
-        const diasAusente = c.ultimo_atendimento ? differenceInDays(new Date(), new Date(c.ultimo_atendimento)) : null
+      {filtradaExibidas.map(c => {
+        const diasAusente = c.ultimo_atendimento ? differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) : null
         const sumida = diasAusente != null && diasAusente >= diasAlerta
         return (
           <div key={c.id} style={s.card} onClick={() => navigate(`/clientes/${c.id}`)}>
@@ -201,7 +227,7 @@ export default function Clientes() {
                 {c.total_visitas >= 10 && <span style={s.tagVip}>✦ VIP</span>}
               </div>
               <div style={s.cardSub}>
-                {c.ultimo_atendimento ? `Última vez: ${format(new Date(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida'}
+                {c.ultimo_atendimento ? `Última vez: ${format(parseUADate(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida'}
               </div>
             </div>
             <div style={s.cardRight}>
@@ -224,6 +250,12 @@ export default function Clientes() {
 
       {filtradas.length === 0 && (
         <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma cliente encontrada</p></div>
+      )}
+
+      {temMais && (
+        <button style={s.verMaisBtn} onClick={() => setPagina(p => p + 1)}>
+          Ver mais ({filtradas.length - pagina * ITENS_POR_PAGINA} restantes)
+        </button>
       )}
 
       <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova cliente">
@@ -307,7 +339,8 @@ const s = {
   cardRight: { textAlign: 'right', flexShrink: 0 },
   cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)' },
   cardVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
-  waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
+  waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
+  verMaisBtn: { width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   empty: { padding: '40px 0', textAlign: 'center' },
