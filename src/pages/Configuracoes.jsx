@@ -414,9 +414,6 @@ export default function Configuracoes() {
             onChange={e => setForm({ ...form, dias_retorno_alerta: parseInt(e.target.value) || 30 })} />
           <div style={s.hint}>Clientes sem visita há mais de X dias aparecem como "para reativar"</div>
         </div>
-        <div style={{ ...s.hint, background: 'var(--surface2)', padding: 10, borderRadius: 8, marginTop: 6, fontSize: 12 }}>
-          💡 <strong>Metas de faturamento</strong> agora ficam na aba <a href="/metas" style={{ color: 'var(--pink)', fontWeight: 700, textDecoration: 'none' }}>Metas →</a> com cálculo de projeção em dias úteis.
-        </div>
       </div>
 
       {/* ── Serviços padrão ─────────────────── */}
@@ -434,9 +431,18 @@ export default function Configuracoes() {
           </div>
         )}
         <div style={s.addRow}>
-          <input style={{ ...s.input, flex: 1 }} placeholder="Nome do serviço..."
-            value={novoServico} onChange={e => setNovoServico(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') addServico(novoServico) }} />
+          <input
+            style={{ ...s.input, flex: 1 }}
+            placeholder="Nome do serviço..."
+            value={novoServico}
+            onChange={e => setNovoServico(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') addServico(novoServico) }}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+            name="novo-servico-nailpro"
+            type="text"
+          />
           <button style={s.addBtn} onClick={() => addServico(novoServico)}><Plus size={16} /></button>
         </div>
         {SUGERIDOS.filter(sv => !form.servicos_padrao.includes(sv)).length > 0 && (
