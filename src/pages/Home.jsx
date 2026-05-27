@@ -487,17 +487,21 @@ export default function Home() {
       {/* ═══════ AÇÕES RÁPIDAS ═══════ */}
       {!contaNova && (
         <div style={s.quickActions}>
+          <div style={s.sectionTitle}>⚡ ações rápidas</div>
           <button style={{ ...s.qaBtn, ...s.qaBtnPink }} onClick={() => navigate('/agenda')}>
-            <Plus size={18} />
+            <div style={{ ...s.qaIcon, background: 'rgba(255,255,255,0.2)' }}><Plus size={16} color="white" /></div>
             <span>Novo agendamento</span>
+            <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
           </button>
           <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/clientes')}>
-            <UserPlus size={18} />
+            <div style={{ ...s.qaIcon, background: 'var(--pink-light)' }}><UserPlus size={16} color="var(--pink)" /></div>
             <span>Nova cliente</span>
+            <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
           </button>
           <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/lembretes')}>
-            <MessageCircle size={18} />
-            <span>Lembretes</span>
+            <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><MessageCircle size={16} color="#15803D" /></div>
+            <span>Enviar lembretes</span>
+            <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
           </button>
         </div>
       )}
@@ -542,8 +546,9 @@ const s = {
   chartSub: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
 
   /* ─── Ações rápidas ─── */
-  quickActions: { display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 8 },
-  qaBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '12px 8px', borderRadius: 12, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
+  quickActions: { display: 'flex', flexDirection: 'column', gap: 8 },
+  qaBtn: { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'left', width: '100%' },
+  qaIcon: { width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   qaBtnPink: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   qaBtnLight: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' },
 

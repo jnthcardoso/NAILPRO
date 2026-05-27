@@ -236,8 +236,14 @@ input:focus, select:focus, textarea:focus {
 
 @media (min-width: 900px) {
   .home-grid {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .home-grid {
+    gap: 36px;
   }
 }
 
