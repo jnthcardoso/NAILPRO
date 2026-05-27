@@ -273,7 +273,114 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══════ KPIs ═══════ */}
+      {/* ════ GRID 2 COLUNAS (desktop) ════ */}
+      <div className="home-grid">
+
+        {/* ═══════ COLUNA ESQUERDA (principal) ═══════ */}
+        <div className="home-col-main">
+
+          {/* ─── ATENDIMENTOS DO DIA ─── */}
+          <div>
+            <div style={s.sectionHeader}>
+              <div style={s.sectionTitle}>
+                {isHoje ? '📋 atendimentos hoje' : '📋 atendimentos do dia'}
+              </div>
+              <input type="date" style={s.datePicker} value={dataFiltro} onChange={e => setDataFiltro(e.target.value)} />
+            </div>
+
+            {agendamentosData.length === 0 ? (
+              <div style={s.emptyDay}>
+                <span style={{ color: 'var(--text3)', fontSize: 13 }}>Nenhum atendimento</span>
+                <button style={s.emptyBtn} onClick={() => navigate('/agenda')}>+ Agendar</button>
+              </div>
+            ) : (
+              agendamentosData.map(ag => {
+                const ST = {
+                  confirmado: { bg: 'var(--green-bg)', color: 'var(--green)', border: 'var(--green)', label: 'Confirmada' },
+                  realizado:  { bg: '#EDE9FE', color: '#5B21B6', border: '#A78BFA', label: 'Realizado' },
+                  pendente:   { bg: '#FEF3C7', color: '#92400E', border: '#FCD34D', label: 'Aguardando' },
+                }
+                const st = ST[ag.status] || ST.pendente
+                return (
+                  <div key={ag.id} style={{ ...s.apptCard, borderLeftColor: st.border }} onClick={() => navigate('/agenda')}>
+                    <div style={s.apptTimeBadge}>{ag.horario?.slice(0, 5)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.apptName}>{ag.clientes?.nome}</div>
+                      <div style={s.apptService}>{ag.servico}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+                      {ag.valor > 0 && <span style={{ ...s.mono, fontSize: 12, color: 'var(--pink)' }}>R$ {ag.valor.toFixed(0)}</span>}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          {/* ─── INSIGHTS ─── */}
+          {!contaNova && (diaTop || aniversarios.length > 0 || clientesSumidas.length > 0) && (
+            <div style={s.insights}>
+              <div style={s.sectionTitle}>💡 insights pra você</div>
+
+              {diaTop && (
+                <div style={{ ...s.insight, background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderColor: '#93C5FD' }}>
+                  <Award size={18} color="#1E40AF" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
+                      Seu dia mais lucrativo é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
+                    </div>
+                    <div style={{ ...s.insightSub, color: '#1E40AF' }}>
+                      R$ {diaTop.valor.toFixed(0)} acumulado nos últimos 90 dias
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {aniversarios.map(c => {
+                const nasc = new Date(c.data_nascimento + 'T12:00:00')
+                const aniv = new Date(new Date().getFullYear(), nasc.getMonth(), nasc.getDate())
+                const diff = differenceInDays(aniv, new Date())
+                return (
+                  <div key={c.id} style={{ ...s.insight, background: 'linear-gradient(135deg, #FDF4FF, #FAE8FF)', borderColor: '#E9D5FF' }}>
+                    <Cake size={18} color="#86198F" />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...s.insightTitle, color: '#701A75' }}>
+                        {c.nome} faz aniversário {diff === 0 ? 'hoje 🎂' : diff === 1 ? 'amanhã 🎂' : `em ${diff} dias`}
+                      </div>
+                      <div style={{ ...s.insightSub, color: '#86198F' }}>
+                        Que tal mandar uma mensagem carinhosa?
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {clientesSumidas.length > 0 && (
+                <div
+                  style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5', cursor: 'pointer' }}
+                  onClick={() => navigate('/clientes')}
+                >
+                  <UserX size={18} color="#B91C1C" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...s.insightTitle, color: '#7F1D1D' }}>
+                      {clientesSumidas.length} {clientesSumidas.length === 1 ? 'cliente sumida há' : 'clientes sumidas há'} +{diasAlerta} dias
+                    </div>
+                    <div style={{ ...s.insightSub, color: '#991B1B' }}>
+                      {clientesSumidas.map(c => c.nome.split(' ')[0]).join(' · ')}
+                    </div>
+                  </div>
+                  <ChevronRight size={16} color="#7F1D1D" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ═══════ COLUNA DIREITA (KPIs + chart + ações) ═══════ */}
+        <div className="home-col-side">
+
+      {/* KPIs */}
       <div style={s.grid}>
         {/* Atendimentos hoje */}
         <div style={s.kpi} onClick={() => navigate('/agenda')}>
@@ -395,100 +502,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══════ INSIGHTS ═══════ */}
-      {!contaNova && (diaTop || aniversarios.length > 0 || clientesSumidas.length > 0) && (
-        <div style={s.insights}>
-          <div style={s.sectionTitle}>💡 Insights pra você</div>
-
-          {diaTop && (
-            <div style={{ ...s.insight, background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderColor: '#93C5FD' }}>
-              <Award size={18} color="#1E40AF" />
-              <div style={{ flex: 1 }}>
-                <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
-                  Seu dia mais lucrativo é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
-                </div>
-                <div style={{ ...s.insightSub, color: '#1E40AF' }}>
-                  R$ {diaTop.valor.toFixed(0)} acumulado nos últimos 90 dias
-                </div>
-              </div>
-            </div>
-          )}
-
-          {aniversarios.map(c => {
-            const nasc = new Date(c.data_nascimento + 'T12:00:00')
-            const aniv = new Date(new Date().getFullYear(), nasc.getMonth(), nasc.getDate())
-            const diff = differenceInDays(aniv, new Date())
-            return (
-              <div key={c.id} style={{ ...s.insight, background: 'linear-gradient(135deg, #FDF4FF, #FAE8FF)', borderColor: '#E9D5FF' }}>
-                <Cake size={18} color="#86198F" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ ...s.insightTitle, color: '#701A75' }}>
-                    {c.nome} faz aniversário {diff === 0 ? 'hoje 🎂' : diff === 1 ? 'amanhã 🎂' : `em ${diff} dias`}
-                  </div>
-                  <div style={{ ...s.insightSub, color: '#86198F' }}>
-                    Que tal mandar uma mensagem carinhosa?
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-
-          {clientesSumidas.length > 0 && (
-            <div
-              style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5', cursor: 'pointer' }}
-              onClick={() => navigate('/clientes')}
-            >
-              <UserX size={18} color="#B91C1C" />
-              <div style={{ flex: 1 }}>
-                <div style={{ ...s.insightTitle, color: '#7F1D1D' }}>
-                  {clientesSumidas.length} {clientesSumidas.length === 1 ? 'cliente sumida há' : 'clientes sumidas há'} +{diasAlerta} dias
-                </div>
-                <div style={{ ...s.insightSub, color: '#991B1B' }}>
-                  {clientesSumidas.map(c => c.nome.split(' ')[0]).join(' · ')}
-                </div>
-              </div>
-              <ChevronRight size={16} color="#7F1D1D" />
-            </div>
-          )}
         </div>
-      )}
-
-      {/* ═══════ ATENDIMENTOS DO DIA ═══════ */}
-      <div style={s.sectionHeader}>
-        <div style={s.sectionTitle}>
-          {isHoje ? '📋 atendimentos hoje' : '📋 atendimentos do dia'}
-        </div>
-        <input type="date" style={s.datePicker} value={dataFiltro} onChange={e => setDataFiltro(e.target.value)} />
       </div>
-
-      {agendamentosData.length === 0 ? (
-        <div style={s.emptyDay}>
-          <span style={{ color: 'var(--text3)', fontSize: 13 }}>Nenhum atendimento</span>
-          <button style={s.emptyBtn} onClick={() => navigate('/agenda')}>+ Agendar</button>
-        </div>
-      ) : (
-        agendamentosData.map(ag => {
-          const ST = {
-            confirmado: { bg: 'var(--green-bg)', color: 'var(--green)', border: 'var(--green)', label: 'Confirmada' },
-            realizado:  { bg: '#EDE9FE', color: '#5B21B6', border: '#A78BFA', label: 'Realizado' },
-            pendente:   { bg: '#FEF3C7', color: '#92400E', border: '#FCD34D', label: 'Aguardando' },
-          }
-          const st = ST[ag.status] || ST.pendente
-          return (
-            <div key={ag.id} style={{ ...s.apptCard, borderLeftColor: st.border }} onClick={() => navigate('/agenda')}>
-              <div style={s.apptTimeBadge}>{ag.horario?.slice(0, 5)}</div>
-              <div style={{ flex: 1 }}>
-                <div style={s.apptName}>{ag.clientes?.nome}</div>
-                <div style={s.apptService}>{ag.servico}</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
-                {ag.valor > 0 && <span style={{ ...s.mono, fontSize: 12, color: 'var(--pink)' }}>R$ {ag.valor.toFixed(0)}</span>}
-              </div>
-            </div>
-          )
-        })
-      )}
+      {/* ════ Fim do grid 2 colunas ════ */}
 
       <button className="fab-btn" onClick={() => navigate('/agenda')} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
@@ -504,11 +520,11 @@ const s = {
   greetingDate: { fontSize: 12, color: 'var(--text3)', fontWeight: 500, textTransform: 'capitalize' },
   mono: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' },
-  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 10px' },
+  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   datePicker: { fontSize: 12, padding: '5px 9px', border: '1px solid var(--border2)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
 
   /* ─── KPIs ─── */
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
   kpi: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' },
   kpiHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   kpiIcon: { width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
@@ -520,19 +536,19 @@ const s = {
   progressFill: { height: '100%', borderRadius: 3, background: 'var(--pink)', transition: 'width 0.6s ease' },
 
   /* ─── Chart ─── */
-  chartCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '14px 14px 8px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', marginBottom: 16 },
+  chartCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '14px 14px 8px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' },
   chartHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 },
   chartTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
   chartSub: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
 
   /* ─── Ações rápidas ─── */
-  quickActions: { display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 8, marginBottom: 18 },
+  quickActions: { display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 8 },
   qaBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '12px 8px', borderRadius: 12, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
   qaBtnPink: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   qaBtnLight: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' },
 
   /* ─── Insights ─── */
-  insights: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 },
+  insights: { display: 'flex', flexDirection: 'column', gap: 8 },
   insight: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid', boxShadow: 'var(--shadow-xs)' },
   insightTitle: { fontSize: 13, fontWeight: 600 },
   insightSub: { fontSize: 11, marginTop: 2, opacity: 0.85 },

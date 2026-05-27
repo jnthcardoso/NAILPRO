@@ -225,6 +225,22 @@ input:focus, select:focus, textarea:focus {
   100% { background-position: -200% 0; }
 }
 
+/* ── Home Dashboard Grid (2 colunas no desktop) ── */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.home-col-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.home-col-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+@media (min-width: 900px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
