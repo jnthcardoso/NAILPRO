@@ -190,9 +190,10 @@ input:focus, select:focus, textarea:focus {
 
   .app-main {
     padding-bottom: 32px !important;
-    padding-left: 24px;
-    padding-right: 24px;
-    max-width: 760px;
+    padding-left: 32px;
+    padding-right: 32px;
+    max-width: 1500px;
+    margin: 0 auto;
   }
 
   .app-bottom-nav { display: none; }
@@ -246,18 +247,18 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Em telas grandes (>=1200px): 3 colunas */
+/* Em telas grandes (>=1200px): 3 colunas com gaps grandes */
 @media (min-width: 1200px) {
   .home-grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.85fr);
-    gap: 36px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.9fr);
+    gap: 56px;
   }
 }
 
-/* Telas extra-grandes (>=1500px): mais respiro */
+/* Telas extra-grandes (>=1500px): respiro maximo */
 @media (min-width: 1500px) {
   .home-grid {
-    gap: 48px;
+    gap: 80px;
   }
 }
 

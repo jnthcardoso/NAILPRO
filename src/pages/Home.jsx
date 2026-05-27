@@ -289,14 +289,13 @@ export default function Home() {
               <input type="date" style={s.datePicker} value={dataFiltro} onChange={e => setDataFiltro(e.target.value)} />
             </div>
 
-            <div style={s.apptList}>
             {agendamentosData.length === 0 ? (
               <div style={s.emptyDay}>
                 <span style={{ color: 'var(--text3)', fontSize: 13 }}>Nenhum atendimento</span>
                 <button style={s.emptyBtn} onClick={() => navigate('/agenda')}>+ Agendar</button>
               </div>
             ) : (
-              agendamentosData.map(ag => {
+              agendamentosData.slice(0, 5).map(ag => {
                 const ST = {
                   confirmado: { bg: 'var(--green-bg)', color: 'var(--green)', border: 'var(--green)', label: 'Confirmada' },
                   realizado:  { bg: '#EDE9FE', color: '#5B21B6', border: '#A78BFA', label: 'Realizado' },
@@ -318,7 +317,11 @@ export default function Home() {
                 )
               })
             )}
-            </div>
+            {agendamentosData.length > 5 && (
+              <button style={s.verTodosBtn} onClick={() => navigate('/agenda')}>
+                Ver todos os {agendamentosData.length} atendimentos →
+              </button>
+            )}
           </div>
 
           {/* ─── INSIGHTS ─── */}
@@ -483,7 +486,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <BarChart data={receita7Dias} cor="#15803D" prefixo="R$ " height={120} />
+          <BarChart data={receita7Dias} cor="#15803D" prefixo="R$ " height={90} />
         </div>
       )}
 
@@ -571,7 +574,7 @@ const s = {
   insightSub: { fontSize: 11, marginTop: 2, opacity: 0.85 },
 
   /* ─── Atendimentos ─── */
-  apptList: { maxHeight: 'min(70vh, 560px)', overflowY: 'auto', paddingRight: 4 },
+  verTodosBtn: { width: '100%', background: 'transparent', border: '1px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px', fontSize: 12, color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', marginTop: 4 },
   apptCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', boxShadow: 'var(--shadow-sm)', marginBottom: 7 },
   apptTimeBadge: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, fontSize: 13, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '4px 7px', textAlign: 'center', flexShrink: 0 },
   apptName: { fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
