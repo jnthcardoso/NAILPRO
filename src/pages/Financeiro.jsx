@@ -417,7 +417,7 @@ export default function Financeiro() {
         </button>
       </div>
 
-      {/* GRID PRINCIPAL: 2 colunas lado a lado */}
+      {/* GRID PRINCIPAL: 3 colunas lado a lado */}
       <div style={s.mainGrid}>
 
         {/* ─── COLUNA ESQUERDA: Relatórios + DRE + Despesas ─── */}
@@ -520,87 +520,83 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* ─── COLUNA DIREITA: Análises + Receitas ─── */}
+        {/* ─── COLUNA CENTRAL: Análises ─── */}
         <div style={s.coluna}>
+          <div style={s.sectionTitle}>📊 análises do mês</div>
+          <div style={s.graficosGrid}>
+            <div style={s.graficoCard}>
+              <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
+              <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={140} />
+            </div>
 
-          {/* Análises (gráficos) */}
-          <div>
-            <div style={s.sectionTitle}>📊 análises do mês</div>
-            <div style={s.graficosGrid}>
+            {dadosDespesas.length > 0 && (
               <div style={s.graficoCard}>
-                <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
-                <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={140} />
+                <div style={s.graficoTitulo}>Despesas por categoria</div>
+                <DonutChart data={dadosDespesas} size={140} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
               </div>
+            )}
 
-              {dadosDespesas.length > 0 && (
-                <div style={s.graficoCard}>
-                  <div style={s.graficoTitulo}>Despesas por categoria</div>
-                  <DonutChart data={dadosDespesas} size={140} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
-                </div>
-              )}
+            <div style={s.graficoCard}>
+              <div style={s.graficoTitulo}>Como você recebeu</div>
+              {dadosFormas.length === 0
+                ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
+                : <DonutChart data={dadosFormas} size={140} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
+              }
+            </div>
 
-              <div style={s.graficoCard}>
-                <div style={s.graficoTitulo}>Como você recebeu</div>
-                {dadosFormas.length === 0
-                  ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
-                  : <DonutChart data={dadosFormas} size={140} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
-                }
-              </div>
-
-              <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
-                <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
-                <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => `R$ ${v.toFixed(0)}`} />
-              </div>
+            <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
+              <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
+              <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => `R$ ${v.toFixed(0)}`} />
             </div>
           </div>
+        </div>
 
-          {/* ─── RECEITAS ─── */}
-          <div>
-            <div style={s.colHeader}>
-              <div style={s.colTitulo}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
-                Receitas ({filtrados.length})
-              </div>
-              <button style={s.addBtnSmall} onClick={() => setShowModal(true)}>
-                <Plus size={13} /> Pagamento
+        {/* ─── COLUNA DIREITA: Receitas ─── */}
+        <div style={s.coluna}>
+          <div style={s.colHeader}>
+            <div style={s.colTitulo}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
+              Receitas ({filtrados.length})
+            </div>
+            <button style={s.addBtnSmall} onClick={() => setShowModal(true)}>
+              <Plus size={13} /> Pagamento
+            </button>
+          </div>
+
+          <div style={s.filtros}>
+            {['todos', 'pago', 'pendente'].map(f => (
+              <button key={f} style={{ ...s.filtroBtn, ...(filtro === f ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f)}>
+                {f === 'todos' ? 'Todos' : f === 'pago' ? 'Pagos' : 'Pendentes'}
               </button>
-            </div>
+            ))}
+          </div>
 
-            <div style={s.filtros}>
-              {['todos', 'pago', 'pendente'].map(f => (
-                <button key={f} style={{ ...s.filtroBtn, ...(filtro === f ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f)}>
-                  {f === 'todos' ? 'Todos' : f === 'pago' ? 'Pagos' : 'Pendentes'}
-                </button>
-              ))}
-            </div>
-
-            {filtrados.length === 0
-              ? <div style={s.empty}>Nenhum lançamento encontrado</div>
-              : filtrados.map(p => {
-                const pago = p.status === 'pago'
-                return (
-                  <div key={p.id} style={s.finCard}>
-                    <div style={{ ...s.dot, background: pago ? 'var(--green)' : '#F59E0B' }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={s.finNome}>{p.agendamentos?.clientes?.nome || '—'}</div>
-                      <div style={s.finSub}>
-                        {p.agendamentos?.servico || '—'} · {format(new Date(p.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                        {' · '}{FORMA_LABEL[p.forma] || p.forma}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
-                        R$ {p.valor.toFixed(2).replace('.', ',')}
-                      </div>
-                      <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
-                        {pago ? '✓ Pago' : '⏳ Pendente'}
-                      </button>
+          {filtrados.length === 0
+            ? <div style={s.empty}>Nenhum lançamento encontrado</div>
+            : filtrados.map(p => {
+              const pago = p.status === 'pago'
+              return (
+                <div key={p.id} style={s.finCard}>
+                  <div style={{ ...s.dot, background: pago ? 'var(--green)' : '#F59E0B' }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={s.finNome}>{p.agendamentos?.clientes?.nome || '—'}</div>
+                    <div style={s.finSub}>
+                      {p.agendamentos?.servico || '—'} · {format(new Date(p.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                      {' · '}{FORMA_LABEL[p.forma] || p.forma}
                     </div>
                   </div>
-                )
-              })
-            }
-          </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
+                      R$ {p.valor.toFixed(2).replace('.', ',')}
+                    </div>
+                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
+                      {pago ? '✓ Pago' : '⏳ Pendente'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })
+          }
         </div>
       </div>
 
@@ -716,7 +712,7 @@ const s = {
   exportBtnAnual: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--gold, #D4AF37)', color: '#5C4A0F', border: '1px solid #B7791F', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' },
   /* Layout principal 2 colunas */
-  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' },
+  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, alignItems: 'start' },
   coluna: { display: 'flex', flexDirection: 'column', gap: 16 },
   /* KPIs em 2x2 dentro da coluna esquerda */
   grid2x2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
