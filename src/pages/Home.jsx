@@ -52,10 +52,20 @@ export default function Home() {
     // Config
     const { data: config } = await supabase.from('configuracoes')
       .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('user_id', user.id).single()
-    if (config?.meta_mensal) setStats(s => ({ ...s, metaMes: config.meta_mensal }))
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
     const limiteAlerta = config?.dias_retorno_alerta ?? 30
     setDiasAlerta(limiteAlerta)
+
+    // Meta do mês: prioriza tabela metas, fallback pra config.meta_mensal
+    const periodoAtual = format(new Date(), 'yyyy-MM')
+    const { data: metaAtual } = await supabase.from('metas')
+      .select('valor_meta')
+      .eq('user_id', user.id)
+      .eq('tipo', 'mes')
+      .eq('periodo', periodoAtual)
+      .maybeSingle()
+    const valorMeta = metaAtual?.valor_meta || config?.meta_mensal || 4000
+    setStats(s => ({ ...s, metaMes: valorMeta }))
 
     // Atendimentos hoje (não cancelados)
     const { data: agendHoje } = await supabase.from('agendamentos')

@@ -48,7 +48,6 @@ export default function Configuracoes() {
   const [form, setForm] = useState({
     nome_salao: '',
     whatsapp: '',
-    meta_mensal: 4000,
     servicos_padrao: [],
     agenda_publica_ativa: false,
     slug: '',
@@ -85,7 +84,6 @@ export default function Configuracoes() {
       setForm({
         nome_salao: data.nome_salao || '',
         whatsapp: data.whatsapp || '',
-        meta_mensal: data.meta_mensal || 4000,
         servicos_padrao: data.servicos_padrao || [],
         agenda_publica_ativa: data.agenda_publica_ativa || false,
         slug: data.slug || '',
@@ -407,20 +405,17 @@ export default function Configuracoes() {
         </div>
       </div>
 
-      {/* ── Metas e Alertas ─────────────────── */}
+      {/* ── Alertas ─────────────────────────── */}
       <div style={{ ...s.section, display: tab === 'perfil' ? 'block' : 'none' }}>
-        <div style={s.sectionTitle}>metas e alertas</div>
-        <div style={s.field}>
-          <label style={s.label}>Meta mensal de receita (R$)</label>
-          <input style={s.input} type="number" placeholder="4000" value={form.meta_mensal}
-            onChange={e => setForm({ ...form, meta_mensal: parseFloat(e.target.value) || 0 })} />
-          <div style={s.hint}>Aparece na barra de progresso do Dashboard</div>
-        </div>
+        <div style={s.sectionTitle}>alertas</div>
         <div style={s.field}>
           <label style={s.label}>Alerta de retorno (dias)</label>
           <input style={s.input} type="number" min="7" max="365" placeholder="30" value={form.dias_retorno_alerta}
             onChange={e => setForm({ ...form, dias_retorno_alerta: parseInt(e.target.value) || 30 })} />
           <div style={s.hint}>Clientes sem visita há mais de X dias aparecem como "para reativar"</div>
+        </div>
+        <div style={{ ...s.hint, background: 'var(--surface2)', padding: 10, borderRadius: 8, marginTop: 6, fontSize: 12 }}>
+          💡 <strong>Metas de faturamento</strong> agora ficam na aba <a href="/metas" style={{ color: 'var(--pink)', fontWeight: 700, textDecoration: 'none' }}>Metas →</a> com cálculo de projeção em dias úteis.
         </div>
       </div>
 
