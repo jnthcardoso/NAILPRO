@@ -71,6 +71,9 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
   doc.setFont('helvetica', 'normal')
   doc.text(`Ticket médio: R$ ${ticket.toFixed(2)} (${qtd} atendimentos)`, 14, 71)
 
+  const totalPago = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
+  const totalPendente = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
+
   if (pagamentos.length) {
     autoTable(doc, {
       startY: 78,
@@ -83,8 +86,14 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
         `R$ ${p.valor.toFixed(2)}`,
         p.status === 'pago' ? 'Pago' : 'Pendente',
       ]),
+      foot: [[
+        '', '', '', 'TOTAL RECEBIDO',
+        `R$ ${totalPago.toFixed(2)}`,
+        totalPendente > 0 ? `+ R$ ${totalPendente.toFixed(2)} pend.` : '',
+      ]],
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [139, 38, 85] },
+      footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
       didDrawPage: (data) => {
         doc.setFontSize(11)
         doc.setFont('helvetica', 'bold')
@@ -107,9 +116,19 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
         d.descricao,
         `R$ ${d.valor.toFixed(2)}`,
       ]),
+      foot: [['', '', 'TOTAL DESPESAS', `R$ ${totalDespesas.toFixed(2)}`]],
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [185, 28, 28] },
+      footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
     })
+
+    const finalYDespesas = doc.lastAutoTable?.finalY || 90
+    const margemFinal = recebido > 0 ? ((lucro / recebido) * 100).toFixed(1) : '0.0'
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(lucro >= 0 ? 21 : 185, lucro >= 0 ? 128 : 28, lucro >= 0 ? 61 : 28)
+    doc.text(`LUCRO LÍQUIDO DO PERÍODO: R$ ${lucro.toFixed(2)} (margem ${margemFinal}%)`, 14, finalYDespesas + 12)
+    doc.setTextColor(0, 0, 0)
   }
 
   doc.save(`nailpro-financeiro-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
