@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
-  TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil
+  TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
+  BarChart2, ListOrdered
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -202,6 +203,7 @@ export default function Financeiro() {
   const [periodoSel, setPeriodoSel] = useState(new Date())
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
+  const [tab, setTab] = useState('resumo')
 
   useEffect(() => { if (user) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [user, periodoSel])
 
@@ -417,14 +419,30 @@ export default function Financeiro() {
         </button>
       </div>
 
-      {/* GRID PRINCIPAL: 3 colunas lado a lado */}
-      <div style={s.mainGrid}>
+      {/* ── Tabs ── */}
+      <div style={tabs.bar}>
+        {[
+          { id: 'resumo',   label: 'Resumo',   icon: DollarSign },
+          { id: 'analises', label: 'Análises', icon: BarChart2 },
+          { id: 'receitas', label: 'Receitas', icon: TrendingUp },
+          { id: 'despesas', label: 'Despesas', icon: Receipt },
+        ].map(t => {
+          const Ico = t.icon
+          const ativo = tab === t.id
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ ...tabs.btn, ...(ativo ? tabs.btnAtivo : {}) }}>
+              <Ico size={15} />
+              <span>{t.label}</span>
+            </button>
+          )
+        })}
+      </div>
 
-        {/* ─── COLUNA ESQUERDA: Relatórios + DRE + Despesas ─── */}
-        <div style={s.coluna}>
-
-          {/* KPIs principais */}
-          <div style={s.grid2x2}>
+      {/* ── ABA: Resumo ── */}
+      {tab === 'resumo' && (
+        <div style={s.tabContent}>
+          {/* KPIs */}
+          <div style={s.grid4}>
             <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
               <div style={s.cardLabel}><DollarSign size={11} /> Recebido</div>
               <div style={{ ...s.cardValue, color: 'var(--green)' }}>R$ {recebido.toFixed(0)}</div>
@@ -447,7 +465,7 @@ export default function Financeiro() {
             </div>
           </div>
 
-          {/* DRE - Demonstração de Resultado */}
+          {/* DRE */}
           <div style={s.dreCard}>
             <div style={s.dreTitulo}>📊 DRE — {periodoLabel}</div>
             <div style={s.dreLinha}>
@@ -473,66 +491,22 @@ export default function Financeiro() {
               </div>
             )}
           </div>
-
-          {/* ─── DESPESAS ─── */}
-          <div>
-            <div style={s.colHeader}>
-              <div style={s.colTitulo}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
-                Despesas ({despesas.length})
-              </div>
-              <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
-                <Plus size={13} /> Despesa
-              </button>
-            </div>
-
-            {despesas.length === 0
-              ? <div style={s.empty}>Nenhuma despesa registrada</div>
-              : despesas.map(d => {
-                const cat = CATEGORIAS.find(c => c.id === d.categoria)
-                return (
-                  <div key={d.id} style={s.finCard}>
-                    <div style={{ ...s.catBadge, background: (cat?.cor || '#888') + '22', color: cat?.cor || '#888' }}>
-                      {cat?.icon || '📦'}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={s.finNome}>{d.descricao}</div>
-                      <div style={s.finSub}>
-                        {cat?.label || d.categoria} · {format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                        {d.recorrente && ' · 🔁 mensal'}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {d.valor.toFixed(2).replace('.', ',')}</div>
-                      <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
-                        <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
-                          <Pencil size={11} />
-                        </button>
-                        <button style={{ ...s.miniIconBtn, color: '#B91C1C' }} onClick={() => excluirDespesa(d)} title="Excluir">
-                          <X size={11} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            }
-          </div>
         </div>
+      )}
 
-        {/* ─── COLUNA CENTRAL: Análises ─── */}
-        <div style={s.coluna}>
-          <div style={s.sectionTitle}>📊 análises do mês</div>
+      {/* ── ABA: Análises ── */}
+      {tab === 'analises' && (
+        <div style={s.tabContent}>
           <div style={s.graficosGrid}>
             <div style={s.graficoCard}>
               <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
-              <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={140} />
+              <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={160} />
             </div>
 
             {dadosDespesas.length > 0 && (
               <div style={s.graficoCard}>
                 <div style={s.graficoTitulo}>Despesas por categoria</div>
-                <DonutChart data={dadosDespesas} size={140} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
+                <DonutChart data={dadosDespesas} size={160} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
               </div>
             )}
 
@@ -540,7 +514,7 @@ export default function Financeiro() {
               <div style={s.graficoTitulo}>Como você recebeu</div>
               {dadosFormas.length === 0
                 ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
-                : <DonutChart data={dadosFormas} size={140} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
+                : <DonutChart data={dadosFormas} size={160} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
               }
             </div>
 
@@ -550,9 +524,11 @@ export default function Financeiro() {
             </div>
           </div>
         </div>
+      )}
 
-        {/* ─── COLUNA DIREITA: Receitas ─── */}
-        <div style={s.coluna}>
+      {/* ── ABA: Receitas ── */}
+      {tab === 'receitas' && (
+        <div style={s.tabContent}>
           <div style={s.colHeader}>
             <div style={s.colTitulo}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
@@ -598,7 +574,54 @@ export default function Financeiro() {
             })
           }
         </div>
-      </div>
+      )}
+
+      {/* ── ABA: Despesas ── */}
+      {tab === 'despesas' && (
+        <div style={s.tabContent}>
+          <div style={s.colHeader}>
+            <div style={s.colTitulo}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
+              Despesas ({despesas.length})
+            </div>
+            <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
+              <Plus size={13} /> Despesa
+            </button>
+          </div>
+
+          {despesas.length === 0
+            ? <div style={s.empty}>Nenhuma despesa registrada</div>
+            : despesas.map(d => {
+              const cat = CATEGORIAS.find(c => c.id === d.categoria)
+              return (
+                <div key={d.id} style={s.finCard}>
+                  <div style={{ ...s.catBadge, background: (cat?.cor || '#888') + '22', color: cat?.cor || '#888' }}>
+                    {cat?.icon || '📦'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={s.finNome}>{d.descricao}</div>
+                    <div style={s.finSub}>
+                      {cat?.label || d.categoria} · {format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                      {d.recorrente && ' · 🔁 mensal'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {d.valor.toFixed(2).replace('.', ',')}</div>
+                    <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
+                      <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
+                        <Pencil size={11} />
+                      </button>
+                      <button style={{ ...s.miniIconBtn, color: '#B91C1C' }} onClick={() => excluirDespesa(d)} title="Excluir">
+                        <X size={11} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          }
+        </div>
+      )}
 
       <UpgradeModal
         aberto={showUpgrade}
@@ -711,13 +734,9 @@ const s = {
   exportBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--pink-light)', color: 'var(--pink)', border: '1px solid var(--pink-mid)', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   exportBtnAnual: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--gold, #D4AF37)', color: '#5C4A0F', border: '1px solid #B7791F', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' },
-  /* Layout principal 2 colunas */
-  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, alignItems: 'start' },
-  coluna: { display: 'flex', flexDirection: 'column', gap: 16 },
-  /* KPIs em 2x2 dentro da coluna esquerda */
-  grid2x2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
-  /* KPIs (legado) */
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 14 },
+  tabContent: { display: 'flex', flexDirection: 'column', gap: 16 },
+  /* KPIs */
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },
   card: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '12px 12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
   cardLabel: { fontSize: 10, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 },
   cardValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, lineHeight: 1 },
@@ -763,4 +782,46 @@ const s = {
   row: { display: 'flex', gap: 10 },
   btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+}
+
+const tabs = {
+  bar: {
+    display: 'flex',
+    gap: 4,
+    background: 'var(--surface)',
+    borderRadius: 'var(--radius-sm)',
+    padding: 4,
+    marginBottom: 20,
+    boxShadow: 'var(--shadow-xs)',
+    border: '1px solid var(--border)',
+    overflowX: 'auto',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+  },
+  btn: {
+    flex: 1,
+    minWidth: 80,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: '10px 12px',
+    borderRadius: 8,
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text3)',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+  },
+  btnAtivo: {
+    background: 'var(--pink)',
+    color: 'white',
+    boxShadow: 'var(--shadow-pink)',
+    fontWeight: 700,
+  },
 }
