@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin } from '../../contexts/AssinaturaContext'
 import { NailProLogo, NailDropIcon } from '../common/Brand'
@@ -16,11 +17,17 @@ const navItems = [
 
 
 export default function AppLayout() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const { isAdmin } = useIsAdmin()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
+
+  async function handleSair() {
+    await signOut()
+    navigate('/login', { replace: true })
+  }
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true'
@@ -125,6 +132,19 @@ export default function AppLayout() {
             <Settings size={19} strokeWidth={isActive('/configuracoes') ? 2.5 : 1.8} />
             {!isSidebarCollapsed && <span>Configurações</span>}
           </NavLink>
+
+          <button
+            onClick={handleSair}
+            style={{
+              ...sb.navItem,
+              ...sb.sairBtn,
+              ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+            }}
+            title={isSidebarCollapsed ? "Sair" : undefined}
+          >
+            <LogOut size={19} strokeWidth={1.8} />
+            {!isSidebarCollapsed && <span>Sair</span>}
+          </button>
         </div>
 
         {/* Botão de Alternância (Toggle) */}
@@ -215,6 +235,7 @@ const sb = {
   nav: { display: 'flex', flexDirection: 'column', gap: 3, padding: '0 10px' },
   navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
   navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 38, 85, 0.4)' },
+  sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
   toggleArea: { padding: '10px 14px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', transition: 'all 0.28s' },
   toggleBtn: { background: 'rgba(255, 255, 255, 0.06)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.7)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' },
 }
