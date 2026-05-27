@@ -17,6 +17,8 @@ export default function Clientes() {
   const [showModal, setShowModal] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [diasAlerta, setDiasAlerta] = useState(30)
+  const [filtro, setFiltro] = useState('todas')
+  const [ordenacao, setOrdenacao] = useState('nome')
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
@@ -71,8 +73,29 @@ export default function Clientes() {
     setShowModal(true)
   }
 
-  const filtradas = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()))
   const sumidas = clientes.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= diasAlerta)
+  const vips = clientes.filter(c => c.total_visitas >= 10)
+  const semVisita = clientes.filter(c => !c.ultimo_atendimento)
+
+  const filtradas = clientes
+    .filter(c => {
+      if (busca && !c.nome.toLowerCase().includes(busca.toLowerCase())) return false
+      if (filtro === 'vip') return c.total_visitas >= 10
+      if (filtro === 'sumidas') return c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= diasAlerta
+      if (filtro === 'sem_visita') return !c.ultimo_atendimento
+      return true
+    })
+    .sort((a, b) => {
+      if (ordenacao === 'gasto') return (b.total_gasto || 0) - (a.total_gasto || 0)
+      if (ordenacao === 'visitas') return (b.total_visitas || 0) - (a.total_visitas || 0)
+      if (ordenacao === 'recente') {
+        if (!a.ultimo_atendimento && !b.ultimo_atendimento) return 0
+        if (!a.ultimo_atendimento) return 1
+        if (!b.ultimo_atendimento) return -1
+        return new Date(b.ultimo_atendimento) - new Date(a.ultimo_atendimento)
+      }
+      return a.nome.localeCompare(b.nome)
+    })
 
   function getInitials(nome) {
     return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
@@ -117,21 +140,53 @@ export default function Clientes() {
         </div>
       )}
 
-      {sumidas.length > 0 && busca === '' && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={s.sectionTitle}>para reativar (+{diasAlerta} dias)</div>
-          <div style={s.chipsRow}>
-            {sumidas.map(c => (
-              <div key={c.id} style={s.chip} onClick={() => navigate(`/clientes/${c.id}`)}>
-                <AlertCircle size={13} />
-                {c.nome.split(' ')[0]} · {differenceInDays(new Date(), new Date(c.ultimo_atendimento))}d
-              </div>
-            ))}
-          </div>
+      {/* Mini stats */}
+      <div style={s.statsRow}>
+        <div style={s.statCard}>
+          <div style={s.statNum}>{clientes.length}</div>
+          <div style={s.statLabel}>Total</div>
         </div>
-      )}
+        <div style={{ ...s.statCard, cursor: vips.length ? 'pointer' : 'default' }} onClick={() => vips.length && setFiltro(filtro === 'vip' ? 'todas' : 'vip')}>
+          <div style={{ ...s.statNum, color: 'var(--gold, #D4AF37)' }}>{vips.length}</div>
+          <div style={s.statLabel}>✦ VIP</div>
+        </div>
+        <div style={{ ...s.statCard, cursor: sumidas.length ? 'pointer' : 'default' }} onClick={() => sumidas.length && setFiltro(filtro === 'sumidas' ? 'todas' : 'sumidas')}>
+          <div style={{ ...s.statNum, color: sumidas.length ? 'var(--red, #B91C1C)' : 'var(--text3)' }}>{sumidas.length}</div>
+          <div style={s.statLabel}>Retorno</div>
+        </div>
+      </div>
 
-      <div style={s.sectionTitle}>todas as clientes ({filtradas.length})</div>
+      {/* Filtros + Ordenação */}
+      <div style={s.filtrosWrap}>
+        <div style={s.filtrosChips}>
+          {[
+            { id: 'todas', label: 'Todas' },
+            { id: 'vip', label: '✦ VIP' },
+            { id: 'sumidas', label: '⏰ Retorno' },
+            { id: 'sem_visita', label: '🆕 Novas' },
+          ].map(f => (
+            <button
+              key={f.id}
+              style={{ ...s.filtroChip, ...(filtro === f.id ? s.filtroChipAtivo : {}) }}
+              onClick={() => setFiltro(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <select
+          style={s.sortSelect}
+          value={ordenacao}
+          onChange={e => setOrdenacao(e.target.value)}
+        >
+          <option value="nome">A–Z</option>
+          <option value="gasto">Maior gasto</option>
+          <option value="visitas">Mais visitas</option>
+          <option value="recente">Mais recente</option>
+        </select>
+      </div>
+
+      <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
 
       {filtradas.map(c => {
         const diasAusente = c.ultimo_atendimento ? differenceInDays(new Date(), new Date(c.ultimo_atendimento)) : null
@@ -236,6 +291,15 @@ const s = {
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   chipsRow: { display: 'flex', flexWrap: 'wrap', gap: 6 },
   chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
+  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 },
+  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', transition: 'border 0.15s' },
+  statNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
+  statLabel: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: 3 },
+  filtrosWrap: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 },
+  filtrosChips: { display: 'flex', gap: 6, flex: 1, overflowX: 'auto', paddingBottom: 2 },
+  filtroChip: { flexShrink: 0, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
+  filtroChipAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', boxShadow: 'var(--shadow-pink)' },
+  sortSelect: { flexShrink: 0, padding: '6px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
   card: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
   avatar: { width: 42, height: 42, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--pink)', flexShrink: 0 },
   cardName: { fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
