@@ -47,12 +47,13 @@ export default function AgendaPublica() {
   useEffect(() => { if (dataSel && config) carregarSlotsOcupados() }, [dataSel])
 
   async function loadConfig() {
+    // Apenas colunas públicas - não expor meta_mensal, configs internas etc
     const { data } = await supabase
       .from('configuracoes')
-      .select('*')
+      .select('user_id, slug, nome_salao, whatsapp, servicos_padrao, horario_inicio, horario_fim, duracao_atendimento, dias_semana, agenda_externa_url, agenda_publica_ativa')
       .eq('slug', slug)
       .eq('agenda_publica_ativa', true)
-      .single()
+      .maybeSingle()
     if (!data) { setNotFound(true) } else { setConfig(data) }
     setLoading(false)
   }
@@ -126,6 +127,71 @@ export default function AgendaPublica() {
       <div style={s.sub}>Verifique o link com a profissional</div>
     </div>
   )
+
+  // ✨ Modo "Link Externo" (Google Calendar / Calendly / etc) - landing bonita
+  if (config?.agenda_externa_url) {
+    const whatsapp = (config.whatsapp || '').replace(/\D/g, '')
+    return (
+      <div style={ext.page} className="fade-in">
+        <div style={ext.card}>
+          <div style={ext.avatarWrap}>
+            <div style={ext.avatarFallback}>
+              <NailDropIcon size={44} variant="gold" />
+            </div>
+          </div>
+
+          <h1 style={ext.nome}>{nomeSalao}</h1>
+          <div style={ext.tagline}>nail designer</div>
+
+          {/* Botão principal: Agendar online */}
+          <a
+            href={config.agenda_externa_url}
+            target="_blank"
+            rel="noreferrer"
+            style={ext.btnPrincipal}
+          >
+            📅 Agendar online
+          </a>
+
+          {/* Botão WhatsApp */}
+          {whatsapp && (
+            <a
+              href={`https://wa.me/55${whatsapp}`}
+              target="_blank"
+              rel="noreferrer"
+              style={ext.btnSecundario}
+            >
+              💬 Conversar no WhatsApp
+            </a>
+          )}
+
+          {/* Serviços */}
+          {config.servicos_padrao?.length > 0 && (
+            <>
+              <div style={ext.sectionLabel}>Serviços oferecidos</div>
+              <div style={ext.servicos}>
+                {config.servicos_padrao.map(sv => (
+                  <span key={sv} style={ext.servicoChip}>{sv}</span>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Horários */}
+          {(config.horario_inicio || config.horario_fim) && (
+            <div style={ext.horarios}>
+              ⏰ Atendimento das {config.horario_inicio?.slice(0,5) || '09:00'} às {config.horario_fim?.slice(0,5) || '18:00'}
+            </div>
+          )}
+
+          <div style={ext.footer}>
+            <NailProLogo size={14} variant="reverso" />
+            <span style={ext.footerText}>powered by nailpro</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={s.page}>
@@ -436,4 +502,135 @@ const s = {
   summaryRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: '#333' },
   footNote: { fontSize: 12, color: '#AAA', textAlign: 'center' },
   footer: { padding: '16px', textAlign: 'center', fontSize: 12, color: '#AAA' },
+}
+
+// ✨ Estilos da landing "Link Externo" (linktree-style)
+const ext = {
+  page: {
+    minHeight: '100vh',
+    background: 'linear-gradient(160deg, #1F0A18 0%, #2D0D20 40%, #1A0612 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px 20px',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 24,
+    padding: '36px 26px 24px',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+    textAlign: 'center',
+  },
+  avatarWrap: {
+    width: 100,
+    height: 100,
+    margin: '0 auto 16px',
+    borderRadius: '50%',
+    overflow: 'hidden',
+    border: '3px solid var(--gold, #E6C260)',
+    boxShadow: '0 8px 24px rgba(230,194,96,0.3)',
+  },
+  avatar: { width: '100%', height: '100%', objectFit: 'cover' },
+  avatarFallback: {
+    width: '100%', height: '100%',
+    background: 'var(--pink-light)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  nome: {
+    fontFamily: "'Instrument Serif', serif",
+    fontStyle: 'italic',
+    fontSize: 28,
+    fontWeight: 400,
+    color: 'white',
+    margin: 0,
+    letterSpacing: '-0.3px',
+    lineHeight: 1.15,
+  },
+  tagline: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.55)',
+    marginBottom: 24,
+    marginTop: 6,
+    fontWeight: 500,
+    textTransform: 'lowercase',
+    letterSpacing: '1px',
+  },
+  btnPrincipal: {
+    display: 'block',
+    background: 'var(--gold, #E6C260)',
+    color: '#1A0612',
+    padding: '14px 24px',
+    borderRadius: 14,
+    fontSize: 15,
+    fontWeight: 800,
+    textDecoration: 'none',
+    boxShadow: '0 10px 28px rgba(230,194,96,0.35)',
+    marginBottom: 10,
+    transition: 'transform 0.15s, box-shadow 0.15s',
+    fontFamily: "'Bricolage Grotesque', sans-serif",
+  },
+  btnSecundario: {
+    display: 'block',
+    background: 'rgba(37,211,102,0.15)',
+    color: '#25D366',
+    border: '1px solid rgba(37,211,102,0.4)',
+    padding: '12px 24px',
+    borderRadius: 14,
+    fontSize: 14,
+    fontWeight: 700,
+    textDecoration: 'none',
+    marginBottom: 20,
+    transition: 'all 0.15s',
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'rgba(255,255,255,0.45)',
+    textTransform: 'uppercase',
+    letterSpacing: '1.2px',
+    marginBottom: 10,
+    marginTop: 16,
+  },
+  servicos: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  servicoChip: {
+    fontSize: 11,
+    background: 'rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.85)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '5px 12px',
+    borderRadius: 'var(--radius-pill)',
+    fontWeight: 500,
+  },
+  horarios: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: 24,
+    fontWeight: 500,
+  },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 20,
+    paddingTop: 18,
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+  },
+  footerText: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.35)',
+    fontWeight: 500,
+    letterSpacing: '0.5px',
+  },
 }

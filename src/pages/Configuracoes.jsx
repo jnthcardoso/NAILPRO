@@ -56,6 +56,7 @@ export default function Configuracoes() {
     dias_retorno_alerta: 30,
     lembretes_ativos: true,
     mensagem_lembrete: 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
+    agenda_externa_url: '',
   })
   const [novoServico, setNovoServico] = useState('')
   const [saving, setSaving] = useState(false)
@@ -92,6 +93,7 @@ export default function Configuracoes() {
         dias_retorno_alerta: data.dias_retorno_alerta || 30,
         lembretes_ativos: data.lembretes_ativos !== false,
         mensagem_lembrete: data.mensagem_lembrete || 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
+        agenda_externa_url: data.agenda_externa_url || '',
       })
     }
   }
@@ -482,6 +484,44 @@ export default function Configuracoes() {
       {/* ── Agenda Online ───────────────────── */}
       <div style={s.section}>
         <div style={s.sectionTitle}>agenda online para clientes</div>
+
+        {/* Card: Usar link externo (Google Calendar, Calendly, etc) */}
+        <div style={{ background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #93C5FD', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1E40AF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ExternalLink size={16} color="white" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1E3A8A' }}>
+                Usar Google Calendar / Calendly (recomendado) ⭐
+              </div>
+              <div style={{ fontSize: 11, color: '#1E40AF', marginTop: 2 }}>
+                Cole a URL do seu agendamento externo. Seus clientes verão uma página linda com botão de agendar.
+              </div>
+            </div>
+          </div>
+          <input
+            style={{ ...s.input, fontSize: 13 }}
+            type="url"
+            placeholder="https://calendar.app.google/..."
+            value={form.agenda_externa_url}
+            onChange={e => setForm({ ...form, agenda_externa_url: e.target.value })}
+          />
+          <details style={{ marginTop: 10, fontSize: 11, color: '#1E40AF' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 700 }}>📘 Como criar no Google Calendar (1 minuto)</summary>
+            <ol style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.7 }}>
+              <li>Abra <a href="https://calendar.google.com" target="_blank" rel="noreferrer" style={{ color: '#1E40AF', fontWeight: 600 }}>calendar.google.com</a></li>
+              <li>Clique em <strong>+ Criar</strong> → <strong>Horário de atendimento</strong></li>
+              <li>Configure: nome do serviço, duração, dias e horários disponíveis</li>
+              <li>Em <strong>"Personalizar"</strong>: nome do salão, descrição, foto</li>
+              <li>Clique em <strong>Salvar</strong> e depois em <strong>"Compartilhar"</strong> → copie o link público</li>
+              <li>Cole o link aqui no NailPro 🎉</li>
+            </ol>
+            <div style={{ marginTop: 8, padding: 8, background: 'rgba(30,64,175,0.1)', borderRadius: 6 }}>
+              💡 <strong>Vantagens:</strong> Confirmação e lembretes automáticos por email do Google, sync direto com seu calendário, sem custo extra.
+            </div>
+          </details>
+        </div>
 
         {/* Toggle ativar */}
         <div
