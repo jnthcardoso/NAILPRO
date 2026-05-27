@@ -435,7 +435,7 @@ export default function Metas() {
           {loadingKpi ? (
             <div style={s.loading}>Calculando KPIs...</div>
           ) : (
-            <>
+            <div style={s.kpiGrid}>
               {/* 1. Faturamento por serviço */}
               <div style={s.kpiCard}>
                 <div style={s.kpiCardTitle}><BarChart2 size={15} color="var(--pink)" /> Faturamento por serviço</div>
@@ -542,7 +542,7 @@ export default function Metas() {
                   </span>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </>
       )}
@@ -626,7 +626,8 @@ const s = {
   segBtn: { flex: 1, padding: '6px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
   segBtnAtivo: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   reloadBtn: { width: 36, height: 36, borderRadius: 8, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', marginBottom: 12, boxShadow: 'var(--shadow-sm)' },
+  kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'start' },
+  kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', boxShadow: 'var(--shadow-sm)' },
   kpiCardTitle: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
   kpiEmpty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' },
   miniSelect: { padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--pink)', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
