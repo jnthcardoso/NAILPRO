@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { NailProLogo } from '../components/common/Brand'
 
@@ -7,6 +7,7 @@ export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [aceitouTermos, setAceitouTermos] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -14,8 +15,12 @@ export default function Login() {
 
   const handle = async (e) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
+    if (mode === 'signup' && !aceitouTermos) {
+      setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade.')
+      return
+    }
+    setLoading(true)
     if (mode === 'login') {
       const { error } = await signIn(form.email, form.password)
       if (error) setError('E-mail ou senha incorretos.')
@@ -85,15 +90,37 @@ export default function Login() {
               onChange={e => setForm({ ...form, password: e.target.value })} 
             />
           </div>
+          {mode === 'signup' && (
+            <label style={s.termosRow}>
+              <input
+                type="checkbox"
+                checked={aceitouTermos}
+                onChange={e => setAceitouTermos(e.target.checked)}
+                style={s.checkbox}
+              />
+              <span>
+                Li e aceito os{' '}
+                <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
+                {' '}e a{' '}
+                <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
+              </span>
+            </label>
+          )}
           {error && <div style={s.error}>{error}</div>}
-          <button 
-            style={s.btn} 
-            type="submit" 
+          <button
+            style={s.btn}
+            type="submit"
             disabled={loading}
           >
             {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
           </button>
         </form>
+
+        <div style={s.footer}>
+          <Link to="/termos" style={s.footerLink}>Termos</Link>
+          <span style={{ opacity: 0.3 }}>·</span>
+          <Link to="/privacidade" style={s.footerLink}>Privacidade</Link>
+        </div>
       </div>
     </div>
   )
@@ -197,5 +224,41 @@ const s = {
     boxShadow: 'var(--shadow-gold)',
     transition: 'all 0.2s ease',
     fontFamily: "'Bricolage Grotesque', sans-serif",
+  },
+  termosRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    cursor: 'pointer',
+    lineHeight: 1.5,
+    padding: '4px 0',
+  },
+  checkbox: {
+    width: 16,
+    height: 16,
+    marginTop: 2,
+    cursor: 'pointer',
+    accentColor: 'var(--gold, #E6C260)',
+    flexShrink: 0,
+  },
+  linkTermos: {
+    color: 'var(--gold, #E6C260)',
+    textDecoration: 'underline',
+    fontWeight: 600,
+  },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 24,
+    fontSize: 12,
+  },
+  footerLink: {
+    color: 'rgba(255,255,255,0.5)',
+    textDecoration: 'none',
+    fontWeight: 500,
   },
 }

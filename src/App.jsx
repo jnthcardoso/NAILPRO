@@ -15,6 +15,8 @@ import BemVindo from './pages/BemVindo'
 import Lembretes from './pages/Lembretes'
 import Planos from './pages/Planos'
 import Admin from './pages/Admin'
+import Termos from './pages/Termos'
+import Privacidade from './pages/Privacidade'
 import { AssinaturaProvider } from './contexts/AssinaturaContext'
 import { supabase } from './lib/supabase'
 import './index.css'
@@ -81,6 +83,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/bem-vindo" element={<PrivateRoute><OnboardingGuard><BemVindo /></OnboardingGuard></PrivateRoute>} />
             <Route path="/planos" element={<PrivateRoute><OnboardingGuard><Planos /></OnboardingGuard></PrivateRoute>} />
             <Route path="/" element={<PrivateRoute><OnboardingGuard><AppLayout /></OnboardingGuard></PrivateRoute>}>

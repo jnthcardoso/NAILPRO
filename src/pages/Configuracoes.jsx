@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -20,6 +20,9 @@ export default function Configuracoes() {
   const navigate = useNavigate()
   const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial, temAcesso } = useAssinatura()
   const [showUpgrade, setShowUpgrade] = useState({ aberto: false, feature: '' })
+  const [showExcluir, setShowExcluir] = useState(false)
+  const [confirmacaoExcluir, setConfirmacaoExcluir] = useState('')
+  const [excluindo, setExcluindo] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
@@ -220,6 +223,22 @@ export default function Configuracoes() {
   }
 
   async function handleLogout() {
+    await signOut()
+    navigate('/login', { replace: true })
+  }
+
+  async function excluirConta() {
+    if (confirmacaoExcluir !== 'EXCLUIR') {
+      alert('Digite EXCLUIR (em maiúsculas) para confirmar.')
+      return
+    }
+    setExcluindo(true)
+    const { error } = await supabase.rpc('excluir_minha_conta')
+    if (error) {
+      setExcluindo(false)
+      alert('Erro ao excluir: ' + error.message)
+      return
+    }
     await signOut()
     navigate('/login', { replace: true })
   }
@@ -621,10 +640,93 @@ export default function Configuracoes() {
           </div>
         </div>
 
+        {/* Links LGPD */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, marginBottom: 8 }}>
+          <a
+            href="/termos"
+            target="_blank"
+            rel="noreferrer"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', textDecoration: 'none', color: 'var(--text2)', fontSize: 12, fontWeight: 600 }}
+          >
+            <FileText size={14} /> Termos de Uso
+          </a>
+          <a
+            href="/privacidade"
+            target="_blank"
+            rel="noreferrer"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', textDecoration: 'none', color: 'var(--text2)', fontSize: 12, fontWeight: 600 }}
+          >
+            <Lock size={14} /> Privacidade
+          </a>
+        </div>
+
         <button style={s.logoutBtn} onClick={handleLogout}>
           <LogOut size={15} /> Sair da conta
         </button>
+
+        {/* Zona de perigo */}
+        <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px dashed var(--border)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#B91C1C', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+            zona de perigo
+          </div>
+          <button
+            onClick={() => setShowExcluir(true)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: '#B91C1C', border: '1px solid #FCA5A5', borderRadius: 'var(--radius-sm)', padding: '11px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            <Trash2 size={14} /> Excluir minha conta permanentemente
+          </button>
+          <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 6, textAlign: 'center' }}>
+            Esta ação remove todos os seus dados (LGPD Art. 18). É irreversível.
+          </div>
+        </div>
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      {showExcluir && (
+        <div style={s.overlayDelete} onClick={() => !excluindo && setShowExcluir(false)}>
+          <div style={s.modalDelete} onClick={e => e.stopPropagation()}>
+            <div style={s.iconDelete}><AlertTriangle size={28} color="white" /></div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
+              Tem certeza absoluta?
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, margin: '0 0 16px', textAlign: 'center' }}>
+              Esta ação é <strong style={{ color: '#B91C1C' }}>irreversível</strong>. Serão excluídos permanentemente:
+            </p>
+            <ul style={{ fontSize: 12, color: 'var(--text2)', paddingLeft: 20, marginBottom: 16 }}>
+              <li>Sua conta e dados de perfil</li>
+              <li>Todas as suas clientes cadastradas</li>
+              <li>Todo seu histórico de agendamentos</li>
+              <li>Todos os pagamentos e finanças</li>
+              <li>Metas, configurações e assinatura</li>
+            </ul>
+            <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 6 }}>
+              Para confirmar, digite <strong>EXCLUIR</strong> abaixo:
+            </div>
+            <input
+              type="text"
+              value={confirmacaoExcluir}
+              onChange={e => setConfirmacaoExcluir(e.target.value)}
+              placeholder="EXCLUIR"
+              style={{ width: '100%', padding: '10px 13px', border: '1.5px solid #FCA5A5', borderRadius: 'var(--radius-sm)', fontSize: 14, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '2px', textAlign: 'center', marginBottom: 14, boxSizing: 'border-box', outline: 'none' }}
+              autoFocus
+            />
+            <button
+              onClick={excluirConta}
+              disabled={excluindo || confirmacaoExcluir !== 'EXCLUIR'}
+              style={{ width: '100%', background: confirmacaoExcluir === 'EXCLUIR' ? '#B91C1C' : '#FCA5A5', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: confirmacaoExcluir === 'EXCLUIR' ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 6 }}
+            >
+              {excluindo ? 'Excluindo...' : 'Sim, excluir minha conta'}
+            </button>
+            <button
+              onClick={() => { setShowExcluir(false); setConfirmacaoExcluir('') }}
+              disabled={excluindo}
+              style={{ width: '100%', background: 'transparent', color: 'var(--text3)', border: 'none', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       <UpgradeModal
         aberto={showUpgrade.aberto}
@@ -725,4 +827,7 @@ const s = {
   googleCard: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px' },
   googleConBtn: { background: '#4285F4', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
   googleDesconBtn: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FFCDD2', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  overlayDelete: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.75)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' },
+  modalDelete: { background: 'var(--surface)', borderRadius: 20, padding: '28px 24px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' },
+  iconDelete: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #B91C1C 0%, #DC2626 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 20px rgba(185,28,28,0.3)' },
 }
