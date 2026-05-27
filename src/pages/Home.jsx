@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   format, addDays, subDays, differenceInDays, startOfDay, endOfDay,
   startOfMonth, endOfMonth, subMonths, subWeeks, eachDayOfInterval, getDay,
+  startOfWeek, endOfWeek,
   endOfDay as endOfDayFn
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -120,11 +121,14 @@ export default function Home() {
       .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicioMes)
     if (pagMes) setStats(s => ({ ...s, receitaMes: pagMes.reduce((s, p) => s + (p.valor || 0), 0) }))
 
-    // Receita últimos 7 dias (chart)
-    const inicio7d = format(subDays(new Date(), 6), 'yyyy-MM-dd')
+    // Receita da semana (Segunda → Domingo)
+    const inicioSemana = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const fimSemana = endOfWeek(new Date(), { weekStartsOn: 1 })
+    const inicioStr = format(inicioSemana, 'yyyy-MM-dd')
+    const fimStr = format(fimSemana, 'yyyy-MM-dd')
     const { data: pag7d } = await supabase.from('pagamentos')
-      .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicio7d).lte('data', hoje)
-    const dias = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() })
+      .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr)
+    const dias = eachDayOfInterval({ start: inicioSemana, end: fimSemana })
     const ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const receitaDias = dias.map(d => {
       const dStr = format(d, 'yyyy-MM-dd')
@@ -490,7 +494,7 @@ export default function Home() {
         <div style={s.chartCard}>
           <div style={s.chartHeader}>
             <div>
-              <div style={s.chartTitle}>📈 Receita dos últimos 7 dias</div>
+              <div style={s.chartTitle}>📈 Receita da semana</div>
               <div style={s.chartSub}>
                 Total: <strong>R$ {receita7Dias.reduce((s, d) => s + d.valor, 0).toFixed(0)}</strong>
               </div>
