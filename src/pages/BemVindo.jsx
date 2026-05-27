@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check, Sparkles, MessageCircle, Scissors, Target, Users, Calendar, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import { formatTelefone, unformatTelefone } from '../lib/formatters'
 
 const SERVICOS_SUGERIDOS = [
@@ -19,6 +20,7 @@ const METAS_SUGERIDAS = [
 
 export default function BemVindo() {
   const { user } = useAuth()
+  const { confirmar, erro: toastErro } = useToast()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -56,14 +58,20 @@ export default function BemVindo() {
     })
     setSaving(false)
     if (error) {
-      alert('Erro ao salvar: ' + error.message)
+      toastErro('Erro ao salvar: ' + error.message)
       return
     }
     navigate('/', { replace: true, state: { onboardingJustCompleted: true } })
   }
 
   async function pularTudo() {
-    if (!confirm('Tem certeza? Você pode configurar depois nas Configurações.')) return
+    const ok = await confirmar({
+      titulo: 'Pular configuração inicial?',
+      mensagem: 'Você pode configurar tudo depois em Configurações.',
+      confirmarLabel: 'Sim, pular',
+      cancelarLabel: 'Continuar setup',
+    })
+    if (!ok) return
     await supabase.from('configuracoes').upsert({
       user_id: user.id,
       onboarding_completo: true,

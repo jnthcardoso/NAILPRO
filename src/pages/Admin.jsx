@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { format, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CardSkeleton } from '../components/common/Skeleton'
+import { useToast } from '../contexts/ToastContext'
 
 const STATUS_LABELS = {
   trialing: { label: 'Teste', color: '#1E40AF', bg: '#DBEAFE' },
@@ -16,6 +17,7 @@ const STATUS_LABELS = {
 
 export default function Admin() {
   const { user } = useAuth()
+  const { confirmar, sucesso, erro: toastErro } = useToast()
   const [usuarios, setUsuarios] = useState([])
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
@@ -30,7 +32,7 @@ export default function Admin() {
     const { data, error } = await supabase.rpc('admin_listar_usuarios')
     if (error) {
       console.error('Erro:', error)
-      alert('Acesso negado ou erro: ' + error.message)
+      toastErro('Acesso negado ou erro: ' + error.message)
       setLoading(false)
       return
     }
@@ -39,33 +41,52 @@ export default function Admin() {
   }
 
   async function ativar(userId, plano, ciclo) {
-    if (!confirm(`Ativar plano ${plano.toUpperCase()} (${ciclo}) para este usuário?`)) return
+    const ok = await confirmar({
+      titulo: `Ativar ${plano.toUpperCase()} (${ciclo})?`,
+      mensagem: 'O usuário terá acesso completo até a próxima cobrança.',
+      confirmarLabel: 'Sim, ativar',
+    })
+    if (!ok) return
     setAcaoLoading(true)
     const { error } = await supabase.rpc('admin_ativar_assinatura', {
       p_user_id: userId, p_plano: plano, p_ciclo: ciclo
     })
     setAcaoLoading(false)
-    if (error) { alert('Erro: ' + error.message); return }
+    if (error) { toastErro('Erro: ' + error.message); return }
+    sucesso(`${plano.toUpperCase()} ativado ✓`)
     setAcaoUserId(null)
     load()
   }
 
   async function cancelar(userId) {
-    if (!confirm('Cancelar a assinatura deste usuário? Ele perderá acesso.')) return
+    const ok = await confirmar({
+      titulo: 'Cancelar assinatura?',
+      mensagem: 'O usuário perderá acesso ao final do período atual.',
+      confirmarLabel: 'Sim, cancelar',
+      tipo: 'perigo',
+    })
+    if (!ok) return
     setAcaoLoading(true)
     const { error } = await supabase.rpc('admin_cancelar_assinatura', { p_user_id: userId })
     setAcaoLoading(false)
-    if (error) { alert('Erro: ' + error.message); return }
+    if (error) { toastErro('Erro: ' + error.message); return }
+    sucesso('Assinatura cancelada')
     setAcaoUserId(null)
     load()
   }
 
   async function estenderTrial(userId, dias) {
-    if (!confirm(`Estender trial por +${dias} dias?`)) return
+    const ok = await confirmar({
+      titulo: `Estender trial em +${dias} dias?`,
+      mensagem: 'O usuário ganha mais tempo de teste gratuito.',
+      confirmarLabel: 'Sim, estender',
+    })
+    if (!ok) return
     setAcaoLoading(true)
     const { error } = await supabase.rpc('admin_estender_trial', { p_user_id: userId, p_dias: dias })
     setAcaoLoading(false)
-    if (error) { alert('Erro: ' + error.message); return }
+    if (error) { toastErro('Erro: ' + error.message); return }
+    sucesso(`Trial estendido +${dias} dias ✓`)
     setAcaoUserId(null)
     load()
   }

@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 import { NailProLogo, NailDropIcon } from '../components/common/Brand'
 import { formatTelefone, unformatTelefone, validarTelefone } from '../lib/formatters'
+import { useToast } from '../contexts/ToastContext'
 
 const DIAS_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
@@ -31,6 +32,7 @@ function gerarSlots(inicio, fim, duracao) {
 
 export default function AgendaPublica() {
   const { slug } = useParams()
+  const { erro: toastErro } = useToast()
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -93,7 +95,7 @@ export default function AgendaPublica() {
     })
 
     if (error) {
-      alert('Erro ao criar agendamento: ' + error.message)
+      toastErro('Erro ao criar agendamento: ' + error.message)
     } else {
       setStep(4)
     }

@@ -4,6 +4,7 @@ import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight
 import { exportarTodosDados } from '../lib/exportarDados'
 import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
 import { formatTelefone, unformatTelefone } from '../lib/formatters'
+import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -22,6 +23,7 @@ export default function Configuracoes() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial, temAcesso } = useAssinatura()
+  const { sucesso, erro: toastErro } = useToast()
   const [showUpgrade, setShowUpgrade] = useState({ aberto: false, feature: '' })
   const [showExcluir, setShowExcluir] = useState(false)
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState('')
@@ -254,21 +256,21 @@ export default function Configuracoes() {
       await exportarTodosDados(user)
     } catch (e) {
       console.error('Erro ao exportar:', e)
-      alert('Erro ao exportar dados: ' + (e.message || 'tente novamente'))
+      toastErro('Erro ao exportar dados: ' + (e.message || 'tente novamente'))
     }
     setExportando(false)
   }
 
   async function excluirConta() {
     if (confirmacaoExcluir !== 'EXCLUIR') {
-      alert('Digite EXCLUIR (em maiúsculas) para confirmar.')
+      toastErro('Digite EXCLUIR (em maiúsculas) para confirmar.')
       return
     }
     setExcluindo(true)
     const { error } = await supabase.rpc('excluir_minha_conta')
     if (error) {
       setExcluindo(false)
-      alert('Erro ao excluir: ' + error.message)
+      toastErro('Erro ao excluir: ' + error.message)
       return
     }
     await signOut()

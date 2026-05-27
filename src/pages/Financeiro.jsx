@@ -8,6 +8,7 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInte
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
+import { useToast } from '../contexts/ToastContext'
 
 async function exportarPDF(pagamentos, periodoLabel) {
   const { default: jsPDF } = await import('jspdf')
@@ -50,6 +51,7 @@ async function exportarPDF(pagamentos, periodoLabel) {
 export default function Financeiro() {
   const { user } = useAuth()
   const { temAcesso } = useAssinatura()
+  const { erro: toastErro } = useToast()
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [pagamentos, setPagamentos] = useState([])
   const [pagamentos6m, setPagamentos6m] = useState([])
@@ -119,7 +121,7 @@ export default function Financeiro() {
       await exportarPDF(pagamentos, periodoLabel)
     } catch (e) {
       console.error('PDF export error:', e)
-      alert('Erro ao gerar PDF. Tente novamente.')
+      toastErro('Erro ao gerar PDF. Tente novamente.')
     }
     setExportando(false)
   }
