@@ -53,6 +53,7 @@ export default function Agenda() {
   const [duracaoAtend, setDuracaoAtend] = useState(60)
   const [googleMsg, setGoogleMsg] = useState(null)
   const [googlePronto, setGooglePronto] = useState(false)
+  const [menuAberto, setMenuAberto] = useState(null)
 
   useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
   useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
@@ -277,14 +278,52 @@ export default function Agenda() {
     return `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`
   }
 
-  function CardAgendamento({ ag }) {
+  function CardAgendamento({ ag, compacto = false }) {
     const st = STATUS[ag.status] || STATUS.pendente
     const pag = ag.pagamentos?.[0]
     const telefone = (ag.clientes?.telefone || '').replace(/\D/g, '')
-    const waLink = telefone ? `https://wa.me/55${telefone}` : null
     const waConfirm = buildWhatsAppConfirm(ag)
+    const estaAberto = menuAberto === ag.id
+
+    const acoes = []
+    if (ag.status === 'pendente')
+      acoes.push({ label: '✅ Confirmar presença', fn: () => atualizarStatus(ag, 'confirmado') })
+    if (ag.status === 'confirmado')
+      acoes.push({ label: '✅ Marcar como realizado', fn: () => atualizarStatus(ag, 'realizado') })
+    if (ag.status === 'realizado')
+      acoes.push({ label: pag ? '💳 Editar pagamento' : '💳 Registrar pagamento', fn: () => { setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') }); setShowPagModal(true) } })
+    if (waConfirm && ag.status !== 'realizado' && ag.status !== 'cancelado')
+      acoes.push({ label: '💬 Confirmar via WhatsApp', href: waConfirm })
+    if (telefone)
+      acoes.push({ label: '📱 Abrir WhatsApp', href: `https://wa.me/55${telefone}` })
+    acoes.push({ label: '✏️ Editar agendamento', fn: () => abrirEdicao(ag) })
+    if (ag.status !== 'realizado' && ag.status !== 'cancelado')
+      acoes.push({ label: '❌ Cancelar agendamento', fn: () => atualizarStatus(ag, 'cancelado'), danger: true })
+
+    if (compacto) return (
+      <div
+        style={{ ...s.cardCompacto, borderLeftColor: st.border, background: estaAberto ? 'var(--surface2)' : 'var(--surface)' }}
+        onClick={() => setMenuAberto(estaAberto ? null : ag.id)}
+      >
+        <div style={s.cardCompactoHora}>{ag.horario?.slice(0, 5)}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={s.cardCompactoNome}>{ag.clientes?.nome?.split(' ')[0]}</div>
+          <div style={s.cardCompactoServ}>{ag.servico}</div>
+        </div>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: st.border, flexShrink: 0 }} />
+        {estaAberto && (
+          <div style={s.menu} onClick={e => e.stopPropagation()}>
+            {acoes.map((a, i) => a.href
+              ? <a key={i} href={a.href} target="_blank" rel="noreferrer" style={s.menuItem} onClick={() => setMenuAberto(null)}>{a.label}</a>
+              : <button key={i} style={{ ...s.menuItem, color: a.danger ? '#B91C1C' : 'var(--text)' }} onClick={() => { setMenuAberto(null); a.fn() }}>{a.label}</button>
+            )}
+          </div>
+        )}
+      </div>
+    )
+
     return (
-      <div style={{ ...s.card, borderLeftColor: st.border }}>
+      <div style={{ ...s.card, borderLeftColor: st.border, position: 'relative' }}>
         <div style={s.cardHeader}>
           <div style={s.cardTime}>{ag.horario?.slice(0, 5)}</div>
           <div style={{ flex: 1 }}>
@@ -292,19 +331,16 @@ export default function Agenda() {
             <div style={s.cardService}>{ag.servico}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {waLink && (
-              <a href={waLink} target="_blank" rel="noreferrer" style={s.waIconBtn} title="Abrir WhatsApp">
-                <MessageCircle size={15} />
-              </a>
-            )}
-            <button style={s.editIconBtn} onClick={() => abrirEdicao(ag)} title="Editar agendamento">
-              <Pencil size={14} />
-            </button>
             <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+            <button
+              style={s.menuBtn}
+              onClick={e => { e.stopPropagation(); setMenuAberto(estaAberto ? null : ag.id) }}
+              title="Ações"
+            >···</button>
           </div>
         </div>
         {ag.valor > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>
             {pag && (
               <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
@@ -313,40 +349,14 @@ export default function Agenda() {
             )}
           </div>
         )}
-        <div style={s.cardActions}>
-          {ag.status === 'pendente' && (
-            <button style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D' }} onClick={() => atualizarStatus(ag, 'confirmado')}>
-              <CheckCircle size={13} /> Confirmar
-            </button>
-          )}
-          {ag.status === 'confirmado' && (
-            <button style={{ ...s.actionBtn, background: '#EDE9FE', color: '#5B21B6' }} onClick={() => atualizarStatus(ag, 'realizado')}>
-              <CheckCircle size={13} /> Marcar realizado
-            </button>
-          )}
-          {ag.status === 'realizado' && (
-            <button
-              style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D' }}
-              onClick={() => {
-                setAgSelecionado(ag)
-                setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') })
-                setShowPagModal(true)
-              }}
-            >
-              <CreditCard size={13} /> {pag ? 'Editar pagamento' : 'Registrar pagamento'}
-            </button>
-          )}
-          {ag.status !== 'realizado' && ag.status !== 'cancelado' && waConfirm && (
-            <a href={waConfirm} target="_blank" rel="noreferrer" style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D', textDecoration: 'none' }}>
-              <MessageCircle size={13} /> Confirmar via WhatsApp
-            </a>
-          )}
-          {ag.status !== 'realizado' && ag.status !== 'cancelado' && (
-            <button style={{ ...s.actionBtn, background: '#FEE2E2', color: '#B91C1C' }} onClick={() => atualizarStatus(ag, 'cancelado')}>
-              <XCircle size={13} /> Cancelar
-            </button>
-          )}
-        </div>
+        {estaAberto && (
+          <div style={s.menu} onClick={e => e.stopPropagation()}>
+            {acoes.map((a, i) => a.href
+              ? <a key={i} href={a.href} target="_blank" rel="noreferrer" style={s.menuItem} onClick={() => setMenuAberto(null)}>{a.label}</a>
+              : <button key={i} style={{ ...s.menuItem, color: a.danger ? '#B91C1C' : 'var(--text)' }} onClick={() => { setMenuAberto(null); a.fn() }}>{a.label}</button>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -369,6 +379,7 @@ export default function Agenda() {
     const dias = eachDayOfInterval({ start: startOfWeek(dataSel, { locale: ptBR }), end: endOfWeek(dataSel, { locale: ptBR }) })
     return (
       <div>
+        {/* Mini strip de navegação */}
         <div style={s.weekGrid}>
           {dias.map(dia => {
             const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
@@ -390,17 +401,25 @@ export default function Agenda() {
             )
           })}
         </div>
-        <div style={{ marginTop: 14 }}>
+
+        {/* Colunas por dia lado a lado */}
+        <div style={s.weekColunas}>
           {dias.map(dia => {
             const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
-            if (agsDia.length === 0) return null
+            const hoje = isToday(dia)
             return (
-              <div key={dia.toISOString()} style={{ marginBottom: 18 }}>
-                <div style={s.sectionTitle}>
-                  {format(dia, "EEEE, dd 'de' MMM", { locale: ptBR })}
-                  {isToday(dia) && <span style={s.hojeChip}>hoje</span>}
+              <div key={dia.toISOString()} style={s.weekColuna}>
+                <div
+                  style={{ ...s.weekColunaHeader, ...(hoje ? s.weekColunaHeaderHoje : {}) }}
+                  onClick={() => { setDataSel(dia); setView('Dia') }}
+                >
+                  <span style={s.weekColunaDia}>{format(dia, 'EEE', { locale: ptBR })}</span>
+                  <span style={{ ...s.weekColunaNum, ...(hoje ? { color: 'var(--pink)', fontWeight: 700 } : {}) }}>{format(dia, 'd')}</span>
                 </div>
-                {agsDia.map(ag => <CardAgendamento key={ag.id} ag={ag} />)}
+                {agsDia.length === 0
+                  ? <div style={s.weekColunaSemAg}>—</div>
+                  : agsDia.map(ag => <CardAgendamento key={ag.id} ag={ag} compacto />)
+                }
               </div>
             )
           })}
@@ -450,21 +469,11 @@ export default function Agenda() {
   }
 
   return (
-    <div style={s.page}>
+    <div style={s.page} onClick={() => setMenuAberto(null)}>
       <div style={s.viewTabs}>
         {VIEWS.map(v => (
           <button key={v} style={{ ...s.viewTab, ...(view === v ? s.viewTabActive : {}) }} onClick={() => setView(v)}>{v}</button>
         ))}
-        {googleConectado && (
-          <button
-            onClick={googlePronto ? undefined : handleReconectarGoogle}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 'var(--radius-pill)', border: 'none', background: googlePronto ? '#DCFCE7' : '#FEF3C7', color: googlePronto ? '#15803D' : '#92400E', fontSize: 11, fontWeight: 600, cursor: googlePronto ? 'default' : 'pointer', flexShrink: 0 }}
-            title={googlePronto ? 'Google Agenda ativo' : 'Clique para reconectar'}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: googlePronto ? '#16A34A' : '#D97706', display: 'inline-block' }} />
-            {googlePronto ? 'Google' : 'Reconectar'}
-          </button>
-        )}
       </div>
       <div style={s.nav}>
         <button style={s.navBtn} onClick={() => navegar(-1)}><ChevronLeft size={18} /></button>
@@ -727,17 +736,31 @@ const s = {
   calNumHoje: { color: 'var(--pink)', fontWeight: 700 },
   calEvent: { fontSize: 9, borderRadius: 3, padding: '1px 4px', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   calMore: { fontSize: 9, color: 'var(--text3)' },
-  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' },
+  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', position: 'relative' },
   cardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
   cardTime: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, color: 'var(--text)', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '3px 7px', textAlign: 'center' },
   cardName: { fontSize: 14, fontWeight: 700 },
   cardService: { fontSize: 12, color: 'var(--text3)', marginTop: 1 },
   cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, color: 'var(--pink)' },
-  cardActions: { display: 'flex', gap: 7, flexWrap: 'wrap' },
   actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', transition: 'opacity 0.15s' },
-  waIconBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', textDecoration: 'none', flexShrink: 0 },
-  editIconBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border)', cursor: 'pointer', flexShrink: 0 },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600, whiteSpace: 'nowrap' },
+  /* Menu 3 pontos */
+  menuBtn: { width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: 1, flexShrink: 0 },
+  menu: { position: 'absolute', top: 46, right: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-md)', zIndex: 50, minWidth: 200, overflow: 'hidden' },
+  menuItem: { display: 'block', width: '100%', padding: '10px 14px', fontSize: 13, fontWeight: 500, textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text)', textDecoration: 'none', fontFamily: 'inherit' },
+  /* Semana colunas */
+  weekColunas: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginTop: 10, overflowX: 'auto' },
+  weekColuna: { minWidth: 110, display: 'flex', flexDirection: 'column', gap: 4 },
+  weekColunaHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 2 },
+  weekColunaHeaderHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
+  weekColunaDia: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase' },
+  weekColunaNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 500, color: 'var(--text)' },
+  weekColunaSemAg: { fontSize: 12, color: 'var(--border2)', textAlign: 'center', padding: '10px 0' },
+  /* Card compacto (view semana) */
+  cardCompacto: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '3px solid', borderRadius: 6, padding: '6px 7px', cursor: 'pointer', position: 'relative' },
+  cardCompactoHora: { fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' },
+  cardCompactoNome: { fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  cardCompactoServ: { fontSize: 10, color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' },
   emptyBtn: { marginTop: 14, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
