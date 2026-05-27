@@ -418,7 +418,7 @@ export default function Home() {
             )}
           </div>
           <div style={s.kpiLabel}>Receita hoje</div>
-          <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--green)', fontSize: 18 }}>
+          <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--green)', fontSize: 17 }}>
             R$ {stats.receitaHoje.toFixed(2).replace('.', ',')}
           </div>
           <div style={s.kpiSub}>
@@ -436,7 +436,7 @@ export default function Home() {
             </div>
           </div>
           <div style={s.kpiLabel}>A receber este mês</div>
-          <div style={{ ...s.kpiValue, ...s.mono, color: stats.aReceber > 0 ? 'var(--amber, #D97706)' : 'var(--text3)', fontSize: 18 }}>
+          <div style={{ ...s.kpiValue, ...s.mono, color: stats.aReceber > 0 ? 'var(--amber, #D97706)' : 'var(--text3)', fontSize: 17 }}>
             R$ {stats.aReceber.toFixed(2).replace('.', ',')}
           </div>
           <div style={s.kpiSub}>
@@ -455,7 +455,7 @@ export default function Home() {
             </span>
           </div>
           <div style={s.kpiLabel}>Meta do mês</div>
-          <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--pink)', fontSize: 18 }}>
+          <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--pink)', fontSize: 17 }}>
             R$ {stats.receitaMes.toFixed(0)}
           </div>
           <div style={s.progressBar}>
@@ -537,13 +537,13 @@ const s = {
   datePicker: { fontSize: 12, padding: '5px 9px', border: '1px solid var(--border2)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
 
   /* ─── KPIs ─── */
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
-  kpi: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' },
-  kpiHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  kpiIcon: { width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  kpiLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 500, marginBottom: 3 },
-  kpiValue: { fontSize: 22, fontWeight: 700, lineHeight: 1 },
-  kpiSub: { fontSize: 10, color: 'var(--text3)', marginTop: 5 },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 },
+  kpi: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '12px 12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s', minWidth: 0, overflow: 'hidden' },
+  kpiHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 6 },
+  kpiIcon: { width: 26, height: 26, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  kpiLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 500, marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  kpiValue: { fontSize: 19, fontWeight: 700, lineHeight: 1.1 },
+  kpiSub: { fontSize: 10, color: 'var(--text3)', marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   varBadge: { display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-pill)' },
   progressBar: { height: 5, borderRadius: 3, background: 'var(--border)', marginTop: 6, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 3, background: 'var(--pink)', transition: 'width 0.6s ease' },
@@ -556,8 +556,8 @@ const s = {
 
   /* ─── Ações rápidas ─── */
   quickActions: { display: 'flex', flexDirection: 'column', gap: 8 },
-  qaBtn: { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'left', width: '100%' },
-  qaIcon: { width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  qaBtn: { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 12px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'left', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden' },
+  qaIcon: { width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   qaBtnPink: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   qaBtnLight: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' },
 
