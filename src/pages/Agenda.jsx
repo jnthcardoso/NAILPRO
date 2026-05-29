@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard, MessageCircle, Pencil } from 'lucide-react'
+import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard, MessageCircle, Pencil, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -59,8 +59,37 @@ export default function Agenda() {
   const [googlePronto, setGooglePronto] = useState(false)
   const [agDetalhe, setAgDetalhe] = useState(null)
   const [diaSelecionadoMes, setDiaSelecionadoMes] = useState(null)
+  const [busca, setBusca] = useState('')
+  const [resultados, setResultados] = useState([])
+  const [buscando, setBuscando] = useState(false)
+
+  const buscaAtiva = busca.trim().length >= 2
 
   useEffect(() => { if (salaoId) loadAgendamentos() }, [salaoId, dataSel, view, filtroProf])
+
+  // ── Busca por cliente/serviço (todas as datas) ──
+  useEffect(() => {
+    const termo = busca.trim().replace(/[,()*\\]/g, ' ').trim()
+    if (!salaoId || termo.length < 2) { setResultados([]); setBuscando(false); return }
+    let cancel = false
+    setBuscando(true)
+    const t = setTimeout(async () => {
+      // clientes cujo nome bate
+      const { data: cls } = await supabase.from('clientes')
+        .select('id').eq('salao_id', salaoId).ilike('nome', `%${termo}%`)
+      const ids = (cls || []).map(c => c.id)
+      const orParts = [`servico.ilike.%${termo}%`]
+      if (ids.length) orParts.push(`cliente_id.in.(${ids.join(',')})`)
+      let q = supabase.from('agendamentos')
+        .select('*, clientes(id, nome, telefone), pagamentos(id, status, forma, valor), profissional:salao_membros(id, nome)')
+        .eq('salao_id', salaoId)
+        .or(orParts.join(','))
+      if (filtroProf) q = q.eq('profissional_id', filtroProf)
+      const { data } = await q.order('data', { ascending: false }).order('horario').limit(100)
+      if (!cancel) { setResultados(data || []); setBuscando(false) }
+    }, 300)
+    return () => { cancel = true; clearTimeout(t) }
+  }, [busca, salaoId, filtroProf])
   useEffect(() => { if (salaoId) { loadClientes(); loadServicosPadrao(); loadGoogleConfig(); loadProfissionais() } }, [salaoId])
 
   // ── Fechar modais com Escape ───────────────────────
@@ -490,6 +519,53 @@ export default function Agenda() {
     )
   }
 
+  function CardBusca({ ag }) {
+    const st = STATUS[ag.status] || STATUS.pendente
+    const pag = ag.pagamentos?.[0]
+    const [y, m, d] = ag.data.split('-')
+    return (
+      <div style={{ ...s.card, borderLeftColor: st.border, cursor: 'pointer' }} onClick={() => setAgDetalhe(ag)}>
+        <div style={s.cardHeader}>
+          <div style={s.cardDataBusca}>
+            <span style={s.cardDataBuscaDia}>{d}/{m}</span>
+            <span style={s.cardDataBuscaHora}>{ag.horario?.slice(0, 5)}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={s.cardName}>{ag.clientes?.nome}</div>
+            <div style={s.cardService}>{ag.servico}</div>
+          </div>
+          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
+        </div>
+        {ag.valor > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>
+            {pag && (
+              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
+                {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function ViewBusca() {
+    if (buscando) return <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Buscando...</p></div>
+    if (resultados.length === 0) return (
+      <div style={s.empty}>
+        <Search size={34} color="var(--text3)" style={{ marginBottom: 10 }} />
+        <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento encontrado para "{busca.trim()}"</p>
+      </div>
+    )
+    return (
+      <div>
+        <div style={s.buscaResumo}>{resultados.length} resultado{resultados.length > 1 ? 's' : ''} (todas as datas)</div>
+        {resultados.map(ag => <CardBusca key={ag.id} ag={ag} />)}
+      </div>
+    )
+  }
+
   return (
     <div style={s.page}>
       <div style={s.viewTabs}>
@@ -497,11 +573,29 @@ export default function Agenda() {
           <button key={v} style={{ ...s.viewTab, ...(view === v ? s.viewTabActive : {}) }} onClick={() => setView(v)}>{v}</button>
         ))}
       </div>
-      <div style={s.nav}>
-        <button style={s.navBtn} onClick={() => navegar(-1)}><ChevronLeft size={18} /></button>
-        <div style={s.navLabel}>{labelNavegacao()}</div>
-        <button style={s.navBtn} onClick={() => navegar(1)}><ChevronRight size={18} /></button>
+
+      <div style={s.buscaWrap}>
+        <Search size={16} color="var(--text3)" style={{ flexShrink: 0 }} />
+        <input
+          style={s.buscaInput}
+          placeholder="Buscar por cliente ou serviço..."
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+        />
+        {busca && (
+          <button style={s.buscaClear} onClick={() => setBusca('')} aria-label="Limpar busca">
+            <X size={15} />
+          </button>
+        )}
       </div>
+
+      {!buscaAtiva && (
+        <div style={s.nav}>
+          <button style={s.navBtn} onClick={() => navegar(-1)}><ChevronLeft size={18} /></button>
+          <div style={s.navLabel}>{labelNavegacao()}</div>
+          <button style={s.navBtn} onClick={() => navegar(1)}><ChevronRight size={18} /></button>
+        </div>
+      )}
       {gerenciaTudo && profissionais.length > 1 && (
         <div style={s.profFiltro}>
           <button style={{ ...s.profChip, ...(filtroProf === '' ? s.profChipAtivo : {}) }} onClick={() => setFiltroProf('')}>Todas</button>
@@ -512,9 +606,13 @@ export default function Agenda() {
           ))}
         </div>
       )}
-      {view === 'Dia' && <ViewDia />}
-      {view === 'Semana' && <ViewSemana />}
-      {view === 'Mês' && <ViewMes />}
+      {buscaAtiva ? <ViewBusca /> : (
+        <>
+          {view === 'Dia' && <ViewDia />}
+          {view === 'Semana' && <ViewSemana />}
+          {view === 'Mês' && <ViewMes />}
+        </>
+      )}
 
       {/* ── Drawer de detalhe do agendamento ── */}
       {agDetalhe && (() => {
@@ -870,6 +968,13 @@ const s = {
   viewTab: { flex: 1, padding: '8px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
   viewTabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 700 },
   nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)' },
+  buscaWrap: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', marginBottom: 12, boxShadow: 'var(--shadow-xs)' },
+  buscaInput: { flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: 'var(--text)', fontFamily: 'inherit' },
+  buscaClear: { background: 'var(--surface2)', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text2)', flexShrink: 0 },
+  buscaResumo: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 },
+  cardDataBusca: { display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 44, background: 'var(--surface2)', borderRadius: 7, padding: '4px 6px' },
+  cardDataBuscaDia: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700, color: 'var(--text)' },
+  cardDataBuscaHora: { fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text3)', marginTop: 1 },
   profFiltro: { display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 14, paddingBottom: 2 },
   profChip: { flexShrink: 0, padding: '6px 14px', borderRadius: 'var(--radius-pill)', fontSize: 12.5, fontWeight: 600, background: 'var(--surface)', color: 'var(--text2)', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap' },
   profChipAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
