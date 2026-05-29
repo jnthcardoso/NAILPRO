@@ -222,11 +222,26 @@ export default function Financeiro() {
   const [savingDespesa, setSavingDespesa] = useState(false)
   const [filtro, setFiltro] = useState('todos')
   const [periodoSel, setPeriodoSel] = useState(new Date())
+  const [rangeMode, setRangeMode] = useState('mes') // 'mes' | 'custom'
+  const [customInicio, setCustomInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'))
+  const [customFim, setCustomFim] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
 
-  useEffect(() => { if (salaoId) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [salaoId, periodoSel])
+  // Intervalo efetivo (mês selecionado ou período personalizado)
+  function getRange() {
+    if (rangeMode === 'custom' && customInicio && customFim) {
+      return customInicio <= customFim
+        ? { inicio: customInicio, fim: customFim }
+        : { inicio: customFim, fim: customInicio }
+    }
+    return { inicio: format(startOfMonth(periodoSel), 'yyyy-MM-dd'), fim: format(endOfMonth(periodoSel), 'yyyy-MM-dd') }
+  }
+  // Data de referência (para janela de 6 meses e relatório anual)
+  const refDate = (rangeMode === 'custom' && customFim) ? new Date(customFim + 'T12:00:00') : periodoSel
+
+  useEffect(() => { if (salaoId) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
   // Fechar modais com Escape
   useEffect(() => {
@@ -240,15 +255,15 @@ export default function Financeiro() {
   }, [showModal, showDespesaModal])
 
   async function loadPagamentos() {
-    const inicio = format(startOfMonth(periodoSel), 'yyyy-MM-dd')
-    const fim = format(endOfMonth(periodoSel), 'yyyy-MM-dd')
+    const { inicio, fim } = getRange()
     const { data } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     setPagamentos(data || [])
 
-    const inicio6m = format(startOfMonth(subMonths(periodoSel, 5)), 'yyyy-MM-dd')
+    const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
+    const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
     const { data: data6m } = await supabase.from('pagamentos')
       .select('data, valor, status').eq('salao_id', salaoId).eq('status', 'pago')
-      .gte('data', inicio6m).lte('data', fim)
+      .gte('data', inicio6m).lte('data', fim6m)
     setPagamentos6m(data6m || [])
 
     const { data: ags } = await supabase.from('agendamentos')
@@ -258,8 +273,7 @@ export default function Financeiro() {
   }
 
   async function loadDespesas() {
-    const inicio = format(startOfMonth(periodoSel), 'yyyy-MM-dd')
-    const fim = format(endOfMonth(periodoSel), 'yyyy-MM-dd')
+    const { inicio, fim } = getRange()
     const { data } = await supabase.from('despesas')
       .select('*').eq('salao_id', salaoId)
       .gte('data', inicio).lte('data', fim).order('data', { ascending: false })
@@ -374,7 +388,7 @@ export default function Financeiro() {
   async function handleExportarAnual() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportandoAnual(true)
-    try { await exportarPDFAnual(salaoId, periodoSel.getFullYear()) }
+    try { await exportarPDFAnual(salaoId, refDate.getFullYear()) }
     catch (e) { toastErro('Erro ao gerar PDF anual') }
     setExportandoAnual(false)
   }
@@ -388,10 +402,12 @@ export default function Financeiro() {
   const lucro = recebido - totalDespesas
   const margemLucro = recebido > 0 ? (lucro / recebido) * 100 : 0
   const filtrados = filtro === 'todos' ? pagamentos : pagamentos.filter(p => p.status === filtro)
-  const periodoLabel = format(periodoSel, "MMMM 'de' yyyy", { locale: ptBR })
+  const periodoLabel = (rangeMode === 'custom' && customInicio && customFim)
+    ? `${format(new Date((customInicio <= customFim ? customInicio : customFim) + 'T12:00:00'), 'dd/MM/yy')} – ${format(new Date((customInicio <= customFim ? customFim : customInicio) + 'T12:00:00'), 'dd/MM/yy')}`
+    : format(periodoSel, "MMMM 'de' yyyy", { locale: ptBR })
 
   // Gráficos
-  const meses6 = eachMonthOfInterval({ start: subMonths(periodoSel, 5), end: periodoSel })
+  const meses6 = eachMonthOfInterval({ start: subMonths(refDate, 5), end: refDate })
   const dadosReceita6m = meses6.map(mes => {
     const ini = format(startOfMonth(mes), 'yyyy-MM-dd')
     const fim = format(endOfMonth(mes), 'yyyy-MM-dd')
@@ -435,19 +451,40 @@ export default function Financeiro() {
 
   return (
     <div style={s.page}>
+      {/* Modo de período */}
+      <div style={s.modoTabs}>
+        <button style={{ ...s.modoTab, ...(rangeMode === 'mes' ? s.modoTabAtivo : {}) }} onClick={() => setRangeMode('mes')}>Por mês</button>
+        <button style={{ ...s.modoTab, ...(rangeMode === 'custom' ? s.modoTabAtivo : {}) }} onClick={() => setRangeMode('custom')}>Período personalizado</button>
+      </div>
+
       {/* Navegação de período */}
       <div style={s.periodoNav}>
-        <button style={s.navBtn} onClick={() => setPeriodoSel(subMonths(periodoSel, 1))}><ChevronLeft size={18} /></button>
-        <div style={s.periodoLabel}>{periodoLabel}</div>
-        <button style={s.navBtn} onClick={() => setPeriodoSel(addMonths(periodoSel, 1))}><ChevronRight size={18} /></button>
-        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title="PDF do mês">
+        {rangeMode === 'mes' ? (
+          <>
+            <button style={s.navBtn} onClick={() => setPeriodoSel(subMonths(periodoSel, 1))}><ChevronLeft size={18} /></button>
+            <div style={s.periodoLabel}>{periodoLabel}</div>
+            <button style={s.navBtn} onClick={() => setPeriodoSel(addMonths(periodoSel, 1))}><ChevronRight size={18} /></button>
+          </>
+        ) : (
+          <div style={s.rangeInputs}>
+            <div style={s.rangeField}>
+              <label style={s.rangeLabel}>De</label>
+              <input style={s.rangeInput} type="date" value={customInicio} onChange={e => setCustomInicio(e.target.value)} />
+            </div>
+            <div style={s.rangeField}>
+              <label style={s.rangeLabel}>Até</label>
+              <input style={s.rangeInput} type="date" value={customFim} onChange={e => setCustomFim(e.target.value)} />
+            </div>
+          </div>
+        )}
+        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title="PDF do período">
           <FileDown size={14} />
-          {exportando ? '...' : 'Mês'}
+          {exportando ? '...' : 'PDF'}
           {!temAcesso('exportPDF') && <ProBadge />}
         </button>
         <button style={s.exportBtnAnual} onClick={handleExportarAnual} disabled={exportandoAnual} title="PDF anual">
           <Calendar size={14} />
-          {exportandoAnual ? '...' : `Ano ${periodoSel.getFullYear()}`}
+          {exportandoAnual ? '...' : `Ano ${refDate.getFullYear()}`}
           {!temAcesso('exportPDF') && <ProBadge />}
         </button>
       </div>
@@ -761,6 +798,13 @@ export default function Financeiro() {
 
 const s = {
   page: { padding: 16, paddingBottom: 80 },
+  modoTabs: { display: 'flex', gap: 6, marginBottom: 10 },
+  modoTab: { flex: 1, padding: '7px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  modoTabAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', fontWeight: 700 },
+  rangeInputs: { display: 'flex', gap: 8, flex: 1, minWidth: 200, flexWrap: 'wrap' },
+  rangeField: { display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 110 },
+  rangeLabel: { fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' },
+  rangeInput: { border: '1px solid var(--border2)', borderRadius: 8, padding: '6px 8px', fontSize: 13, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' },
   periodoNav: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)', flexWrap: 'wrap' },
   periodoLabel: { flex: 1, fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize', textAlign: 'center', minWidth: 140 },
   navBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: 4 },
