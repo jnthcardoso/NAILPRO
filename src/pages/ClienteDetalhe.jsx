@@ -21,13 +21,27 @@ export default function ClienteDetalhe() {
   }
 
   async function loadHistorico() {
-    const { data } = await supabase.from('agendamentos').select('*, pagamentos(status, valor)').eq('cliente_id', id).order('data', { ascending: false }).limit(20)
+    const { data } = await supabase.from('agendamentos')
+      .select('*, pagamentos(status, valor, forma)')
+      .eq('cliente_id', id)
+      .order('data', { ascending: false })
+      .order('horario', { ascending: false })
+      .limit(50)
     setHistorico(data || [])
   }
 
   function getInitials(nome) {
     return nome?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '??'
   }
+
+  // Resumo do histórico
+  const realizados = historico.filter(h => h.status === 'realizado')
+  const cancelados = historico.filter(h => h.status === 'cancelado')
+  const totalRecebido = historico.reduce((acc, h) => {
+    const pago = h.pagamentos?.[0]
+    return acc + (pago?.status === 'pago' ? (pago.valor || h.valor || 0) : 0)
+  }, 0)
+  const ticketMedio = realizados.length ? totalRecebido / realizados.length : 0
 
   if (!cliente) return <div style={{ padding: 24, color: 'var(--text3)' }}>Carregando...</div>
 
@@ -80,31 +94,85 @@ export default function ClienteDetalhe() {
         </div>
       )}
 
-      <div style={s.sectionTitle}>histórico de atendimentos</div>
+      {/* Resumo do histórico */}
+      {historico.length > 0 && (
+        <div style={s.resumoGrid}>
+          <div style={s.resumoCard}>
+            <div style={s.resumoValor}>{realizados.length}</div>
+            <div style={s.resumoLabel}>atendimentos</div>
+          </div>
+          <div style={s.resumoCard}>
+            <div style={{ ...s.resumoValor, color: 'var(--green)' }}>R$ {totalRecebido.toFixed(0)}</div>
+            <div style={s.resumoLabel}>recebido</div>
+          </div>
+          <div style={s.resumoCard}>
+            <div style={s.resumoValor}>R$ {ticketMedio.toFixed(0)}</div>
+            <div style={s.resumoLabel}>ticket médio</div>
+          </div>
+        </div>
+      )}
+
+      <div style={s.sectionTitle}>
+        linha do tempo
+        {cancelados.length > 0 && <span style={s.cancelInfo}> · {cancelados.length} cancelado{cancelados.length > 1 ? 's' : ''}</span>}
+      </div>
 
       {historico.length === 0
         ? <div style={s.empty}>Nenhum atendimento registrado</div>
-        : historico.map(h => {
-          const pago = h.pagamentos?.[0]?.status === 'pago'
-          return (
-            <div key={h.id} style={s.histCard}>
-              <div style={{ flex: 1 }}>
-                <div style={s.histService}>{h.servico}</div>
-                <div style={s.histDate}>{format(new Date(h.data), "dd 'de' MMM yyyy", { locale: ptBR })}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={s.histValor}>R$ {(h.valor || 0).toFixed(2).replace('.', ',')}</div>
-                <span style={{ ...s.badge, ...(pago ? s.badgePago : s.badgePendente) }}>
-                  {pago ? '✓ Pago' : '⏳ Pendente'}
-                </span>
-              </div>
-            </div>
-          )
-        })
+        : (
+          <div style={s.timeline}>
+            {historico.map((h, i) => {
+              const st = HIST_STATUS[h.status] || HIST_STATUS.pendente
+              const pag = h.pagamentos?.[0]
+              const pago = pag?.status === 'pago'
+              const cancelado = h.status === 'cancelado'
+              const ultimo = i === historico.length - 1
+              return (
+                <div key={h.id} style={s.tlRow}>
+                  <div style={s.tlGutter}>
+                    <span style={{ ...s.tlDot, background: st.cor, borderColor: st.cor }} />
+                    {!ultimo && <span style={s.tlLine} />}
+                  </div>
+                  <div style={{ ...s.tlCard, ...(cancelado ? { opacity: 0.6 } : {}) }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ ...s.histService, ...(cancelado ? { textDecoration: 'line-through' } : {}) }}>{h.servico}</div>
+                        <div style={s.histDate}>
+                          {format(new Date(h.data + 'T12:00:00'), "dd 'de' MMM yyyy", { locale: ptBR })}
+                          {h.horario && ` · ${h.horario.slice(0, 5)}`}
+                        </div>
+                      </div>
+                      <span style={{ ...s.badge, background: st.bg, color: st.cor }}>{st.label}</span>
+                    </div>
+                    {!cancelado && (h.valor > 0 || pag) && (
+                      <div style={s.tlPagRow}>
+                        <span style={s.histValor}>R$ {(pag?.valor ?? h.valor ?? 0).toFixed(2).replace('.', ',')}</span>
+                        {pag && (
+                          <span style={{ ...s.badge, ...(pago ? s.badgePago : s.badgePendente) }}>
+                            {pago ? '✓ Pago' : '⏳ Pendente'}{pag.forma ? ` · ${FORMA_LABEL[pag.forma] || pag.forma}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
       }
     </div>
   )
 }
+
+const HIST_STATUS = {
+  realizado:  { label: 'Realizado',  cor: '#5B21B6', bg: '#EDE9FE' },
+  confirmado: { label: 'Confirmada', cor: '#15803D', bg: '#DCFCE7' },
+  pendente:   { label: 'Aguardando', cor: '#92400E', bg: '#FEF3C7' },
+  cancelado:  { label: 'Cancelado',  cor: '#B91C1C', bg: '#FEE2E2' },
+}
+
+const FORMA_LABEL = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito' }
 
 const s = {
   page: { padding: 16, paddingBottom: 80 },
@@ -124,11 +192,22 @@ const s = {
   obs: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
   obsTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 },
   obsText: { fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 },
-  sectionTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' },
-  histCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 10, boxShadow: 'var(--shadow-xs)' },
+  sectionTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 12px' },
+  cancelInfo: { color: '#B91C1C', fontWeight: 600 },
+  resumoGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 18 },
+  resumoCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
+  resumoValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 17, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
+  resumoLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' },
+  timeline: { display: 'flex', flexDirection: 'column' },
+  tlRow: { display: 'flex', gap: 12 },
+  tlGutter: { display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: 14 },
+  tlDot: { width: 13, height: 13, borderRadius: '50%', border: '3px solid', background: 'white', marginTop: 4, flexShrink: 0, boxShadow: '0 0 0 3px var(--surface)' },
+  tlLine: { width: 2, flex: 1, background: 'var(--border2)', marginTop: 2, minHeight: 14 },
+  tlCard: { flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', marginBottom: 12, boxShadow: 'var(--shadow-xs)' },
+  tlPagRow: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 },
   histService: { fontSize: 14, fontWeight: 600 },
   histDate: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
-  histValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)', marginBottom: 3 },
+  histValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)' },
   badge: { fontSize: 11, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
   badgePago: { background: 'var(--green-bg)', color: 'var(--green)' },
   badgePendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
