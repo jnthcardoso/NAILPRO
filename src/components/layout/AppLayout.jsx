@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin } from '../../contexts/AssinaturaContext'
 import { useSalao } from '../../contexts/SalaoContext'
 import { NailProLogo, NailDropIcon } from '../common/Brand'
+import Notificacoes from '../common/Notificacoes'
 
 // Itens completos (dona / recepcionista — gerenciam tudo)
 const navItemsCompleto = [
@@ -117,6 +118,7 @@ export default function AppLayout() {
         <div style={{ flex: 1 }} />
         
         <div style={{ padding: isSidebarCollapsed ? '0 12px 12px' : '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Notificacoes variant="sidebar" collapsed={isSidebarCollapsed} />
           {isAdmin && (
             <NavLink
               to="/admin"
@@ -199,10 +201,11 @@ export default function AppLayout() {
               <em>oi {firstName},</em>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={mh.date}>
               {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
             </div>
+            <Notificacoes variant="header" />
             {gerenciaTudo && (
               <NavLink to="/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
                 <Settings size={18} />
