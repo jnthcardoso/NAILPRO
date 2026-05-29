@@ -3,12 +3,15 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import { differenceInDays, differenceInHours } from 'date-fns'
 
-// Configuração de planos
+// Preço de cada usuário adicional (login próprio além da dona/admin) — só no Pro
+export const PRECO_USUARIO_ADICIONAL = 4990 // R$ 49,90/mês por usuário
+
+// Configuração de planos — ambos ANUAIS com fidelidade de 12 meses
 export const PLANOS = {
   starter: {
     id: 'starter',
     nome: 'Starter',
-    precoMensal: 26990,  // R$ 269,90/mês — sem fidelidade
+    precoMensal: 16990,  // exibição: R$ 169,90/mês (cobrado anualmente)
     precoAnual: 203880,  // R$ 169,90/mês × 12 = R$ 2.038,80 — fidelidade 12 meses
     cor: '#8B2655',
     limites: {
@@ -18,15 +21,18 @@ export const PLANOS = {
       googleCalendar: false,
       exportPDF: false,
       relatoriosAvancados: false,
+      usuariosAdicionais: false,
     },
     features: [
       '✓ Até 30 clientes',
+      '✓ 1 login de administrador',
       '✓ Agenda completa (dia, semana, mês)',
       '✓ Financeiro completo com DRE',
       '✓ Controle de despesas por categoria',
       '✓ Metas com projeção inteligente',
       '✓ Previsão de receita futura',
       '✓ KPI: faturamento por serviço',
+      '✗ Usuários (logins) adicionais',
       '✗ KPIs avançados (retenção de clientes)',
       '✗ Exportar relatórios PDF',
       '✗ Lembretes WhatsApp automáticos',
@@ -37,7 +43,7 @@ export const PLANOS = {
   pro: {
     id: 'pro',
     nome: 'Pro',
-    precoMensal: 29990, // R$ 299,90/mês — sem fidelidade
+    precoMensal: 19990, // exibição: R$ 199,90/mês (cobrado anualmente)
     precoAnual: 239880, // R$ 199,90/mês × 12 = R$ 2.398,80 — fidelidade 12 meses
     cor: '#D4AF37',
     limites: {
@@ -47,9 +53,12 @@ export const PLANOS = {
       googleCalendar: true,
       exportPDF: true,
       relatoriosAvancados: true,
+      usuariosAdicionais: true,
     },
     features: [
       '✓ Clientes ilimitadas',
+      '✓ Login de administrador + equipe',
+      '✓ Usuários adicionais (R$ 49,90/mês cada)',
       '✓ Agenda completa (dia, semana, mês)',
       '✓ Financeiro completo com DRE',
       '✓ Controle de despesas por categoria',
@@ -172,21 +181,30 @@ function sanitizarTexto(str) {
   return (str || '').replace(/[<>'"\\]/g, '').trim().slice(0, 200)
 }
 
-// Helper pra gerar link WhatsApp de assinatura
-export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo }) {
-  const plano = PLANOS[planoId]
+// Helper pra gerar link WhatsApp de assinatura (planos anuais com fidelidade)
+export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuarios = 0 }) {
+  const plano = PLANOS[planoId] || PLANOS.pro
   const planoNome = plano?.nome || 'Pro'
-  const precoMes = ciclo === 'anual'
-    ? `R$ ${formatPreco(plano.precoAnual / 12)}/mês (cobrado anualmente — R$ ${formatPreco(plano.precoAnual)}) — fidelidade 12 meses`
-    : `R$ ${formatPreco(plano.precoMensal)}/mês — sem fidelidade`
+
+  const baseMes = plano.precoAnual / 12
+  const podeUsuarios = plano.limites?.usuariosAdicionais === true
+  const qtdUsuarios = podeUsuarios ? Math.max(0, usuarios) : 0
+  const usuariosMes = qtdUsuarios * PRECO_USUARIO_ADICIONAL
+  const totalMes = baseMes + usuariosMes
+  const totalAno = totalMes * 12
 
   const nomeSeguro = sanitizarTexto(nomeUsuario)
   const emailSeguro = sanitizarTexto(emailUsuario)
 
+  const linhaUsuarios = qtdUsuarios > 0
+    ? `\n👥 Usuários adicionais: ${qtdUsuarios} × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(usuariosMes)}/mês`
+    : ''
+
   const msg = `Olá! Quero assinar o NailPro 💅
 
-📋 Plano: ${planoNome} (${ciclo === 'anual' ? 'Anual' : 'Mensal'})
-💰 Valor: ${precoMes}
+📋 Plano: ${planoNome} (Anual — fidelidade 12 meses)
+💰 Mensalidade do plano: R$ ${formatPreco(baseMes)}/mês${linhaUsuarios}
+🧾 Total: R$ ${formatPreco(totalMes)}/mês (R$ ${formatPreco(totalAno)}/ano)
 👤 Nome: ${nomeSeguro}
 📧 E-mail: ${emailSeguro}
 

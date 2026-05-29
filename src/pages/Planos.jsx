@@ -8,7 +8,6 @@ export default function Planos() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { assinatura, plano: planoAtual, isTrialing, diasRestantesTrial, trialAcabou, isActive } = useAssinatura()
-  const [ciclo, setCiclo] = useState('mensal')
   const [assinarLoading, setAssinarLoading] = useState(null)
 
   const nomeUsuario = user?.user_metadata?.full_name || ''
@@ -16,7 +15,7 @@ export default function Planos() {
 
   function handleAssinar(planoId) {
     setAssinarLoading(planoId)
-    const link = whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo })
+    const link = whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId })
     window.open(link, '_blank')
     setTimeout(() => setAssinarLoading(null), 1500)
   }
@@ -43,25 +42,14 @@ export default function Planos() {
         <p style={s.heroSub}>
           {trialAcabou
             ? 'Assine pra continuar usando todas as funcionalidades.'
-            : 'Escolha o plano ideal pro seu momento. No mensal, cancela quando quiser.'}
+            : 'Dois planos anuais, com fidelidade de 12 meses. Escolha o ideal pro seu salão.'}
         </p>
       </div>
 
-      {/* Toggle Mensal/Anual */}
+      {/* Selo plano anual */}
       <div style={s.toggleWrap}>
-        <div style={s.toggleCard}>
-          <button
-            style={{ ...s.toggleBtn, ...(ciclo === 'mensal' ? s.toggleBtnActive : {}) }}
-            onClick={() => setCiclo('mensal')}
-          >
-            Mensal
-          </button>
-          <button
-            style={{ ...s.toggleBtn, ...(ciclo === 'anual' ? s.toggleBtnActive : {}) }}
-            onClick={() => setCiclo('anual')}
-          >
-            Anual <span style={s.economiaBadge}>até 37% off</span>
-          </button>
+        <div style={s.anualSelo}>
+          📅 Planos anuais · fidelidade de 12 meses
         </div>
       </div>
 
@@ -70,7 +58,6 @@ export default function Planos() {
         {/* STARTER */}
         <PlanoCard
           plano={PLANOS.starter}
-          ciclo={ciclo}
           isAtual={isActive && assinatura?.plano === 'starter'}
           isPopular={false}
           loading={assinarLoading === 'starter'}
@@ -80,7 +67,6 @@ export default function Planos() {
         {/* PRO */}
         <PlanoCard
           plano={PLANOS.pro}
-          ciclo={ciclo}
           isAtual={isActive && assinatura?.plano === 'pro'}
           isPopular={true}
           loading={assinarLoading === 'pro'}
@@ -92,10 +78,9 @@ export default function Planos() {
       <div style={s.equipeBanner}>
         <div style={s.equipeBannerTitulo}>👥 Tem uma equipe?</div>
         <div style={s.equipeBannerTexto}>
-          O plano já cobre o salão inteiro — não importa quantas profissionais atendem.
-          Se quiser que cada manicure ou a recepcionista tenha o <strong>próprio login</strong>,
-          é só <strong>R$ {formatPreco(1990)}/mês por login extra</strong>. A dona não paga login adicional.
-          Você gerencia tudo isso na página <strong>Equipe</strong>.
+          No plano <strong>Pro</strong>, dê um <strong>login próprio</strong> para cada profissional por
+          <strong> R$ {formatPreco(4990)}/mês por usuário</strong>. A dona/admin não paga, e quem usar o login
+          de administrador (ex.: recepcionista) também não. Tudo gerenciado na página <strong>Equipe</strong>.
         </div>
       </div>
 
@@ -108,7 +93,7 @@ export default function Planos() {
         />
         <FaqItem
           q="Tem fidelidade?"
-          a="Depende do ciclo. No plano mensal não tem fidelidade — você cancela quando quiser, sem multa. No plano anual há fidelidade de 12 meses, por isso o valor é bem mais barato."
+          a="Sim. Os dois planos são anuais, com fidelidade de 12 meses. Em caso de cancelamento antes do fim do contrato, há multa de 50% sobre o valor restante."
         />
         <FaqItem
           q="Meus dados ficam guardados se eu cancelar?"
@@ -120,7 +105,7 @@ export default function Planos() {
         />
         <FaqItem
           q="Como funciona pra salão com várias manicures?"
-          a="O valor do plano já vale pro salão todo, independente de quantas profissionais atendem. Se você quiser dar login individual (cada uma vê só a própria agenda e o próprio financeiro) ou um login pra recepcionista que gerencia tudo, cada login extra custa R$ 19,90/mês. A dona não paga login adicional. Adicione e gerencie a equipe na página Equipe."
+          a="No plano Pro você pode dar login individual para cada profissional (cada uma vê só a própria agenda e o próprio financeiro) por R$ 49,90/mês por usuário. A dona/admin não paga login adicional, e quem usar o login de administrador (por exemplo, a recepcionista) também não é cobrado. Ex.: salão no Pro com 4 manicures = R$ 199,90 + 4 × R$ 49,90. O plano Starter inclui só o login de administrador. Gerencie tudo na página Equipe."
         />
       </div>
 
@@ -134,8 +119,8 @@ export default function Planos() {
   )
 }
 
-function PlanoCard({ plano, ciclo, isAtual, isPopular, loading, onAssinar }) {
-  const precoMensalExibido = ciclo === 'anual' ? plano.precoAnual / 12 : plano.precoMensal
+function PlanoCard({ plano, isAtual, isPopular, loading, onAssinar }) {
+  const precoMensalExibido = plano.precoAnual / 12
   const totalAnual = plano.precoAnual
 
   return (
@@ -149,14 +134,13 @@ function PlanoCard({ plano, ciclo, isAtual, isPopular, loading, onAssinar }) {
         <span style={s.precoValor}>{formatPreco(precoMensalExibido)}</span>
         <span style={s.precoCiclo}>/mês</span>
       </div>
-      {ciclo === 'anual' ? (
-        <div style={{ marginBottom: 4 }}>
-          <div style={s.precoAnualNota}>R$ {formatPreco(totalAnual)} cobrados anualmente</div>
-          <div style={s.fidelidadeTag}>📅 Fidelidade de 12 meses</div>
-        </div>
-      ) : (
-        <div style={s.semFidelidadeTag}>✓ Sem fidelidade — cancela quando quiser</div>
-      )}
+      <div style={{ marginBottom: 4 }}>
+        <div style={s.precoAnualNota}>R$ {formatPreco(totalAnual)} cobrados anualmente</div>
+        <div style={s.fidelidadeTag}>📅 Fidelidade de 12 meses</div>
+        {plano.limites?.usuariosAdicionais
+          ? <div style={s.usuarioNota}>+ usuários adicionais por R$ 49,90/mês cada</div>
+          : <div style={s.usuarioNota}>Inclui 1 login de administrador</div>}
+      </div>
 
       <button
         style={{ ...s.btnAssinar, ...(isPopular ? s.btnAssinarPro : {}), ...(isAtual ? s.btnAssinarAtual : {}), ...(loading ? { opacity: 0.75 } : {}) }}
@@ -216,7 +200,9 @@ const s = {
   toggleCard: { display: 'inline-flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: 4, boxShadow: 'var(--shadow-xs)' },
   toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'var(--text3)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
   toggleBtnActive: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
+  anualSelo: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: 'var(--radius-pill)', padding: '7px 16px', fontSize: 12, fontWeight: 700 },
   economiaBadge: { background: 'var(--gold, #D4AF37)', color: 'var(--brand-dark-bg, #170D14)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', fontSize: 10, fontWeight: 800 },
+  usuarioNota: { fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginTop: 2 },
   planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 32 },
   planoCard: { position: 'relative', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '24px 22px', boxShadow: 'var(--shadow-sm)' },
   planoCardPro: { border: '2px solid var(--pink)', boxShadow: '0 12px 32px rgba(139,38,85,0.18)' },

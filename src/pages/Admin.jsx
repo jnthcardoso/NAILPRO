@@ -251,31 +251,17 @@ export default function Admin() {
                 <div style={s.acoesGrid}>
                   <button
                     style={s.acaoBtn}
-                    onClick={() => ativar(u.user_id, 'pro', 'mensal')}
-                    disabled={acaoLoading}
-                  >
-                    ✓ Ativar Pro Mensal (R$ 129,90)
-                  </button>
-                  <button
-                    style={s.acaoBtn}
                     onClick={() => ativar(u.user_id, 'pro', 'anual')}
                     disabled={acaoLoading}
                   >
-                    ✓ Ativar Pro Anual (R$ 1.299)
-                  </button>
-                  <button
-                    style={s.acaoBtn}
-                    onClick={() => ativar(u.user_id, 'starter', 'mensal')}
-                    disabled={acaoLoading}
-                  >
-                    ✓ Ativar Starter Mensal (R$ 99,90)
+                    ✓ Ativar Pro Anual (R$ 199,90/mês)
                   </button>
                   <button
                     style={s.acaoBtn}
                     onClick={() => ativar(u.user_id, 'starter', 'anual')}
                     disabled={acaoLoading}
                   >
-                    ✓ Ativar Starter Anual (R$ 999)
+                    ✓ Ativar Starter Anual (R$ 169,90/mês)
                   </button>
                   <button
                     style={{ ...s.acaoBtn, background: '#EFF6FF', color: '#1E40AF', border: '1px solid #93C5FD' }}

@@ -3,10 +3,8 @@ import { Users, UserPlus, Crown, Trash2, Mail, Check, X, ShieldCheck, Headset, S
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
-import { useAssinatura, formatPreco, whatsappAssinarLink } from '../contexts/AssinaturaContext'
+import { useAssinatura, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
-
-const PRECO_LICENCA_ADICIONAL = 1990 // R$ 19,90 por membro com login
 
 const PAPEIS = {
   dona: { label: 'Dona', icon: Crown, cor: '#D4AF37', desc: 'Acesso total + gestão da equipe e licença' },
@@ -39,11 +37,13 @@ export default function Equipe() {
     setLoading(false)
   }
 
-  // Profissionais/recepcionistas COM login (user_id não nulo) → contam licença adicional.
-  // A dona não conta (já está incluída no plano base).
+  // Membros COM login próprio (user_id não nulo) que não são a dona/admin → cada um é um
+  // usuário adicional. A dona não conta (já incluída no plano). Quem usa o login admin
+  // (ex.: recepcionista compartilhando) não vira membro, então não é cobrado.
   const membrosComLogin = membros.filter(m => m.papel !== 'dona' && m.user_id)
   const licencasAdicionais = membrosComLogin.length
-  const custoAdicional = licencasAdicionais * PRECO_LICENCA_ADICIONAL
+  const custoAdicional = licencasAdicionais * PRECO_USUARIO_ADICIONAL
+  const planoPermiteUsuarios = plano?.limites?.usuariosAdicionais === true
 
   async function adicionar(e) {
     e.preventDefault()
@@ -109,8 +109,8 @@ export default function Equipe() {
     const link = whatsappAssinarLink({
       nomeUsuario: user?.user_metadata?.full_name,
       emailUsuario: user?.email,
-      planoId: plano?.id || 'pro',
-      ciclo: 'anual',
+      planoId: planoPermiteUsuarios ? (plano?.id || 'pro') : 'pro',
+      usuarios: licencasAdicionais,
     })
     window.open(link, '_blank')
   }
@@ -143,30 +143,40 @@ export default function Equipe() {
         </button>
       </div>
 
-      {/* Resumo de licenças / custo */}
+      {/* Resumo de usuários / custo */}
       <div style={s.licencaCard}>
         <div style={s.licencaTop}>
           <div>
-            <div style={s.licencaLabel}>Licenças adicionais</div>
+            <div style={s.licencaLabel}>Usuários adicionais</div>
             <div style={s.licencaValor}>{licencasAdicionais}</div>
-            <div style={s.licencaHint}>profissionais/recepcionistas com login ativo</div>
+            <div style={s.licencaHint}>logins próprios além da admin</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={s.licencaLabel}>Custo adicional</div>
-            <div style={s.licencaValor}>R$ {formatPreco(custoAdicional)}</div>
-            <div style={s.licencaHint}>R$ {formatPreco(PRECO_LICENCA_ADICIONAL)} por login extra</div>
+            <div style={s.licencaValor}>R$ {formatPreco(custoAdicional)}/mês</div>
+            <div style={s.licencaHint}>R$ {formatPreco(PRECO_USUARIO_ADICIONAL)} por usuário</div>
           </div>
         </div>
-        <div style={s.licencaInfo}>
-          <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-          <span>
-            O plano <strong>{plano?.nome || 'Pro'}</strong> já cobre o salão inteiro. A dona não conta como licença extra —
-            só os logins adicionais de profissionais e recepcionistas.
-          </span>
-        </div>
-        {licencasAdicionais > 0 && (
+        {planoPermiteUsuarios ? (
+          <div style={s.licencaInfo}>
+            <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>
+              O plano <strong>{plano?.nome || 'Pro'}</strong> já cobre o salão. A dona/admin não conta — cada membro com
+              login próprio é um usuário adicional. Quem usar o login admin (ex.: recepcionista) não é cobrado.
+            </span>
+          </div>
+        ) : (
+          <div style={{ ...s.licencaInfo, background: '#FEF3C7', color: '#92400E' }}>
+            <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>
+              O plano <strong>{plano?.nome || 'Starter'}</strong> inclui só o login de administrador.
+              Para dar login individual à equipe (R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/usuário), faça upgrade para o <strong>Pro</strong>.
+            </span>
+          </div>
+        )}
+        {(licencasAdicionais > 0 || !planoPermiteUsuarios) && (
           <button style={s.licencaBtn} onClick={abrirWhatsappLicencas}>
-            Atualizar minha assinatura
+            {planoPermiteUsuarios ? 'Atualizar minha assinatura' : 'Fazer upgrade para o Pro'}
           </button>
         )}
       </div>
