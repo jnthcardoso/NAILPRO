@@ -61,6 +61,9 @@ export default function BemVindo() {
       toastErro('Erro ao salvar: ' + error.message)
       return
     }
+    if (form.nome_salao) {
+      await supabase.from('saloes').update({ nome: form.nome_salao }).eq('dona_user_id', user.id)
+    }
     navigate('/', { replace: true, state: { onboardingJustCompleted: true } })
   }
 

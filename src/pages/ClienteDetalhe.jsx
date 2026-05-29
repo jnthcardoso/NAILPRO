@@ -16,12 +16,12 @@ export default function ClienteDetalhe() {
   useEffect(() => { if (user && id) { loadCliente(); loadHistorico() } }, [user, id])
 
   async function loadCliente() {
-    const { data } = await supabase.from('clientes').select('*').eq('id', id).eq('user_id', user.id).single()
+    const { data } = await supabase.from('clientes').select('*').eq('id', id).maybeSingle()
     setCliente(data)
   }
 
   async function loadHistorico() {
-    const { data } = await supabase.from('agendamentos').select('*, pagamentos(status, valor)').eq('cliente_id', id).eq('user_id', user.id).order('data', { ascending: false }).limit(20)
+    const { data } = await supabase.from('agendamentos').select('*, pagamentos(status, valor)').eq('cliente_id', id).order('data', { ascending: false }).limit(20)
     setHistorico(data || [])
   }
 

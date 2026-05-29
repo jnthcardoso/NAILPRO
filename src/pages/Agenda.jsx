@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard, MessageCircle, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
 import { formatTelefone, unformatTelefone } from '../lib/formatters'
@@ -30,19 +31,22 @@ const VIEWS = ['Dia', 'Semana', 'Mês']
 
 export default function Agenda() {
   const { user } = useAuth()
+  const { salaoId, membroId, gerenciaTudo, isProfissional } = useSalao()
   const { sucesso, erro, confirmar } = useToast()
   const [view, setView] = useState('Semana')
   const [dataSel, setDataSel] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState([])
   const [clientes, setClientes] = useState([])
+  const [profissionais, setProfissionais] = useState([])
+  const [filtroProf, setFiltroProf] = useState('') // '' = todas
   const [showModal, setShowModal] = useState(false)
   const [showNovaCliente, setShowNovaCliente] = useState(false)
   const [showPagModal, setShowPagModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [agSelecionado, setAgSelecionado] = useState(null)
   const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '' })
-  const [form, setForm] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(new Date(), 'yyyy-MM-dd') })
-  const [formEdit, setFormEdit] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: '' })
+  const [form, setForm] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(new Date(), 'yyyy-MM-dd'), profissional_id: '' })
+  const [formEdit, setFormEdit] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: '', profissional_id: '' })
   const [formCliente, setFormCliente] = useState({ nome: '', telefone: '' })
   const [saving, setSaving] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
@@ -56,8 +60,8 @@ export default function Agenda() {
   const [agDetalhe, setAgDetalhe] = useState(null)
   const [diaSelecionadoMes, setDiaSelecionadoMes] = useState(null)
 
-  useEffect(() => { if (user) loadAgendamentos() }, [user, dataSel, view])
-  useEffect(() => { if (user) { loadClientes(); loadServicosPadrao(); loadGoogleConfig() } }, [user])
+  useEffect(() => { if (salaoId) loadAgendamentos() }, [salaoId, dataSel, view, filtroProf])
+  useEffect(() => { if (salaoId) { loadClientes(); loadServicosPadrao(); loadGoogleConfig(); loadProfissionais() } }, [salaoId])
 
   // ── Fechar modais com Escape ───────────────────────
   useEffect(() => {
@@ -82,22 +86,29 @@ export default function Agenda() {
       inicio = format(startOfMonth(dataSel), 'yyyy-MM-dd')
       fim = format(endOfMonth(dataSel), 'yyyy-MM-dd')
     }
-    const { data } = await supabase
+    let q = supabase
       .from('agendamentos')
-      .select('*, clientes(id, nome, telefone), pagamentos(id, status, forma, valor)')
-      .eq('user_id', user.id)
+      .select('*, clientes(id, nome, telefone), pagamentos(id, status, forma, valor), profissional:salao_membros(id, nome)')
+      .eq('salao_id', salaoId)
       .gte('data', inicio).lte('data', fim)
-      .order('data').order('horario')
+    if (filtroProf) q = q.eq('profissional_id', filtroProf)
+    const { data } = await q.order('data').order('horario')
     setAgendamentos(data || [])
   }
 
   async function loadClientes() {
-    const { data } = await supabase.from('clientes').select('id, nome, telefone').eq('user_id', user.id).order('nome')
+    const { data } = await supabase.from('clientes').select('id, nome, telefone').eq('salao_id', salaoId).order('nome')
     setClientes(data || [])
   }
 
+  async function loadProfissionais() {
+    const { data } = await supabase.from('salao_membros')
+      .select('id, nome, papel').eq('salao_id', salaoId).eq('ativo', true).order('nome')
+    setProfissionais(data || [])
+  }
+
   async function loadServicosPadrao() {
-    const { data } = await supabase.from('configuracoes').select('servicos_padrao').eq('user_id', user.id).single()
+    const { data } = await supabase.from('configuracoes').select('servicos_padrao').eq('salao_id', salaoId).maybeSingle()
     if (data?.servicos_padrao?.length) setServicosPadrao(data.servicos_padrao)
   }
 
@@ -107,7 +118,7 @@ export default function Agenda() {
   }
 
   async function loadGoogleConfig() {
-    const { data } = await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('user_id', user.id).single()
+    const { data } = await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('salao_id', salaoId).maybeSingle()
     if (data?.duracao_atendimento) setDuracaoAtend(data.duracao_atendimento)
     if (data?.google_conectado) {
       setGoogleConectado(true)
@@ -136,24 +147,29 @@ export default function Agenda() {
   async function salvarAgendamento() {
     if (!form.cliente_id || !form.horario || !form.servico || !form.data) return
 
-    // ── Detecção de conflito de horário ─────────────
-    const { data: conflito } = await supabase
+    // profissional que vai realizar (profissional só agenda pra si)
+    const profId = isProfissional ? membroId : (form.profissional_id || membroId)
+
+    // ── Detecção de conflito de horário (por profissional) ──
+    let cq = supabase
       .from('agendamentos')
       .select('id, clientes(nome)')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .eq('data', form.data)
       .eq('horario', form.horario + ':00')
       .neq('status', 'cancelado')
-      .maybeSingle()
+    if (profId) cq = cq.eq('profissional_id', profId)
+    const { data: conflito } = await cq.maybeSingle()
     if (conflito) {
       erro(`Horário já ocupado — ${conflito.clientes?.nome || 'outra cliente'}`)
       return
     }
 
     setSaving(true)
+    const { profissional_id: _pf, ...formRest } = form
     const { data: ag } = await supabase
       .from('agendamentos')
-      .insert({ ...form, user_id: user.id, valor: parseFloat(form.valor) || 0 })
+      .insert({ ...formRest, user_id: user.id, salao_id: salaoId, profissional_id: profId || null, valor: parseFloat(form.valor) || 0 })
       .select('*, clientes(nome)')
       .single()
     if (ag && googleConectado) {
@@ -168,7 +184,7 @@ export default function Agenda() {
     }
     setSaving(false)
     setShowModal(false)
-    setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd') })
+    setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd'), profissional_id: '' })
     loadAgendamentos()
   }
 
@@ -181,6 +197,7 @@ export default function Agenda() {
       valor: ag.valor != null ? String(ag.valor) : '',
       status: ag.status || 'pendente',
       observacoes: ag.observacoes || '',
+      profissional_id: ag.profissional_id || '',
     })
     setEditando(ag)
   }
@@ -189,15 +206,17 @@ export default function Agenda() {
     if (!editando) return
 
     // ── Detecção de conflito de horário (excluindo o próprio) ─
-    const { data: conflito } = await supabase
+    const profIdEdit = isProfissional ? membroId : (formEdit.profissional_id || editando.profissional_id || null)
+    let cqe = supabase
       .from('agendamentos')
       .select('id, clientes(nome)')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .eq('data', formEdit.data)
       .eq('horario', formEdit.horario + ':00')
       .neq('status', 'cancelado')
       .neq('id', editando.id)
-      .maybeSingle()
+    if (profIdEdit) cqe = cqe.eq('profissional_id', profIdEdit)
+    const { data: conflito } = await cqe.maybeSingle()
     if (conflito) {
       erro(`Horário já ocupado — ${conflito.clientes?.nome || 'outra cliente'}`)
       return
@@ -212,6 +231,7 @@ export default function Agenda() {
       valor: parseFloat(formEdit.valor) || 0,
       status: formEdit.status,
       observacoes: formEdit.observacoes,
+      profissional_id: profIdEdit,
     }).eq('id', editando.id)
     setSavingEdit(false)
     setEditando(null)
@@ -221,7 +241,7 @@ export default function Agenda() {
   async function salvarNovaCliente() {
     if (!formCliente.nome) return
     setSavingCliente(true)
-    const { data } = await supabase.from('clientes').insert({ ...formCliente, user_id: user.id }).select().single()
+    const { data } = await supabase.from('clientes').insert({ ...formCliente, user_id: user.id, salao_id: salaoId }).select().single()
     setSavingCliente(false)
     if (data) {
       setClientes(prev => [...prev, data].sort((a, b) => a.nome.localeCompare(b.nome)))
@@ -283,6 +303,7 @@ export default function Agenda() {
     } else {
       await supabase.from('pagamentos').insert({
         user_id: user.id,
+        salao_id: salaoId,
         agendamento_id: agSelecionado.id,
         valor: parseFloat(formPag.valor) || agSelecionado.valor || 0,
         forma: formPag.forma,
@@ -481,6 +502,16 @@ export default function Agenda() {
         <div style={s.navLabel}>{labelNavegacao()}</div>
         <button style={s.navBtn} onClick={() => navegar(1)}><ChevronRight size={18} /></button>
       </div>
+      {gerenciaTudo && profissionais.length > 1 && (
+        <div style={s.profFiltro}>
+          <button style={{ ...s.profChip, ...(filtroProf === '' ? s.profChipAtivo : {}) }} onClick={() => setFiltroProf('')}>Todas</button>
+          {profissionais.map(p => (
+            <button key={p.id} style={{ ...s.profChip, ...(filtroProf === p.id ? s.profChipAtivo : {}) }} onClick={() => setFiltroProf(p.id)}>
+              {p.nome.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+      )}
       {view === 'Dia' && <ViewDia />}
       {view === 'Semana' && <ViewSemana />}
       {view === 'Mês' && <ViewMes />}
@@ -660,6 +691,16 @@ export default function Agenda() {
               </div>
             </div>
 
+            {gerenciaTudo && profissionais.length > 1 && (
+              <div style={s.field}>
+                <label style={s.label}>Profissional</label>
+                <select style={s.input} value={formEdit.profissional_id} onChange={e => setFormEdit({ ...formEdit, profissional_id: e.target.value })}>
+                  <option value="">Selecionar profissional</option>
+                  {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}{p.papel === 'dona' ? ' (dona)' : p.papel === 'recepcionista' ? ' (recepção)' : ''}</option>)}
+                </select>
+              </div>
+            )}
+
             <div style={s.field}>
               <label style={s.label}>Observações</label>
               <input style={s.input} placeholder="Opcional..." value={formEdit.observacoes} onChange={e => setFormEdit({ ...formEdit, observacoes: e.target.value })} />
@@ -799,6 +840,15 @@ export default function Agenda() {
                 </select>
               </div>
             </div>
+            {gerenciaTudo && profissionais.length > 1 && (
+              <div style={s.field}>
+                <label style={s.label}>Profissional</label>
+                <select style={s.input} value={form.profissional_id} onChange={e => setForm({ ...form, profissional_id: e.target.value })}>
+                  <option value="">Selecionar profissional</option>
+                  {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}{p.papel === 'dona' ? ' (dona)' : p.papel === 'recepcionista' ? ' (recepção)' : ''}</option>)}
+                </select>
+              </div>
+            )}
             <div style={s.field}>
               <label style={s.label}>Observações</label>
               <input style={s.input} placeholder="Opcional..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
@@ -820,6 +870,9 @@ const s = {
   viewTab: { flex: 1, padding: '8px 0', borderRadius: 7, fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--text3)', border: 'none', cursor: 'pointer', transition: 'all 0.15s' },
   viewTabActive: { background: 'white', color: 'var(--pink)', boxShadow: 'var(--shadow-xs)', fontWeight: 700 },
   nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)' },
+  profFiltro: { display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 14, paddingBottom: 2 },
+  profChip: { flexShrink: 0, padding: '6px 14px', borderRadius: 'var(--radius-pill)', fontSize: 12.5, fontWeight: 600, background: 'var(--surface)', color: 'var(--text2)', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap' },
+  profChipAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
   navBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: 4 },
   navLabel: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' },
   weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 },

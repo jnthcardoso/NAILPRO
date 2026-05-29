@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, MessageCircle, Check, Send, Settings, AlertCircle, Phone } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
 import { UpgradeBlock } from '../components/common/UpgradeBlock'
 import { format, addDays, startOfDay } from 'date-fns'
@@ -16,6 +17,7 @@ const TABS = [
 
 export default function Lembretes() {
   const { user } = useAuth()
+  const { salaoId } = useSalao()
   const navigate = useNavigate()
   const { temAcesso, loading: loadingAssinatura } = useAssinatura()
   const [tab, setTab] = useState('amanha')
@@ -24,12 +26,12 @@ export default function Lembretes() {
   const [semTelefone, setSemTelefone] = useState([])
   const [enviandoTodos, setEnviandoTodos] = useState(false)
 
-  useEffect(() => { if (user) load() }, [user, tab])
+  useEffect(() => { if (salaoId) load() }, [salaoId, tab])
 
   async function load() {
     const { data: cfg } = await supabase.from('configuracoes')
       .select('mensagem_lembrete, nome_salao, lembretes_ativos')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .maybeSingle()
     if (cfg) setConfig(cfg)
 
@@ -46,7 +48,7 @@ export default function Lembretes() {
 
     const { data } = await supabase.from('agendamentos')
       .select('*, clientes(nome, telefone)')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .gte('data', dataInicio).lte('data', dataFim)
       .in('status', ['pendente', 'confirmado'])
       .order('data').order('horario')

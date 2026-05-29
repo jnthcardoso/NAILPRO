@@ -15,9 +15,11 @@ import BemVindo from './pages/BemVindo'
 import Lembretes from './pages/Lembretes'
 import Planos from './pages/Planos'
 import Admin from './pages/Admin'
+import Equipe from './pages/Equipe'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import { AssinaturaProvider } from './contexts/AssinaturaContext'
+import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { PageSkeleton } from './components/common/Skeleton'
 import { supabase } from './lib/supabase'
@@ -47,7 +49,6 @@ function OnboardingGuard({ children }) {
 
     supabase.from('configuracoes')
       .select('onboarding_completo')
-      .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (cancelled) return
@@ -77,9 +78,18 @@ function OnboardingGuard({ children }) {
   return children
 }
 
+// Bloqueia profissionais de páginas de gestão (clientes, financeiro do salão,
+// metas, lembretes, configurações). Dona e recepcionista passam.
+function RequireGerencia({ children }) {
+  const { loading, gerenciaTudo } = useSalao()
+  if (loading) return <PageSkeleton />
+  return gerenciaTudo ? children : <Navigate to="/agenda" replace />
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <SalaoProvider>
       <AssinaturaProvider>
         <ToastProvider>
         <BrowserRouter>
@@ -92,19 +102,21 @@ export default function App() {
             <Route path="/planos" element={<PrivateRoute><OnboardingGuard><Planos /></OnboardingGuard></PrivateRoute>} />
             <Route path="/" element={<PrivateRoute><OnboardingGuard><AppLayout /></OnboardingGuard></PrivateRoute>}>
               <Route index element={<Home />} />
-              <Route path="metas" element={<Metas />} />
-              <Route path="lembretes" element={<Lembretes />} />
+              <Route path="metas" element={<RequireGerencia><Metas /></RequireGerencia>} />
+              <Route path="lembretes" element={<RequireGerencia><Lembretes /></RequireGerencia>} />
               <Route path="agenda" element={<Agenda />} />
-              <Route path="clientes" element={<Clientes />} />
-              <Route path="clientes/:id" element={<ClienteDetalhe />} />
+              <Route path="clientes" element={<RequireGerencia><Clientes /></RequireGerencia>} />
+              <Route path="clientes/:id" element={<RequireGerencia><ClienteDetalhe /></RequireGerencia>} />
               <Route path="financeiro" element={<Financeiro />} />
-              <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="configuracoes" element={<RequireGerencia><Configuracoes /></RequireGerencia>} />
+              <Route path="equipe" element={<Equipe />} />
               <Route path="admin" element={<Admin />} />
             </Route>
           </Routes>
         </BrowserRouter>
         </ToastProvider>
       </AssinaturaProvider>
+      </SalaoProvider>
     </AuthProvider>
   )
 }

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin } from '../../contexts/AssinaturaContext'
+import { useSalao } from '../../contexts/SalaoContext'
 import { NailProLogo, NailDropIcon } from '../common/Brand'
 
-const navItems = [
+// Itens completos (dona / recepcionista — gerenciam tudo)
+const navItemsCompleto = [
   { to: '/', icon: Home, label: 'Início', exact: true },
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/lembretes', icon: Bell, label: 'Lembretes' },
@@ -15,12 +17,21 @@ const navItems = [
   { to: '/metas', icon: Target, label: 'Metas' },
 ]
 
+// Profissional: só a própria agenda + o próprio financeiro
+const navItemsProfissional = [
+  { to: '/', icon: Home, label: 'Início', exact: true },
+  { to: '/agenda', icon: Calendar, label: 'Agenda' },
+  { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
+]
+
 
 export default function AppLayout() {
   const { user, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const { isAdmin } = useIsAdmin()
+  const { gerenciaTudo, isProfissional, podeGerenciarEquipe } = useSalao()
+  const navItems = isProfissional ? navItemsProfissional : navItemsCompleto
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
 
@@ -120,18 +131,34 @@ export default function AppLayout() {
               {!isSidebarCollapsed && <span>Admin</span>}
             </NavLink>
           )}
-          <NavLink
-            to="/configuracoes"
-            style={{
-              ...sb.navItem,
-              ...(isActive('/configuracoes') ? sb.navItemActive : {}),
-              ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
-            }}
-            title={isSidebarCollapsed ? "Configurações" : undefined}
-          >
-            <Settings size={19} strokeWidth={isActive('/configuracoes') ? 2.5 : 1.8} />
-            {!isSidebarCollapsed && <span>Configurações</span>}
-          </NavLink>
+          {podeGerenciarEquipe && (
+            <NavLink
+              to="/equipe"
+              style={{
+                ...sb.navItem,
+                ...(isActive('/equipe') ? sb.navItemActive : {}),
+                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+              }}
+              title={isSidebarCollapsed ? "Equipe" : undefined}
+            >
+              <UsersRound size={19} strokeWidth={isActive('/equipe') ? 2.5 : 1.8} />
+              {!isSidebarCollapsed && <span>Equipe</span>}
+            </NavLink>
+          )}
+          {gerenciaTudo && (
+            <NavLink
+              to="/configuracoes"
+              style={{
+                ...sb.navItem,
+                ...(isActive('/configuracoes') ? sb.navItemActive : {}),
+                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+              }}
+              title={isSidebarCollapsed ? "Configurações" : undefined}
+            >
+              <Settings size={19} strokeWidth={isActive('/configuracoes') ? 2.5 : 1.8} />
+              {!isSidebarCollapsed && <span>Configurações</span>}
+            </NavLink>
+          )}
 
           <button
             onClick={handleSair}
@@ -176,9 +203,11 @@ export default function AppLayout() {
             <div style={mh.date}>
               {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
             </div>
-            <NavLink to="/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
-              <Settings size={18} />
-            </NavLink>
+            {gerenciaTudo && (
+              <NavLink to="/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
+                <Settings size={18} />
+              </NavLink>
+            )}
           </div>
         </header>
 

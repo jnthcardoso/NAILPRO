@@ -83,9 +83,11 @@ export function AssinaturaProvider({ children }) {
 
   const carregar = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
+    // RLS retorna a assinatura do salão para qualquer membro (dona/recep/profissional)
     const { data } = await supabase.from('assinaturas')
       .select('*')
-      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
       .maybeSingle()
     setAssinatura(data)
     setLoading(false)

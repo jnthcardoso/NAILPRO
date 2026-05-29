@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
@@ -134,7 +135,7 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
   doc.save(`nailpro-financeiro-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
 }
 
-async function exportarPDFAnual(userId, ano) {
+async function exportarPDFAnual(salaoId, ano) {
   const { default: jsPDF } = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
 
@@ -145,9 +146,9 @@ async function exportarPDFAnual(userId, ano) {
   const [{ data: pags }, { data: desps }] = await Promise.all([
     supabase.from('pagamentos')
       .select('data, valor, status, forma, agendamentos(servico, clientes(nome))')
-      .eq('user_id', userId).eq('status', 'pago')
+      .eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio).lte('data', fim),
-    supabase.from('despesas').select('*').eq('user_id', userId).gte('data', inicio).lte('data', fim),
+    supabase.from('despesas').select('*').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim),
   ])
 
   const doc = new jsPDF()
@@ -203,6 +204,7 @@ async function exportarPDFAnual(userId, ano) {
 
 export default function Financeiro() {
   const { user } = useAuth()
+  const { salaoId } = useSalao()
   const { temAcesso } = useAssinatura()
   const { erro: toastErro, sucesso, confirmar } = useToast()
   const [showUpgrade, setShowUpgrade] = useState(false)
@@ -224,7 +226,7 @@ export default function Financeiro() {
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
 
-  useEffect(() => { if (user) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [user, periodoSel])
+  useEffect(() => { if (salaoId) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [salaoId, periodoSel])
 
   // Fechar modais com Escape
   useEffect(() => {
@@ -240,17 +242,17 @@ export default function Financeiro() {
   async function loadPagamentos() {
     const inicio = format(startOfMonth(periodoSel), 'yyyy-MM-dd')
     const fim = format(endOfMonth(periodoSel), 'yyyy-MM-dd')
-    const { data } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('user_id', user.id).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    const { data } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     setPagamentos(data || [])
 
     const inicio6m = format(startOfMonth(subMonths(periodoSel, 5)), 'yyyy-MM-dd')
     const { data: data6m } = await supabase.from('pagamentos')
-      .select('data, valor, status').eq('user_id', user.id).eq('status', 'pago')
+      .select('data, valor, status').eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio6m).lte('data', fim)
     setPagamentos6m(data6m || [])
 
     const { data: ags } = await supabase.from('agendamentos')
-      .select('servico, valor').eq('user_id', user.id)
+      .select('servico, valor').eq('salao_id', salaoId)
       .gte('data', inicio).lte('data', fim).neq('status', 'cancelado')
     setAgendamentosMes(ags || [])
   }
@@ -259,20 +261,20 @@ export default function Financeiro() {
     const inicio = format(startOfMonth(periodoSel), 'yyyy-MM-dd')
     const fim = format(endOfMonth(periodoSel), 'yyyy-MM-dd')
     const { data } = await supabase.from('despesas')
-      .select('*').eq('user_id', user.id)
+      .select('*').eq('salao_id', salaoId)
       .gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     setDespesas(data || [])
   }
 
   async function loadAgendamentos() {
-    const { data } = await supabase.from('agendamentos').select('id, servico, data, clientes(nome)').eq('user_id', user.id).order('data', { ascending: false }).limit(50)
+    const { data } = await supabase.from('agendamentos').select('id, servico, data, clientes(nome)').eq('salao_id', salaoId).order('data', { ascending: false }).limit(50)
     setAgendamentos(data || [])
   }
 
   async function salvarPagamento() {
     if (!form.valor) return
     setSaving(true)
-    await supabase.from('pagamentos').insert({ ...form, user_id: user.id, valor: parseFloat(form.valor) })
+    await supabase.from('pagamentos').insert({ ...form, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
     setSaving(false)
     setShowModal(false)
     setForm({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
@@ -288,6 +290,7 @@ export default function Financeiro() {
     setSavingDespesa(true)
     const dados = {
       user_id: user.id,
+      salao_id: salaoId,
       descricao: formDespesa.descricao,
       categoria: formDespesa.categoria,
       valor: parseFloat(formDespesa.valor),
@@ -371,7 +374,7 @@ export default function Financeiro() {
   async function handleExportarAnual() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportandoAnual(true)
-    try { await exportarPDFAnual(user.id, periodoSel.getFullYear()) }
+    try { await exportarPDFAnual(salaoId, periodoSel.getFullYear()) }
     catch (e) { toastErro('Erro ao gerar PDF anual') }
     setExportandoAnual(false)
   }

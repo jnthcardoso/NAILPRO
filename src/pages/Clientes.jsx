@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome } from '../lib/formatters'
@@ -10,6 +11,7 @@ import { differenceInDays, format } from 'date-fns'
 
 export default function Clientes() {
   const { user } = useAuth()
+  const { salaoId } = useSalao()
   const navigate = useNavigate()
   const { plano, dentroDoLimite } = useAssinatura()
   const [clientes, setClientes] = useState([])
@@ -31,7 +33,7 @@ export default function Clientes() {
   const noLimite = limiteClientes !== Infinity && clientes.length >= limiteClientes
   const perto = limiteClientes !== Infinity && clientes.length >= limiteClientes - 5 && !noLimite
 
-  useEffect(() => { if (user) { loadClientes(); loadConfig() } }, [user])
+  useEffect(() => { if (salaoId) { loadClientes(); loadConfig() } }, [salaoId])
 
   // Debounce na busca (300ms)
   useEffect(() => {
@@ -50,12 +52,12 @@ export default function Clientes() {
   }, [showModal])
 
   async function loadConfig() {
-    const { data } = await supabase.from('configuracoes').select('dias_retorno_alerta').eq('user_id', user.id).single()
+    const { data } = await supabase.from('configuracoes').select('dias_retorno_alerta').eq('salao_id', salaoId).maybeSingle()
     if (data?.dias_retorno_alerta) setDiasAlerta(data.dias_retorno_alerta)
   }
 
   async function loadClientes() {
-    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto').eq('user_id', user.id).order('nome')
+    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto').eq('salao_id', salaoId).order('nome')
     setClientes(data || [])
   }
 
@@ -77,6 +79,7 @@ export default function Clientes() {
       ...form,
       telefone: unformatTelefone(form.telefone),
       user_id: user.id,
+      salao_id: salaoId,
     })
     setSaving(false)
     setShowModal(false)

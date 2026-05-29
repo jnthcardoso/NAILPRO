@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import {
   format, addDays, subDays, differenceInDays, startOfDay, endOfDay,
   startOfMonth, endOfMonth, subMonths, subWeeks, eachDayOfInterval, getDay,
@@ -21,6 +22,7 @@ const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Home() {
   const { user } = useAuth()
+  const { salaoId } = useSalao()
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
 
@@ -43,8 +45,8 @@ export default function Home() {
   const [receita7Dias, setReceita7Dias] = useState([])
   const [diaTop, setDiaTop] = useState(null) // { dia: 4 (qui), valor: 1200 }
 
-  useEffect(() => { if (user) loadDashboard() }, [user])
-  useEffect(() => { if (user) loadAgendamentosData() }, [user, dataFiltro])
+  useEffect(() => { if (salaoId) loadDashboard() }, [salaoId])
+  useEffect(() => { if (salaoId) loadAgendamentosData() }, [salaoId, dataFiltro])
 
   async function loadDashboard() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
@@ -52,7 +54,7 @@ export default function Home() {
 
     // Config
     const { data: config } = await supabase.from('configuracoes')
-      .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('user_id', user.id).single()
+      .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('salao_id', salaoId).single()
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
     const limiteAlerta = config?.dias_retorno_alerta ?? 30
     setDiasAlerta(limiteAlerta)
@@ -61,7 +63,7 @@ export default function Home() {
     const periodoAtual = format(new Date(), 'yyyy-MM')
     const { data: metaAtual } = await supabase.from('metas')
       .select('valor_meta')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .eq('tipo', 'mes')
       .eq('periodo', periodoAtual)
       .maybeSingle()
@@ -71,7 +73,7 @@ export default function Home() {
     // Atendimentos hoje (não cancelados)
     const { data: agendHoje } = await supabase.from('agendamentos')
       .select('*, clientes(nome)')
-      .eq('user_id', user.id).eq('data', hoje)
+      .eq('salao_id', salaoId).eq('data', hoje)
       .neq('status', 'cancelado').order('horario')
     if (agendHoje) {
       const receita = agendHoje.reduce((s, a) => s + (a.valor || 0), 0)
@@ -98,7 +100,7 @@ export default function Home() {
     // Atendimentos ontem (comparativo)
     const { data: agendOntem } = await supabase.from('agendamentos')
       .select('valor, status')
-      .eq('user_id', user.id).eq('data', ontem)
+      .eq('salao_id', salaoId).eq('data', ontem)
       .neq('status', 'cancelado')
     if (agendOntem) {
       const receitaOntem = agendOntem.reduce((s, a) => s + (a.valor || 0), 0)
@@ -109,7 +111,7 @@ export default function Home() {
     const inicioMes = format(startOfMonth(new Date()), 'yyyy-MM-dd')
     const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
     const { data: pagPendentes } = await supabase.from('pagamentos')
-      .select('valor').eq('user_id', user.id).eq('status', 'pendente')
+      .select('valor').eq('salao_id', salaoId).eq('status', 'pendente')
       .gte('data', inicioMes).lte('data', fimMes)
     if (pagPendentes) {
       const total = pagPendentes.reduce((s, p) => s + (p.valor || 0), 0)
@@ -118,7 +120,7 @@ export default function Home() {
 
     // Receita do mês (pagamentos pagos)
     const { data: pagMes } = await supabase.from('pagamentos')
-      .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicioMes)
+      .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes)
     if (pagMes) setStats(s => ({ ...s, receitaMes: pagMes.reduce((s, p) => s + (p.valor || 0), 0) }))
 
     // Receita da semana (Segunda → Domingo)
@@ -127,7 +129,7 @@ export default function Home() {
     const inicioStr = format(inicioSemana, 'yyyy-MM-dd')
     const fimStr = format(fimSemana, 'yyyy-MM-dd')
     const { data: pag7d } = await supabase.from('pagamentos')
-      .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr)
+      .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr)
     const dias = eachDayOfInterval({ start: inicioSemana, end: fimSemana })
     const ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const receitaDias = dias.map(d => {
@@ -140,7 +142,7 @@ export default function Home() {
     // Dia da semana mais lucrativo (insight) - últimos 90 dias
     const inicio90d = format(subDays(new Date(), 90), 'yyyy-MM-dd')
     const { data: pag90d } = await supabase.from('pagamentos')
-      .select('data, valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicio90d)
+      .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d)
     if (pag90d?.length) {
       const porDiaSemana = [0, 0, 0, 0, 0, 0, 0]
       pag90d.forEach(p => {
@@ -156,17 +158,17 @@ export default function Home() {
 
     // Counts pra conta nova
     const { count: countClientes } = await supabase.from('clientes')
-      .select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+      .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId)
     setTotalClientes(countClientes ?? 0)
     const { count: countAgendamentos } = await supabase.from('agendamentos')
-      .select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+      .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId)
     setTotalAgendamentos(countAgendamentos ?? 0)
 
     // Lembretes pendentes amanhã
     const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
     const { data: ags } = await supabase.from('agendamentos')
       .select('lembrete_enviado_em, clientes(telefone)')
-      .eq('user_id', user.id).eq('data', amanha)
+      .eq('salao_id', salaoId).eq('data', amanha)
       .in('status', ['pendente', 'confirmado'])
     if (ags) {
       const pend = ags.filter(a => !a.lembrete_enviado_em && a.clientes?.telefone).length
@@ -181,7 +183,7 @@ export default function Home() {
 
     // Clientes sumidas + aniversários
     const { data: clientes } = await supabase.from('clientes')
-      .select('id, nome, ultimo_atendimento, data_nascimento').eq('user_id', user.id)
+      .select('id, nome, ultimo_atendimento, data_nascimento').eq('salao_id', salaoId)
     if (clientes) {
       setClientesSumidas(clientes
         .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= limiteAlerta)
@@ -199,7 +201,7 @@ export default function Home() {
 
   async function loadAgendamentosData() {
     const { data } = await supabase.from('agendamentos')
-      .select('*, clientes(nome)').eq('user_id', user.id).eq('data', dataFiltro)
+      .select('*, clientes(nome)').eq('salao_id', salaoId).eq('data', dataFiltro)
       .neq('status', 'cancelado').order('horario')
     setAgendamentosData(data || [])
   }

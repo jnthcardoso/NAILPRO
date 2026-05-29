@@ -18,10 +18,10 @@ export async function exportarTodosDados(user) {
     { data: assinatura },
   ] = await Promise.all([
     supabase.from('configuracoes').select('*').eq('user_id', user.id).maybeSingle(),
-    supabase.from('clientes').select('*').eq('user_id', user.id).order('nome'),
-    supabase.from('agendamentos').select('*, clientes(nome)').eq('user_id', user.id).order('data', { ascending: false }),
-    supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('user_id', user.id).order('data', { ascending: false }),
-    supabase.from('metas').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('clientes').select('*').order('nome'),
+    supabase.from('agendamentos').select('*, clientes(nome)').order('data', { ascending: false }),
+    supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').order('data', { ascending: false }),
+    supabase.from('metas').select('*').order('created_at', { ascending: false }),
     supabase.from('assinaturas').select('*').eq('user_id', user.id).maybeSingle(),
   ])
 

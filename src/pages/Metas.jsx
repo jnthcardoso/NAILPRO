@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   format, endOfMonth, endOfYear, startOfMonth, startOfYear,
@@ -13,6 +14,7 @@ const DIAS_UTEIS_PADRAO = [1, 2, 3, 4, 5]
 
 export default function Metas() {
   const { user } = useAuth()
+  const { salaoId } = useSalao()
   const { confirmar, sucesso, erro: toastErro } = useToast()
   const [tab, setTab] = useState('metas')
 
@@ -37,13 +39,13 @@ export default function Metas() {
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
   const [loadingFatur, setLoadingFatur] = useState(false) // carga isolada do faturamento
 
-  useEffect(() => { if (user) { loadConfig(); loadMetas(); loadPrevisao() } }, [user])
+  useEffect(() => { if (salaoId) { loadConfig(); loadMetas(); loadPrevisao() } }, [salaoId])
   // Carga inicial: carrega TODOS os KPIs quando entra na tab
-  useEffect(() => { if (user && tab === 'kpis') loadKpis() }, [user, tab])
+  useEffect(() => { if (salaoId && tab === 'kpis') loadKpis() }, [salaoId, tab])
   // kpiMeses → só recarrega faturamento
-  useEffect(() => { if (user && tab === 'kpis') loadFaturamento() }, [kpiMeses])
+  useEffect(() => { if (salaoId && tab === 'kpis') loadFaturamento() }, [kpiMeses])
   // retencaoDias → só recarrega retenção
-  useEffect(() => { if (user && tab === 'kpis') loadRetencaoKpi() }, [retencaoDias])
+  useEffect(() => { if (salaoId && tab === 'kpis') loadRetencaoKpi() }, [retencaoDias])
 
   // Fechar modal com Escape
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function Metas() {
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
-      .select('dias_semana').eq('user_id', user.id).maybeSingle()
+      .select('dias_semana').eq('salao_id', salaoId).maybeSingle()
     if (data?.dias_semana?.length) setDiasFuncionamento(data.dias_semana)
   }
 
@@ -68,7 +70,7 @@ export default function Metas() {
 
     const { data: ags } = await supabase
       .from('agendamentos').select('data, valor, status')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .gte('data', hoje)
       .neq('status', 'cancelado')
 
@@ -86,14 +88,14 @@ export default function Metas() {
 
   // ── Metas ─────────────────────────────────────────────
   async function loadMetas() {
-    const { data } = await supabase.from('metas').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    const { data } = await supabase.from('metas').select('*').eq('salao_id', salaoId).order('created_at', { ascending: false })
     setMetas(data || [])
     if (!data?.length) return
     const pros = {}
     for (const meta of data) {
       const { inicio, fim } = periodoMeta(meta)
       const { data: ps } = await supabase.from('pagamentos')
-        .select('valor').eq('user_id', user.id).eq('status', 'pago').gte('data', inicio).lte('data', fim)
+        .select('valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio).lte('data', fim)
       pros[meta.id] = (ps || []).reduce((s, p) => s + (p.valor || 0), 0)
     }
     setProgressos(pros)
@@ -139,7 +141,7 @@ export default function Metas() {
   async function salvarMeta() {
     if (!form.valor_meta || parseFloat(form.valor_meta) <= 0) { toastErro('Informe um valor válido'); return }
     setSaving(true)
-    const dados = { user_id: user.id, tipo: form.tipo, periodo: form.periodo, valor_meta: parseFloat(form.valor_meta) }
+    const dados = { user_id: user.id, salao_id: salaoId, tipo: form.tipo, periodo: form.periodo, valor_meta: parseFloat(form.valor_meta) }
     const resp = editando
       ? await supabase.from('metas').update(dados).eq('id', editando.id)
       : await supabase.from('metas').insert(dados)
@@ -180,7 +182,7 @@ export default function Metas() {
       duracao: 5000, acaoLabel: 'Desfazer',
       acao: async () => {
         const { tipo, periodo, valor_meta } = metaAnterior
-        await supabase.from('metas').insert({ tipo, periodo, valor_meta, user_id: user.id })
+        await supabase.from('metas').insert({ tipo, periodo, valor_meta, user_id: user.id, salao_id: salaoId })
         loadMetas()
       },
     })
@@ -209,7 +211,7 @@ export default function Metas() {
     const { data: agsServ } = await supabase
       .from('agendamentos')
       .select('servico, valor, pagamentos(valor, status)')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .eq('status', 'realizado')
       .gte('data', inicio)
     if (agsServ) {
@@ -236,7 +238,7 @@ export default function Metas() {
     const { data: agsRet } = await supabase
       .from('agendamentos')
       .select('cliente_id, data')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
       .in('status', ['realizado', 'confirmado'])
       .order('data')
     if (agsRet) {
@@ -267,7 +269,7 @@ export default function Metas() {
     const { data: cls } = await supabase
       .from('clientes')
       .select('created_at')
-      .eq('user_id', user.id)
+      .eq('salao_id', salaoId)
     if (cls) {
       const byMonth = {}
       cls.forEach(c => {

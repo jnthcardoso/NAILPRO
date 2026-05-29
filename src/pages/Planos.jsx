@@ -88,6 +88,17 @@ export default function Planos() {
         />
       </div>
 
+      {/* Equipe / licenças adicionais */}
+      <div style={s.equipeBanner}>
+        <div style={s.equipeBannerTitulo}>👥 Tem uma equipe?</div>
+        <div style={s.equipeBannerTexto}>
+          O plano já cobre o salão inteiro — não importa quantas profissionais atendem.
+          Se quiser que cada manicure ou a recepcionista tenha o <strong>próprio login</strong>,
+          é só <strong>R$ {formatPreco(1990)}/mês por login extra</strong>. A dona não paga login adicional.
+          Você gerencia tudo isso na página <strong>Equipe</strong>.
+        </div>
+      </div>
+
       {/* FAQ rápido */}
       <div style={s.faq}>
         <h3 style={s.faqTitle}>Dúvidas frequentes</h3>
@@ -106,6 +117,10 @@ export default function Planos() {
         <FaqItem
           q="Posso mudar de plano depois?"
           a="Pode. Faz upgrade ou downgrade quando quiser, é só falar com a gente no WhatsApp."
+        />
+        <FaqItem
+          q="Como funciona pra salão com várias manicures?"
+          a="O valor do plano já vale pro salão todo, independente de quantas profissionais atendem. Se você quiser dar login individual (cada uma vê só a própria agenda e o próprio financeiro) ou um login pra recepcionista que gerencia tudo, cada login extra custa R$ 19,90/mês. A dona não paga login adicional. Adicione e gerencie a equipe na página Equipe."
         />
       </div>
 
@@ -226,4 +241,7 @@ const s = {
   faqQ: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'transparent', border: 'none', padding: '14px 16px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   faqA: { padding: '0 16px 14px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 },
   garantia: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 18px', fontSize: 13, color: 'var(--text2)' },
+  equipeBanner: { background: 'var(--pink-light)', border: '1px solid var(--pink)', borderRadius: 14, padding: '18px 20px', marginBottom: 8, textAlign: 'center' },
+  equipeBannerTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 16, fontWeight: 800, color: 'var(--pink)', marginBottom: 6 },
+  equipeBannerTexto: { fontSize: 13, color: 'var(--text2)', lineHeight: 1.55, maxWidth: 560, margin: '0 auto' },
 }

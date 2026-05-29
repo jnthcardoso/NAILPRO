@@ -7,6 +7,7 @@ import { formatTelefone, unformatTelefone } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
@@ -21,6 +22,7 @@ function slugify(text) {
 
 export default function Configuracoes() {
   const { user, signOut } = useAuth()
+  const { salaoId } = useSalao()
   const navigate = useNavigate()
   const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial, temAcesso } = useAssinatura()
   const { sucesso, erro: toastErro } = useToast()
@@ -72,15 +74,14 @@ export default function Configuracoes() {
   const [senhaSaving, setSenhaSaving] = useState(false)
   const [senhaMsg, setSenhaMsg] = useState(null)
 
-  useEffect(() => { 
-    if (user) {
-      loadConfig() 
-      setAvatarUrl(user.user_metadata?.avatar_url || '')
-    }
+  useEffect(() => {
+    if (user) setAvatarUrl(user.user_metadata?.avatar_url || '')
   }, [user])
 
+  useEffect(() => { if (salaoId) loadConfig() }, [salaoId])
+
   async function loadConfig() {
-    const { data } = await supabase.from('configuracoes').select('*').eq('user_id', user.id).single()
+    const { data } = await supabase.from('configuracoes').select('*').eq('salao_id', salaoId).maybeSingle()
     if (data) {
       setForm({
         nome_salao: data.nome_salao || '',
@@ -150,7 +151,10 @@ export default function Configuracoes() {
     }
     setSaving(true)
     
-    const { error: configError } = await supabase.from('configuracoes').upsert({ user_id: user.id, ...form })
+    const { error: configError } = await supabase.from('configuracoes').update({ ...form }).eq('salao_id', salaoId)
+    if (!configError && form.nome_salao && salaoId) {
+      await supabase.from('saloes').update({ nome: form.nome_salao }).eq('id', salaoId)
+    }
     const { error: authError } = await supabase.auth.updateUser({
       data: { avatar_url: avatarUrl }
     })
@@ -227,7 +231,7 @@ export default function Configuracoes() {
       await waitForGIS()
       initTokenClient()
       await conectarGoogle()
-      await supabase.from('configuracoes').upsert({ user_id: user.id, google_conectado: true }, { onConflict: 'user_id' })
+      await supabase.from('configuracoes').update({ google_conectado: true }).eq('salao_id', salaoId)
       setForm(f => ({ ...f, google_conectado: true }))
     } catch (e) {
       setGoogleErro('Não foi possível conectar. Verifique o Client ID e tente novamente.')
@@ -238,7 +242,7 @@ export default function Configuracoes() {
 
   async function handleDesconectarGoogle() {
     desconectarGoogle()
-    await supabase.from('configuracoes').update({ google_conectado: false }).eq('user_id', user.id)
+    await supabase.from('configuracoes').update({ google_conectado: false }).eq('salao_id', salaoId)
     setForm(f => ({ ...f, google_conectado: false }))
   }
 
