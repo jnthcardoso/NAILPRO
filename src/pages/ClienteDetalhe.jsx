@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Phone, Calendar, DollarSign } from 'lucide-react'
+import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -10,8 +11,10 @@ export default function ClienteDetalhe() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { confirmar, sucesso, erro } = useToast()
   const [cliente, setCliente] = useState(null)
   const [historico, setHistorico] = useState([])
+  const [arquivando, setArquivando] = useState(false)
 
   useEffect(() => { if (user && id) { loadCliente(); loadHistorico() } }, [user, id])
 
@@ -32,6 +35,30 @@ export default function ClienteDetalhe() {
 
   function getInitials(nome) {
     return nome?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '??'
+  }
+
+  async function toggleArquivar() {
+    const arquivar = !cliente.arquivada
+    if (arquivar) {
+      const ok = await confirmar({
+        titulo: 'Arquivar cliente?',
+        mensagem: `${cliente.nome} sairá da lista de clientes, mas o histórico fica salvo. Você pode reativar quando quiser.`,
+        confirmarLabel: 'Arquivar',
+        tipo: 'aviso',
+      })
+      if (!ok) return
+    }
+    setArquivando(true)
+    const { error } = await supabase.from('clientes').update({ arquivada: arquivar }).eq('id', id)
+    setArquivando(false)
+    if (error) { erro('Erro: ' + error.message); return }
+    if (arquivar) {
+      sucesso('Cliente arquivada')
+      navigate('/clientes')
+    } else {
+      sucesso('Cliente reativada')
+      setCliente({ ...cliente, arquivada: false })
+    }
   }
 
   // Resumo do histórico
@@ -161,6 +188,21 @@ export default function ClienteDetalhe() {
           </div>
         )
       }
+
+      {/* Arquivar / Reativar */}
+      <div style={s.arquivarArea}>
+        {cliente.arquivada && (
+          <div style={s.arquivadaAviso}>Esta cliente está arquivada — não aparece na lista principal.</div>
+        )}
+        <button
+          style={{ ...s.arquivarBtn, ...(cliente.arquivada ? s.reativarBtn : {}) }}
+          onClick={toggleArquivar}
+          disabled={arquivando}
+        >
+          {cliente.arquivada ? <RotateCcw size={15} /> : <Archive size={15} />}
+          {arquivando ? '...' : cliente.arquivada ? 'Reativar cliente' : 'Arquivar cliente'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -212,4 +254,8 @@ const s = {
   badgePago: { background: 'var(--green-bg)', color: 'var(--green)' },
   badgePendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   empty: { color: 'var(--text3)', fontSize: 14, textAlign: 'center', padding: '24px 0' },
+  arquivarArea: { marginTop: 24, paddingTop: 16, borderTop: '1px dashed var(--border2)', display: 'flex', flexDirection: 'column', gap: 10 },
+  arquivadaAviso: { fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 12px', textAlign: 'center' },
+  arquivarBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  reativarBtn: { background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC' },
 }

@@ -29,9 +29,11 @@ export default function Clientes() {
 
   const ITENS_POR_PAGINA = 20
 
+  const ativas = clientes.filter(c => !c.arquivada)
+  const arquivadas = clientes.filter(c => c.arquivada)
   const limiteClientes = plano?.limites?.clientes ?? Infinity
-  const noLimite = limiteClientes !== Infinity && clientes.length >= limiteClientes
-  const perto = limiteClientes !== Infinity && clientes.length >= limiteClientes - 5 && !noLimite
+  const noLimite = limiteClientes !== Infinity && ativas.length >= limiteClientes
+  const perto = limiteClientes !== Infinity && ativas.length >= limiteClientes - 5 && !noLimite
 
   useEffect(() => { if (salaoId) { loadClientes(); loadConfig() } }, [salaoId])
 
@@ -57,7 +59,7 @@ export default function Clientes() {
   }
 
   async function loadClientes() {
-    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto').eq('salao_id', salaoId).order('nome')
+    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada').eq('salao_id', salaoId).order('nome')
     setClientes(data || [])
   }
 
@@ -99,11 +101,11 @@ export default function Clientes() {
   // ── UTC-safe date parse ──
   const parseUADate = (d) => d ? new Date(d + 'T12:00:00') : null
 
-  const sumidas = clientes.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= diasAlerta)
-  const vips = clientes.filter(c => c.total_visitas >= 10)
-  const semVisita = clientes.filter(c => !c.ultimo_atendimento)
+  const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= diasAlerta)
+  const vips = ativas.filter(c => c.total_visitas >= 10)
+  const semVisita = ativas.filter(c => !c.ultimo_atendimento)
 
-  const filtradas = clientes
+  const filtradas = (filtro === 'arquivadas' ? arquivadas : ativas)
     .filter(c => {
       if (busca && !c.nome.toLowerCase().includes(busca.toLowerCase())) return false
       if (filtro === 'vip') return c.total_visitas >= 10
@@ -172,7 +174,7 @@ export default function Clientes() {
       {/* Mini stats */}
       <div style={s.statsRow}>
         <div style={s.statCard}>
-          <div style={s.statNum}>{clientes.length}</div>
+          <div style={s.statNum}>{ativas.length}</div>
           <div style={s.statLabel}>Total</div>
         </div>
         <div style={{ ...s.statCard, cursor: vips.length ? 'pointer' : 'default' }} onClick={() => vips.length && setFiltro(filtro === 'vip' ? 'todas' : 'vip')}>
@@ -193,6 +195,7 @@ export default function Clientes() {
             { id: 'vip', label: '✦ VIP' },
             { id: 'sumidas', label: '⏰ Retorno' },
             { id: 'sem_visita', label: '🆕 Novas' },
+            ...(arquivadas.length ? [{ id: 'arquivadas', label: `🗄 Arquivadas (${arquivadas.length})` }] : []),
           ].map(f => (
             <button
               key={f.id}
