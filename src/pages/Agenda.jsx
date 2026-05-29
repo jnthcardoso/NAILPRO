@@ -39,6 +39,7 @@ export default function Agenda() {
   const [clientes, setClientes] = useState([])
   const [profissionais, setProfissionais] = useState([])
   const [filtroProf, setFiltroProf] = useState('') // '' = todas
+  const [filtroPag, setFiltroPag] = useState('todos') // todos | pago | receber
   const [showModal, setShowModal] = useState(false)
   const [showNovaCliente, setShowNovaCliente] = useState(false)
   const [showPagModal, setShowPagModal] = useState(false)
@@ -373,6 +374,20 @@ export default function Agenda() {
     return `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`
   }
 
+  // Estado de pagamento de um agendamento (para o filtro)
+  function pagState(a) {
+    const p = a.pagamentos?.[0]
+    if (p?.status === 'pago') return 'pago'
+    if (p?.status === 'pendente') return 'receber'
+    if (a.status === 'realizado' && (a.valor || 0) > 0) return 'receber'
+    return 'sem'
+  }
+
+  // Lista base já filtrada por status de pagamento (alimenta as views de calendário)
+  const agendamentosBase = filtroPag === 'todos'
+    ? agendamentos
+    : agendamentos.filter(a => pagState(a) === filtroPag)
+
   // Card compacto para view Semana
   function CardCompacto({ ag }) {
     const st = STATUS[ag.status] || STATUS.pendente
@@ -417,7 +432,7 @@ export default function Agenda() {
   }
 
   function ViewDia() {
-    const dia = agendamentos.filter(a => a.data === format(dataSel, 'yyyy-MM-dd'))
+    const dia = agendamentosBase.filter(a => a.data === format(dataSel, 'yyyy-MM-dd'))
     if (dia.length === 0) return (
       <div style={s.empty}>
         <Calendar size={34} color="var(--text3)" style={{ marginBottom: 10 }} />
@@ -435,7 +450,7 @@ export default function Agenda() {
     return (
       <div style={s.weekColunas}>
         {dias.map(dia => {
-          const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
+          const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
           const hoje = isToday(dia)
           return (
             <div key={dia.toISOString()} style={s.weekColuna}>
@@ -469,7 +484,7 @@ export default function Agenda() {
     const dias = eachDayOfInterval({ start: startOfWeek(inicio, { locale: ptBR }), end: endOfWeek(fim, { locale: ptBR }) })
     const semanas = []
     for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7))
-    const agsDiaSel = diaSelecionadoMes ? agendamentos.filter(a => a.data === diaSelecionadoMes) : []
+    const agsDiaSel = diaSelecionadoMes ? agendamentosBase.filter(a => a.data === diaSelecionadoMes) : []
     return (
       <div>
         <div style={s.calHeader}>
@@ -480,7 +495,7 @@ export default function Agenda() {
         {semanas.map((semana, si) => (
           <div key={si} style={s.calRow}>
             {semana.map(dia => {
-              const agsDia = agendamentos.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
+              const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
               const hoje = isToday(dia)
               const doMes = isSameMonth(dia, dataSel)
               const datStr = format(dia, 'yyyy-MM-dd')
@@ -606,6 +621,20 @@ export default function Agenda() {
           ))}
         </div>
       )}
+      {!buscaAtiva && (
+        <div style={s.profFiltro}>
+          {[
+            { id: 'todos', label: 'Todos' },
+            { id: 'pago', label: '✓ Pagos' },
+            { id: 'receber', label: '⏳ A receber' },
+          ].map(f => (
+            <button key={f.id} style={{ ...s.profChip, ...(filtroPag === f.id ? s.profChipAtivo : {}) }} onClick={() => setFiltroPag(f.id)}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {buscaAtiva ? <ViewBusca /> : (
         <>
           {view === 'Dia' && <ViewDia />}
