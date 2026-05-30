@@ -152,7 +152,8 @@ export function AssinaturaProvider({ children }) {
     const fim = new Date(assinatura.periodo_termina_em)
     const hoje = new Date()
     const diasRestantes = Math.max(0, differenceInDays(fim, hoje))
-    const mesesRestantes = Math.max(0, Math.ceil(diasRestantes / 30))
+    // limita à fidelidade de 12 meses (evita 13 logo no início do contrato)
+    const mesesRestantes = Math.min(12, Math.max(0, Math.ceil(diasRestantes / 30)))
     const mensalidadeCentavos = Math.round(plano.precoAnual / 12) + (assinatura.licencas_adicionais || 0) * PRECO_USUARIO_ADICIONAL
     const multaCentavos = Math.round(0.5 * mensalidadeCentavos * mesesRestantes)
     contrato = {
