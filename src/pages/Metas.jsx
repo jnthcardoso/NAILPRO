@@ -6,7 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   format, endOfMonth, endOfYear, startOfMonth, startOfYear,
-  endOfWeek, startOfWeek, subMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
+  endOfWeek, startOfWeek, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -22,6 +22,7 @@ export default function Metas() {
   const [metas, setMetas] = useState([])
   const [progressos, setProgressos] = useState({})
   const [diasFuncionamento, setDiasFuncionamento] = useState(DIAS_UTEIS_PADRAO)
+  const [mesFiltro, setMesFiltro] = useState(format(new Date(), 'yyyy-MM'))
   const [showModal, setShowModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [form, setForm] = useState({ tipo: 'mes', periodo: format(new Date(), 'yyyy-MM'), valor_meta: '' })
@@ -153,7 +154,7 @@ export default function Metas() {
 
   function abrirModalNova() {
     setEditando(null)
-    setForm({ tipo: 'mes', periodo: format(new Date(), 'yyyy-MM'), valor_meta: '' })
+    setForm({ tipo: 'mes', periodo: mesFiltro, valor_meta: '' })
     setShowModal(true)
   }
 
@@ -296,6 +297,24 @@ export default function Metas() {
   const maxFatur = faturServico.length > 0 ? faturServico[0].valor : 1
   const maxNovas = novasClientes.length > 0 ? Math.max(...novasClientes.map(m => m.qtd), 1) : 1
 
+  // ── Navegação de mês ──────────────────────────────────
+  function mesAnterior() {
+    setMesFiltro(prev => format(subMonths(new Date(prev + '-02'), 1), 'yyyy-MM'))
+  }
+  function mesProximo() {
+    setMesFiltro(prev => format(addMonths(new Date(prev + '-02'), 1), 'yyyy-MM'))
+  }
+  const labelMesFiltro = format(new Date(mesFiltro + '-02'), "MMMM 'de' yyyy", { locale: ptBR })
+  const ehMesAtual = mesFiltro === format(new Date(), 'yyyy-MM')
+
+  // Filtra metas pelo período selecionado
+  const metasFiltradas = metas.filter(m => {
+    if (m.tipo === 'mes') return m.periodo === mesFiltro
+    if (m.tipo === 'ano') return m.periodo === mesFiltro.slice(0, 4)
+    // semana/custom: verifica se o período começa com o ano-mês selecionado
+    return (m.periodo || '').startsWith(mesFiltro)
+  })
+
   return (
     <div style={s.page}>
       {/* Tab bar */}
@@ -314,14 +333,24 @@ export default function Metas() {
       {/* ── TAB: METAS ─────────────────────────────────── */}
       {tab === 'metas' && (
         <>
-          {metas.length === 0 && (
+          {/* Navegação de mês */}
+          <div style={s.mesNav}>
+            <button style={s.mesNavBtn} onClick={mesAnterior}>‹</button>
+            <div style={s.mesNavLabel}>
+              {labelMesFiltro}
+              {ehMesAtual && <span style={s.mesAtualChip}>atual</span>}
+            </div>
+            <button style={s.mesNavBtn} onClick={mesProximo}>›</button>
+          </div>
+
+          {metasFiltradas.length === 0 && (
             <div style={s.empty}>
               <Target size={32} color="var(--text3)" style={{ marginBottom: 10 }} />
-              <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma meta ainda</p>
-              <p style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Clique em + para definir uma meta</p>
+              <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma meta para {labelMesFiltro}</p>
+              <p style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Clique em + para criar uma meta para este mês</p>
             </div>
           )}
-          {metas.map(meta => {
+          {metasFiltradas.map(meta => {
             const realizado = progressos[meta.id] || 0
             const projecao = calcularProjecao(meta, realizado)
             const { diasUteisTotal, diasUteisTrabalhados, diasUteisRestantes } = dadosPeriodoAtual(meta)
@@ -638,6 +667,10 @@ const tabs = {
 
 const s = {
   page: { padding: 16, paddingBottom: 80 },
+  mesNav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 16, boxShadow: 'var(--shadow-xs)' },
+  mesNavBtn: { background: 'none', border: 'none', fontSize: 22, color: 'var(--text2)', cursor: 'pointer', padding: '0 6px', lineHeight: 1, fontFamily: 'inherit' },
+  mesNavLabel: { display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' },
+  mesAtualChip: { fontSize: 10, fontWeight: 700, background: 'var(--pink)', color: 'white', borderRadius: 'var(--radius-pill)', padding: '2px 8px' },
   sectionLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 },
   // Previsão
   kpiInfo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 13px', fontSize: 12, color: 'var(--text2)', marginBottom: 16 },
