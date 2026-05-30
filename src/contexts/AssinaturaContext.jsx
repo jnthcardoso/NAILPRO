@@ -1,21 +1,21 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
-import { differenceInDays, differenceInHours } from 'date-fns'
+import { differenceInDays } from 'date-fns'
 
 // Preço de cada usuário adicional (login próprio além da dona/admin) — só no Pro
-export const PRECO_USUARIO_ADICIONAL = 4990 // R$ 49,90/mês por usuário
+export const PRECO_USUARIO_ADICIONAL = 4490 // R$ 44,90/mês por usuário
 
-// Configuração de planos — ambos ANUAIS com fidelidade de 12 meses
 export const PLANOS = {
-  starter: {
-    id: 'starter',
-    nome: 'Starter',
-    precoMensal: 16990,  // exibição: R$ 169,90/mês (cobrado anualmente)
-    precoAnual: 203880,  // R$ 169,90/mês × 12 = R$ 2.038,80 — fidelidade 12 meses
+  solo: {
+    id: 'solo',
+    nome: 'Solo',
+    precoMensalAnual: 9700,    // R$ 97,00/mês — cobrado anualmente
+    precoMensalMensal: 12700,  // R$ 127,00/mês — cobrado mensalmente (sem fidelidade)
+    precoAnual: 116400,        // R$ 97 × 12 = R$ 1.164,00/ano
     cor: '#8B2655',
     limites: {
-      clientes: 30,
+      clientes: 40,
       agendaPublica: false,
       lembretesWhatsapp: false,
       googleCalendar: false,
@@ -24,7 +24,7 @@ export const PLANOS = {
       usuariosAdicionais: false,
     },
     features: [
-      '✓ Até 30 clientes',
+      '✓ Até 40 clientes',
       '✓ 1 login de administrador',
       '✓ Agenda completa (dia, semana, mês)',
       '✓ Financeiro completo com DRE',
@@ -32,19 +32,21 @@ export const PLANOS = {
       '✓ Metas com projeção inteligente',
       '✓ Previsão de receita futura',
       '✓ KPI: faturamento por serviço',
-      '✗ Usuários (logins) adicionais',
+      '✓ Alertas de clientes sumidas',
+      '✗ Lembretes WhatsApp automáticos',
       '✗ KPIs avançados (retenção de clientes)',
       '✗ Exportar relatórios PDF',
-      '✗ Lembretes WhatsApp automáticos',
       '✗ Agenda online (link público)',
       '✗ Google Calendar',
+      '✗ Logins adicionais para equipe',
     ],
   },
   pro: {
     id: 'pro',
     nome: 'Pro',
-    precoMensal: 19990, // exibição: R$ 199,90/mês (cobrado anualmente)
-    precoAnual: 239880, // R$ 199,90/mês × 12 = R$ 2.398,80 — fidelidade 12 meses
+    precoMensalAnual: 17900,   // R$ 179,00/mês — cobrado anualmente
+    precoMensalMensal: 22900,  // R$ 229,00/mês — cobrado mensalmente (sem fidelidade)
+    precoAnual: 214800,        // R$ 179 × 12 = R$ 2.148,00/ano
     cor: '#D4AF37',
     limites: {
       clientes: Infinity,
@@ -58,7 +60,7 @@ export const PLANOS = {
     features: [
       '✓ Clientes ilimitadas',
       '✓ Login de administrador + equipe',
-      '✓ Usuários adicionais (R$ 49,90/mês cada)',
+      `✓ Usuários adicionais (R$ 44,90/mês cada)`,
       '✓ Agenda completa (dia, semana, mês)',
       '✓ Financeiro completo com DRE',
       '✓ Controle de despesas por categoria',
@@ -73,6 +75,9 @@ export const PLANOS = {
     ],
   },
 }
+
+// Compatibilidade com assinaturas antigas (plano='starter' no banco)
+PLANOS.starter = { ...PLANOS.solo, id: 'starter', nome: 'Solo' }
 
 // WhatsApp do suporte para assinaturas (você recebe as solicitações aqui)
 export const SUPORTE_WHATSAPP = import.meta.env.VITE_SUPORTE_WHATSAPP || '5554999419628'
@@ -92,7 +97,6 @@ export function AssinaturaProvider({ children }) {
 
   const carregar = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
-    // RLS retorna a assinatura do salão para qualquer membro (dona/recep/profissional)
     const { data } = await supabase.from('assinaturas')
       .select('*')
       .order('created_at', { ascending: true })
@@ -104,8 +108,7 @@ export function AssinaturaProvider({ children }) {
 
   useEffect(() => { carregar() }, [carregar])
 
-  // Helpers derivados
-  const plano = assinatura ? PLANOS[assinatura.plano] : PLANOS.pro // fallback otimista
+  const plano = assinatura ? (PLANOS[assinatura.plano] || PLANOS.pro) : PLANOS.pro
   const status = assinatura?.status || 'trialing'
   const isTrialing = status === 'trialing'
   const isActive = status === 'active'
@@ -119,17 +122,13 @@ export function AssinaturaProvider({ children }) {
     trialAcabou = new Date(assinatura.trial_termina_em) < new Date()
   }
 
-  // Tem acesso a feature?
   function temAcesso(feature) {
-    // Se tá ativo ou em trial válido, libera tudo que o plano permite
     if (isActive || (isTrialing && !trialAcabou)) {
       return plano.limites[feature] === true || plano.limites[feature] === Infinity
     }
-    // Trial expirado ou cancelado: bloqueia tudo
     return false
   }
 
-  // Está dentro do limite numérico (ex: 50 clientes)?
   function dentroDoLimite(feature, valorAtual) {
     if (isActive || (isTrialing && !trialAcabou)) {
       const limite = plano.limites[feature]
@@ -139,22 +138,16 @@ export function AssinaturaProvider({ children }) {
     return false
   }
 
-  // Precisa fazer upgrade?
   const precisaUpgrade = trialAcabou || isExpired
-
-  // Pode adicionar usuários (logins) extras? Só no Pro (em trial, libera por otimismo)
   const podeUsuariosAdicionais = plano?.limites?.usuariosAdicionais === true
 
-  // ── Contrato / fidelidade (planos anuais) ──
-  // periodo_inicia_em / periodo_termina_em representam a janela do contrato anual.
   let contrato = null
   if (isActive && assinatura?.periodo_termina_em) {
     const fim = new Date(assinatura.periodo_termina_em)
     const hoje = new Date()
     const diasRestantes = Math.max(0, differenceInDays(fim, hoje))
-    // limita à fidelidade de 12 meses (evita 13 logo no início do contrato)
     const mesesRestantes = Math.min(12, Math.max(0, Math.ceil(diasRestantes / 30)))
-    const mensalidadeCentavos = Math.round(plano.precoAnual / 12) + (assinatura.licencas_adicionais || 0) * PRECO_USUARIO_ADICIONAL
+    const mensalidadeCentavos = (plano.precoMensalAnual || Math.round(plano.precoAnual / 12)) + (assinatura.licencas_adicionais || 0) * PRECO_USUARIO_ADICIONAL
     const multaCentavos = Math.round(0.5 * mensalidadeCentavos * mesesRestantes)
     contrato = {
       inicio: assinatura.periodo_inicia_em,
@@ -183,7 +176,6 @@ export function AssinaturaProvider({ children }) {
 
 export const useAssinatura = () => useContext(AssinaturaContext)
 
-// Hook separado para verificar se o usuário é admin
 export function useIsAdmin() {
   const { user } = useAuth()
   const [isAdmin, setIsAdmin] = useState(false)
@@ -203,22 +195,21 @@ export function useIsAdmin() {
   return { isAdmin, checking }
 }
 
-// Helper pra sanitizar texto pra uso em mensagens externas
 function sanitizarTexto(str) {
   return (str || '').replace(/[<>'"\\]/g, '').trim().slice(0, 200)
 }
 
-// Helper pra gerar link WhatsApp de assinatura (planos anuais com fidelidade)
-export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuarios = 0 }) {
+export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuarios = 0, ciclo = 'anual' }) {
   const plano = PLANOS[planoId] || PLANOS.pro
   const planoNome = plano?.nome || 'Pro'
+  const isAnual = ciclo === 'anual'
 
-  const baseMes = plano.precoAnual / 12
+  const precoBase = isAnual ? plano.precoMensalAnual : plano.precoMensalMensal
   const podeUsuarios = plano.limites?.usuariosAdicionais === true
   const qtdUsuarios = podeUsuarios ? Math.max(0, usuarios) : 0
   const usuariosMes = qtdUsuarios * PRECO_USUARIO_ADICIONAL
-  const totalMes = baseMes + usuariosMes
-  const totalAno = totalMes * 12
+  const totalMes = precoBase + usuariosMes
+  const totalAno = (plano.precoAnual + usuariosMes * 12)
 
   const nomeSeguro = sanitizarTexto(nomeUsuario)
   const emailSeguro = sanitizarTexto(emailUsuario)
@@ -227,11 +218,16 @@ export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuari
     ? `\n👥 Usuários adicionais: ${qtdUsuarios} × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(usuariosMes)}/mês`
     : ''
 
+  const descricaoCiclo = isAnual ? 'Anual — fidelidade 12 meses' : 'Mensal — sem fidelidade'
+  const valorCobrado = isAnual
+    ? `R$ ${formatPreco(totalMes)}/mês (R$ ${formatPreco(totalAno)}/ano)`
+    : `R$ ${formatPreco(totalMes)}/mês (sem fidelidade)`
+
   const msg = `Olá! Quero assinar a Lumen 💅
 
-📋 Plano: ${planoNome} (Anual — fidelidade 12 meses)
-💰 Mensalidade do plano: R$ ${formatPreco(baseMes)}/mês${linhaUsuarios}
-🧾 Total: R$ ${formatPreco(totalMes)}/mês (R$ ${formatPreco(totalAno)}/ano)
+📋 Plano: ${planoNome} (${descricaoCiclo})
+💰 Mensalidade do plano: R$ ${formatPreco(precoBase)}/mês${linhaUsuarios}
+🧾 Total: ${valorCobrado}
 👤 Nome: ${nomeSeguro}
 📧 E-mail: ${emailSeguro}
 

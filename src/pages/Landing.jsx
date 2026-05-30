@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, Star, ShieldCheck } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
@@ -13,8 +14,11 @@ const BENEFICIOS = [
 export default function Landing() {
   const navigate = useNavigate()
   const ir = () => navigate('/login')
+  const [ciclo, setCiclo] = useState('anual')
 
-  const precoMes = (p) => formatPreco(p.precoAnual / 12)
+  const precoMes = (p) => ciclo === 'anual'
+    ? formatPreco(p.precoMensalAnual)
+    : formatPreco(p.precoMensalMensal)
 
   return (
     <div style={s.page}>
@@ -71,19 +75,43 @@ export default function Landing() {
 
       {/* Planos */}
       <section id="planos" style={s.secao}>
-        <div style={s.secaoLabel}>planos anuais · fidelidade de 12 meses</div>
+        <div style={s.secaoLabel}>planos para autônomas e salões</div>
         <h2 style={s.planosTitulo}>Escolha o plano do seu momento</h2>
+
+        {/* Toggle mensal/anual */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 }}>
+          <div style={s.toggleCard}>
+            <button
+              style={{ ...s.toggleBtn, ...(ciclo === 'anual' ? s.toggleBtnActive : {}) }}
+              onClick={() => setCiclo('anual')}
+            >
+              Anual <span style={s.economiaBadge}>-22%</span>
+            </button>
+            <button
+              style={{ ...s.toggleBtn, ...(ciclo === 'mensal' ? s.toggleBtnActive : {}) }}
+              onClick={() => setCiclo('mensal')}
+            >
+              Mensal
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+            {ciclo === 'anual' ? '📅 Fidelidade de 12 meses' : '📆 Sem fidelidade · cancele quando quiser'}
+          </div>
+        </div>
+
         <div style={s.planosGrid}>
-          {/* Starter */}
+          {/* Solo */}
           <div style={s.planoCard}>
-            <div style={s.planoNome}>{PLANOS.starter.nome}</div>
-            <div style={s.planoPreco}><span style={s.moeda}>R$</span><span style={s.valor}>{precoMes(PLANOS.starter)}</span><span style={s.ciclo}>/mês</span></div>
-            <div style={s.planoNota}>cobrado anualmente · 1 login</div>
+            <div style={s.planoNome}>{PLANOS.solo.nome}</div>
+            <div style={s.planoPreco}>
+              <span style={s.moeda}>R$</span>
+              <span style={s.valor}>{precoMes(PLANOS.solo)}</span>
+              <span style={s.ciclo}>/mês</span>
+            </div>
+            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.solo.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
             <button style={s.planoBtn} onClick={ir}>Começar grátis</button>
             <div style={s.feats}>
-              {PLANOS.starter.features.slice(0, 8).map((f, i) => (
-                <Feat key={i} f={f} />
-              ))}
+              {PLANOS.solo.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
             </div>
           </div>
 
@@ -91,13 +119,15 @@ export default function Landing() {
           <div style={{ ...s.planoCard, ...s.planoCardPro }}>
             <div style={s.popular}>⭐ Mais popular</div>
             <div style={s.planoNome}>{PLANOS.pro.nome}</div>
-            <div style={s.planoPreco}><span style={s.moeda}>R$</span><span style={s.valor}>{precoMes(PLANOS.pro)}</span><span style={s.ciclo}>/mês</span></div>
-            <div style={s.planoNota}>cobrado anualmente · + usuários por R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}</div>
+            <div style={s.planoPreco}>
+              <span style={s.moeda}>R$</span>
+              <span style={s.valor}>{precoMes(PLANOS.pro)}</span>
+              <span style={s.ciclo}>/mês</span>
+            </div>
+            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · + usuários por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + usuários por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
             <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={ir}>Começar grátis</button>
             <div style={s.feats}>
-              {PLANOS.pro.features.slice(0, 9).map((f, i) => (
-                <Feat key={i} f={f} />
-              ))}
+              {PLANOS.pro.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
             </div>
           </div>
         </div>
@@ -173,7 +203,11 @@ const s = {
   equipeTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 30, fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 14px' },
   equipeTexto: { fontSize: 16, lineHeight: 1.65, color: 'rgba(255,255,255,0.8)' },
 
-  planosTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 28, fontWeight: 800, textAlign: 'center', letterSpacing: '-0.03em', margin: '0 0 28px' },
+  planosTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 28, fontWeight: 800, textAlign: 'center', letterSpacing: '-0.03em', margin: '0 0 20px' },
+  toggleCard: { display: 'inline-flex', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-pill)', padding: 4, gap: 4 },
+  toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
+  toggleBtnActive: { background: 'rgba(255,255,255,0.15)', color: '#fff' },
+  economiaBadge: { background: 'var(--gold, #E6C260)', color: '#170D14', borderRadius: 'var(--radius-pill)', padding: '1px 7px', fontSize: 10, fontWeight: 800 },
   planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, maxWidth: 760, margin: '0 auto' },
   planoCard: { position: 'relative', background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, padding: '26px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)' },
   planoCardPro: { border: `2px solid ${BERRY}`, boxShadow: '0 14px 36px rgba(139,38,85,0.18)' },
