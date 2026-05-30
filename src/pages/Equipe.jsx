@@ -47,6 +47,10 @@ export default function Equipe() {
 
   async function adicionar(e) {
     e.preventDefault()
+    if (!planoPermiteUsuarios) {
+      erro('O plano Starter não permite usuários adicionais. Faça upgrade para o Pro.')
+      return
+    }
     const nome = form.nome.trim()
     const email = form.email.trim().toLowerCase()
     if (!nome || !email) { erro('Preencha nome e e-mail.'); return }
@@ -137,9 +141,15 @@ export default function Equipe() {
           <h1 style={s.title}>Equipe</h1>
           <p style={s.sub}>{salao?.nome || 'Seu salão'}</p>
         </div>
-        <button style={s.addBtn} onClick={() => setShowForm(v => !v)}>
+        <button
+          style={{ ...s.addBtn, ...(planoPermiteUsuarios ? {} : { opacity: 0.85 }) }}
+          onClick={() => {
+            if (!planoPermiteUsuarios) { abrirWhatsappLicencas(); return }
+            setShowForm(v => !v)
+          }}
+        >
           {showForm ? <X size={16} /> : <UserPlus size={16} />}
-          {showForm ? 'Fechar' : 'Adicionar'}
+          {showForm ? 'Fechar' : planoPermiteUsuarios ? 'Adicionar' : 'Upgrade'}
         </button>
       </div>
 
