@@ -44,7 +44,8 @@ export default function BarChart({ data = [], cor = 'var(--pink)', prefixo = '',
 }
 
 /**
- * Gráfico de barras horizontais — bom pra top serviços, top clientes, etc.
+ * Gráfico de barras horizontais — top serviços, top clientes, etc.
+ * Layout: label ←→ valor / barra proporcional abaixo
  */
 export function HBarChart({ data = [], cor = 'var(--pink)', prefixo = '', formatValor }) {
   if (!data.length) {
@@ -55,21 +56,24 @@ export function HBarChart({ data = [], cor = 'var(--pink)', prefixo = '', format
   return (
     <div style={s.hwrap}>
       {data.map((d, i) => {
-        const w = (d.valor / max) * 100
+        const pct = Math.round((d.valor / max) * 100)
+        const valorFmt = formatValor ? formatValor(d.valor) : `${prefixo}${d.valor.toFixed(0)}`
         return (
           <div key={i} style={s.hrow}>
-            <div style={s.hlabel}>{d.label}</div>
+            {/* Label + valor na mesma linha */}
+            <div style={s.hrowHeader}>
+              <span style={s.hlabel}>{d.label}</span>
+              <span style={s.hvalor}>{valorFmt}</span>
+            </div>
+            {/* Track + barra proporcional */}
             <div style={s.htrack}>
               <div
                 style={{
                   ...s.hbar,
-                  width: `${w}%`,
-                  background: `linear-gradient(90deg, ${cor} 0%, ${cor}cc 100%)`,
+                  width: `${pct}%`,
+                  background: `linear-gradient(90deg, ${cor} 0%, ${cor}bb 100%)`,
                 }}
               />
-              <span style={s.hvalor}>
-                {formatValor ? formatValor(d.valor) : `${prefixo}${d.valor.toFixed(0)}`}
-              </span>
             </div>
           </div>
         )
@@ -87,10 +91,11 @@ const s = {
   barLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginTop: 6, textAlign: 'center', textTransform: 'capitalize' },
   empty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '24px 12px' },
   /* HBar */
-  hwrap: { display: 'flex', flexDirection: 'column', gap: 10, padding: 4 },
-  hrow: { display: 'flex', flexDirection: 'column', gap: 4 },
-  hlabel: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  htrack: { position: 'relative', height: 22, background: 'var(--surface2)', borderRadius: 6, overflow: 'hidden', display: 'flex', alignItems: 'center' },
-  hbar: { height: '100%', borderRadius: 6, transition: 'width 0.5s ease' },
-  hvalor: { position: 'absolute', right: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--text)', textShadow: '0 1px 2px rgba(255,255,255,0.8)' },
+  hwrap: { display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 2px' },
+  hrow: { display: 'flex', flexDirection: 'column', gap: 5 },
+  hrowHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
+  hlabel: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  htrack: { height: 8, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' },
+  hbar: { height: '100%', borderRadius: 4, transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)', minWidth: 4 },
+  hvalor: { fontSize: 12, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--pink)', flexShrink: 0 },
 }
