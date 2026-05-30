@@ -5,20 +5,40 @@ import { supabase } from '../../lib/supabase'
 import { useSalao } from '../../contexts/SalaoContext'
 import { differenceInDays, format, addDays } from 'date-fns'
 
+const SEEN_KEY = 'notif_seen_ids'
+
+function getSeenIds() {
+  try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '[]') } catch { return [] }
+}
+function saveSeenIds(ids) {
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(ids)) } catch {}
+}
+
 export default function Notificacoes({ variant = 'header', collapsed = false }) {
   const { salaoId, isProfissional } = useSalao()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [alertas, setAlertas] = useState([])
+  const [seenIds, setSeenIds] = useState(getSeenIds)
 
   useEffect(() => { if (salaoId) load() }, [salaoId, isProfissional])
 
-  // Fecha com Escape
+  // Ao abrir o painel: marca todos os alertas atuais como lidos
+  useEffect(() => {
+    if (!open || alertas.length === 0) return
+    const ids = alertas.map(a => a.id)
+    saveSeenIds(ids)
+    setSeenIds(ids)
+  }, [open, alertas])
+
+  // Fecha com Escape — usa capture:true para ter prioridade sobre outros listeners
   useEffect(() => {
     if (!open) return
-    const h = (e) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('keydown', h)
-    return () => document.removeEventListener('keydown', h)
+    const h = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); setOpen(false) }
+    }
+    document.addEventListener('keydown', h, true)
+    return () => document.removeEventListener('keydown', h, true)
   }, [open])
 
   async function load() {
@@ -101,25 +121,29 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
   }
 
   const total = alertas.length
+  // Badge mostra apenas alertas que o usuário ainda não viu
+  const naoVistos = alertas.filter(a => !seenIds.includes(a.id)).length
+
+  function abrir() { setOpen(true) }
 
   return (
     <>
       {variant === 'sidebar' ? (
         <button
-          onClick={() => setOpen(true)}
+          onClick={abrir}
           style={{ ...s.sbTrigger, ...(collapsed ? { justifyContent: 'center', padding: '11px 0' } : {}) }}
           title={collapsed ? 'Avisos' : undefined}
         >
           <span style={{ position: 'relative', display: 'flex' }}>
             <Bell size={19} strokeWidth={1.8} />
-            {total > 0 && <span style={s.dotSb}>{total}</span>}
+            {naoVistos > 0 && <span style={s.dotSb}>{naoVistos}</span>}
           </span>
           {!collapsed && <span>Avisos</span>}
         </button>
       ) : (
-        <button onClick={() => setOpen(true)} style={s.hdrTrigger} aria-label="Notificações">
+        <button onClick={abrir} style={s.hdrTrigger} aria-label="Notificações">
           <Bell size={18} />
-          {total > 0 && <span style={s.dotHdr}>{total}</span>}
+          {naoVistos > 0 && <span style={s.dotHdr}>{naoVistos}</span>}
         </button>
       )}
 
