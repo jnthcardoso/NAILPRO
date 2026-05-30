@@ -19,7 +19,7 @@ import Equipe from './pages/Equipe'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import Landing from './pages/Landing'
-import { AssinaturaProvider } from './contexts/AssinaturaContext'
+import { AssinaturaProvider, useAssinatura } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { PageSkeleton } from './components/common/Skeleton'
@@ -87,6 +87,14 @@ function RequireGerencia({ children }) {
   return gerenciaTudo ? children : <Navigate to="/agenda" replace />
 }
 
+// Paywall: trial encerrado ou assinatura expirada → manda para /planos.
+function PlanoGuard({ children }) {
+  const { loading, precisaUpgrade } = useAssinatura()
+  if (loading) return <PageSkeleton />
+  if (precisaUpgrade) return <Navigate to="/planos" replace />
+  return children
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -102,7 +110,7 @@ export default function App() {
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/bem-vindo" element={<PrivateRoute><OnboardingGuard><BemVindo /></OnboardingGuard></PrivateRoute>} />
             <Route path="/planos" element={<PrivateRoute><OnboardingGuard><Planos /></OnboardingGuard></PrivateRoute>} />
-            <Route path="/" element={<PrivateRoute><OnboardingGuard><AppLayout /></OnboardingGuard></PrivateRoute>}>
+            <Route path="/" element={<PrivateRoute><OnboardingGuard><PlanoGuard><AppLayout /></PlanoGuard></OnboardingGuard></PrivateRoute>}>
               <Route index element={<Home />} />
               <Route path="metas" element={<RequireGerencia><Metas /></RequireGerencia>} />
               <Route path="lembretes" element={<RequireGerencia><Lembretes /></RequireGerencia>} />

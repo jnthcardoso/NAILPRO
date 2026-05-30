@@ -7,8 +7,13 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export default function Planos() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
+
+  async function sair() {
+    await signOut()
+    navigate('/login', { replace: true })
+  }
   const { assinatura, plano: planoAtual, isTrialing, diasRestantesTrial, trialAcabou, isActive, contrato } = useAssinatura()
   const [assinarLoading, setAssinarLoading] = useState(null)
 
@@ -27,9 +32,14 @@ export default function Planos() {
   return (
     <div style={s.page}>
 
-      <button style={s.voltarBtn} onClick={() => navigate(-1)}>
-        <ArrowLeft size={14} /> Voltar
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button style={s.voltarBtn} onClick={() => navigate(-1)}>
+          <ArrowLeft size={14} /> Voltar
+        </button>
+        <button style={s.voltarBtn} onClick={sair}>
+          Sair
+        </button>
+      </div>
 
       {/* Header */}
       <div style={s.hero}>
