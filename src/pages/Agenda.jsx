@@ -196,26 +196,33 @@ export default function Agenda() {
     }
 
     setSaving(true)
-    const { profissional_id: _pf, ...formRest } = form
-    const { data: ag } = await supabase
-      .from('agendamentos')
-      .insert({ ...formRest, user_id: user.id, salao_id: salaoId, profissional_id: profId || null, valor: parseFloat(form.valor) || 0 })
-      .select('*, clientes(nome)')
-      .single()
-    if (ag && googleConectado) {
-      try {
-        const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
-        await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
-        showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
-      } catch (e) {
-        console.error('Google Agenda sync erro:', e)
-        showGoogleMsg(`Google Agenda: ${e.message}`, 'error')
+    try {
+      const { profissional_id: _pf, ...formRest } = form
+      const { data: ag, error: insertError } = await supabase
+        .from('agendamentos')
+        .insert({ ...formRest, user_id: user.id, salao_id: salaoId, profissional_id: profId || null, valor: parseFloat(form.valor) || 0 })
+        .select('*, clientes(nome)')
+        .single()
+      if (insertError) {
+        erro('Erro ao salvar agendamento. Tente novamente.')
+        return
       }
+      if (ag && googleConectado) {
+        try {
+          const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
+          await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
+          showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
+        } catch (e) {
+          console.error('Google Agenda sync erro:', e)
+          showGoogleMsg(`Google Agenda: ${e.message}`, 'error')
+        }
+      }
+      setShowModal(false)
+      setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd'), profissional_id: '' })
+      loadAgendamentos()
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setShowModal(false)
-    setForm({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(dataSel, 'yyyy-MM-dd'), profissional_id: '' })
-    loadAgendamentos()
   }
 
   function abrirEdicao(ag) {
@@ -253,19 +260,23 @@ export default function Agenda() {
     }
 
     setSavingEdit(true)
-    await supabase.from('agendamentos').update({
-      cliente_id: formEdit.cliente_id,
-      servico: formEdit.servico,
-      data: formEdit.data,
-      horario: formEdit.horario,
-      valor: parseFloat(formEdit.valor) || 0,
-      status: formEdit.status,
-      observacoes: formEdit.observacoes,
-      profissional_id: profIdEdit,
-    }).eq('id', editando.id)
-    setSavingEdit(false)
-    setEditando(null)
-    loadAgendamentos()
+    try {
+      const { error: updateError } = await supabase.from('agendamentos').update({
+        cliente_id: formEdit.cliente_id,
+        servico: formEdit.servico,
+        data: formEdit.data,
+        horario: formEdit.horario,
+        valor: parseFloat(formEdit.valor) || 0,
+        status: formEdit.status,
+        observacoes: formEdit.observacoes,
+        profissional_id: profIdEdit,
+      }).eq('id', editando.id)
+      if (updateError) { erro('Erro ao atualizar agendamento. Tente novamente.'); return }
+      setEditando(null)
+      loadAgendamentos()
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   async function salvarNovaCliente() {
@@ -323,28 +334,35 @@ export default function Agenda() {
   async function salvarPagamento() {
     if (!agSelecionado) return
     setSavingPag(true)
-    const pagExistente = agSelecionado.pagamentos?.[0]
-    if (pagExistente) {
-      await supabase.from('pagamentos').update({
-        forma: formPag.forma,
-        status: formPag.status,
-        valor: parseFloat(formPag.valor) || agSelecionado.valor,
-      }).eq('id', pagExistente.id)
-    } else {
-      await supabase.from('pagamentos').insert({
-        user_id: user.id,
-        salao_id: salaoId,
-        agendamento_id: agSelecionado.id,
-        valor: parseFloat(formPag.valor) || agSelecionado.valor || 0,
-        forma: formPag.forma,
-        status: formPag.status,
-        data: agSelecionado.data,
-      })
+    try {
+      const pagExistente = agSelecionado.pagamentos?.[0]
+      let pagError
+      if (pagExistente) {
+        const { error } = await supabase.from('pagamentos').update({
+          forma: formPag.forma,
+          status: formPag.status,
+          valor: parseFloat(formPag.valor) || agSelecionado.valor,
+        }).eq('id', pagExistente.id)
+        pagError = error
+      } else {
+        const { error } = await supabase.from('pagamentos').insert({
+          user_id: user.id,
+          salao_id: salaoId,
+          agendamento_id: agSelecionado.id,
+          valor: parseFloat(formPag.valor) || agSelecionado.valor || 0,
+          forma: formPag.forma,
+          status: formPag.status,
+          data: agSelecionado.data,
+        })
+        pagError = error
+      }
+      if (pagError) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
+      setShowPagModal(false)
+      setAgSelecionado(null)
+      loadAgendamentos()
+    } finally {
+      setSavingPag(false)
     }
-    setSavingPag(false)
-    setShowPagModal(false)
-    setAgSelecionado(null)
-    loadAgendamentos()
   }
 
   function navegar(dir) {
