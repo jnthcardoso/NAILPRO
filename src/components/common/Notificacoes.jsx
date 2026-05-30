@@ -6,12 +6,12 @@ import { useSalao } from '../../contexts/SalaoContext'
 import { differenceInDays, format, addDays } from 'date-fns'
 
 export default function Notificacoes({ variant = 'header', collapsed = false }) {
-  const { salaoId } = useSalao()
+  const { salaoId, isProfissional } = useSalao()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [alertas, setAlertas] = useState([])
 
-  useEffect(() => { if (salaoId) load() }, [salaoId])
+  useEffect(() => { if (salaoId) load() }, [salaoId, isProfissional])
 
   // Fecha com Escape
   useEffect(() => {
@@ -67,31 +67,34 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
       })
     }
 
-    // Clientes: sumidas + aniversariantes (não arquivadas)
-    const { data: cls } = await supabase.from('clientes')
-      .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId)
-    const ativas = (cls || []).filter(c => !c.arquivada)
-    const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= diasAlerta)
-    if (sumidas.length) {
-      lista.push({
-        id: 'sumidas', icon: UserX, cor: '#B91C1C', bg: '#FEE2E2',
-        titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes sumidas' : 'cliente sumida'} +${diasAlerta}d`,
-        sub: sumidas.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/clientes',
+    // Avisos do salão (clientes sumidas + aniversariantes) — só para dona/recepcionista.
+    // A profissional não enxerga dados do salão inteiro.
+    if (!isProfissional) {
+      const { data: cls } = await supabase.from('clientes')
+        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId)
+      const ativas = (cls || []).filter(c => !c.arquivada)
+      const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= diasAlerta)
+      if (sumidas.length) {
+        lista.push({
+          id: 'sumidas', icon: UserX, cor: '#B91C1C', bg: '#FEE2E2',
+          titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes sumidas' : 'cliente sumida'} +${diasAlerta}d`,
+          sub: sumidas.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/clientes',
+        })
+      }
+      const aniv = ativas.filter(c => {
+        if (!c.data_nascimento) return false
+        const n = new Date(c.data_nascimento + 'T12:00:00')
+        const a = new Date(new Date().getFullYear(), n.getMonth(), n.getDate())
+        const d = differenceInDays(a, new Date())
+        return d >= 0 && d <= 7
       })
-    }
-    const aniv = ativas.filter(c => {
-      if (!c.data_nascimento) return false
-      const n = new Date(c.data_nascimento + 'T12:00:00')
-      const a = new Date(new Date().getFullYear(), n.getMonth(), n.getDate())
-      const d = differenceInDays(a, new Date())
-      return d >= 0 && d <= 7
-    })
-    if (aniv.length) {
-      lista.push({
-        id: 'aniv', icon: Cake, cor: '#86198F', bg: '#FAE8FF',
-        titulo: `${aniv.length} aniversariante${aniv.length > 1 ? 's' : ''} essa semana`,
-        sub: aniv.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/clientes',
-      })
+      if (aniv.length) {
+        lista.push({
+          id: 'aniv', icon: Cake, cor: '#86198F', bg: '#FAE8FF',
+          titulo: `${aniv.length} aniversariante${aniv.length > 1 ? 's' : ''} essa semana`,
+          sub: aniv.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/clientes',
+        })
+      }
     }
 
     setAlertas(lista)
