@@ -1008,7 +1008,7 @@ export default function Agenda() {
 }
 
 const s = {
-  page: { padding: 16, paddingBottom: 80 },
+  page: { padding: 16, paddingBottom: 80, overflowX: 'hidden' },
   sectionTitle: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', textTransform: 'capitalize', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 },
   hojeChip: { fontSize: 10, background: 'var(--pink)', color: 'white', borderRadius: 20, padding: '2px 9px', fontWeight: 700 },
   viewTabs: { display: 'flex', background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: 3, marginBottom: 12, gap: 3, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
@@ -1044,7 +1044,7 @@ const s = {
   calCellSel: { background: 'var(--pink-light)', border: '2px solid var(--pink)', outline: '2px solid var(--pink-mid)' },
   calNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 2 },
   calNumHoje: { color: 'var(--pink)', fontWeight: 700 },
-  calEvent: { fontSize: 9, borderRadius: 3, padding: '1px 4px', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  calEvent: { fontSize: 9, borderRadius: 3, padding: '1px 4px', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'block' },
   calMore: { fontSize: 9, color: 'var(--text3)' },
   card: { background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '4px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', position: 'relative' },
   cardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
