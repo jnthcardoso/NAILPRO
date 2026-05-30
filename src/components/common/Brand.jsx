@@ -41,44 +41,24 @@ export function LumenLogo({ size = 26, variant = 'default', layout = 'horizontal
   const altura = Math.round(size * 1.25)
   const textColor = variant === 'reverso' ? '#fbf6f8' : '#180712'
   const dotColor  = variant === 'reverso' ? '#e8c66a' : '#8b2655'
-  // IDs únicos por variante para evitar conflito de gradiente quando há múltiplos logos na página
-  const berryId = `lumen-berry-${variant}`
-  const glowId  = `lumen-glow-${variant}`
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 540 160"
+    <span
       role="img"
-      aria-label="Lumen — iluminando a gestão, impulsionando o seu talento"
-      style={{ display: 'inline-block', verticalAlign: 'middle', height: altura, width: 'auto', ...style }}
+      aria-label="Lumen"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: Math.round(size * 0.28), ...style }}
     >
-      <defs>
-        <linearGradient id={berryId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#b34678" />
-          <stop offset="1" stopColor="#8b2655" />
-        </linearGradient>
-        <radialGradient id={glowId} cx="0.5" cy="0.72" r="0.55">
-          <stop offset="0" stopColor="#f5dd9b" />
-          <stop offset="1" stopColor="#e8c66a" />
-        </radialGradient>
-      </defs>
-      <g transform="translate(12,12)">
-        <path d="M60 8 C 96 50, 108 84, 108 102 A 48 48 0 1 1 12 102 C 12 84, 24 50, 60 8 Z" fill={`url(#${berryId})`} />
-        <path d="M60 60 C 82 86, 90 100, 90 112 A 30 30 0 1 1 30 112 C 30 100, 38 86, 60 60 Z" fill={`url(#${glowId})`} />
-        <ellipse cx="60" cy="114" rx="9" ry="15" fill="#fffdf5" opacity="0.65" />
-      </g>
-      <text
-        x="148"
-        y="118"
-        fill={textColor}
-        fontFamily="'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, sans-serif"
-        fontSize="90"
-        fontWeight="800"
-        letterSpacing="-4"
-      >
-        lumen<tspan fill={dotColor}>.</tspan>
-      </text>
-    </svg>
+      <LumenFlameIcon size={altura} variant={variant} />
+      <span style={{
+        fontFamily: "'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, sans-serif",
+        fontSize: Math.round(altura * 0.82),
+        fontWeight: 800,
+        color: textColor,
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+      }}>
+        lumen<span style={{ color: dotColor }}>.</span>
+      </span>
+    </span>
   )
 }

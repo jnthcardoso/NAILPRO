@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { LumenLogo } from '../components/common/Brand'
 import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
@@ -56,7 +57,10 @@ export default function Login() {
         </div>
         <p style={s.sub}>iluminando a gestão, impulsionando o seu talento</p>
         <div style={{ textAlign: 'center', marginBottom: 6 }}>
-          <Link to="/lp" style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', textDecoration: 'none' }}>← conhecer a Lumen</Link>
+          <Link to="/lp" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
+            <ChevronLeft size={13} strokeWidth={2} />
+            conhecer a Lumen
+          </Link>
         </div>
 
         <div style={s.tabs}>
