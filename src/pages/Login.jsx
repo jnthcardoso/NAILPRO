@@ -55,6 +55,9 @@ export default function Login() {
           <LumenLogo size={36} variant="reverso" layout="horizontal" />
         </div>
         <p style={s.sub}>iluminando a gestão, impulsionando o seu talento</p>
+        <div style={{ textAlign: 'center', marginBottom: 6 }}>
+          <Link to="/lp" style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', textDecoration: 'none' }}>← conhecer a Lumen</Link>
+        </div>
 
         <div style={s.tabs}>
           <button 

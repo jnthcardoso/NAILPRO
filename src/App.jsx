@@ -18,6 +18,7 @@ import Admin from './pages/Admin'
 import Equipe from './pages/Equipe'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
+import Landing from './pages/Landing'
 import { AssinaturaProvider } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -94,6 +95,7 @@ export default function App() {
         <ToastProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/lp" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
             <Route path="/termos" element={<Termos />} />
