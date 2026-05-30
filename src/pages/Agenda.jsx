@@ -497,21 +497,28 @@ export default function Agenda() {
   }
 
   function ViewMes() {
+    const isMobile = window.innerWidth < 769
     const inicio = startOfMonth(dataSel)
     const fim = endOfMonth(dataSel)
     const dias = eachDayOfInterval({ start: startOfWeek(inicio, { locale: ptBR }), end: endOfWeek(fim, { locale: ptBR }) })
     const semanas = []
     for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7))
     const agsDiaSel = diaSelecionadoMes ? agendamentosBase.filter(a => a.data === diaSelecionadoMes) : []
+
+    // Mobile: initial de cada dia da semana; Desktop: nome curto
+    const headerDias = isMobile
+      ? ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+      : ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
     return (
       <div>
-        <div style={s.calHeader}>
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} style={s.calHeaderCell}>{d}</div>
+        <div style={{ ...s.calHeader, gap: isMobile ? 0 : undefined }}>
+          {headerDias.map((d, i) => (
+            <div key={i} style={{ ...s.calHeaderCell, fontSize: isMobile ? 11 : 10 }}>{d}</div>
           ))}
         </div>
         {semanas.map((semana, si) => (
-          <div key={si} style={s.calRow}>
+          <div key={si} style={{ ...s.calRow, gap: isMobile ? 1 : 1 }}>
             {semana.map(dia => {
               const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
               const hoje = isToday(dia)
@@ -521,15 +528,54 @@ export default function Agenda() {
               return (
                 <div
                   key={dia.toISOString()}
-                  style={{ ...s.calCell, ...(!doMes ? s.calCellOut : {}), ...(hoje ? s.calCellHoje : {}), ...(selecionado ? s.calCellSel : {}) }}
+                  style={{
+                    ...s.calCell,
+                    ...(!doMes ? s.calCellOut : {}),
+                    ...(hoje ? s.calCellHoje : {}),
+                    ...(selecionado ? s.calCellSel : {}),
+                    ...(isMobile ? { minHeight: 52, padding: '4px 3px' } : {}),
+                  }}
                   onClick={() => setDiaSelecionadoMes(selecionado ? null : datStr)}
                 >
-                  <div style={{ ...s.calNum, ...(hoje ? s.calNumHoje : {}) }}>{format(dia, 'd')}</div>
-                  {agsDia.slice(0, 2).map((ag, i) => {
-                    const st = STATUS[ag.status] || STATUS.pendente
-                    return <div key={i} style={{ ...s.calEvent, background: st.bg, color: st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>
-                  })}
-                  {agsDia.length > 2 && <div style={s.calMore}>+{agsDia.length - 2}</div>}
+                  {/* Número do dia */}
+                  {isMobile ? (
+                    <div style={{
+                      width: 22, height: 22, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12, fontWeight: hoje ? 700 : 400,
+                      background: hoje ? 'var(--pink)' : selecionado ? 'var(--pink-light)' : 'transparent',
+                      color: hoje ? '#fff' : selecionado ? 'var(--pink)' : doMes ? 'var(--text)' : 'var(--text3)',
+                      margin: '0 auto 3px',
+                    }}>
+                      {format(dia, 'd')}
+                    </div>
+                  ) : (
+                    <div style={{ ...s.calNum, ...(hoje ? s.calNumHoje : {}) }}>{format(dia, 'd')}</div>
+                  )}
+
+                  {/* Mobile: dots coloridos por status */}
+                  {isMobile ? (
+                    agsDia.length > 0 && (
+                      <div style={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {agsDia.slice(0, 3).map((ag, i) => {
+                          const st = STATUS[ag.status] || STATUS.pendente
+                          return <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: st.border, display: 'block', flexShrink: 0 }} />
+                        })}
+                        {agsDia.length > 3 && (
+                          <span style={{ fontSize: 8, color: 'var(--text3)', fontWeight: 700, lineHeight: '6px' }}>+{agsDia.length - 3}</span>
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    /* Desktop: text cards */
+                    <>
+                      {agsDia.slice(0, 2).map((ag, i) => {
+                        const st = STATUS[ag.status] || STATUS.pendente
+                        return <div key={i} style={{ ...s.calEvent, background: st.bg, color: st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>
+                      })}
+                      {agsDia.length > 2 && <div style={s.calMore}>+{agsDia.length - 2}</div>}
+                    </>
+                  )}
                 </div>
               )
             })}
