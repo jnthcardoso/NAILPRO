@@ -37,10 +37,11 @@ export default function Equipe() {
     setLoading(false)
   }
 
-  // Membros COM login próprio (user_id não nulo) que não são a dona/admin → cada um é um
-  // usuário adicional. A dona não conta (já incluída no plano). Quem usa o login admin
-  // (ex.: recepcionista compartilhando) não vira membro, então não é cobrado.
-  const membrosComLogin = membros.filter(m => m.papel !== 'dona' && m.user_id)
+  // Membros COM login próprio (user_id não nulo), ativos, que não são a dona/admin → cada um
+  // é um usuário adicional. A dona não conta (já incluída no plano). Quem usa o login admin
+  // (ex.: recepcionista compartilhando) não vira membro, então não é cobrado. Suspensos
+  // (ativo=false) não consomem licença. Mesma regra do gatilho sync_licencas_adicionais.
+  const membrosComLogin = membros.filter(m => m.papel !== 'dona' && m.user_id && m.ativo)
   const licencasAdicionais = membrosComLogin.length
   const custoAdicional = licencasAdicionais * PRECO_USUARIO_ADICIONAL
   const planoPermiteUsuarios = plano?.limites?.usuariosAdicionais === true
