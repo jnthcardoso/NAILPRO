@@ -77,37 +77,43 @@ export default function Login() {
         <form onSubmit={handle} style={s.form}>
           {mode === 'signup' && (
             <div style={s.field}>
-              <label style={s.label}>Seu nome</label>
-              <input 
-                style={s.input} 
-                type="text" 
-                placeholder="Ex: Camila Souza" 
-                required 
-                value={form.name} 
-                onChange={e => setForm({ ...form, name: e.target.value })} 
+              <label htmlFor="login-name" style={s.label}>Seu nome</label>
+              <input
+                id="login-name"
+                style={s.input}
+                type="text"
+                placeholder="Ex: Camila Souza"
+                autoComplete="name"
+                required
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
               />
             </div>
           )}
           <div style={s.field}>
-            <label style={s.label}>E-mail</label>
-            <input 
-              style={s.input} 
-              type="email" 
-              placeholder="seu@email.com" 
-              required 
-              value={form.email} 
-              onChange={e => setForm({ ...form, email: e.target.value })} 
+            <label htmlFor="login-email" style={s.label}>E-mail</label>
+            <input
+              id="login-email"
+              style={s.input}
+              type="email"
+              placeholder="seu@email.com"
+              autoComplete="email"
+              required
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
             />
           </div>
           <div style={s.field}>
-            <label style={s.label}>Senha</label>
-            <input 
-              style={s.input} 
-              type="password" 
-              placeholder="••••••••" 
-              required 
-              value={form.password} 
-              onChange={e => setForm({ ...form, password: e.target.value })} 
+            <label htmlFor="login-password" style={s.label}>Senha</label>
+            <input
+              id="login-password"
+              style={s.input}
+              type="password"
+              placeholder="••••••••"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              required
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
             />
           </div>
           {mode === 'signup' && (
@@ -126,7 +132,7 @@ export default function Login() {
               </span>
             </label>
           )}
-          {error && <div style={s.error}>{error}</div>}
+          {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
           <button
             style={s.btn}
             type="submit"
