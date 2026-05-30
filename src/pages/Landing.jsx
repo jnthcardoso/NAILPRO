@@ -145,7 +145,7 @@ const BERRY = '#8B2655'
 const NOIR = '#180712'
 
 const s = {
-  page: { background: 'var(--cream, #FBF6F8)', color: 'var(--text, #180712)', minHeight: '100vh', overflowX: 'hidden' },
+  page: { background: 'var(--cream, #FBF6F8)', color: 'var(--text, #180712)', minHeight: '100vh', height: '100vh', overflowX: 'hidden', overflowY: 'auto' },
   topbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', maxWidth: 1080, margin: '0 auto' },
   entrarBtn: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-pill)', padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 
