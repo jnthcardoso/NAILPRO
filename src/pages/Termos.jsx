@@ -39,14 +39,16 @@ export default function Termos() {
           <ul style={s.lista}>
             <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito ao plano Pro.</li>
             <li>Após o período de teste, é necessário assinar um plano pago para manter o acesso completo.</li>
-            <li>Os valores e funcionalidades de cada plano estão disponíveis em <a href="/planos" style={s.link}>nossa página de planos</a>.</li>
+            <li>Os planos são <strong>anuais</strong>, com fidelidade de 12 meses, podendo ser pagos à vista ou em parcelas mensais.</li>
+            <li>O plano <strong>Pro</strong> permite adicionar usuários (logins individuais) por um valor mensal por usuário, conforme a <a href="/planos" style={s.link}>página de planos</a>. O plano <strong>Starter</strong> inclui apenas o login de administrador.</li>
             <li>Pagamentos são realizados via PIX, cartão ou boleto, sob solicitação no WhatsApp de atendimento.</li>
           </ul>
 
-          <h2 style={s.h2}>5. Cancelamento e Reembolso</h2>
+          <h2 style={s.h2}>5. Fidelidade, Cancelamento e Reembolso</h2>
           <ul style={s.lista}>
-            <li>Você pode cancelar sua assinatura a qualquer momento, sem multa.</li>
-            <li>Oferecemos garantia de reembolso integral em até 7 dias após a primeira cobrança.</li>
+            <li><strong>Garantia de 7 dias:</strong> você pode cancelar em até 7 (sete) dias após a primeira cobrança e receber reembolso integral, sem qualquer custo (direito de arrependimento, CDC Art. 49).</li>
+            <li>Os planos têm fidelidade de 12 meses. O cancelamento após o período de garantia e antes do fim do contrato está sujeito a <strong>multa de 50% (cinquenta por cento) sobre o valor restante do contrato</strong>.</li>
+            <li>Você pode visualizar a data de término da fidelidade e a multa estimada a qualquer momento na página de planos.</li>
             <li>Após o cancelamento, seus dados ficam guardados por 90 dias para eventual reativação.</li>
           </ul>
 
