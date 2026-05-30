@@ -204,9 +204,9 @@ const s = {
   equipeTexto: { fontSize: 16, lineHeight: 1.65, color: 'rgba(255,255,255,0.8)' },
 
   planosTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 28, fontWeight: 800, textAlign: 'center', letterSpacing: '-0.03em', margin: '0 0 20px' },
-  toggleCard: { display: 'inline-flex', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-pill)', padding: 4, gap: 4 },
-  toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
-  toggleBtnActive: { background: 'rgba(255,255,255,0.15)', color: '#fff' },
+  toggleCard: { display: 'inline-flex', background: '#fff', border: '1px solid var(--border, #EAD5E2)', borderRadius: 'var(--radius-pill)', padding: 4, gap: 4, boxShadow: '0 1px 4px rgba(24,7,18,0.07)' },
+  toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'var(--text3, #8B6070)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
+  toggleBtnActive: { background: 'var(--pink, #8B2655)', color: '#fff', boxShadow: '0 3px 10px rgba(139,38,85,0.25)' },
   economiaBadge: { background: 'var(--gold, #E6C260)', color: '#170D14', borderRadius: 'var(--radius-pill)', padding: '1px 7px', fontSize: 10, fontWeight: 800 },
   planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, maxWidth: 760, margin: '0 auto' },
   planoCard: { position: 'relative', background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, padding: '26px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)' },
