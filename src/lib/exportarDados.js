@@ -116,6 +116,6 @@ export async function exportarTodosDados(user) {
   }
 
   // ─── Gera e baixa o arquivo ───
-  const nomeArquivo = `nailpro-backup-${configuracoes?.nome_salao?.replace(/[^\w]/g, '-').toLowerCase() || 'meus-dados'}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+  const nomeArquivo = `lumen-backup-${configuracoes?.nome_salao?.replace(/[^\w]/g, '-').toLowerCase() || 'meus-dados'}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`
   XLSX.writeFile(workbook, nomeArquivo)
 }

@@ -22,10 +22,10 @@ export default function Termos() {
         <div style={s.conteudo}>
 
           <h2 style={s.h2}>1. Aceitação dos Termos</h2>
-          <p>Ao criar uma conta ou utilizar o NailPro, você concorda integralmente com estes Termos de Uso e com nossa <a href="/privacidade" style={s.link}>Política de Privacidade</a>. Se você não concordar, não utilize a plataforma.</p>
+          <p>Ao criar uma conta ou utilizar a Lumen, você concorda integralmente com estes Termos de Uso e com nossa <a href="/privacidade" style={s.link}>Política de Privacidade</a>. Se você não concordar, não utilize a plataforma.</p>
 
-          <h2 style={s.h2}>2. Sobre o NailPro</h2>
-          <p>O NailPro é uma plataforma SaaS (Software as a Service) destinada a profissionais de manicure, pedicure e nail designers, oferecendo ferramentas para gestão de agenda, clientes, financeiro e comunicação.</p>
+          <h2 style={s.h2}>2. Sobre a Lumen</h2>
+          <p>A Lumen é uma plataforma SaaS (Software as a Service) destinada a profissionais de manicure, pedicure e nail designers, oferecendo ferramentas para gestão de agenda, clientes, financeiro e comunicação.</p>
 
           <h2 style={s.h2}>3. Cadastro e Conta</h2>
           <ul style={s.lista}>
@@ -51,7 +51,7 @@ export default function Termos() {
           </ul>
 
           <h2 style={s.h2}>6. Uso Permitido</h2>
-          <p>Você concorda em utilizar o NailPro apenas para fins lícitos e relacionados à sua atividade profissional. É vedado:</p>
+          <p>Você concorda em utilizar a Lumen apenas para fins lícitos e relacionados à sua atividade profissional. É vedado:</p>
           <ul style={s.lista}>
             <li>Utilizar a plataforma para atividades ilegais, fraudulentas ou abusivas;</li>
             <li>Tentar acessar dados de outros usuários ou contornar mecanismos de segurança;</li>
@@ -60,15 +60,15 @@ export default function Termos() {
           </ul>
 
           <h2 style={s.h2}>7. Dados das Suas Clientes</h2>
-          <p>Você (controlador) é responsável legal pelos dados que cadastra de suas clientes finais (titulares). Ao usar o NailPro:</p>
+          <p>Você (controlador) é responsável legal pelos dados que cadastra de suas clientes finais (titulares). Ao usar a Lumen:</p>
           <ul style={s.lista}>
             <li>Você declara possuir base legal para tratar esses dados (consentimento, execução de contrato);</li>
-            <li>Você deve informar suas clientes sobre o uso do NailPro como ferramenta de gestão;</li>
-            <li>O NailPro atua como operador (Art. 5º, VII, LGPD), tratando dados em seu nome.</li>
+            <li>Você deve informar suas clientes sobre o uso da Lumen como ferramenta de gestão;</li>
+            <li>A Lumen atua como operador (Art. 5º, VII, LGPD), tratando dados em seu nome.</li>
           </ul>
 
           <h2 style={s.h2}>8. Integrações de Terceiros</h2>
-          <p>O NailPro oferece integrações opcionais com Google Calendar e WhatsApp. Ao ativá-las, você concorda com os respectivos termos:</p>
+          <p>A Lumen oferece integrações opcionais com Google Calendar e WhatsApp. Ao ativá-las, você concorda com os respectivos termos:</p>
           <ul style={s.lista}>
             <li>Google Calendar — <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" style={s.link}>termos do Google</a></li>
             <li>WhatsApp — <a href="https://www.whatsapp.com/legal" target="_blank" rel="noreferrer" style={s.link}>termos da Meta</a></li>
@@ -78,10 +78,10 @@ export default function Termos() {
           <p>Empenhamos esforços para manter a plataforma disponível 24/7, mas não garantimos disponibilidade ininterrupta. Manutenções programadas serão comunicadas com antecedência.</p>
 
           <h2 style={s.h2}>10. Propriedade Intelectual</h2>
-          <p>Todo o software, marca, design e código do NailPro são de propriedade exclusiva da empresa. O acesso ao serviço não confere qualquer direito sobre essa propriedade intelectual.</p>
+          <p>Todo o software, marca, design e código da Lumen são de propriedade exclusiva da empresa. O acesso ao serviço não confere qualquer direito sobre essa propriedade intelectual.</p>
 
           <h2 style={s.h2}>11. Limitação de Responsabilidade</h2>
-          <p>O NailPro não se responsabiliza por:</p>
+          <p>A Lumen não se responsabiliza por:</p>
           <ul style={s.lista}>
             <li>Lucros cessantes ou perdas indiretas decorrentes do uso;</li>
             <li>Falhas em integrações externas (Google, WhatsApp);</li>

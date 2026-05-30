@@ -46,7 +46,7 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
   const doc = new jsPDF()
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
-  doc.text('NailPro — Relatório Financeiro', 14, 18)
+  doc.text('Lumen — Relatório Financeiro', 14, 18)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(11)
   doc.text(periodoLabel, 14, 27)
@@ -132,7 +132,7 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
     doc.setTextColor(0, 0, 0)
   }
 
-  doc.save(`nailpro-financeiro-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
+  doc.save(`lumen-financeiro-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
 }
 
 async function exportarPDFAnual(salaoId, ano) {
@@ -154,7 +154,7 @@ async function exportarPDFAnual(salaoId, ano) {
   const doc = new jsPDF()
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.text(`NailPro — Relatório Anual ${ano}`, 14, 18)
+  doc.text(`Lumen — Relatório Anual ${ano}`, 14, 18)
 
   // Tabela mensal
   const meses = eachMonthOfInterval({ start: new Date(ano, 0, 1), end: new Date(ano, 11, 31) })
@@ -199,7 +199,7 @@ async function exportarPDFAnual(salaoId, ano) {
     alternateRowStyles: { fillColor: [251, 246, 248] },
   })
 
-  doc.save(`nailpro-relatorio-anual-${ano}.pdf`)
+  doc.save(`lumen-relatorio-anual-${ano}.pdf`)
 }
 
 export default function Financeiro() {

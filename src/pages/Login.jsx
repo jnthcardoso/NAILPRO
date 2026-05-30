@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { NailProLogo } from '../components/common/Brand'
+import { LumenLogo } from '../components/common/Brand'
 import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
 
 export default function Login() {
@@ -52,9 +52,9 @@ export default function Login() {
     <div style={s.root}>
       <div className="fade-in" style={s.card}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          <NailProLogo size={36} variant="reverso" layout="horizontal" />
+          <LumenLogo size={36} variant="reverso" layout="horizontal" />
         </div>
-        <p style={s.sub}>gestão simples para nail designers</p>
+        <p style={s.sub}>iluminando a gestão, impulsionando o seu talento</p>
 
         <div style={s.tabs}>
           <button 

@@ -1,26 +1,28 @@
 import React from 'react'
 
 /**
- * Gotinha de esmalte estilizada com brilhinho interno (proporção 1.16 : 1).
- * @param {object} props
- * @param {number} props.size - Largura da gotinha (a altura é calculada automaticamente como 1.16 * size)
- * @param {'default'|'light'|'gold'|'reverso'} props.variant - Variação de cor correspondente à marca
+ * Chama de luz com núcleo dourado — ícone da marca Lumen (proporção 1.16 : 1).
+ * Referência ao Salmo 119:105 ("lâmpada para os meus pés é tua palavra").
+ *
+ * ⚠️ Interino: seguindo as regras de construção do manual (chama + núcleo dourado,
+ * núcleo suprimido abaixo de 16px). Substituir pelo SVG oficial quando disponível.
+ *
+ * @param {number} props.size - Largura (a altura é 1.16 × size)
+ * @param {'default'|'light'|'gold'|'reverso'} props.variant - Variação de cor da marca
  * @param {object} props.style - Estilos inline opcionais
  */
-export function NailDropIcon({ size = 26, variant = 'default', style = {} }) {
-  // Cores exatas da identidade visual do NailPro
+export function LumenFlameIcon({ size = 26, variant = 'default', style = {} }) {
+  // Paleta Berry — corpo Berry, núcleo Gold
   const colors = {
-    default: { fill: 'var(--pink, #8B2655)', hl: 'rgba(255, 255, 255, 0.45)' },
-    light: { fill: 'rgba(255, 255, 255, 0.95)', hl: 'rgba(255, 255, 255, 0.35)' },
-    gold: { fill: 'var(--pink, #8B2655)', hl: 'rgba(255, 255, 255, 0.45)' },
-    reverso: { fill: 'var(--pink-mid, #D9A0B8)', hl: 'rgba(255, 255, 255, 0.5)' },
+    default: { fill: 'var(--pink, #8B2655)', core: 'var(--gold, #E8C66A)' },
+    light: { fill: 'rgba(255, 255, 255, 0.95)', core: 'var(--gold, #E8C66A)' },
+    gold: { fill: 'var(--pink, #8B2655)', core: 'var(--gold, #E8C66A)' },
+    reverso: { fill: 'var(--pink-mid, #D9A0B8)', core: 'var(--gold, #E8C66A)' },
   }
 
-  const activeColor = colors[variant] || colors.default
-  const showShine = size >= 16 // "ABAIXO DE 16PX, O BRILHO INTERNO É SUPRIMIDO"
+  const c = colors[variant] || colors.default
+  const showCore = size >= 16 // "ABAIXO DE 16PX, O NÚCLEO DOURADO É SUPRIMIDO"
 
-  // Geometria da gotinha calculada de forma harmônica na proporção 1.16 : 1 (Largura = 100, Altura = 116)
-  // M 50,0 C 72,15 100,38 100,66 A 50,50 0 0,1 0,66 C 0,38 28,15 50,0 Z
   return (
     <svg
       width={size}
@@ -35,20 +37,16 @@ export function NailDropIcon({ size = 26, variant = 'default', style = {} }) {
         ...style
       }}
     >
-      {/* Corpo da Gotinha */}
+      {/* Corpo da chama (ponta para cima) */}
       <path
         d="M50 0C72 15 100 38 100 66A50 50 0 0 1 0 66C0 38 28 15 50 0Z"
-        fill={activeColor.fill}
+        fill={c.fill}
       />
-      {/* Brilho interno (Elipse inclinada a -10°, no lado esquerdo. Suprimido em tamanho reduzido < 16px) */}
-      {showShine && (
-        <ellipse
-          cx="38"
-          cy="68"
-          rx="9"
-          ry="17"
-          transform="rotate(-10 38 68)"
-          fill={activeColor.hl}
+      {/* Núcleo dourado (chama interna; suprimido abaixo de 16px) */}
+      {showCore && (
+        <path
+          d="M50 40C61 48 75 60 75 73A25 25 0 0 1 25 73C25 60 39 48 50 40Z"
+          fill={c.core}
         />
       )}
     </svg>
@@ -56,15 +54,14 @@ export function NailDropIcon({ size = 26, variant = 'default', style = {} }) {
 }
 
 /**
- * Logotipo completo ou monograma do NailPro com suporte a múltiplos layouts e esquemas de cores.
- * @param {object} props
- * @param {number} props.size - Tamanho de referência (ajusta o texto e o ícone proporcionalmente)
- * @param {'default'|'reverso'|'gold'} props.variant - Tema de cor (default = claro, reverso = escuro/dark, gold = gold edition)
- * @param {'horizontal'|'stacked'|'monograma'} props.layout - Formato de exibição do logo
+ * Logotipo / monograma da Lumen com suporte a múltiplos layouts e esquemas de cor.
+ * @param {number} props.size - Tamanho de referência
+ * @param {'default'|'reverso'|'gold'} props.variant - Tema de cor
+ * @param {'horizontal'|'stacked'|'monograma'} props.layout - Formato
  * @param {object} props.style - Estilos inline adicionais
  */
-export function NailProLogo({ size = 26, variant = 'default', layout = 'horizontal', style = {} }) {
-  // Caso de Monograma "np"
+export function LumenLogo({ size = 26, variant = 'default', layout = 'horizontal', style = {} }) {
+  // Monograma "lu"
   if (layout === 'monograma') {
     const circleColor = variant === 'reverso' ? 'rgba(255, 255, 255, 0.1)' : 'var(--pink, #8B2655)'
     const textColor = variant === 'reverso' ? 'var(--pink-light, #FAF6F6)' : '#FFFFFF'
@@ -87,7 +84,7 @@ export function NailProLogo({ size = 26, variant = 'default', layout = 'horizont
           ...style
         }}
       >
-        np
+        lu
       </div>
     )
   }
@@ -95,19 +92,18 @@ export function NailProLogo({ size = 26, variant = 'default', layout = 'horizont
   const isDark = variant === 'reverso'
   const isGold = variant === 'gold'
 
-  // Determinar cores do texto e ponto de encerramento da marca
   let textColor = 'var(--text, #180712)'
   let dotColor = 'var(--pink, #8B2655)'
-  let dropVariant = 'default'
+  let flameVariant = 'default'
 
   if (isDark) {
     textColor = '#FFFFFF'
-    dotColor = 'var(--gold, #E6C260)'
-    dropVariant = 'reverso'
+    dotColor = 'var(--gold, #E8C66A)'
+    flameVariant = 'reverso'
   } else if (isGold) {
     textColor = 'var(--pink-dark, #5E1839)'
-    dotColor = 'var(--pink, #8B2655)'
-    dropVariant = 'gold'
+    dotColor = 'var(--gold, #E8C66A)'
+    flameVariant = 'gold'
   }
 
   const textStyle = {
@@ -121,7 +117,7 @@ export function NailProLogo({ size = 26, variant = 'default', layout = 'horizont
     userSelect: 'none'
   }
 
-  // Layout vertical / empilhado (Gotinha em cima, "nailpro." embaixo)
+  // Layout empilhado (chama em cima, "lumen." embaixo)
   if (layout === 'stacked') {
     return (
       <div
@@ -135,15 +131,15 @@ export function NailProLogo({ size = 26, variant = 'default', layout = 'horizont
           ...style
         }}
       >
-        <NailDropIcon size={size * 1.3} variant={dropVariant} />
+        <LumenFlameIcon size={size * 1.3} variant={flameVariant} />
         <span style={textStyle}>
-          nailpro<span style={{ color: dotColor }}>.</span>
+          lumen<span style={{ color: dotColor }}>.</span>
         </span>
       </div>
     )
   }
 
-  // Layout horizontal clássico (Gotinha do lado esquerdo do texto)
+  // Layout horizontal (chama à esquerda do texto)
   return (
     <div
       style={{
@@ -153,9 +149,9 @@ export function NailProLogo({ size = 26, variant = 'default', layout = 'horizont
         ...style
       }}
     >
-      <NailDropIcon size={size} variant={dropVariant} />
+      <LumenFlameIcon size={size} variant={flameVariant} />
       <span style={textStyle}>
-        nailpro<span style={{ color: dotColor }}>.</span>
+        lumen<span style={{ color: dotColor }}>.</span>
       </span>
     </div>
   )

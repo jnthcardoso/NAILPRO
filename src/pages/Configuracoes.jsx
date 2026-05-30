@@ -480,7 +480,7 @@ export default function Configuracoes() {
             autoComplete="off"
             autoCorrect="off"
             spellCheck="false"
-            name="novo-servico-nailpro"
+            name="novo-servico-lumen"
             type="text"
           />
           <button style={s.addBtn} onClick={() => addServico(novoServico)}><Plus size={16} /></button>
@@ -588,7 +588,7 @@ export default function Configuracoes() {
               <li>Configure: nome do serviço, duração, dias e horários disponíveis</li>
               <li>Em <strong>"Personalizar"</strong>: nome do salão, descrição, foto</li>
               <li>Clique em <strong>Salvar</strong> e depois em <strong>"Compartilhar"</strong> → copie o link público</li>
-              <li>Cole o link aqui no NailPro 🎉</li>
+              <li>Cole o link aqui na Lumen 🎉</li>
             </ol>
             <div style={{ marginTop: 8, padding: 8, background: 'rgba(30,64,175,0.1)', borderRadius: 6 }}>
               💡 <strong>Vantagens:</strong> Confirmação e lembretes automáticos por email do Google, sync direto com seu calendário, sem custo extra.

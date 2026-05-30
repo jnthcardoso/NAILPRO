@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin } from '../../contexts/AssinaturaContext'
 import { useSalao } from '../../contexts/SalaoContext'
-import { NailProLogo, NailDropIcon } from '../common/Brand'
+import { LumenLogo, LumenFlameIcon } from '../common/Brand'
 import Notificacoes from '../common/Notificacoes'
 
 // Itens completos (dona / recepcionista — gerenciam tudo)
@@ -59,10 +59,10 @@ export default function AppLayout() {
       <aside className="app-sidebar">
         <NavLink to="/" style={{ ...sb.logoArea, textDecoration: 'none', display: 'block', cursor: 'pointer', ...(isSidebarCollapsed ? { padding: '24px 0', display: 'flex', justifyContent: 'center' } : {}) }}>
           {isSidebarCollapsed ? (
-            <NailDropIcon size={24} variant="reverso" />
+            <LumenFlameIcon size={24} variant="reverso" />
           ) : (
             <>
-              <NailProLogo size={24} variant="reverso" style={{ marginBottom: 4 }} />
+              <LumenLogo size={24} variant="reverso" style={{ marginBottom: 4 }} />
               <div style={sb.logoTagline}>gestão para nail designers</div>
             </>
           )}
@@ -195,7 +195,7 @@ export default function AppLayout() {
         <header className="app-mobile-header">
           <div style={mh.left}>
             <NavLink to="/" style={{ ...mh.logoRow, textDecoration: 'none' }}>
-              <NailProLogo size={18} variant="reverso" />
+              <LumenLogo size={18} variant="reverso" />
             </NavLink>
             <div style={mh.sub}>
               <em>oi {firstName},</em>

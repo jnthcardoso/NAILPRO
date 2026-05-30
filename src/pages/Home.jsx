@@ -250,7 +250,7 @@ export default function Home() {
         <div style={s.welcomeCard}>
           <div style={s.welcomeHeader}>
             <Sparkles size={20} color="var(--pink)" />
-            <div style={s.welcomeTitle}>Bem-vinda ao nailpro! 🎉</div>
+            <div style={s.welcomeTitle}>Bem-vinda à Lumen! 🎉</div>
           </div>
           <div style={s.welcomeSub}>Comece dando os primeiros passos abaixo:</div>
           <div style={s.welcomeSteps}>

@@ -226,7 +226,7 @@ export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuari
     ? `\n👥 Usuários adicionais: ${qtdUsuarios} × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(usuariosMes)}/mês`
     : ''
 
-  const msg = `Olá! Quero assinar o NailPro 💅
+  const msg = `Olá! Quero assinar a Lumen 💅
 
 📋 Plano: ${planoNome} (Anual — fidelidade 12 meses)
 💰 Mensalidade do plano: R$ ${formatPreco(baseMes)}/mês${linhaUsuarios}

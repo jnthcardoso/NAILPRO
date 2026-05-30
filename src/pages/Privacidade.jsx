@@ -19,7 +19,7 @@ export default function Privacidade() {
         <div style={s.conteudo}>
 
           <h2 style={s.h2}>1. Quem somos</h2>
-          <p>O NailPro é uma plataforma de gestão para profissionais de manicure. Esta política descreve como coletamos, usamos e protegemos seus dados pessoais e os de suas clientes, em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.</p>
+          <p>A Lumen é uma plataforma de gestão para profissionais de manicure. Esta política descreve como coletamos, usamos e protegemos seus dados pessoais e os de suas clientes, em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.</p>
 
           <h2 style={s.h2}>2. Dados que coletamos</h2>
 
@@ -37,7 +37,7 @@ export default function Privacidade() {
             <li>Data de nascimento (opcional, para alertas de aniversário);</li>
             <li>Histórico de atendimentos, valores e observações que você inserir.</li>
           </ul>
-          <p style={s.aviso}><strong>⚠ Importante:</strong> Você é o controlador desses dados (LGPD Art. 5º, VI). O NailPro atua como operador, processando-os em seu nome para fornecer o serviço.</p>
+          <p style={s.aviso}><strong>⚠ Importante:</strong> Você é o controlador desses dados (LGPD Art. 5º, VI). A Lumen atua como operadora, processando-os em seu nome para fornecer o serviço.</p>
 
           <h2 style={s.h2}>3. Por que coletamos</h2>
           <p>Tratamos seus dados com base nas seguintes finalidades e bases legais (LGPD Art. 7º):</p>
@@ -96,7 +96,7 @@ export default function Privacidade() {
           <p>Alguns provedores (Supabase, Vercel) podem armazenar dados em servidores fora do Brasil. Todos cumprem cláusulas contratuais padrão de proteção de dados.</p>
 
           <h2 style={s.h2}>11. Crianças e adolescentes</h2>
-          <p>O NailPro não é destinado a menores de 18 anos. Não coletamos intencionalmente dados de crianças.</p>
+          <p>A Lumen não é destinada a menores de 18 anos. Não coletamos intencionalmente dados de crianças.</p>
 
           <h2 style={s.h2}>12. Alterações nesta política</h2>
           <p>Podemos atualizar esta política. Alterações relevantes serão comunicadas por e-mail e no app com 30 dias de antecedência.</p>

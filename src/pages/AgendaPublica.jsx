@@ -8,7 +8,7 @@ import {
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
-import { NailProLogo, NailDropIcon } from '../components/common/Brand'
+import { LumenLogo, LumenFlameIcon } from '../components/common/Brand'
 import { formatTelefone, unformatTelefone, validarTelefone } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 
@@ -141,7 +141,7 @@ export default function AgendaPublica() {
   if (notFound) return (
     <div style={s.center} className="fade-in">
       <div style={{ marginBottom: 18 }} className="pulse-soft">
-        <NailDropIcon size={64} />
+        <LumenFlameIcon size={64} />
       </div>
       <div style={s.h2}>agenda não encontrada</div>
       <div style={s.sub}>Verifique o link com a profissional</div>
@@ -156,7 +156,7 @@ export default function AgendaPublica() {
         <div style={ext.card}>
           <div style={ext.avatarWrap}>
             <div style={ext.avatarFallback}>
-              <NailDropIcon size={44} variant="gold" />
+              <LumenFlameIcon size={44} variant="gold" />
             </div>
           </div>
 
@@ -205,8 +205,8 @@ export default function AgendaPublica() {
           )}
 
           <div style={ext.footer}>
-            <NailProLogo size={14} variant="reverso" />
-            <span style={ext.footerText}>powered by nailpro</span>
+            <LumenLogo size={14} variant="reverso" />
+            <span style={ext.footerText}>powered by lumen</span>
           </div>
         </div>
       </div>
@@ -217,7 +217,7 @@ export default function AgendaPublica() {
     <div style={s.page}>
       <div style={s.header} className="fade-in">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-          <NailProLogo size={22} variant="reverso" />
+          <LumenLogo size={22} variant="reverso" />
         </div>
         <div style={s.headerName}>{nomeSalao}</div>
         <div style={s.headerSub}>agendamento online</div>
@@ -463,7 +463,7 @@ export default function AgendaPublica() {
       </div>
 
       <div style={s.footer}>
-        Powered by <strong>nailpro</strong> 💅
+        Powered by <strong>lumen</strong> 💅
       </div>
     </div>
   )

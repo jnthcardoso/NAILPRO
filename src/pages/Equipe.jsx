@@ -235,7 +235,7 @@ export default function Equipe() {
           </button>
           <div style={s.formNota}>
             <Mail size={12} style={{ flexShrink: 0 }} />
-            Ela receberá acesso assim que criar a conta no NailPro com esse mesmo e-mail.
+            Ela receberá acesso assim que criar a conta na Lumen com esse mesmo e-mail.
           </div>
         </form>
       )}

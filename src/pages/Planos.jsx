@@ -41,7 +41,7 @@ export default function Planos() {
             ? `Você tem ${diasRestantesTrial} ${diasRestantesTrial === 1 ? 'dia' : 'dias'} de teste grátis`
             : trialAcabou
               ? 'Seu período de teste acabou'
-              : 'Continue crescendo com o NailPro'}
+              : 'Continue crescendo com a Lumen'}
         </h1>
         <p style={s.heroSub}>
           {trialAcabou
