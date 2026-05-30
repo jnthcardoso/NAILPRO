@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, X, Sparkles, ArrowLeft, MessageCircle, Star } from 'lucide-react'
+import { Check, X, Sparkles, ArrowLeft, MessageCircle, Star, FileText } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, PLANOS, formatPreco, whatsappAssinarLink } from '../contexts/AssinaturaContext'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function Planos() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { assinatura, plano: planoAtual, isTrialing, diasRestantesTrial, trialAcabou, isActive } = useAssinatura()
+  const { assinatura, plano: planoAtual, isTrialing, diasRestantesTrial, trialAcabou, isActive, contrato } = useAssinatura()
   const [assinarLoading, setAssinarLoading] = useState(null)
+
+  const fmtData = (d) => d ? format(new Date(d), "dd 'de' MMM 'de' yyyy", { locale: ptBR }) : '—'
 
   const nomeUsuario = user?.user_metadata?.full_name || ''
   const emailUsuario = user?.email || ''
@@ -45,6 +49,40 @@ export default function Planos() {
             : 'Dois planos anuais, com fidelidade de 12 meses. Escolha o ideal pro seu salão.'}
         </p>
       </div>
+
+      {/* Contrato atual (assinatura ativa) */}
+      {isActive && contrato && (
+        <div style={s.contratoCard}>
+          <div style={s.contratoHeader}>
+            <FileText size={16} color="var(--pink)" />
+            <span style={s.contratoTitulo}>Seu contrato — {planoAtual?.nome}</span>
+          </div>
+          <div style={s.contratoGrid}>
+            <div>
+              <div style={s.contratoLabel}>Início</div>
+              <div style={s.contratoValor}>{fmtData(contrato.inicio)}</div>
+            </div>
+            <div>
+              <div style={s.contratoLabel}>Fim da fidelidade</div>
+              <div style={s.contratoValor}>{fmtData(contrato.fim)}</div>
+            </div>
+            <div>
+              <div style={s.contratoLabel}>Tempo restante</div>
+              <div style={s.contratoValor}>{contrato.mesesRestantes} {contrato.mesesRestantes === 1 ? 'mês' : 'meses'}</div>
+            </div>
+          </div>
+          {contrato.dentroFidelidade ? (
+            <div style={s.contratoMulta}>
+              ⚠️ Cancelamento antes de {fmtData(contrato.fim)} tem multa de <strong>50% do valor restante</strong> —
+              hoje, aproximadamente <strong>R$ {formatPreco(contrato.multaCentavos)}</strong>.
+            </div>
+          ) : (
+            <div style={{ ...s.contratoMulta, background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC' }}>
+              ✓ Fidelidade cumprida — você pode cancelar sem multa.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Selo plano anual */}
       <div style={s.toggleWrap}>
@@ -201,6 +239,13 @@ const s = {
   toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'var(--text3)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
   toggleBtnActive: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   anualSelo: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: 'var(--radius-pill)', padding: '7px 16px', fontSize: 12, fontWeight: 700 },
+  contratoCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px', marginBottom: 24, boxShadow: 'var(--shadow-sm)', maxWidth: 620, margin: '0 auto 24px' },
+  contratoHeader: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 },
+  contratoTitulo: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
+  contratoGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 },
+  contratoLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' },
+  contratoValor: { fontSize: 13, fontWeight: 700, color: 'var(--text)', marginTop: 3 },
+  contratoMulta: { fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '10px 12px', lineHeight: 1.5 },
   economiaBadge: { background: 'var(--gold, #D4AF37)', color: 'var(--brand-dark-bg, #170D14)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', fontSize: 10, fontWeight: 800 },
   usuarioNota: { fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginTop: 2 },
   planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 32 },

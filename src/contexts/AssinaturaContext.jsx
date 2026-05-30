@@ -142,11 +142,37 @@ export function AssinaturaProvider({ children }) {
   // Precisa fazer upgrade?
   const precisaUpgrade = trialAcabou || isExpired
 
+  // Pode adicionar usuários (logins) extras? Só no Pro (em trial, libera por otimismo)
+  const podeUsuariosAdicionais = plano?.limites?.usuariosAdicionais === true
+
+  // ── Contrato / fidelidade (planos anuais) ──
+  // periodo_inicia_em / periodo_termina_em representam a janela do contrato anual.
+  let contrato = null
+  if (isActive && assinatura?.periodo_termina_em) {
+    const fim = new Date(assinatura.periodo_termina_em)
+    const hoje = new Date()
+    const diasRestantes = Math.max(0, differenceInDays(fim, hoje))
+    const mesesRestantes = Math.max(0, Math.ceil(diasRestantes / 30))
+    const mensalidadeCentavos = Math.round(plano.precoAnual / 12) + (assinatura.licencas_adicionais || 0) * PRECO_USUARIO_ADICIONAL
+    const multaCentavos = Math.round(0.5 * mensalidadeCentavos * mesesRestantes)
+    contrato = {
+      inicio: assinatura.periodo_inicia_em,
+      fim: assinatura.periodo_termina_em,
+      diasRestantes,
+      mesesRestantes,
+      fidelidadeMeses: 12,
+      mensalidadeCentavos,
+      multaCentavos,
+      dentroFidelidade: mesesRestantes > 0,
+    }
+  }
+
   return (
     <AssinaturaContext.Provider value={{
       assinatura, plano, status, loading,
       isTrialing, isActive, isExpired, trialAcabou,
       diasRestantesTrial, precisaUpgrade,
+      podeUsuariosAdicionais, contrato,
       temAcesso, dentroDoLimite, recarregar: carregar,
     }}>
       {children}
