@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Users, UserPlus, Crown, Trash2, Mail, Check, X, ShieldCheck, Headset, Sparkles, Info } from 'lucide-react'
+import { Users, UserPlus, Crown, Trash2, Check, X, ShieldCheck, Headset, Sparkles, Info, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -12,6 +12,28 @@ const PAPEIS = {
   profissional: { label: 'Profissional', icon: Sparkles, cor: '#6366F1', desc: 'Vê apenas a própria agenda e o próprio financeiro' },
 }
 
+// Gera link de convite via WhatsApp com instruções de cadastro
+function gerarConviteWhatsapp({ nome, email, papel, nomeSalao, whatsappMembro }) {
+  const papelLabel = PAPEIS[papel]?.label || papel
+  const appUrl = window.location.origin
+  const msg = [
+    `Oi${nome ? ' ' + nome.split(' ')[0] : ''}! 👋`,
+    ``,
+    `Você foi adicionada à equipe do *${nomeSalao || 'salão'}* na *Lumen* como *${papelLabel}* 💅`,
+    ``,
+    `Para ter acesso, crie sua conta gratuitamente:`,
+    `👉 ${appUrl}/login`,
+    ``,
+    `Use exatamente esse e-mail: *${email}*`,
+    ``,
+    `Qualquer dúvida é só me chamar! 😊`,
+  ].join('\n')
+
+  const tel = (whatsappMembro || '').replace(/\D/g, '')
+  if (tel) return `https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`
+  return `https://wa.me/?text=${encodeURIComponent(msg)}`
+}
+
 export default function Equipe() {
   const { user } = useAuth()
   const { salaoId, salao, podeGerenciarEquipe } = useSalao()
@@ -22,7 +44,9 @@ export default function Equipe() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [salvando, setSalvando] = useState(false)
-  const [form, setForm] = useState({ nome: '', email: '', papel: 'profissional' })
+  const [form, setForm] = useState({ nome: '', email: '', papel: 'profissional', whatsapp: '' })
+  // Guarda o último membro adicionado para exibir botão de convite
+  const [membroConvite, setMembroConvite] = useState(null)
 
   useEffect(() => { if (salaoId) load() }, [salaoId])
 
@@ -37,10 +61,6 @@ export default function Equipe() {
     setLoading(false)
   }
 
-  // Membros COM login próprio (user_id não nulo), ativos, que não são a dona/admin → cada um
-  // é um usuário adicional. A dona não conta (já incluída no plano). Quem usa o login admin
-  // (ex.: recepcionista compartilhando) não vira membro, então não é cobrado. Suspensos
-  // (ativo=false) não consomem licença. Mesma regra do gatilho sync_licencas_adicionais.
   const membrosComLogin = membros.filter(m => m.papel !== 'dona' && m.user_id && m.ativo)
   const licencasAdicionais = membrosComLogin.length
   const custoAdicional = licencasAdicionais * PRECO_USUARIO_ADICIONAL
@@ -49,11 +69,12 @@ export default function Equipe() {
   async function adicionar(e) {
     e.preventDefault()
     if (!planoPermiteUsuarios) {
-      erro('O plano Starter não permite usuários adicionais. Faça upgrade para o Pro.')
+      erro('O plano Solo não permite usuários adicionais. Faça upgrade para o Pro.')
       return
     }
     const nome = form.nome.trim()
     const email = form.email.trim().toLowerCase()
+    const whatsapp = form.whatsapp.trim()
     if (!nome || !email) { erro('Preencha nome e e-mail.'); return }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { erro('E-mail inválido.'); return }
     if (membros.some(m => (m.email || '').toLowerCase() === email)) {
@@ -71,8 +92,11 @@ export default function Equipe() {
     setSalvando(false)
 
     if (error) { erro('Não foi possível adicionar: ' + error.message); return }
-    sucesso('Membro adicionado! Peça para ela criar a conta com esse e-mail.')
-    setForm({ nome: '', email: '', papel: 'profissional' })
+
+    sucesso('Membro adicionado!')
+    // Guarda dados para o card de convite
+    setMembroConvite({ nome, email, papel: form.papel, whatsapp })
+    setForm({ nome: '', email: '', papel: 'profissional', whatsapp: '' })
     setShowForm(false)
     load()
   }
@@ -107,6 +131,8 @@ export default function Equipe() {
     const { error } = await supabase.from('salao_membros').delete().eq('id', membro.id)
     if (error) { erro('Erro ao remover: ' + error.message); return }
     sucesso('Membro removido.')
+    // Limpa convite se era desse membro
+    if (membroConvite?.email === membro.email) setMembroConvite(null)
     load()
   }
 
@@ -116,6 +142,18 @@ export default function Equipe() {
       emailUsuario: user?.email,
       planoId: planoPermiteUsuarios ? (plano?.id || 'pro') : 'pro',
       usuarios: licencasAdicionais,
+    })
+    window.open(link, '_blank')
+  }
+
+  function abrirConvite() {
+    if (!membroConvite) return
+    const link = gerarConviteWhatsapp({
+      nome: membroConvite.nome,
+      email: membroConvite.email,
+      papel: membroConvite.papel,
+      nomeSalao: salao?.nome,
+      whatsappMembro: membroConvite.whatsapp,
     })
     window.open(link, '_blank')
   }
@@ -147,6 +185,7 @@ export default function Equipe() {
           onClick={() => {
             if (!planoPermiteUsuarios) { abrirWhatsappLicencas(); return }
             setShowForm(v => !v)
+            setMembroConvite(null)
           }}
         >
           {showForm ? <X size={16} /> : <UserPlus size={16} />}
@@ -180,7 +219,7 @@ export default function Equipe() {
           <div style={{ ...s.licencaInfo, background: '#FEF3C7', color: '#92400E' }}>
             <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
             <span>
-              O plano <strong>{plano?.nome || 'Starter'}</strong> inclui só o login de administrador.
+              O plano <strong>{plano?.nome || 'Solo'}</strong> inclui só o login de administrador.
               Para dar login individual à equipe (R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/usuário), faça upgrade para o <strong>Pro</strong>.
             </span>
           </div>
@@ -192,13 +231,36 @@ export default function Equipe() {
         )}
       </div>
 
+      {/* Card de convite após adicionar */}
+      {membroConvite && (
+        <div style={s.conviteCard}>
+          <div style={s.conviteIconWrap}>
+            <MessageCircle size={20} color="#25D366" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={s.conviteTitulo}>Convide {membroConvite.nome.split(' ')[0]} pelo WhatsApp</div>
+            <div style={s.conviteSub}>
+              Ela precisa criar a conta em <strong>{window.location.host}</strong> com o e-mail <strong>{membroConvite.email}</strong>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button style={s.conviteBtnEnviar} onClick={abrirConvite}>
+              Enviar convite
+            </button>
+            <button style={s.conviteBtnFechar} onClick={() => setMembroConvite(null)}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Form de adicionar */}
       {showForm && (
         <form style={s.form} onSubmit={adicionar}>
           <div style={s.formTitulo}>Adicionar membro</div>
           <input
             style={s.input}
-            placeholder="Nome"
+            placeholder="Nome completo"
             value={form.nome}
             onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
           />
@@ -208,6 +270,14 @@ export default function Equipe() {
             placeholder="E-mail (ela usará para criar a conta)"
             value={form.email}
             onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+          />
+          <input
+            style={{ ...s.input, marginBottom: 12 }}
+            type="tel"
+            placeholder="WhatsApp dela (opcional — para enviar convite)"
+            value={form.whatsapp}
+            onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))}
+            inputMode="numeric"
           />
           <div style={s.papelOpcoes}>
             {['recepcionista', 'profissional'].map(p => {
@@ -235,8 +305,8 @@ export default function Equipe() {
             {salvando ? 'Adicionando...' : 'Adicionar membro'}
           </button>
           <div style={s.formNota}>
-            <Mail size={12} style={{ flexShrink: 0 }} />
-            Ela receberá acesso assim que criar a conta na Lumen com esse mesmo e-mail.
+            <MessageCircle size={12} style={{ flexShrink: 0, color: '#25D366' }} />
+            Após adicionar, você poderá enviar um convite via WhatsApp com o link de cadastro.
           </div>
         </form>
       )}
@@ -276,6 +346,24 @@ export default function Equipe() {
                     </select>
                   )}
                 </div>
+
+                {/* Reenviar convite para quem ainda não se cadastrou */}
+                {pendente && (
+                  <button
+                    style={s.reenviarBtn}
+                    title="Reenviar convite via WhatsApp"
+                    onClick={() => {
+                      const link = gerarConviteWhatsapp({
+                        nome: m.nome, email: m.email,
+                        papel: m.papel, nomeSalao: salao?.nome,
+                      })
+                      window.open(link, '_blank')
+                    }}
+                  >
+                    <MessageCircle size={14} color="#25D366" />
+                  </button>
+                )}
+
                 {!isDona && (
                   <div style={s.membroAcoes}>
                     <button
@@ -315,6 +403,14 @@ const s = {
   licencaInfo: { display: 'flex', gap: 6, alignItems: 'flex-start', background: 'var(--surface2)', borderRadius: 8, padding: '9px 11px', fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.5 },
   licencaBtn: { width: '100%', marginTop: 10, background: '#25D366', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 
+  /* Card de convite */
+  conviteCard: { display: 'flex', alignItems: 'center', gap: 12, background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, boxShadow: 'var(--shadow-xs)' },
+  conviteIconWrap: { width: 38, height: 38, borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  conviteTitulo: { fontSize: 13, fontWeight: 700, color: '#15803D' },
+  conviteSub: { fontSize: 11, color: '#166534', marginTop: 2, lineHeight: 1.4 },
+  conviteBtnEnviar: { background: '#25D366', color: 'white', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  conviteBtnFechar: { background: 'transparent', border: '1px solid #86EFAC', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#15803D' },
+
   form: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 16, marginBottom: 14, boxShadow: 'var(--shadow-xs)' },
   formTitulo: { fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 12 },
   input: { width: '100%', boxSizing: 'border-box', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '11px 13px', fontSize: 14, marginBottom: 10, fontFamily: 'inherit', color: 'var(--text)', background: 'var(--surface)' },
@@ -336,6 +432,7 @@ const s = {
   tagSuspenso: { fontSize: 9.5, fontWeight: 700, background: '#FEE2E2', color: '#B91C1C', padding: '2px 7px', borderRadius: 'var(--radius-pill)', textTransform: 'uppercase', letterSpacing: '0.3px' },
   membroAcoes: { display: 'flex', gap: 4, flexShrink: 0 },
   acaoBtn: { width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text2)' },
+  reenviarBtn: { width: 32, height: 32, borderRadius: 8, border: '1px solid #86EFAC', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginRight: 2, flexShrink: 0 },
 
   empty: { textAlign: 'center', padding: '40px 20px', color: 'var(--text3)', fontSize: 13 },
   bloqueio: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', textAlign: 'center' },
