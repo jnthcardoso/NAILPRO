@@ -1,0 +1,59 @@
+/**
+ * Helpers de analytics — Google Analytics (GA4) + Meta Pixel
+ * Todas as funções são seguras: só disparam se os scripts estiverem carregados.
+ */
+
+// ── Google Analytics (GA4) ─────────────────────────────────────────────
+function ga(eventName, params = {}) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', eventName, params)
+  }
+}
+
+// ── Meta Pixel ─────────────────────────────────────────────────────────
+function pixel(eventName, params = {}) {
+  if (typeof window.fbq === 'function') {
+    window.fbq('track', eventName, params)
+  }
+}
+
+// ── Eventos principais ─────────────────────────────────────────────────
+
+/** Usuário criou uma conta (dispara no signup bem-sucedido) */
+export function trackCadastro() {
+  ga('sign_up', { method: 'email' })
+  pixel('CompleteRegistration')
+}
+
+/** Usuário iniciou o fluxo de assinatura (clicou "Assinar com cartão") */
+export function trackInicioAssinatura(plano, ciclo, valorReais) {
+  ga('begin_checkout', {
+    currency: 'BRL',
+    value: valorReais,
+    items: [{ item_name: `Lumen ${plano} ${ciclo}`, price: valorReais }],
+  })
+  pixel('InitiateCheckout', { value: valorReais, currency: 'BRL', content_name: `Lumen ${plano} ${ciclo}` })
+}
+
+/** Pagamento confirmado (dispara na Home após retorno do MP com ?pagamento=sucesso) */
+export function trackPagamentoConfirmado(plano, ciclo, valorReais) {
+  ga('purchase', {
+    currency: 'BRL',
+    value: valorReais,
+    transaction_id: `${plano}_${ciclo}_${Date.now()}`,
+    items: [{ item_name: `Lumen ${plano} ${ciclo}`, price: valorReais, quantity: 1 }],
+  })
+  pixel('Purchase', { value: valorReais, currency: 'BRL', content_name: `Lumen ${plano} ${ciclo}` })
+}
+
+/** Usuário visitou a seção de planos (interesse demonstrado) */
+export function trackVerPlanos() {
+  ga('view_item_list', { item_list_name: 'Planos Lumen' })
+  pixel('ViewContent', { content_name: 'Planos', content_type: 'product' })
+}
+
+/** Lead: usuário clicou em "Fale conosco" no WhatsApp */
+export function trackFaleConosco() {
+  ga('generate_lead')
+  pixel('Lead')
+}

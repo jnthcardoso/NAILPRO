@@ -41,8 +41,48 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@500&display=swap" />
 
     <title>lumen. | iluminando a gestão, impulsionando o seu talento</title>
+
+    <!-- ═══════════════════════════════════════════════════
+         GOOGLE ANALYTICS (GA4)
+         Substitua G-XXXXXXXXXX pelo seu Measurement ID
+         analytics.google.com → Administrador → Fluxos de dados → ID de medição
+    ════════════════════════════════════════════════════════ -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX', {
+        page_title: document.title,
+        page_location: window.location.href,
+        anonymize_ip: true
+      });
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════
+         META PIXEL (Facebook / Instagram Ads)
+         Substitua SEU_PIXEL_ID pelo ID numérico do seu pixel
+         business.facebook.com → Gerenciador de Eventos → Pixel
+    ════════════════════════════════════════════════════════ -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', 'SEU_PIXEL_ID');
+      fbq('track', 'PageView');
+    </script>
   </head>
   <body>
+    <!-- Meta Pixel noscript (deve ficar no body) -->
+    <noscript>
+      <img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=SEU_PIXEL_ID&ev=PageView&noscript=1"/>
+    </noscript>
     <div id="root"></div>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="module" src="/src/main.jsx"></script>

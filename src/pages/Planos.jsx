@@ -4,6 +4,7 @@ import { Check, X, Sparkles, ArrowLeft, CreditCard, Star, FileText, Zap, Message
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, PLANOS, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
 import { supabase } from '../lib/supabase'
+import { trackInicioAssinatura, trackVerPlanos } from '../lib/analytics'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -14,6 +15,9 @@ export default function Planos() {
   const [planoDestaque, setPlanoDestaque] = useState(null) // plano pré-selecionado da landing
   const [assinarLoading, setAssinarLoading] = useState(null)
   const [assinarErro, setAssinarErro] = useState('')
+
+  // Dispara evento de analytics ao entrar na página de planos
+  useEffect(() => { trackVerPlanos() }, [])
 
   // Lê intenção de plano salva na landing
   useEffect(() => {
@@ -44,6 +48,9 @@ export default function Planos() {
   async function handleAssinar(planoId) {
     setAssinarErro('')
     setAssinarLoading(planoId)
+    // Dispara evento de inicio de checkout
+    const precos = { solo_mensal: 127, solo_anual: 97, pro_mensal: 229, pro_anual: 179 }
+    trackInicioAssinatura(planoId, ciclo, precos[`${planoId}_${ciclo}`] ?? 0)
     try {
       const { data, error } = await supabase.functions.invoke('mp-criar-assinatura', {
         body: { plano: planoId, ciclo },

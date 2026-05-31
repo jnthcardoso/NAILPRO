@@ -17,6 +17,7 @@ import { ptBR } from 'date-fns/locale'
 import TrialBanner from '../components/common/TrialBanner'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
+import { trackPagamentoConfirmado } from '../lib/analytics'
 
 const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -30,8 +31,9 @@ export default function Home() {
   const [pagamentoSucesso, setPagamentoSucesso] = useState(() => {
     const p = new URLSearchParams(window.location.search).get('pagamento')
     if (p === 'sucesso') {
-      // Remove o param da URL sem recarregar
       window.history.replaceState({}, '', window.location.pathname)
+      // Dispara evento de purchase no GA4 + Meta Pixel
+      trackPagamentoConfirmado('lumen', 'assinatura', 0) // valores reais vêm do webhook
       return true
     }
     return false

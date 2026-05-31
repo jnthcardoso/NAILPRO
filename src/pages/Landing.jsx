@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
+import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
 
 const BENEFICIOS = [
   { icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Veja todos os atendimentos por dia, semana ou mês. Chega de caderninho, borracha e horário esquecido.' },
@@ -104,6 +105,9 @@ export default function Landing() {
   }, [])
 
   const whatsappContato = `https://wa.me/${SUPORTE_WHATSAPP}?text=${encodeURIComponent('Olá! Quero saber mais sobre a Lumen 💅')}`
+
+  const abrirWhatsapp = (e) => { trackFaleConosco(); window.open(whatsappContato, '_blank') }
+  const irPlanos = () => { trackVerPlanos(); scrollTo('planos') }
 
   return (
     <div style={s.page}>

@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { LumenLogo } from '../components/common/Brand'
 import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
+import { trackCadastro } from '../lib/analytics'
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
@@ -49,6 +50,7 @@ export default function Login() {
     } else {
       const { error } = await signUp(form.email, form.password, form.name)
       if (error) setError(error.message)
+      else trackCadastro()
     }
     setLoading(false)
   }
