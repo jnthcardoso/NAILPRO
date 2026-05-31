@@ -16,6 +16,7 @@ import Lembretes from './pages/Lembretes'
 import Planos from './pages/Planos'
 import Admin from './pages/Admin'
 import Equipe from './pages/Equipe'
+import Avisos from './pages/Avisos'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import Landing from './pages/Landing'
@@ -131,6 +132,7 @@ export default function App() {
               <Route path="configuracoes" element={<RequireGerencia><Configuracoes /></RequireGerencia>} />
               <Route path="equipe" element={<Equipe />} />
               <Route path="admin" element={<Admin />} />
+              <Route path="avisos" element={<Avisos />} />
             </Route>
           </Routes>
         </BrowserRouter>

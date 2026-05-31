@@ -16,6 +16,7 @@ const navItemsCompleto = [
   { to: '/app/clientes', icon: Users, label: 'Clientes' },
   { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/app/metas', icon: Target, label: 'Metas' },
+  { to: '/app/avisos', icon: Bell, label: 'Avisos' },
 ]
 
 // Profissional: só a própria agenda + o próprio financeiro
@@ -118,7 +119,6 @@ export default function AppLayout() {
         <div style={{ flex: 1 }} />
         
         <div style={{ padding: isSidebarCollapsed ? '0 12px 12px' : '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Notificacoes variant="sidebar" collapsed={isSidebarCollapsed} />
           {isAdmin && (
             <NavLink
               to="/app/admin"
@@ -205,7 +205,9 @@ export default function AppLayout() {
             <div style={mh.date}>
               {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
             </div>
-            <Notificacoes variant="header" />
+            <NavLink to="/app/avisos" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', position: 'relative' }}>
+                <Bell size={18} />
+              </NavLink>
             {gerenciaTudo && (
               <NavLink to="/app/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
                 <Settings size={18} />
