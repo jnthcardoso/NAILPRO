@@ -275,7 +275,7 @@ export default function Home() {
 
       {/* Chip de lembretes pendentes */}
       {!contaNova && lembretesPendentes > 0 && (
-        <div style={s.lembreteChip} onClick={() => navigate('/lembretes')}>
+        <div style={s.lembreteChip} onClick={() => navigate('/app/lembretes')}>
           <div style={s.lembreteChipIcon}><Bell size={16} color="white" /></div>
           <div style={{ flex: 1 }}>
             <div style={s.lembreteChipTitle}>
@@ -296,7 +296,7 @@ export default function Home() {
           </div>
           <div style={s.welcomeSub}>Comece dando os primeiros passos abaixo:</div>
           <div style={s.welcomeSteps}>
-            <button style={s.welcomeStep} onClick={() => navigate('/clientes')}>
+            <button style={s.welcomeStep} onClick={() => navigate('/app/clientes')}>
               <div style={s.welcomeStepIcon}><UserPlus size={18} color="var(--pink)" /></div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>1. Cadastre sua primeira cliente</div>
@@ -304,7 +304,7 @@ export default function Home() {
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
-            <button style={s.welcomeStep} onClick={() => navigate('/agenda')}>
+            <button style={s.welcomeStep} onClick={() => navigate('/app/agenda')}>
               <div style={s.welcomeStepIcon}><Calendar size={18} color="var(--pink)" /></div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>2. Crie seu primeiro agendamento</div>
@@ -312,7 +312,7 @@ export default function Home() {
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
-            <button style={s.welcomeStep} onClick={() => navigate('/lembretes')}>
+            <button style={s.welcomeStep} onClick={() => navigate('/app/lembretes')}>
               <div style={s.welcomeStepIcon}><Bell size={18} color="var(--pink)" /></div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>3. Envie lembretes pelo WhatsApp</div>
@@ -320,7 +320,7 @@ export default function Home() {
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
-            <button style={s.welcomeStep} onClick={() => navigate('/configuracoes')}>
+            <button style={s.welcomeStep} onClick={() => navigate('/app/configuracoes')}>
               <div style={s.welcomeStepIcon}><Sparkles size={18} color="var(--pink)" /></div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>4. Ative sua agenda online</div>
@@ -350,7 +350,7 @@ export default function Home() {
             {agendamentosData.length === 0 ? (
               <div style={s.emptyDay}>
                 <span style={{ color: 'var(--text3)', fontSize: 13 }}>Nenhum atendimento</span>
-                <button style={s.emptyBtn} onClick={() => navigate('/agenda')}>+ Agendar</button>
+                <button style={s.emptyBtn} onClick={() => navigate('/app/agenda')}>+ Agendar</button>
               </div>
             ) : (
               agendamentosData.slice(0, 5).map(ag => {
@@ -361,7 +361,7 @@ export default function Home() {
                 }
                 const st = ST[ag.status] || ST.pendente
                 return (
-                  <div key={ag.id} style={{ ...s.apptCard, borderLeftColor: st.border }} onClick={() => navigate('/agenda')}>
+                  <div key={ag.id} style={{ ...s.apptCard, borderLeftColor: st.border }} onClick={() => navigate('/app/agenda')}>
                     <div style={s.apptTimeBadge}>{ag.horario?.slice(0, 5)}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={s.apptName}>{ag.clientes?.nome}</div>
@@ -376,7 +376,7 @@ export default function Home() {
               })
             )}
             {agendamentosData.length > 5 && (
-              <button style={s.verTodosBtn} onClick={() => navigate('/agenda')}>
+              <button style={s.verTodosBtn} onClick={() => navigate('/app/agenda')}>
                 Ver todos os {agendamentosData.length} atendimentos →
               </button>
             )}
@@ -423,7 +423,7 @@ export default function Home() {
               {clientesSumidas.length > 0 && (
                 <div
                   style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5', cursor: 'pointer' }}
-                  onClick={() => navigate('/clientes')}
+                  onClick={() => navigate('/app/clientes')}
                 >
                   <UserX size={18} color="#B91C1C" />
                   <div style={{ flex: 1 }}>
@@ -447,7 +447,7 @@ export default function Home() {
       {/* KPIs */}
       <div style={s.grid}>
         {/* Atendimentos hoje */}
-        <div style={s.kpi} onClick={() => navigate('/agenda')}>
+        <div style={s.kpi} onClick={() => navigate('/app/agenda')}>
           <div style={s.kpiHeader}>
             <div style={{ ...s.kpiIcon, background: 'var(--pink-light)', color: 'var(--pink)' }}>
               <Calendar size={16} />
@@ -465,7 +465,7 @@ export default function Home() {
         </div>
 
         {/* Receita hoje */}
-        <div style={s.kpi} onClick={() => navigate('/financeiro')}>
+        <div style={s.kpi} onClick={() => navigate('/app/financeiro')}>
           <div style={s.kpiHeader}>
             <div style={{ ...s.kpiIcon, background: '#DCFCE7', color: '#15803D' }}>
               <DollarSign size={16} />
@@ -493,7 +493,7 @@ export default function Home() {
         </div>
 
         {/* A receber */}
-        <div style={s.kpi} onClick={() => navigate('/financeiro')}>
+        <div style={s.kpi} onClick={() => navigate('/app/financeiro')}>
           <div style={s.kpiHeader}>
             <div style={{ ...s.kpiIcon, background: stats.aReceber > 0 ? '#FEF3C7' : 'var(--surface2)', color: stats.aReceber > 0 ? '#92400E' : 'var(--text3)' }}>
               <Clock size={16} />
@@ -509,7 +509,7 @@ export default function Home() {
         </div>
 
         {/* Meta */}
-        <div style={s.kpi} onClick={() => navigate('/metas')}>
+        <div style={s.kpi} onClick={() => navigate('/app/metas')}>
           <div style={s.kpiHeader}>
             <div style={{ ...s.kpiIcon, background: 'var(--pink-light)', color: 'var(--pink)' }}>
               <Target size={16} />
@@ -556,22 +556,22 @@ export default function Home() {
           <div className="home-col-actions">
             <div style={s.quickActions}>
               <div style={s.sectionTitle}>⚡ ações rápidas</div>
-              <button style={{ ...s.qaBtn, ...s.qaBtnPink }} onClick={() => navigate('/agenda')}>
+              <button style={{ ...s.qaBtn, ...s.qaBtnPink }} onClick={() => navigate('/app/agenda')}>
                 <div style={{ ...s.qaIcon, background: 'rgba(255,255,255,0.2)' }}><Plus size={16} color="white" /></div>
                 <span>Novo agendamento</span>
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
               </button>
-              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/clientes')}>
+              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/app/clientes')}>
                 <div style={{ ...s.qaIcon, background: 'var(--pink-light)' }}><UserPlus size={16} color="var(--pink)" /></div>
                 <span>Nova cliente</span>
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
               </button>
-              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/lembretes')}>
+              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/app/lembretes')}>
                 <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><MessageCircle size={16} color="#15803D" /></div>
                 <span>Enviar lembretes</span>
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
               </button>
-              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/financeiro')}>
+              <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/app/financeiro')}>
                 <div style={{ ...s.qaIcon, background: '#FEF3C7' }}><DollarSign size={16} color="#D97706" /></div>
                 <span>Ver financeiro</span>
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
@@ -583,7 +583,7 @@ export default function Home() {
       </div>
       {/* ════ Fim do grid 3 colunas ════ */}
 
-      <button className="fab-btn" onClick={() => navigate('/agenda')} aria-label="Novo agendamento">
+      <button className="fab-btn" onClick={() => navigate('/app/agenda')} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
       </button>
     </div>

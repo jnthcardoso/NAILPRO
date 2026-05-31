@@ -136,7 +136,7 @@ export default function Lembretes() {
           <h1 style={s.title}>Lembretes WhatsApp</h1>
           <p style={s.sub}>Envie lembretes às clientes com 1 clique</p>
         </div>
-        <button style={s.cfgBtn} onClick={() => navigate('/configuracoes')} title="Configurar mensagem">
+        <button style={s.cfgBtn} onClick={() => navigate('/app/configuracoes')} title="Configurar mensagem">
           <Settings size={16} />
         </button>
       </div>
@@ -147,7 +147,7 @@ export default function Lembretes() {
           <AlertCircle size={16} />
           <div>
             Lembretes estão <strong>desativados</strong>.{' '}
-            <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => navigate('/configuracoes')}>
+            <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => navigate('/app/configuracoes')}>
               Ativar nas Configurações
             </span>
           </div>
@@ -273,7 +273,7 @@ export default function Lembretes() {
                 <div style={s.itemNome}>{ag.clientes?.nome}</div>
                 <div style={s.itemServ}>{ag.servico}</div>
               </div>
-              <button style={s.btnEditar} onClick={() => navigate('/clientes')}>
+              <button style={s.btnEditar} onClick={() => navigate('/app/clientes')}>
                 Cadastrar
               </button>
             </div>
@@ -291,14 +291,14 @@ export default function Lembretes() {
             {tab === 'amanha' && 'Você não tem agendamentos amanhã.'}
             {tab === '7dias' && 'Nada nos próximos 7 dias.'}
           </div>
-          <button style={s.emptyBtn} onClick={() => navigate('/agenda')}>
+          <button style={s.emptyBtn} onClick={() => navigate('/app/agenda')}>
             Ver agenda
           </button>
         </div>
       )}
 
       {/* Footer: link pra configurar mensagem */}
-      <div style={s.footerCfg} onClick={() => navigate('/configuracoes')}>
+      <div style={s.footerCfg} onClick={() => navigate('/app/configuracoes')}>
         <Settings size={14} />
         <span>Personalizar mensagem padrão dos lembretes</span>
       </div>

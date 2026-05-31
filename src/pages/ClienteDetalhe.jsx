@@ -54,7 +54,7 @@ export default function ClienteDetalhe() {
     if (error) { erro('Erro: ' + error.message); return }
     if (arquivar) {
       sucesso('Cliente arquivada')
-      navigate('/clientes')
+      navigate('/app/clientes')
     } else {
       sucesso('Cliente reativada')
       setCliente({ ...cliente, arquivada: false })
