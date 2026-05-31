@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
+import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
@@ -15,6 +16,7 @@ export default function Clientes() {
   const { salaoId } = useSalao()
   const navigate = useNavigate()
   const { plano, dentroDoLimite } = useAssinatura()
+  const { sucesso, erro } = useToast()
   const [clientes, setClientes] = useState([])
   const [buscaInput, setBuscaInput] = useState('')
   const [busca, setBusca] = useState('')
@@ -64,6 +66,10 @@ export default function Clientes() {
     if (!validarNome(form.nome)) novosErros.nome = 'Nome inválido (mín. 2 caracteres)'
     if (form.telefone && !validarTelefone(form.telefone)) novosErros.telefone = 'WhatsApp deve ter 10 ou 11 dígitos'
     if (form.email && !validarEmail(form.email)) novosErros.email = 'E-mail inválido'
+    const diasRetorno = form.dias_retorno === '' ? null : parseInt(form.dias_retorno, 10)
+    if (form.dias_retorno !== '' && (!Number.isFinite(diasRetorno) || diasRetorno < 1 || diasRetorno > 365)) {
+      novosErros.dias_retorno = 'Informe entre 1 e 365 dias'
+    }
     if (Object.keys(novosErros).length > 0) { setErros(novosErros); return }
 
     // 🔒 Bloqueio de limite no Starter
@@ -73,18 +79,19 @@ export default function Clientes() {
       return
     }
     setSaving(true)
-    const diasRetorno = form.dias_retorno === '' ? null : parseInt(form.dias_retorno, 10)
-    await supabase.from('clientes').insert({
+    const { error } = await supabase.from('clientes').insert({
       ...form,
       telefone: unformatTelefone(form.telefone),
-      dias_retorno: Number.isFinite(diasRetorno) ? diasRetorno : null,
+      dias_retorno: diasRetorno,
       user_id: user.id,
       salao_id: salaoId,
     })
     setSaving(false)
+    if (error) { erro('Erro ao cadastrar: ' + error.message); return }
     setShowModal(false)
     setForm({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
     setErros({})
+    sucesso('Cliente cadastrada')
     loadClientes()
   }
 
@@ -321,16 +328,18 @@ export default function Clientes() {
             <div style={s.field}>
               <label style={s.label}>Retorno a cada (dias)</label>
               <input
-                style={s.input}
+                style={{ ...s.input, ...(erros.dias_retorno ? s.inputErro : {}) }}
                 type="number"
                 min="1"
                 max="365"
                 inputMode="numeric"
                 placeholder={`Padrão (${diasAlerta} dias)`}
                 value={form.dias_retorno}
-                onChange={e => setForm({ ...form, dias_retorno: e.target.value })}
+                onChange={e => { setForm({ ...form, dias_retorno: e.target.value }); setErros({ ...erros, dias_retorno: null }) }}
               />
-              <span style={s.hint}>Deixe em branco para usar o padrão de {diasAlerta} dias.</span>
+              {erros.dias_retorno
+                ? <span style={s.erroMsg}>{erros.dias_retorno}</span>
+                : <span style={s.hint}>Deixe em branco para usar o padrão de {diasAlerta} dias.</span>}
             </div>
             <button style={s.btnPrimary} onClick={salvarCliente} disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar cliente'}</button>
             <button style={s.btnSecondary} onClick={() => { setShowModal(false); setErros({}) }}>Cancelar</button>

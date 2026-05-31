@@ -163,7 +163,7 @@ export default function ClienteDetalhe() {
         <div style={s.statCard}>
           <Calendar size={18} color="var(--text3)" />
           <div style={s.statValue}>
-            {cliente.ultimo_atendimento ? format(new Date(cliente.ultimo_atendimento), 'dd/MM') : '—'}
+            {cliente.ultimo_atendimento ? format(new Date(cliente.ultimo_atendimento + 'T12:00:00'), 'dd/MM') : '—'}
           </div>
           <div style={s.statLabel}>última vez</div>
         </div>

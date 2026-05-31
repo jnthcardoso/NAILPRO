@@ -226,7 +226,7 @@ export default function Home() {
     if (clientes) {
       const ativas = clientes.filter(c => !c.arquivada)
       setClientesSumidas(ativas
-        .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= (c.dias_retorno ?? limiteAlerta))
+        .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? limiteAlerta))
         .slice(0, 3))
       const hj = new Date()
       setAniversarios(ativas.filter(c => {
