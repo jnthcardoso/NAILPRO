@@ -78,7 +78,7 @@ export default function Privacidade() {
             <li>↩️ <strong>Revogar consentimento</strong> a qualquer momento;</li>
             <li>📨 <strong>Solicitar informações</strong> sobre o tratamento.</li>
           </ul>
-          <p>Para exercer esses direitos: <strong>vagasjonathancardoso@gmail.com</strong></p>
+          <p>Para exercer esses direitos: <strong>suporte@lumengestaoempresarial.com.br</strong></p>
 
           <h2 style={s.h2}>8. Segurança</h2>
           <p>Adotamos medidas técnicas e organizacionais para proteger seus dados:</p>
@@ -103,7 +103,7 @@ export default function Privacidade() {
 
           <h2 style={s.h2}>13. Encarregado de Dados (DPO)</h2>
           <p>Jonathan Cardoso<br />
-          E-mail: vagasjonathancardoso@gmail.com<br />
+          E-mail: suporte@lumengestaoempresarial.com.br<br />
           WhatsApp: (54) 99941-9628</p>
 
           <h2 style={s.h2}>14. ANPD</h2>

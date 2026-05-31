@@ -100,7 +100,7 @@ export default function Termos() {
           <p>Em caso de dúvidas, sugestões ou solicitações, entre em contato:</p>
           <ul style={s.lista}>
             <li>WhatsApp: (54) 99941-9628</li>
-            <li>E-mail: vagasjonathancardoso@gmail.com</li>
+            <li>E-mail: suporte@lumengestaoempresarial.com.br</li>
           </ul>
 
         </div>
