@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, X, Sparkles, ArrowLeft, MessageCircle, Star, FileText, Zap } from 'lucide-react'
+import { Check, X, Sparkles, ArrowLeft, CreditCard, Star, FileText, Zap, MessageCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, PLANOS, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
+import { supabase } from '../lib/supabase'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -11,6 +12,7 @@ export default function Planos() {
   const navigate = useNavigate()
   const [ciclo, setCiclo] = useState('anual') // 'anual' | 'mensal'
   const [assinarLoading, setAssinarLoading] = useState(null)
+  const [assinarErro, setAssinarErro] = useState('')
 
   async function sair() {
     await signOut()
@@ -26,11 +28,27 @@ export default function Planos() {
   const nomeUsuario = user?.user_metadata?.full_name || ''
   const emailUsuario = user?.email || ''
 
-  function handleAssinar(planoId) {
+  async function handleAssinar(planoId) {
+    setAssinarErro('')
     setAssinarLoading(planoId)
+    try {
+      const { data, error } = await supabase.functions.invoke('mp-criar-assinatura', {
+        body: { plano: planoId, ciclo },
+      })
+      if (error) throw error
+      if (!data?.url) throw new Error('URL de pagamento não recebida')
+      // Redireciona para o checkout do Mercado Pago
+      window.location.href = data.url
+    } catch (err) {
+      console.error('Erro ao criar assinatura:', err)
+      setAssinarErro('Erro ao abrir o checkout. Tente novamente ou fale pelo WhatsApp.')
+      setAssinarLoading(null)
+    }
+  }
+
+  function handleAssinarWhatsapp(planoId) {
     const link = whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, ciclo })
     window.open(link, '_blank')
-    setTimeout(() => setAssinarLoading(null), 1500)
   }
 
   const isSoloAtual = isActive && (assinatura?.plano === 'solo' || assinatura?.plano === 'starter')
@@ -128,6 +146,17 @@ export default function Planos() {
         </div>
       )}
 
+      {/* Erro ao assinar */}
+      {assinarErro && (
+        <div style={s.erroCard}>
+          <AlertCircle size={16} />
+          <span>{assinarErro}</span>
+          <button style={s.erroWpp} onClick={() => handleAssinarWhatsapp(assinarLoading || 'pro')}>
+            <MessageCircle size={13} /> Assinar via WhatsApp
+          </button>
+        </div>
+      )}
+
       {/* Cards de planos */}
       <div style={s.planosGrid}>
         <PlanoCard
@@ -146,6 +175,13 @@ export default function Planos() {
           loading={assinarLoading === 'pro'}
           onAssinar={() => handleAssinar('pro')}
         />
+      </div>
+
+      {/* Segurança */}
+      <div style={s.segurancaRow}>
+        <span>🔒 Pagamento seguro via</span>
+        <strong>Mercado Pago</strong>
+        <span>· Cartão de crédito com cobrança mensal automática</span>
       </div>
 
       {/* Studio — equipe */}
@@ -181,7 +217,7 @@ export default function Planos() {
         <h3 style={s.faqTitle}>Dúvidas frequentes</h3>
         <FaqItem
           q="Como funciona o pagamento?"
-          a="Após clicar em 'Assinar', você é direcionada pro WhatsApp pra escolher entre PIX, cartão ou boleto. Liberamos seu acesso em até 1 hora."
+          a="Ao clicar em 'Assinar com cartão', você é redirecionada para o checkout seguro do Mercado Pago. Insira os dados do cartão de crédito e o plano é ativado automaticamente. A cobrança é mensal e recorrente — sem precisar fazer nada todo mês."
         />
         <FaqItem
           q="Qual a diferença entre mensal e anual?"
@@ -259,8 +295,8 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, loading, onAssi
         disabled={isAtual || loading}
       >
         {isAtual ? 'Seu plano atual'
-          : loading ? '⏳ Abrindo WhatsApp...'
-          : <><MessageCircle size={15} /> Assinar via WhatsApp</>}
+          : loading ? '⏳ Abrindo checkout...'
+          : <><CreditCard size={15} /> Assinar com cartão</>}
       </button>
 
       <div style={s.featuresList}>
@@ -357,4 +393,7 @@ const s = {
   faqA: { padding: '0 16px 14px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 },
 
   garantia: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 18px', fontSize: 13, color: 'var(--text2)' },
+  erroCard: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#B91C1C' },
+  erroWpp: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#25D366', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' },
+  segurancaRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--text3)', marginBottom: 24, flexWrap: 'wrap', textAlign: 'center' },
 }

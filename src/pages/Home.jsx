@@ -26,6 +26,17 @@ export default function Home() {
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
 
+  // Banner de sucesso apos pagamento no Mercado Pago
+  const [pagamentoSucesso, setPagamentoSucesso] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get('pagamento')
+    if (p === 'sucesso') {
+      // Remove o param da URL sem recarregar
+      window.history.replaceState({}, '', window.location.pathname)
+      return true
+    }
+    return false
+  })
+
   // Stats principais
   const [stats, setStats] = useState({
     hoje: 0, receitaHoje: 0, realizadosHoje: 0, pendentesHoje: 0,
@@ -223,6 +234,35 @@ export default function Home() {
 
   return (
     <div style={s.page}>
+
+      {/* Banner de sucesso apos pagamento MP */}
+      {pagamentoSucesso && (
+        <div style={{
+          background: 'linear-gradient(135deg, #15803D, #16A34A)',
+          color: 'white',
+          borderRadius: 14,
+          padding: '14px 18px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 14,
+          fontWeight: 600,
+          boxShadow: '0 4px 16px rgba(21,128,61,0.3)',
+        }}>
+          <span style={{ fontSize: 22 }}>🎉</span>
+          <div>
+            <div>Pagamento confirmado! Bem-vinda ao plano Lumen.</div>
+            <div style={{ fontSize: 12, fontWeight: 400, opacity: 0.9, marginTop: 2 }}>
+              Seu acesso completo já está ativo. Aproveite!
+            </div>
+          </div>
+          <button
+            onClick={() => setPagamentoSucesso(false)}
+            style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}
+          >×</button>
+        </div>
+      )}
 
       <div style={s.greetingRow}>
         <span style={s.greetingText}>{nomeSalao || `oi ${firstName},`}</span>
