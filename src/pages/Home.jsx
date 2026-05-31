@@ -15,6 +15,7 @@ import {
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import TrialBanner from '../components/common/TrialBanner'
+import Skeleton from '../components/common/Skeleton'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
 import { trackPagamentoConfirmado } from '../lib/analytics'
@@ -57,37 +58,94 @@ export default function Home() {
   const [lembretesPendentes, setLembretesPendentes] = useState(0)
   const [receita7Dias, setReceita7Dias] = useState([])
   const [diaTop, setDiaTop] = useState(null) // { dia: 4 (qui), valor: 1200 }
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (salaoId) loadDashboard() }, [salaoId])
   useEffect(() => { if (salaoId) loadAgendamentosData() }, [salaoId, dataFiltro])
 
   async function loadDashboard() {
+    try {
+      await carregarDashboard()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function carregarDashboard() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const ontem = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+    const periodoAtual = format(new Date(), 'yyyy-MM')
+    const inicioMes = format(startOfMonth(new Date()), 'yyyy-MM-dd')
+    const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
+    const inicioSemana = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const fimSemana = endOfWeek(new Date(), { weekStartsOn: 1 })
+    const inicioStr = format(inicioSemana, 'yyyy-MM-dd')
+    const fimStr = format(fimSemana, 'yyyy-MM-dd')
+    const inicio90d = format(subDays(new Date(), 90), 'yyyy-MM-dd')
+    const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+
+    // Todas as consultas são independentes (só dependem do salaoId), então
+    // disparamos em paralelo — o tempo passa a ser o da query mais lenta,
+    // não o somatório de todas.
+    const [
+      { data: config },
+      { data: metaAtual },
+      { data: agendHoje },
+      { data: agendOntem },
+      { data: pagPendentes },
+      { data: pagMes },
+      { data: pag7d },
+      { data: pag90d },
+      { count: countClientes },
+      { count: countAgendamentos },
+      { data: ags },
+      { data: clientes },
+    ] = await Promise.all([
+      supabase.from('configuracoes')
+        .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('salao_id', salaoId).single(),
+      supabase.from('metas')
+        .select('valor_meta')
+        .eq('salao_id', salaoId).eq('tipo', 'mes').eq('periodo', periodoAtual)
+        .maybeSingle(),
+      supabase.from('agendamentos')
+        .select('*, clientes(nome)')
+        .eq('salao_id', salaoId).eq('data', hoje)
+        .neq('status', 'cancelado').order('horario'),
+      supabase.from('agendamentos')
+        .select('valor, status')
+        .eq('salao_id', salaoId).eq('data', ontem)
+        .neq('status', 'cancelado'),
+      supabase.from('pagamentos')
+        .select('valor').eq('salao_id', salaoId).eq('status', 'pendente')
+        .gte('data', inicioMes).lte('data', fimMes),
+      supabase.from('pagamentos')
+        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes),
+      supabase.from('pagamentos')
+        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr),
+      supabase.from('pagamentos')
+        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d),
+      supabase.from('clientes')
+        .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId),
+      supabase.from('agendamentos')
+        .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId),
+      supabase.from('agendamentos')
+        .select('lembrete_enviado_em, clientes(telefone)')
+        .eq('salao_id', salaoId).eq('data', amanha)
+        .in('status', ['pendente', 'confirmado']),
+      supabase.from('clientes')
+        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId),
+    ])
 
     // Config
-    const { data: config } = await supabase.from('configuracoes')
-      .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('salao_id', salaoId).single()
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
     const limiteAlerta = config?.dias_retorno_alerta ?? 30
     setDiasAlerta(limiteAlerta)
 
     // Meta do mês: prioriza tabela metas, fallback pra config.meta_mensal
-    const periodoAtual = format(new Date(), 'yyyy-MM')
-    const { data: metaAtual } = await supabase.from('metas')
-      .select('valor_meta')
-      .eq('salao_id', salaoId)
-      .eq('tipo', 'mes')
-      .eq('periodo', periodoAtual)
-      .maybeSingle()
     const valorMeta = metaAtual?.valor_meta || config?.meta_mensal || 4000
     setStats(s => ({ ...s, metaMes: valorMeta }))
 
     // Atendimentos hoje (não cancelados)
-    const { data: agendHoje } = await supabase.from('agendamentos')
-      .select('*, clientes(nome)')
-      .eq('salao_id', salaoId).eq('data', hoje)
-      .neq('status', 'cancelado').order('horario')
     if (agendHoje) {
       const receita = agendHoje.reduce((s, a) => s + (a.valor || 0), 0)
       const realizados = agendHoje.filter(a => a.status === 'realizado').length
@@ -111,38 +169,21 @@ export default function Home() {
     }
 
     // Atendimentos ontem (comparativo)
-    const { data: agendOntem } = await supabase.from('agendamentos')
-      .select('valor, status')
-      .eq('salao_id', salaoId).eq('data', ontem)
-      .neq('status', 'cancelado')
     if (agendOntem) {
       const receitaOntem = agendOntem.reduce((s, a) => s + (a.valor || 0), 0)
       setStats(s => ({ ...s, receitaOntem, atendimentosOntem: agendOntem.length }))
     }
 
     // A receber (todo o mês corrente)
-    const inicioMes = format(startOfMonth(new Date()), 'yyyy-MM-dd')
-    const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
-    const { data: pagPendentes } = await supabase.from('pagamentos')
-      .select('valor').eq('salao_id', salaoId).eq('status', 'pendente')
-      .gte('data', inicioMes).lte('data', fimMes)
     if (pagPendentes) {
       const total = pagPendentes.reduce((s, p) => s + (p.valor || 0), 0)
       setStats(s => ({ ...s, aReceber: total, qtdAReceber: pagPendentes.length }))
     }
 
     // Receita do mês (pagamentos pagos)
-    const { data: pagMes } = await supabase.from('pagamentos')
-      .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes)
     if (pagMes) setStats(s => ({ ...s, receitaMes: pagMes.reduce((s, p) => s + (p.valor || 0), 0) }))
 
     // Receita da semana (Segunda → Domingo)
-    const inicioSemana = startOfWeek(new Date(), { weekStartsOn: 1 })
-    const fimSemana = endOfWeek(new Date(), { weekStartsOn: 1 })
-    const inicioStr = format(inicioSemana, 'yyyy-MM-dd')
-    const fimStr = format(fimSemana, 'yyyy-MM-dd')
-    const { data: pag7d } = await supabase.from('pagamentos')
-      .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr)
     const dias = eachDayOfInterval({ start: inicioSemana, end: fimSemana })
     const ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const receitaDias = dias.map(d => {
@@ -153,9 +194,6 @@ export default function Home() {
     setReceita7Dias(receitaDias)
 
     // Dia da semana mais lucrativo (insight) - últimos 90 dias
-    const inicio90d = format(subDays(new Date(), 90), 'yyyy-MM-dd')
-    const { data: pag90d } = await supabase.from('pagamentos')
-      .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d)
     if (pag90d?.length) {
       const porDiaSemana = [0, 0, 0, 0, 0, 0, 0]
       pag90d.forEach(p => {
@@ -170,19 +208,10 @@ export default function Home() {
     }
 
     // Counts pra conta nova
-    const { count: countClientes } = await supabase.from('clientes')
-      .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId)
     setTotalClientes(countClientes ?? 0)
-    const { count: countAgendamentos } = await supabase.from('agendamentos')
-      .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId)
     setTotalAgendamentos(countAgendamentos ?? 0)
 
     // Lembretes pendentes amanhã
-    const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
-    const { data: ags } = await supabase.from('agendamentos')
-      .select('lembrete_enviado_em, clientes(telefone)')
-      .eq('salao_id', salaoId).eq('data', amanha)
-      .in('status', ['pendente', 'confirmado'])
     if (ags) {
       const pend = ags.filter(a => !a.lembrete_enviado_em && a.clientes?.telefone).length
       setLembretesPendentes(pend)
@@ -195,8 +224,6 @@ export default function Home() {
     }
 
     // Clientes sumidas + aniversários
-    const { data: clientes } = await supabase.from('clientes')
-      .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId)
     if (clientes) {
       const ativas = clientes.filter(c => !c.arquivada)
       setClientesSumidas(ativas
@@ -274,8 +301,11 @@ export default function Home() {
 
       <TrialBanner />
 
+      {/* Skeleton enquanto o dashboard carrega */}
+      {loading && <HomeSkeleton />}
+
       {/* Chip de lembretes pendentes */}
-      {!contaNova && lembretesPendentes > 0 && (
+      {!loading && !contaNova && lembretesPendentes > 0 && (
         <div style={s.lembreteChip} onClick={() => navigate('/app/lembretes')}>
           <div style={s.lembreteChipIcon}><Bell size={16} color="white" /></div>
           <div style={{ flex: 1 }}>
@@ -289,7 +319,7 @@ export default function Home() {
       )}
 
       {/* Onboarding pra conta nova */}
-      {contaNova && (
+      {!loading && contaNova && (
         <div style={s.welcomeCard}>
           <div style={s.welcomeHeader}>
             <Sparkles size={20} color="var(--pink)" />
@@ -334,6 +364,7 @@ export default function Home() {
       )}
 
       {/* ════ GRID 2 COLUNAS (desktop) ════ */}
+      {!loading && (
       <div className="home-grid">
 
         {/* ═══════ COLUNA ESQUERDA (principal) ═══════ */}
@@ -582,11 +613,60 @@ export default function Home() {
         )}
 
       </div>
+      )}
       {/* ════ Fim do grid 3 colunas ════ */}
 
       <button className="fab-btn" onClick={() => navigate('/app/agenda')} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
       </button>
+    </div>
+  )
+}
+
+// Placeholder visual enquanto o dashboard carrega — espelha o layout real
+// (lista de atendimentos + KPIs + gráfico) pra evitar "pulo" de conteúdo.
+function HomeSkeleton() {
+  return (
+    <div className="home-grid">
+      <div className="home-col-main">
+        <Skeleton width={160} height={12} style={{ marginBottom: 12 }} />
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ ...s.apptCard, borderLeftColor: 'var(--border)', cursor: 'default' }}>
+            <Skeleton width={44} height={28} borderRadius={7} />
+            <div style={{ flex: 1 }}>
+              <Skeleton width="55%" height={13} />
+              <div style={{ height: 6 }} />
+              <Skeleton width="35%" height={10} />
+            </div>
+            <Skeleton width={64} height={20} borderRadius={10} />
+          </div>
+        ))}
+      </div>
+
+      <div className="home-col-side">
+        <div style={s.grid}>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{ ...s.kpi, cursor: 'default' }}>
+              <Skeleton width={26} height={26} borderRadius={8} style={{ marginBottom: 8 }} />
+              <Skeleton width="50%" height={10} style={{ marginBottom: 6 }} />
+              <Skeleton width="70%" height={18} />
+            </div>
+          ))}
+        </div>
+        <div style={{ ...s.chartCard, marginTop: 12 }}>
+          <Skeleton width={140} height={13} style={{ marginBottom: 12 }} />
+          <Skeleton width="100%" height={90} borderRadius={8} />
+        </div>
+      </div>
+
+      <div className="home-col-actions">
+        <div style={s.quickActions}>
+          <Skeleton width={110} height={12} style={{ marginBottom: 4 }} />
+          {[0, 1, 2, 3].map(i => (
+            <Skeleton key={i} width="100%" height={42} borderRadius={12} />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
