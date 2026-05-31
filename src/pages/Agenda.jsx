@@ -868,9 +868,9 @@ export default function Agenda() {
               <label style={s.label}>Serviço</label>
               <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={formEdit.servico} onChange={e => setFormEdit({ ...formEdit, servico: e.target.value })} />
               {servicosPadrao.length > 0 && (
-                <div style={{ display: 'flex', overflowX: 'auto', gap: 5, marginTop: 5, paddingBottom: 4, scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', overflowX: 'auto', gap: 5, marginTop: 5, paddingBottom: 4, paddingRight: 8, scrollbarWidth: 'none' }}>
                   {servicosPadrao.map(sv => (
-                    <button key={sv} style={{ ...s.actionBtn, background: formEdit.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: formEdit.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (formEdit.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setFormEdit({ ...formEdit, servico: sv })}>
+                    <button key={sv} style={{ ...s.actionBtn, flexShrink: 0, background: formEdit.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: formEdit.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (formEdit.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setFormEdit({ ...formEdit, servico: sv })}>
                       {sv}
                     </button>
                   ))}
@@ -1067,7 +1067,7 @@ export default function Agenda() {
               <label style={s.label}>Serviço</label>
               <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
               {servicosPadrao.length > 0 && (
-                <div style={{ display: 'flex', overflowX: 'auto', gap: 5, marginTop: 5, paddingBottom: 4, scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', overflowX: 'auto', gap: 5, marginTop: 5, paddingBottom: 4, paddingRight: 8, scrollbarWidth: 'none' }}>
                   {servicosPadrao.map(sv => (
                     <button key={sv} style={{ ...s.actionBtn, flexShrink: 0, background: form.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: form.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (form.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setForm({ ...form, servico: sv })}>
                       {sv}
