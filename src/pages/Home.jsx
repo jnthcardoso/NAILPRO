@@ -19,6 +19,7 @@ import Skeleton from '../components/common/Skeleton'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
 import { trackPagamentoConfirmado } from '../lib/analytics'
+import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -51,7 +52,6 @@ export default function Home() {
   const [aniversarios, setAniversarios] = useState([])
   const [agendamentosData, setAgendamentosData] = useState([])
   const [dataFiltro, setDataFiltro] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [diasAlerta, setDiasAlerta] = useState(30)
   const [nomeSalao, setNomeSalao] = useState('')
   const [totalClientes, setTotalClientes] = useState(null)
   const [totalAgendamentos, setTotalAgendamentos] = useState(null)
@@ -102,7 +102,7 @@ export default function Home() {
       { data: clientes },
     ] = await Promise.all([
       supabase.from('configuracoes')
-        .select('meta_mensal, dias_retorno_alerta, nome_salao').eq('salao_id', salaoId).single(),
+        .select('meta_mensal, nome_salao').eq('salao_id', salaoId).single(),
       supabase.from('metas')
         .select('valor_meta')
         .eq('salao_id', salaoId).eq('tipo', 'mes').eq('periodo', periodoAtual)
@@ -138,8 +138,7 @@ export default function Home() {
 
     // Config
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
-    const limiteAlerta = config?.dias_retorno_alerta ?? 30
-    setDiasAlerta(limiteAlerta)
+    const limiteAlerta = DIAS_RETORNO_PADRAO
 
     // Meta do mês: prioriza tabela metas, fallback pra config.meta_mensal
     const valorMeta = metaAtual?.valor_meta || config?.meta_mensal || 4000
@@ -460,7 +459,7 @@ export default function Home() {
                   <UserX size={18} color="#B91C1C" />
                   <div style={{ flex: 1 }}>
                     <div style={{ ...s.insightTitle, color: '#7F1D1D' }}>
-                      {clientesSumidas.length} {clientesSumidas.length === 1 ? 'cliente sumida há' : 'clientes sumidas há'} +{diasAlerta} dias
+                      {clientesSumidas.length} {clientesSumidas.length === 1 ? 'cliente passou' : 'clientes passaram'} do retorno
                     </div>
                     <div style={{ ...s.insightSub, color: '#991B1B' }}>
                       {clientesSumidas.map(c => c.nome.split(' ')[0]).join(' · ')}

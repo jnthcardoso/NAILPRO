@@ -8,6 +8,7 @@ import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
+import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 export default function Clientes() {
   const { user } = useAuth()
@@ -19,7 +20,7 @@ export default function Clientes() {
   const [busca, setBusca] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const [diasAlerta, setDiasAlerta] = useState(30)
+  const diasAlerta = DIAS_RETORNO_PADRAO
   const [filtro, setFiltro] = useState('todas')
   const [ordenacao, setOrdenacao] = useState('nome')
   const [pagina, setPagina] = useState(1)
@@ -35,7 +36,7 @@ export default function Clientes() {
   const noLimite = limiteClientes !== Infinity && ativas.length >= limiteClientes
   const perto = limiteClientes !== Infinity && ativas.length >= limiteClientes - 5 && !noLimite
 
-  useEffect(() => { if (salaoId) { loadClientes(); loadConfig() } }, [salaoId])
+  useEffect(() => { if (salaoId) { loadClientes() } }, [salaoId])
 
   // Debounce na busca (300ms)
   useEffect(() => {
@@ -52,11 +53,6 @@ export default function Clientes() {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [showModal])
-
-  async function loadConfig() {
-    const { data } = await supabase.from('configuracoes').select('dias_retorno_alerta').eq('salao_id', salaoId).maybeSingle()
-    if (data?.dias_retorno_alerta) setDiasAlerta(data.dias_retorno_alerta)
-  }
 
   async function loadClientes() {
     const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno').eq('salao_id', salaoId).order('nome')
@@ -330,11 +326,11 @@ export default function Clientes() {
                 min="1"
                 max="365"
                 inputMode="numeric"
-                placeholder={`Padrão do salão (${diasAlerta} dias)`}
+                placeholder={`Padrão (${diasAlerta} dias)`}
                 value={form.dias_retorno}
                 onChange={e => setForm({ ...form, dias_retorno: e.target.value })}
               />
-              <span style={s.hint}>Deixe em branco para usar o padrão do salão.</span>
+              <span style={s.hint}>Deixe em branco para usar o padrão de {diasAlerta} dias.</span>
             </div>
             <button style={s.btnPrimary} onClick={salvarCliente} disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar cliente'}</button>
             <button style={s.btnSecondary} onClick={() => { setShowModal(false); setErros({}) }}>Cancelar</button>

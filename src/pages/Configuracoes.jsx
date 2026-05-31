@@ -58,7 +58,6 @@ export default function Configuracoes() {
     duracao_atendimento: 60,
     dias_semana: [1, 2, 3, 4, 5],
     google_conectado: false,
-    dias_retorno_alerta: 30,
     lembretes_ativos: true,
     mensagem_lembrete: 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
     agenda_externa_url: '',
@@ -94,7 +93,6 @@ export default function Configuracoes() {
         duracao_atendimento: data.duracao_atendimento || 60,
         dias_semana: data.dias_semana || [1, 2, 3, 4, 5],
         google_conectado: data.google_conectado || false,
-        dias_retorno_alerta: data.dias_retorno_alerta || 30,
         lembretes_ativos: data.lembretes_ativos !== false,
         mensagem_lembrete: data.mensagem_lembrete || 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
         agenda_externa_url: data.agenda_externa_url || '',
@@ -442,17 +440,6 @@ export default function Configuracoes() {
             inputMode="numeric"
           />
           <div style={s.hint}>Usado para enviar lembretes às clientes</div>
-        </div>
-      </div>
-
-      {/* ── Alertas ─────────────────────────── */}
-      <div style={{ ...s.section, display: tab === 'perfil' ? 'block' : 'none' }}>
-        <div style={s.sectionTitle}>alertas</div>
-        <div style={s.field}>
-          <label style={s.label}>Alerta de retorno (dias)</label>
-          <input style={s.input} type="number" min="7" max="365" placeholder="30" value={form.dias_retorno_alerta}
-            onChange={e => setForm({ ...form, dias_retorno_alerta: parseInt(e.target.value) || 30 })} />
-          <div style={s.hint}>Clientes sem visita há mais de X dias aparecem como "para reativar"</div>
         </div>
       </div>
 

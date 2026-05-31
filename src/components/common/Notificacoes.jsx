@@ -4,6 +4,7 @@ import { Bell, X, Cake, UserX, Clock, CheckCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useSalao } from '../../contexts/SalaoContext'
 import { differenceInDays, format, addDays } from 'date-fns'
+import { DIAS_RETORNO_PADRAO } from '../../lib/constants'
 
 const SEEN_KEY = 'notif_seen_ids'
 
@@ -45,10 +46,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
     const lista = []
-
-    const { data: cfg } = await supabase.from('configuracoes')
-      .select('dias_retorno_alerta').eq('salao_id', salaoId).maybeSingle()
-    const diasAlerta = cfg?.dias_retorno_alerta ?? 30
+    const diasAlerta = DIAS_RETORNO_PADRAO
 
     // Pagamentos pendentes (a receber)
     const { data: pend } = await supabase.from('pagamentos')

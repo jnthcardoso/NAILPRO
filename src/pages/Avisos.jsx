@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useSalao } from '../contexts/SalaoContext'
 import { differenceInDays, format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 export default function Avisos() {
   const { salaoId, isProfissional } = useSalao()
@@ -19,10 +20,7 @@ export default function Avisos() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
     const lista = []
-
-    const { data: cfg } = await supabase.from('configuracoes')
-      .select('dias_retorno_alerta').eq('salao_id', salaoId).maybeSingle()
-    const diasAlerta = cfg?.dias_retorno_alerta ?? 30
+    const diasAlerta = DIAS_RETORNO_PADRAO
 
     // Pagamentos pendentes
     const { data: pend } = await supabase.from('pagamentos')
