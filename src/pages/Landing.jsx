@@ -12,11 +12,16 @@ const BENEFICIOS = [
 ]
 
 const NAV_LINKS = [
-  { label: 'Início', href: '#inicio' },
-  { label: 'Funcionalidades', href: '#funcionalidades' },
-  { label: 'Planos', href: '#planos' },
-  { label: 'Contato', href: '#contato' },
+  { label: 'Início', id: 'inicio' },
+  { label: 'Funcionalidades', id: 'funcionalidades' },
+  { label: 'Planos', id: 'planos' },
+  { label: 'Contato', id: 'contato' },
 ]
+
+function scrollTo(id) {
+  const el = document.getElementById(id)
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -56,14 +61,14 @@ export default function Landing() {
       <header style={{ ...s.navbar, ...(scrolled ? s.navbarScrolled : {}) }}>
         <div style={s.navInner}>
           {/* Logo */}
-          <a href="#inicio" style={{ textDecoration: 'none', display: 'flex' }}>
+          <button style={s.logoBtn} onClick={() => scrollTo('inicio')}>
             <LumenLogo size={20} variant="reverso" />
-          </a>
+          </button>
 
           {/* Links — desktop */}
           <nav style={s.navLinks} className="lp-nav-links">
             {NAV_LINKS.map(l => (
-              <a key={l.label} href={l.href} style={s.navLink}>{l.label}</a>
+              <button key={l.label} style={s.navLink} onClick={() => scrollTo(l.id)}>{l.label}</button>
             ))}
           </nav>
 
@@ -86,9 +91,9 @@ export default function Landing() {
         {menuAberto && (
           <div style={s.mobileMenu}>
             {NAV_LINKS.map(l => (
-              <a key={l.label} href={l.href} style={s.mobileLink} onClick={() => setMenuAberto(false)}>
+              <button key={l.label} style={s.mobileLink} onClick={() => { scrollTo(l.id); setMenuAberto(false) }}>
                 {l.label}
-              </a>
+              </button>
             ))}
             <div style={s.mobileDivider} />
             <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.mobileBtnWhats}>
@@ -111,7 +116,7 @@ export default function Landing() {
         </p>
         <div style={s.heroCtas}>
           <button style={s.ctaPrimary} onClick={ir}>Começar grátis <ArrowRight size={16} /></button>
-          <a href="#planos" style={s.ctaGhost}>Ver planos</a>
+          <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
         </div>
         <div style={s.heroNota}>“+18% de receita média em 30 dias.” — Carol, autônoma</div>
       </section>
@@ -255,13 +260,14 @@ const s = {
   navbarScrolled: { boxShadow: '0 4px 24px rgba(0,0,0,0.25)' },
   navInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 64, maxWidth: 1100, margin: '0 auto' },
   navLinks: { display: 'flex', gap: 8, '@media(max-width:768px)': { display: 'none' } },
-  navLink: { color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '6px 12px', borderRadius: 8, transition: 'color 0.15s', fontFamily: 'inherit' },
+  logoBtn: { background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 },
+  navLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: 500, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' },
   navBtns: { display: 'flex', gap: 8, alignItems: 'center' },
   navBtnWhats: { display: 'flex', alignItems: 'center', gap: 6, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' },
   navBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   hamburger: { display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 },
   mobileMenu: { background: BERRY, borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px 20px', display: 'flex', flexDirection: 'column', gap: 4 },
-  mobileLink: { color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 500, textDecoration: 'none', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' },
+  mobileLink: { background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 500, padding: '10px 0', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', width: '100%' },
   mobileDivider: { height: 1, background: 'rgba(255,255,255,0.1)', margin: '8px 0' },
   mobileBtnWhats: { display: 'flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '11px 18px', fontSize: 14, fontWeight: 700, textDecoration: 'none', justifyContent: 'center', marginBottom: 8 },
   mobileBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
