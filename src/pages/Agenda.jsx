@@ -868,7 +868,7 @@ export default function Agenda() {
               <label style={s.label}>Serviço</label>
               <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={formEdit.servico} onChange={e => setFormEdit({ ...formEdit, servico: e.target.value })} />
               {servicosPadrao.length > 0 && (
-                <div style={{ display: 'flex', overflowX: 'auto', gap: 5, marginTop: 5, paddingBottom: 4, paddingRight: 8, scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
                   {servicosPadrao.map(sv => (
                     <button key={sv} style={{ ...s.actionBtn, flexShrink: 0, background: formEdit.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: formEdit.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (formEdit.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setFormEdit({ ...formEdit, servico: sv })}>
                       {sv}
@@ -1067,7 +1067,7 @@ export default function Agenda() {
               <label style={s.label}>Serviço</label>
               <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
               {servicosPadrao.length > 0 && (
-                <div style={{ display: 'flex', overflowX: 'auto', gap: 5, marginTop: 5, paddingBottom: 4, paddingRight: 8, scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
                   {servicosPadrao.map(sv => (
                     <button key={sv} style={{ ...s.actionBtn, flexShrink: 0, background: form.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: form.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (form.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setForm({ ...form, servico: sv })}>
                       {sv}
@@ -1166,7 +1166,7 @@ const s = {
   cardName: { fontSize: 14, fontWeight: 700 },
   cardService: { fontSize: 12, color: 'var(--text3)', marginTop: 1 },
   cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 500, color: 'var(--pink)' },
-  actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', transition: 'opacity 0.15s' },
+  actionBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', transition: 'opacity 0.15s', fontFamily: 'inherit' },
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600, whiteSpace: 'nowrap' },
   /* Menu 3 pontos */
   menuBtn: { width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: 1, flexShrink: 0 },
