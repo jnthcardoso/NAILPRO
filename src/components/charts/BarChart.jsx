@@ -30,7 +30,7 @@ export default function BarChart({ data = [], cor = 'var(--pink)', prefixo = '',
                 style={{
                   ...s.bar,
                   height: `${h}%`,
-                  background: `linear-gradient(180deg, ${cor} 0%, ${cor}cc 100%)`,
+                  background: cor,
                 }}
                 title={`${d.label}: ${prefixo}${d.valor.toFixed(2)}`}
               />
@@ -71,7 +71,7 @@ export function HBarChart({ data = [], cor = 'var(--pink)', prefixo = '', format
                 style={{
                   ...s.hbar,
                   width: `${pct}%`,
-                  background: `linear-gradient(90deg, ${cor} 0%, ${cor}bb 100%)`,
+                  background: cor,
                 }}
               />
             </div>
