@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /termos
+Allow: /privacidade
+
+# Bloqueia páginas internas do app (requerem login)
+Disallow: /app
+Disallow: /app/
+Disallow: /bem-vindo
+Disallow: /planos
+Disallow: /agendar/
+
+Sitemap: https://lumengestaoempresarial.com.br/sitemap.xml

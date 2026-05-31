@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Landing page principal -->
+  <url>
+    <loc>https://lumengestaoempresarial.com.br/</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Login / Cadastro -->
+  <url>
+    <loc>https://lumengestaoempresarial.com.br/login</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Termos de uso -->
+  <url>
+    <loc>https://lumengestaoempresarial.com.br/termos</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Política de privacidade -->
+  <url>
+    <loc>https://lumengestaoempresarial.com.br/privacidade</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>
