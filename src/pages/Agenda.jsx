@@ -364,7 +364,10 @@ export default function Agenda() {
         if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
       }
 
-      sucesso(formPag.modo === 'duplo' ? 'Pagamento em 2 formas registrado ✓' : 'Pagamento registrado ✓')
+      const msgSucesso = formPag.status === 'pendente'
+        ? '⏳ Pagamento pendente registrado — aparece em "A receber" no financeiro'
+        : formPag.modo === 'duplo' ? '✓ Pagamento em 2 formas confirmado' : '✓ Pagamento confirmado'
+      sucesso(msgSucesso)
       setShowPagModal(false)
       setPagModalObrigatorio(false)
       setAgSelecionado(null)
