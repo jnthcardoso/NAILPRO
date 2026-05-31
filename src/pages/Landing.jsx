@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, Star, ShieldCheck } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
-import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
+import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 
 const BENEFICIOS = [
   { icon: Calendar, titulo: 'Agenda que organiza seu dia', texto: 'Veja seus atendimentos por dia, semana ou mês. Sem caderninho, sem esquecer horário.' },
@@ -11,25 +11,98 @@ const BENEFICIOS = [
   { icon: Bell, titulo: 'Lembretes no WhatsApp', texto: 'Reduza faltas com lembretes automáticos. Um clique e a cliente confirma.' },
 ]
 
+const NAV_LINKS = [
+  { label: 'Início', href: '#inicio' },
+  { label: 'Funcionalidades', href: '#funcionalidades' },
+  { label: 'Planos', href: '#planos' },
+  { label: 'Contato', href: '#contato' },
+]
+
 export default function Landing() {
   const navigate = useNavigate()
   const ir = () => navigate('/login')
   const [ciclo, setCiclo] = useState('anual')
+  const [menuAberto, setMenuAberto] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   const precoMes = (p) => ciclo === 'anual'
     ? formatPreco(p.precoMensalAnual)
     : formatPreco(p.precoMensalMensal)
 
+  // Efeito de sombra ao rolar
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const whatsappContato = `https://wa.me/${SUPORTE_WHATSAPP}?text=${encodeURIComponent('Olá! Quero saber mais sobre a Lumen 💅')}`
+
   return (
     <div style={s.page}>
-      {/* Topo */}
-      <header style={s.topbar}>
-        <LumenLogo size={22} variant="reverso" />
-        <button style={s.entrarBtn} onClick={ir}>Entrar</button>
+      {/* CSS responsivo para navbar */}
+      <style>{`
+        .lp-nav-links { display: flex; }
+        .lp-nav-btns { display: flex; }
+        .lp-hamburger { display: none; }
+        @media (max-width: 768px) {
+          .lp-nav-links { display: none !important; }
+          .lp-nav-btns { display: none !important; }
+          .lp-hamburger { display: block !important; }
+        }
+      `}</style>
+
+      {/* ── Navbar ─────────────────────────────────── */}
+      <header style={{ ...s.navbar, ...(scrolled ? s.navbarScrolled : {}) }}>
+        <div style={s.navInner}>
+          {/* Logo */}
+          <a href="#inicio" style={{ textDecoration: 'none', display: 'flex' }}>
+            <LumenLogo size={20} variant="reverso" />
+          </a>
+
+          {/* Links — desktop */}
+          <nav style={s.navLinks} className="lp-nav-links">
+            {NAV_LINKS.map(l => (
+              <a key={l.label} href={l.href} style={s.navLink}>{l.label}</a>
+            ))}
+          </nav>
+
+          {/* Botões — desktop */}
+          <div style={s.navBtns} className="lp-nav-btns">
+            <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.navBtnWhats}>
+              <MessageCircle size={14} />
+              Fale conosco
+            </a>
+            <button style={s.navBtnLogin} onClick={ir}>Login</button>
+          </div>
+
+          {/* Hamburger — mobile */}
+          <button style={s.hamburger} className="lp-hamburger" onClick={() => setMenuAberto(v => !v)}>
+            {menuAberto ? <X size={22} color="white" /> : <Menu size={22} color="white" />}
+          </button>
+        </div>
+
+        {/* Menu mobile */}
+        {menuAberto && (
+          <div style={s.mobileMenu}>
+            {NAV_LINKS.map(l => (
+              <a key={l.label} href={l.href} style={s.mobileLink} onClick={() => setMenuAberto(false)}>
+                {l.label}
+              </a>
+            ))}
+            <div style={s.mobileDivider} />
+            <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.mobileBtnWhats}>
+              <MessageCircle size={14} /> Fale conosco
+            </a>
+            <button style={s.mobileBtnLogin} onClick={() => { setMenuAberto(false); ir() }}>
+              Login
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Hero */}
-      <section style={s.hero}>
+      <section id="inicio" style={s.hero}>
         <div style={s.heroBadge}><Sparkles size={13} /> 14 dias grátis · sem cartão</div>
         <h1 style={s.heroTitle}>você não é só manicure.<br /><em style={s.heroEm}>é dona.</em></h1>
         <p style={s.heroSub}>
@@ -44,7 +117,7 @@ export default function Landing() {
       </section>
 
       {/* Benefícios */}
-      <section style={s.secao}>
+      <section id="funcionalidades" style={s.secao}>
         <div style={s.secaoLabel}>tudo o que o seu salão precisa</div>
         <div style={s.benGrid}>
           {BENEFICIOS.map(b => {
@@ -137,8 +210,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA final */}
-      <section style={s.ctaFinal}>
+      {/* CTA final / Contato */}
+      <section id="contato" style={s.ctaFinal}>
         <h2 style={s.ctaFinalTitulo}>a gestão que a manicure faltava ter.</h2>
         <p style={s.ctaFinalSub}>Comece grátis hoje. Leva menos de 1 minuto.</p>
         <button style={s.ctaPrimary} onClick={ir}>Criar minha conta <ArrowRight size={16} /></button>
@@ -175,11 +248,25 @@ const BERRY = '#8B2655'
 const NOIR = '#180712'
 
 const s = {
-  page: { background: 'var(--cream, #FBF6F8)', color: 'var(--text, #180712)', minHeight: '100vh', height: '100vh', overflowX: 'hidden', overflowY: 'auto' },
-  topbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', maxWidth: 1080, margin: '0 auto' },
-  entrarBtn: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-pill)', padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  page: { background: 'var(--cream, #FBF6F8)', color: 'var(--text, #180712)', minHeight: '100vh', overflowX: 'hidden' },
 
-  hero: { background: `linear-gradient(160deg, ${BERRY} 0%, #5E1839 100%)`, color: '#fff', padding: '20px 20px 56px', textAlign: 'center', marginTop: -64, paddingTop: 90, position: 'relative' },
+  /* ── Navbar ── */
+  navbar: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: BERRY, transition: 'box-shadow 0.2s' },
+  navbarScrolled: { boxShadow: '0 4px 24px rgba(0,0,0,0.25)' },
+  navInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 64, maxWidth: 1100, margin: '0 auto' },
+  navLinks: { display: 'flex', gap: 8, '@media(max-width:768px)': { display: 'none' } },
+  navLink: { color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '6px 12px', borderRadius: 8, transition: 'color 0.15s', fontFamily: 'inherit' },
+  navBtns: { display: 'flex', gap: 8, alignItems: 'center' },
+  navBtnWhats: { display: 'flex', alignItems: 'center', gap: 6, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' },
+  navBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  hamburger: { display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 },
+  mobileMenu: { background: BERRY, borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px 20px', display: 'flex', flexDirection: 'column', gap: 4 },
+  mobileLink: { color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 500, textDecoration: 'none', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' },
+  mobileDivider: { height: 1, background: 'rgba(255,255,255,0.1)', margin: '8px 0' },
+  mobileBtnWhats: { display: 'flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '11px 18px', fontSize: 14, fontWeight: 700, textDecoration: 'none', justifyContent: 'center', marginBottom: 8 },
+  mobileBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+
+  hero: { background: `linear-gradient(160deg, ${BERRY} 0%, #5E1839 100%)`, color: '#fff', padding: '100px 20px 56px', textAlign: 'center', position: 'relative' },
   heroBadge: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.14)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '6px 14px', fontSize: 12, fontWeight: 700, marginBottom: 20 },
   heroTitle: { fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: 40, lineHeight: 1.05, letterSpacing: '-0.04em', margin: '0 auto 16px', maxWidth: 620 },
   heroEm: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontWeight: 400, color: 'var(--gold, #E8C66A)' },
