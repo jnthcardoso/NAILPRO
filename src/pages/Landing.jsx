@@ -353,7 +353,7 @@ const s = {
   heroSub: { fontSize: 16, lineHeight: 1.6, color: 'rgba(255,255,255,0.85)', maxWidth: 540, margin: '0 auto 28px' },
   heroCtas: { display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 },
   ctaPrimary: { display: 'inline-flex', alignItems: 'center', gap: 8, background: '#fff', color: BERRY, border: 'none', borderRadius: 14, padding: '14px 26px', fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' },
-  ctaGhost: { display: 'inline-flex', alignItems: 'center', padding: '14px 22px', fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 14 },
+  ctaGhost: { display: 'inline-flex', alignItems: 'center', padding: '14px 22px', fontSize: 15, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.7)', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit' },
   heroNota: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15, color: 'rgba(255,255,255,0.75)' },
 
   secao: { maxWidth: 1080, margin: '0 auto', padding: '56px 20px' },
