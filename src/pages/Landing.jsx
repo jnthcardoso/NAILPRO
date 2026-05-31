@@ -34,6 +34,20 @@ export default function Landing() {
     ? formatPreco(p.precoMensalAnual)
     : formatPreco(p.precoMensalMensal)
 
+  // Libera scroll do body (o CSS do app bloqueia no desktop)
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const prevHtml = html.style.overflow
+    const prevBody = body.style.overflow
+    html.style.overflow = 'auto'
+    body.style.overflow = 'auto'
+    return () => {
+      html.style.overflow = prevHtml
+      body.style.overflow = prevBody
+    }
+  }, [])
+
   // Efeito de sombra ao rolar
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
