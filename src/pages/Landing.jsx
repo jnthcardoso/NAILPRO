@@ -24,8 +24,30 @@ const FAQ_ITEMS = [
 const NAV_LINKS = [
   { label: 'Início', id: 'inicio' },
   { label: 'Funcionalidades', id: 'funcionalidades' },
+  { label: 'Depoimentos', id: 'depoimentos' },
   { label: 'Planos', id: 'planos' },
   { label: 'Contato', id: 'contato' },
+]
+
+const DEPOIMENTOS = [
+  {
+    nome: 'Queléen Bauer',
+    cargo: 'Nail designer autônoma · Caxias do Sul',
+    texto: 'Antes eu não sabia nem quanto ganhava no mês. Hoje vejo tudo no celular em segundos. A Lumen mudou como eu me vejo como profissional.',
+    iniciais: 'QB',
+  },
+  {
+    nome: 'Camila Rossato',
+    cargo: 'Proprietária · Studio CR Nails',
+    texto: 'Minha equipe tem login próprio e cada uma vê só a própria agenda. Acabou a confusão e a falta de profissionalismo. Vale cada centavo.',
+    iniciais: 'CR',
+  },
+  {
+    nome: 'Fernanda Oliveira',
+    cargo: 'Nail designer · São Paulo',
+    texto: 'Tentei planilha, tentei caderninho, tentei outros apps. A Lumen é a única que foi feita de verdade pra quem faz unhas. Simples e completa.',
+    iniciais: 'FO',
+  },
 ]
 
 function scrollTo(id) {
@@ -75,11 +97,20 @@ export default function Landing() {
 
   return (
     <div style={s.page}>
-      {/* CSS responsivo para navbar */}
+      {/* CSS responsivo */}
       <style>{`
         .lp-nav-links { display: flex; }
         .lp-nav-btns { display: flex; }
         .lp-hamburger { display: none; }
+        .hero-inner { display: flex; align-items: center; justify-content: space-between; gap: 40px; max-width: 1100px; margin: 0 auto; text-align: left; padding: 0 24px; }
+        .hero-text { flex: 1; min-width: 0; }
+        .hero-mock { flex-shrink: 0; }
+        .hero-ctas-inner { justify-content: flex-start !important; }
+        @media (max-width: 860px) {
+          .hero-inner { flex-direction: column; text-align: center; padding: 0 16px; }
+          .hero-mock { display: none; }
+          .hero-ctas-inner { justify-content: center !important; }
+        }
         @media (max-width: 768px) {
           .lp-nav-links { display: none !important; }
           .lp-nav-btns { display: none !important; }
@@ -138,17 +169,31 @@ export default function Landing() {
 
       {/* Hero */}
       <section id="inicio" style={s.hero}>
-        <div style={s.heroBadge}><Sparkles size={13} /> 14 dias grátis · sem cartão</div>
-        <h1 style={s.heroTitle}>você não é só manicure.<br /><em style={s.heroEm}>é dona.</em></h1>
-        <p style={s.heroSub}>
-          Chega de caderninho, esquecimento e dinheiro sem controle.
-          A Lumen cuida da gestão enquanto você cuida das unhas.
-        </p>
-        <div style={s.heroCtas}>
-          <button style={s.ctaPrimary} onClick={ir}>Começar grátis <ArrowRight size={16} /></button>
-          <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
+        <div className="hero-inner">
+          {/* Texto */}
+          <div className="hero-text">
+            <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> 14 dias grátis · sem cartão</div>
+            <h1 style={{ ...s.heroTitle, textAlign: 'left', maxWidth: 520 }}>
+              você não é só manicure.<br /><em style={s.heroEm}>é dona.</em>
+            </h1>
+            <p style={{ ...s.heroSub, textAlign: 'left', margin: '0 0 28px' }}>
+              Chega de caderninho, esquecimento e dinheiro sem controle.
+              A Lumen cuida da gestão enquanto você cuida das unhas.
+            </p>
+            <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
+              <button style={s.ctaPrimary} onClick={ir}>Começar grátis <ArrowRight size={16} /></button>
+              <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
+            </div>
+            <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
+              "Finalmente sei quanto ganho de verdade." — Queléen, nail designer
+            </div>
+          </div>
+
+          {/* Mockup do app */}
+          <div className="hero-mock">
+            <AppMockup />
+          </div>
         </div>
-        <div style={s.heroNota}>”Finalmente sei quanto ganho de verdade.” — Queléen, nail designer</div>
       </section>
 
       {/* Benefícios */}
@@ -166,6 +211,29 @@ export default function Landing() {
               </div>
             )
           })}
+        </div>
+      </section>
+
+      {/* Depoimentos */}
+      <section id="depoimentos" style={{ background: 'var(--cream, #FBF6F8)', padding: '56px 20px' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div style={s.secaoLabel}>quem já usa a lumen</div>
+          <h2 style={s.secaoTitulo}>Nail designers reais. Resultados reais.</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            {DEPOIMENTOS.map((d, i) => (
+              <div key={i} style={dep.card}>
+                <div style={dep.aspas}>"</div>
+                <p style={dep.texto}>{d.texto}</p>
+                <div style={dep.perfil}>
+                  <div style={dep.avatar}>{d.iniciais}</div>
+                  <div>
+                    <div style={dep.nome}>{d.nome}</div>
+                    <div style={dep.cargo}>{d.cargo}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -329,6 +397,87 @@ export default function Landing() {
       </footer>
     </div>
   )
+}
+
+// Mockup visual do app no hero
+function AppMockup() {
+  return (
+    <div style={mock.phone}>
+      {/* Header do app */}
+      <div style={mock.header}>
+        <div style={mock.headerDot} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>lumen.</div>
+        <div style={mock.headerDot} />
+      </div>
+
+      {/* Saudação */}
+      <div style={mock.body}>
+        <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Sábado, 31 de Maio</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#180712', marginBottom: 12 }}>
+          <em style={{ fontFamily: 'serif', fontStyle: 'italic' }}>oi Queléen,</em>
+        </div>
+
+        {/* Cards de resumo */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+          <div style={mock.card}>
+            <div style={{ fontSize: 9, color: '#999', marginBottom: 2 }}>Recebido hoje</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#8B2655' }}>R$ 420</div>
+          </div>
+          <div style={mock.card}>
+            <div style={{ fontSize: 9, color: '#999', marginBottom: 2 }}>Este mês</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#15803D' }}>R$ 3.810</div>
+          </div>
+        </div>
+
+        {/* Próximos atendimentos */}
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hoje</div>
+        {[
+          { hora: '09:00', nome: 'Ana Paula', servico: 'Gel francês' },
+          { hora: '11:00', nome: 'Mariana', servico: 'Alongamento gel' },
+          { hora: '14:00', nome: 'Carla', servico: 'Manutenção' },
+        ].map((ag, i) => (
+          <div key={i} style={mock.ag}>
+            <div style={mock.agHora}>{ag.hora}</div>
+            <div style={mock.agBar} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#180712' }}>{ag.nome}</div>
+              <div style={{ fontSize: 10, color: '#888' }}>{ag.servico}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom nav */}
+      <div style={mock.nav}>
+        {['🏠','📅','💰','👥'].map((ic, i) => (
+          <div key={i} style={{ ...mock.navItem, ...(i === 0 ? { color: '#8B2655' } : {}) }}>{ic}</div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const mock = {
+  phone: { width: 220, background: '#F8F4F6', borderRadius: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15)', overflow: 'hidden', border: '6px solid rgba(255,255,255,0.1)' },
+  header: { background: '#8B2655', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  headerDot: { width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' },
+  body: { padding: '12px 14px 8px' },
+  card: { background: 'white', borderRadius: 10, padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
+  ag: { display: 'flex', alignItems: 'center', gap: 8, background: 'white', borderRadius: 8, padding: '7px 9px', marginBottom: 5, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  agHora: { fontSize: 10, fontWeight: 700, color: '#8B2655', minWidth: 30 },
+  agBar: { width: 2, height: 24, background: '#8B2655', borderRadius: 2, flexShrink: 0 },
+  nav: { display: 'flex', borderTop: '1px solid #eee', background: 'white', padding: '8px 0' },
+  navItem: { flex: 1, textAlign: 'center', fontSize: 16, color: '#ccc' },
+}
+
+const dep = {
+  card: { background: 'white', border: '1px solid var(--border)', borderRadius: 18, padding: '24px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)', display: 'flex', flexDirection: 'column', gap: 14 },
+  aspas: { fontSize: 48, lineHeight: 1, color: 'var(--pink)', fontFamily: 'Georgia, serif', marginTop: -10 },
+  texto: { fontSize: 14, lineHeight: 1.7, color: 'var(--text2)', margin: 0, flex: 1 },
+  perfil: { display: 'flex', alignItems: 'center', gap: 12 },
+  avatar: { width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: 'white', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  nome: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
+  cargo: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
 }
 
 function FaqList() {
