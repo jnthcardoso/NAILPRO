@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 
@@ -235,23 +235,77 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA final / Contato */}
-      <section id="contato" style={s.ctaFinal}>
+      {/* CTA final */}
+      <section style={s.ctaFinal}>
         <h2 style={s.ctaFinalTitulo}>a gestão que a manicure faltava ter.</h2>
         <p style={s.ctaFinalSub}>Comece grátis hoje. Leva menos de 1 minuto.</p>
         <button style={s.ctaPrimary} onClick={ir}>Criar minha conta <ArrowRight size={16} /></button>
       </section>
 
-      {/* Footer */}
-      <footer style={s.footer}>
-        <LumenLogo size={18} variant="reverso" />
-        <div style={s.footerSlogan}>iluminando a gestão, impulsionando o seu talento.</div>
-        <div style={s.footerLinks}>
-          <Link to="/termos" style={s.footerLink}>Termos</Link>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <Link to="/privacidade" style={s.footerLink}>Privacidade</Link>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <button style={s.footerLinkBtn} onClick={ir}>Entrar</button>
+      {/* Footer / Contato */}
+      <footer id="contato" style={s.footer}>
+        <div style={s.footerInner}>
+
+          {/* Col 1 — Logo + descrição + redes */}
+          <div style={s.footerCol}>
+            <LumenLogo size={20} variant="reverso" style={{ marginBottom: 12 }} />
+            <p style={s.footerDesc}>
+              O app de gestão feito para nail designers — agenda, financeiro e clientes num só lugar.
+            </p>
+            <div style={s.footerSocial}>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" style={s.socialIcon} title="Instagram">
+                <Instagram size={18} />
+              </a>
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" style={s.socialIcon} title="Facebook">
+                <Facebook size={18} />
+              </a>
+            </div>
+          </div>
+
+          {/* Col 2 — Navegação */}
+          <div style={s.footerCol}>
+            <div style={s.footerColTitulo}>Navegação</div>
+            {NAV_LINKS.map(l => (
+              <button key={l.label} style={s.footerNavLink} onClick={() => scrollTo(l.id)}>
+                {l.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Col 3 — Contato */}
+          <div style={s.footerCol}>
+            <div style={s.footerColTitulo}>Contato</div>
+            <div style={s.footerContato}>
+              <Mail size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <a href="mailto:suporte@lumengestaoempresarial.com.br" style={s.footerContatoLink}>
+                suporte@lumengestaoempresarial.com.br
+              </a>
+            </div>
+            <div style={s.footerContato}>
+              <Phone size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <a href={`https://wa.me/${SUPORTE_WHATSAPP}`} target="_blank" rel="noreferrer" style={s.footerContatoLink}>
+                WhatsApp de suporte
+              </a>
+            </div>
+            <a
+              href={whatsappContato}
+              target="_blank"
+              rel="noreferrer"
+              style={s.footerBtnWhats}
+            >
+              <MessageCircle size={15} /> Fale conosco
+            </a>
+          </div>
+        </div>
+
+        {/* Barra inferior */}
+        <div style={s.footerBottom}>
+          <span>© {new Date().getFullYear()} Lumen. Todos os direitos reservados.</span>
+          <div style={s.footerBottomLinks}>
+            <Link to="/termos" style={s.footerBottomLink}>Termos de uso</Link>
+            <Link to="/privacidade" style={s.footerBottomLink}>Privacidade</Link>
+            <button style={s.footerBottomBtn} onClick={() => scrollTo('inicio')}>Voltar ao topo ↑</button>
+          </div>
         </div>
       </footer>
     </div>
@@ -340,9 +394,20 @@ const s = {
   ctaFinalTitulo: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 32, fontWeight: 400, margin: '0 0 10px', color: BERRY },
   ctaFinalSub: { fontSize: 15, color: 'var(--text2, #6b5560)', marginBottom: 26 },
 
-  footer: { background: NOIR, color: '#fff', textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 },
-  footerSlogan: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: 'rgba(255,255,255,0.7)' },
-  footerLinks: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 },
-  footerLink: { color: 'rgba(255,255,255,0.8)', textDecoration: 'none' },
-  footerLinkBtn: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 },
+  /* Footer */
+  footer: { background: NOIR, color: '#fff' },
+  footerInner: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40, padding: '56px 40px 40px', maxWidth: 1100, margin: '0 auto' },
+  footerCol: { display: 'flex', flexDirection: 'column', gap: 10 },
+  footerDesc: { fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, margin: '8px 0 0' },
+  footerSocial: { display: 'flex', gap: 10, marginTop: 4 },
+  socialIcon: { width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', transition: 'background 0.15s' },
+  footerColTitulo: { fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' },
+  footerNavLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', padding: '3px 0', lineHeight: 1.6 },
+  footerContato: { display: 'flex', alignItems: 'flex-start', gap: 9, color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 1.5 },
+  footerContatoLink: { color: 'rgba(255,255,255,0.75)', textDecoration: 'none', wordBreak: 'break-all' },
+  footerBtnWhats: { display: 'inline-flex', alignItems: 'center', gap: 7, background: '#25D366', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '9px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none', marginTop: 6, width: 'fit-content' },
+  footerBottom: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '18px 40px', borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: 'rgba(255,255,255,0.45)', maxWidth: 1100, margin: '0 auto' },
+  footerBottomLinks: { display: 'flex', gap: 16, alignItems: 'center' },
+  footerBottomLink: { color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: 12 },
+  footerBottomBtn: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', padding: 0 },
 }
