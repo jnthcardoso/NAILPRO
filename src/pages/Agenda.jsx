@@ -45,7 +45,8 @@ export default function Agenda() {
   const [showPagModal, setShowPagModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [agSelecionado, setAgSelecionado] = useState(null)
-  const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '' })
+  const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+  const [pagModalObrigatorio, setPagModalObrigatorio] = useState(false) // true quando veio de 'realizado'
   const [form, setForm] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: format(new Date(), 'yyyy-MM-dd'), profissional_id: '' })
   const [formEdit, setFormEdit] = useState({ cliente_id: '', servico: '', horario: '', valor: '', status: 'pendente', observacoes: '', data: '', profissional_id: '' })
   const [formCliente, setFormCliente] = useState({ nome: '', telefone: '' })
@@ -325,7 +326,8 @@ export default function Agenda() {
 
     if (novoStatus === 'realizado') {
       setAgSelecionado(ag)
-      setFormPag({ forma: 'pix', status: 'pago', valor: String(ag.valor || '') })
+      setFormPag({ forma: 'pix', status: 'pago', valor: String(ag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+      setPagModalObrigatorio(true)
       setShowPagModal(true)
     }
     loadAgendamentos()
@@ -333,36 +335,53 @@ export default function Agenda() {
 
   async function salvarPagamento() {
     if (!agSelecionado) return
+
+    const v1 = parseFloat(formPag.valor) || 0
+    const v2 = formPag.modo === 'duplo' ? (parseFloat(formPag.valor2) || 0) : 0
+
+    if (v1 <= 0) { erro('Informe o valor do pagamento.'); return }
+    if (formPag.modo === 'duplo' && v2 <= 0) { erro('Informe o valor da 2ª forma de pagamento.'); return }
+
     setSavingPag(true)
     try {
-      const pagExistente = agSelecionado.pagamentos?.[0]
-      let pagError
-      if (pagExistente) {
-        const { error } = await supabase.from('pagamentos').update({
-          forma: formPag.forma,
-          status: formPag.status,
-          valor: parseFloat(formPag.valor) || agSelecionado.valor,
-        }).eq('id', pagExistente.id)
-        pagError = error
-      } else {
-        const { error } = await supabase.from('pagamentos').insert({
-          user_id: user.id,
-          salao_id: salaoId,
-          agendamento_id: agSelecionado.id,
-          valor: parseFloat(formPag.valor) || agSelecionado.valor || 0,
-          forma: formPag.forma,
-          status: formPag.status,
-          data: agSelecionado.data,
-        })
-        pagError = error
+      // Remove pagamentos anteriores desse agendamento antes de inserir novos
+      const idsExistentes = (agSelecionado.pagamentos || []).map(p => p.id)
+      if (idsExistentes.length > 0) {
+        await supabase.from('pagamentos').delete().in('id', idsExistentes)
       }
-      if (pagError) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
+
+      // Monta os registros a inserir
+      const base = { user_id: user.id, salao_id: salaoId, agendamento_id: agSelecionado.id, data: agSelecionado.data, status: formPag.status }
+
+      if (formPag.modo === 'duplo') {
+        const { error } = await supabase.from('pagamentos').insert([
+          { ...base, valor: v1, forma: formPag.forma },
+          { ...base, valor: v2, forma: formPag.forma2 },
+        ])
+        if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
+      } else {
+        const { error } = await supabase.from('pagamentos').insert({ ...base, valor: v1, forma: formPag.forma })
+        if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
+      }
+
+      sucesso(formPag.modo === 'duplo' ? 'Pagamento em 2 formas registrado ✓' : 'Pagamento registrado ✓')
       setShowPagModal(false)
+      setPagModalObrigatorio(false)
       setAgSelecionado(null)
       loadAgendamentos()
     } finally {
       setSavingPag(false)
     }
+  }
+
+  function fecharPagModal() {
+    if (pagModalObrigatorio) {
+      // Avisa que o agendamento ficará sem pagamento registrado
+      erro('⚠️ Agendamento marcado como realizado sem pagamento. Registre depois em "💳 Pagamento" no card.')
+    }
+    setShowPagModal(false)
+    setPagModalObrigatorio(false)
+    setAgSelecionado(null)
   }
 
   function navegar(dir) {
@@ -905,7 +924,7 @@ export default function Agenda() {
 
       {/* ── Modal de pagamento ──────────────── */}
       {showPagModal && agSelecionado && (
-        <div style={s.overlay} onClick={() => setShowPagModal(false)}>
+        <div style={s.overlay} onClick={fecharPagModal}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
             <div style={s.modalTitle}>💳 Registrar pagamento</div>
 
@@ -914,54 +933,99 @@ export default function Agenda() {
               <div style={s.pagServico}>{agSelecionado.servico} · {agSelecionado.data}</div>
             </div>
 
+            {/* Toggle: 1 forma ou 2 formas */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <button
+                style={{ ...s.statusBtn2, flex: 1, ...(formPag.modo === 'simples' ? s.statusPagoActive : {}) }}
+                onClick={() => setFormPag({ ...formPag, modo: 'simples', valor2: '' })}
+              >
+                1 forma
+              </button>
+              <button
+                style={{ ...s.statusBtn2, flex: 1, ...(formPag.modo === 'duplo' ? { background: '#EDE9FE', color: '#5B21B6', border: '1.5px solid #A78BFA' } : {}) }}
+                onClick={() => {
+                  const totalAtual = parseFloat(formPag.valor) || 0
+                  const metade = totalAtual > 0 ? (totalAtual / 2).toFixed(2) : ''
+                  setFormPag({ ...formPag, modo: 'duplo', valor: metade, valor2: metade })
+                }}
+              >
+                2 formas
+              </button>
+            </div>
+
+            {/* Forma 1 */}
             <div style={s.field}>
-              <label style={s.label}>Valor (R$)</label>
+              <label style={s.label}>{formPag.modo === 'duplo' ? '1ª forma — Valor (R$)' : 'Valor (R$)'}</label>
               <input
                 style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
-                type="number"
-                placeholder="0,00"
+                type="number" placeholder="0,00"
                 value={formPag.valor}
                 onChange={e => setFormPag({ ...formPag, valor: e.target.value })}
               />
             </div>
-
             <div style={s.field}>
-              <label style={s.label}>Forma de pagamento</label>
+              <label style={s.label}>{formPag.modo === 'duplo' ? '1ª forma de pagamento' : 'Forma de pagamento'}</label>
               <div style={s.formasGrid}>
                 {FORMAS.map(f => (
-                  <button
-                    key={f.value}
+                  <button key={f.value}
                     style={{ ...s.formaBtn, ...(formPag.forma === f.value ? s.formaBtnActive : {}) }}
                     onClick={() => setFormPag({ ...formPag, forma: f.value })}
-                  >
-                    {f.label}
-                  </button>
+                  >{f.label}</button>
                 ))}
               </div>
             </div>
 
+            {/* Forma 2 (só no modo duplo) */}
+            {formPag.modo === 'duplo' && (
+              <>
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 12px' }} />
+                <div style={s.field}>
+                  <label style={s.label}>2ª forma — Valor (R$)</label>
+                  <input
+                    style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
+                    type="number" placeholder="0,00"
+                    value={formPag.valor2}
+                    onChange={e => setFormPag({ ...formPag, valor2: e.target.value })}
+                  />
+                </div>
+                <div style={s.field}>
+                  <label style={s.label}>2ª forma de pagamento</label>
+                  <div style={s.formasGrid}>
+                    {FORMAS.map(f => (
+                      <button key={f.value}
+                        style={{ ...s.formaBtn, ...(formPag.forma2 === f.value ? s.formaBtnActive : {}) }}
+                        onClick={() => setFormPag({ ...formPag, forma2: f.value })}
+                      >{f.label}</button>
+                    ))}
+                  </div>
+                </div>
+                {/* Total */}
+                {(parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0) > 0 && (
+                  <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
+                    Total: <strong style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      R$ {((parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0)).toFixed(2)}
+                    </strong>
+                  </div>
+                )}
+              </>
+            )}
+
             <div style={s.field}>
-              <label style={s.label}>Status do pagamento</label>
+              <label style={s.label}>Status</label>
               <div style={s.statusGrid}>
-                <button
-                  style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }}
-                  onClick={() => setFormPag({ ...formPag, status: 'pago' })}
-                >
-                  ✓ Pago
-                </button>
-                <button
-                  style={{ ...s.statusBtn2, ...(formPag.status === 'pendente' ? s.statusPendenteActive : {}) }}
-                  onClick={() => setFormPag({ ...formPag, status: 'pendente' })}
-                >
-                  ⏳ Pendente
-                </button>
+                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }}
+                  onClick={() => setFormPag({ ...formPag, status: 'pago' })}>✓ Pago</button>
+                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pendente' ? s.statusPendenteActive : {}) }}
+                  onClick={() => setFormPag({ ...formPag, status: 'pendente' })}>⏳ Pendente</button>
               </div>
             </div>
 
             <button style={s.btnPrimary} onClick={salvarPagamento} disabled={savingPag}>
               {savingPag ? 'Salvando...' : 'Confirmar pagamento'}
             </button>
-            <button style={s.btnSecondary} onClick={() => setShowPagModal(false)}>Fechar</button>
+            <button style={s.btnSecondary} onClick={fecharPagModal}>
+              {pagModalObrigatorio ? 'Registrar depois' : 'Fechar'}
+            </button>
           </div>
         </div>
       )}
