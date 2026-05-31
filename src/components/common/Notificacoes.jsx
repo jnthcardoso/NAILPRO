@@ -91,13 +91,13 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
     // A profissional não enxerga dados do salão inteiro.
     if (!isProfissional) {
       const { data: cls } = await supabase.from('clientes')
-        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId)
+        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada, dias_retorno').eq('salao_id', salaoId)
       const ativas = (cls || []).filter(c => !c.arquivada)
-      const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= diasAlerta)
+      const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? diasAlerta))
       if (sumidas.length) {
         lista.push({
           id: 'sumidas', icon: UserX, cor: '#B91C1C', bg: '#FEE2E2',
-          titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes sumidas' : 'cliente sumida'} +${diasAlerta}d`,
+          titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes' : 'cliente'} p/ retorno`,
           sub: sumidas.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/app/clientes',
         })
       }

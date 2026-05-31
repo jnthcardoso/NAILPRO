@@ -71,19 +71,19 @@ export default function Avisos() {
 
     if (!isProfissional) {
       const { data: cls } = await supabase.from('clientes')
-        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada')
+        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada, dias_retorno')
         .eq('salao_id', salaoId)
       const ativas = (cls || []).filter(c => !c.arquivada)
 
-      // Clientes sumidas
+      // Clientes sumidas — usa o ciclo individual (dias_retorno) ou o padrão do salão
       const sumidas = ativas.filter(c =>
         c.ultimo_atendimento &&
-        differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= diasAlerta
+        differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? diasAlerta)
       )
       if (sumidas.length) {
         lista.push({
           id: 'sumidas', icon: UserX, cor: '#B91C1C', bg: '#FEE2E2',
-          titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes sumidas' : 'cliente sumida'} há +${diasAlerta} dias`,
+          titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes passaram' : 'cliente passou'} do retorno`,
           sub: 'Clientes sem atendimento há muito tempo — que tal entrar em contato?',
           detalhe: sumidas.slice(0, 5).map(c => c.nome.split(' ')[0]).join(', '),
           to: '/app/clientes',

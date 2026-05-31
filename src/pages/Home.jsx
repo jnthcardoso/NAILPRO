@@ -133,7 +133,7 @@ export default function Home() {
         .eq('salao_id', salaoId).eq('data', amanha)
         .in('status', ['pendente', 'confirmado']),
       supabase.from('clientes')
-        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId),
+        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada, dias_retorno').eq('salao_id', salaoId),
     ])
 
     // Config
@@ -227,7 +227,7 @@ export default function Home() {
     if (clientes) {
       const ativas = clientes.filter(c => !c.arquivada)
       setClientesSumidas(ativas
-        .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= limiteAlerta)
+        .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= (c.dias_retorno ?? limiteAlerta))
         .slice(0, 3))
       const hj = new Date()
       setAniversarios(ativas.filter(c => {

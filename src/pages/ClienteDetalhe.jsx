@@ -17,13 +17,39 @@ export default function ClienteDetalhe() {
   const [cliente, setCliente] = useState(null)
   const [historico, setHistorico] = useState([])
   const [arquivando, setArquivando] = useState(false)
+  const [diasAlertaPadrao, setDiasAlertaPadrao] = useState(30)
+  const [retornoInput, setRetornoInput] = useState('')
+  const [salvandoRetorno, setSalvandoRetorno] = useState(false)
 
-  useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico() } }, [user, id, salaoId])
+  useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico(); loadConfig() } }, [user, id, salaoId])
 
   async function loadCliente() {
     const { data } = await supabase.from('clientes').select('*').eq('id', id).eq('salao_id', salaoId).maybeSingle()
     if (!data) { navigate('/app/clientes'); return } // Bloqueia acesso a clientes de outros salões
     setCliente(data)
+    setRetornoInput(data.dias_retorno != null ? String(data.dias_retorno) : '')
+  }
+
+  async function loadConfig() {
+    const { data } = await supabase.from('configuracoes').select('dias_retorno_alerta').eq('salao_id', salaoId).maybeSingle()
+    if (data?.dias_retorno_alerta) setDiasAlertaPadrao(data.dias_retorno_alerta)
+  }
+
+  async function salvarRetorno() {
+    const atual = cliente.dias_retorno != null ? String(cliente.dias_retorno) : ''
+    if (retornoInput === atual) return // nada mudou
+    let valor = retornoInput === '' ? null : parseInt(retornoInput, 10)
+    if (valor != null && (!Number.isFinite(valor) || valor < 1 || valor > 365)) {
+      erro('Informe um número de dias entre 1 e 365.')
+      setRetornoInput(atual)
+      return
+    }
+    setSalvandoRetorno(true)
+    const { error } = await supabase.from('clientes').update({ dias_retorno: valor }).eq('id', id).eq('salao_id', salaoId)
+    setSalvandoRetorno(false)
+    if (error) { erro('Erro ao salvar: ' + error.message); setRetornoInput(atual); return }
+    setCliente({ ...cliente, dias_retorno: valor })
+    sucesso(valor == null ? 'Retorno usando padrão do salão' : `Retorno definido para ${valor} dias`)
   }
 
   async function loadHistorico() {
@@ -123,6 +149,33 @@ export default function ClienteDetalhe() {
           <div style={s.obsText}>{cliente.observacoes}</div>
         </div>
       )}
+
+      {/* Ciclo de retorno individual */}
+      <div style={s.retornoCard}>
+        <div style={{ flex: 1 }}>
+          <div style={s.obsTitle}>Retorno previsto</div>
+          <div style={s.retornoSub}>
+            {cliente.dias_retorno != null
+              ? `Alerta de retorno a cada ${cliente.dias_retorno} dias`
+              : `Usando o padrão do salão (${diasAlertaPadrao} dias)`}
+          </div>
+        </div>
+        <div style={s.retornoInputWrap}>
+          <input
+            style={s.retornoInput}
+            type="number"
+            min="1"
+            max="365"
+            inputMode="numeric"
+            placeholder={String(diasAlertaPadrao)}
+            value={retornoInput}
+            onChange={e => setRetornoInput(e.target.value)}
+            onBlur={salvarRetorno}
+            disabled={salvandoRetorno}
+          />
+          <span style={s.retornoUnidade}>dias</span>
+        </div>
+      </div>
 
       {/* Resumo do histórico */}
       {historico.length > 0 && (
@@ -237,6 +290,11 @@ const s = {
   obs: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
   obsTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 },
   obsText: { fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 },
+  retornoCard: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
+  retornoSub: { fontSize: 13, color: 'var(--text2)', marginTop: 4 },
+  retornoInputWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 },
+  retornoInput: { width: 64, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', outline: 'none' },
+  retornoUnidade: { fontSize: 12, color: 'var(--text3)', fontWeight: 600 },
   sectionTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 12px' },
   cancelInfo: { color: '#B91C1C', fontWeight: 600 },
   resumoGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 18 },

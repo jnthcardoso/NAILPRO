@@ -23,7 +23,7 @@ export default function Clientes() {
   const [filtro, setFiltro] = useState('todas')
   const [ordenacao, setOrdenacao] = useState('nome')
   const [pagina, setPagina] = useState(1)
-  const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
+  const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
 
@@ -59,7 +59,7 @@ export default function Clientes() {
   }
 
   async function loadClientes() {
-    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada').eq('salao_id', salaoId).order('nome')
+    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno').eq('salao_id', salaoId).order('nome')
     setClientes(data || [])
   }
 
@@ -77,15 +77,17 @@ export default function Clientes() {
       return
     }
     setSaving(true)
+    const diasRetorno = form.dias_retorno === '' ? null : parseInt(form.dias_retorno, 10)
     await supabase.from('clientes').insert({
       ...form,
       telefone: unformatTelefone(form.telefone),
+      dias_retorno: Number.isFinite(diasRetorno) ? diasRetorno : null,
       user_id: user.id,
       salao_id: salaoId,
     })
     setSaving(false)
     setShowModal(false)
-    setForm({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '' })
+    setForm({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
     setErros({})
     loadClientes()
   }
@@ -101,7 +103,15 @@ export default function Clientes() {
   // ── UTC-safe date parse ──
   const parseUADate = (d) => d ? new Date(d + 'T12:00:00') : null
 
-  const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= diasAlerta)
+  // Cliente "sumida": passou do ciclo de retorno individual (dias_retorno)
+  // ou, na ausência dele, do padrão do salão (diasAlerta).
+  const estaSumida = (c) => {
+    if (!c.ultimo_atendimento) return false
+    const limite = c.dias_retorno ?? diasAlerta
+    return differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= limite
+  }
+
+  const sumidas = ativas.filter(estaSumida)
   const vips = ativas.filter(c => c.total_visitas >= 10)
   const semVisita = ativas.filter(c => !c.ultimo_atendimento)
 
@@ -109,7 +119,7 @@ export default function Clientes() {
     .filter(c => {
       if (busca && !c.nome.toLowerCase().includes(busca.toLowerCase())) return false
       if (filtro === 'vip') return c.total_visitas >= 10
-      if (filtro === 'sumidas') return c.ultimo_atendimento && differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= diasAlerta
+      if (filtro === 'sumidas') return estaSumida(c)
       if (filtro === 'sem_visita') return !c.ultimo_atendimento
       return true
     })
@@ -221,8 +231,7 @@ export default function Clientes() {
       <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
 
       {filtradaExibidas.map(c => {
-        const diasAusente = c.ultimo_atendimento ? differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) : null
-        const sumida = diasAusente != null && diasAusente >= diasAlerta
+        const sumida = estaSumida(c)
         return (
           <div key={c.id} style={s.card} onClick={() => navigate(`/app/clientes/${c.id}`)}>
             <div style={s.avatar}>{getInitials(c.nome)}</div>
@@ -313,6 +322,20 @@ export default function Clientes() {
             </div>
             <div style={s.field}><label style={s.label}>Data de nascimento</label><input style={s.input} type="date" value={form.data_nascimento} onChange={e => setForm({ ...form, data_nascimento: e.target.value })} /></div>
             <div style={s.field}><label style={s.label}>Observações</label><input style={s.input} placeholder="Preferências, alergias..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} /></div>
+            <div style={s.field}>
+              <label style={s.label}>Retorno a cada (dias)</label>
+              <input
+                style={s.input}
+                type="number"
+                min="1"
+                max="365"
+                inputMode="numeric"
+                placeholder={`Padrão do salão (${diasAlerta} dias)`}
+                value={form.dias_retorno}
+                onChange={e => setForm({ ...form, dias_retorno: e.target.value })}
+              />
+              <span style={s.hint}>Deixe em branco para usar o padrão do salão.</span>
+            </div>
             <button style={s.btnPrimary} onClick={salvarCliente} disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar cliente'}</button>
             <button style={s.btnSecondary} onClick={() => { setShowModal(false); setErros({}) }}>Cancelar</button>
           </div>
@@ -358,6 +381,7 @@ const s = {
   input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', transition: 'border 0.15s' },
   inputErro: { border: '1.5px solid #FCA5A5', background: '#FEF2F2' },
   erroMsg: { fontSize: 11, color: '#B91C1C', fontWeight: 600, marginTop: 4 },
+  hint: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
   btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
   btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
 }
