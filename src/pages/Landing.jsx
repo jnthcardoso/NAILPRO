@@ -60,11 +60,15 @@ export default function Landing() {
   const [ciclo, setCiclo] = useState('anual')
 
   // Navega para login salvando a intenção de plano no sessionStorage
+  // Login simples (botão "Login" da navbar)
   const ir = () => navigate('/login')
+  // Cadastro com plano pré-selecionado (botões "Começar grátis" dos cards)
   const irComPlano = (planoId) => {
     sessionStorage.setItem('lumen_plano_intencao', JSON.stringify({ plano: planoId, ciclo }))
-    navigate('/login')
+    navigate('/login?modo=cadastro')
   }
+  // Cadastro sem plano (CTAs genéricos da landing)
+  const irCadastro = () => navigate('/login?modo=cadastro')
   const [menuAberto, setMenuAberto] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -187,7 +191,7 @@ export default function Landing() {
               A Lumen cuida da gestão enquanto você cuida das unhas.
             </p>
             <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
-              <button style={s.ctaPrimary} onClick={ir}>Começar grátis <ArrowRight size={16} /></button>
+              <button style={s.ctaPrimary} onClick={irCadastro}>Começar grátis <ArrowRight size={16} /></button>
               <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>

@@ -7,7 +7,11 @@ import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
-  const [mode, setMode] = useState('login')
+  // Se vier com ?modo=cadastro (ex: botão "Começar grátis" da landing), abre signup direto
+  const [mode, setMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('modo') === 'cadastro' ? 'signup' : 'login'
+  })
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [aceitouTermos, setAceitouTermos] = useState(false)
   const [loading, setLoading] = useState(false)
