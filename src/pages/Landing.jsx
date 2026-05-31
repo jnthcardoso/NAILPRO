@@ -5,10 +5,20 @@ import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 
 const BENEFICIOS = [
-  { icon: Calendar, titulo: 'Agenda que organiza seu dia', texto: 'Veja seus atendimentos por dia, semana ou mês. Sem caderninho, sem esquecer horário.' },
-  { icon: DollarSign, titulo: 'Financeiro de verdade', texto: 'Receita, despesas, lucro e metas. Saiba quanto você ganha — e quanto pode ganhar.' },
-  { icon: Users, titulo: 'Clientes na palma da mão', texto: 'Histórico, preferências, aniversários e quem sumiu. Atendimento que fideliza.' },
-  { icon: Bell, titulo: 'Lembretes no WhatsApp', texto: 'Reduza faltas com lembretes automáticos. Um clique e a cliente confirma.' },
+  { icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Veja todos os atendimentos por dia, semana ou mês. Chega de caderninho, borracha e horário esquecido.' },
+  { icon: DollarSign, titulo: 'Financeiro que você entende', texto: 'Saiba exatamente quanto entrou, quanto saiu e quanto sobrou. Com metas e projeção de receita futura.' },
+  { icon: Users, titulo: 'Nunca perca uma cliente', texto: 'Histórico completo, preferências, aniversários e alerta automático de clientes que sumiram há tempo.' },
+  { icon: Bell, titulo: 'Lembretes no WhatsApp', texto: 'Reduza faltas com lembretes automáticos no WhatsApp. A cliente confirma com um clique — sem trabalho extra.' },
+]
+
+const FAQ_ITEMS = [
+  { p: 'Preciso instalar alguma coisa?', r: 'Não. A Lumen funciona direto no navegador e no celular — sem download, sem instalação. É só entrar e usar.' },
+  { p: 'Preciso de cartão de crédito para testar?', r: 'Não. Os 14 dias de teste são 100% grátis e sem necessidade de cartão. Você só paga se quiser continuar.' },
+  { p: 'Posso cancelar quando quiser?', r: 'Sim. No plano mensal, você cancela a qualquer momento sem multa. No plano anual, há fidelidade de 12 meses.' },
+  { p: 'Funciona bem no celular?', r: 'Perfeitamente. A Lumen foi feita pensando em quem trabalha com as mãos e usa o celular para tudo — é rápida e fácil de usar na tela pequena.' },
+  { p: 'O que acontece quando os 14 dias acabam?', r: 'Você escolhe um plano e continua usando normalmente. Se não quiser continuar, seus dados ficam salvos por 30 dias.' },
+  { p: 'Como funciona o suporte?', r: 'Atendimento direto pelo WhatsApp, de segunda a sábado. Sem robô, sem espera interminável — você fala com a equipe da Lumen.' },
+  { p: 'Meus dados ficam seguros?', r: 'Sim. Seus dados ficam salvos na nuvem com backup automático e criptografia. Você nunca perde nada — mesmo que troque de celular.' },
 ]
 
 const NAV_LINKS = [
@@ -131,19 +141,20 @@ export default function Landing() {
         <div style={s.heroBadge}><Sparkles size={13} /> 14 dias grátis · sem cartão</div>
         <h1 style={s.heroTitle}>você não é só manicure.<br /><em style={s.heroEm}>é dona.</em></h1>
         <p style={s.heroSub}>
-          A Lumen ilumina a gestão do seu salão — agenda, financeiro e clientes
-          num só lugar. Para você tratar o seu talento como o negócio sério que ele é.
+          Chega de caderninho, esquecimento e dinheiro sem controle.
+          A Lumen cuida da gestão enquanto você cuida das unhas.
         </p>
         <div style={s.heroCtas}>
           <button style={s.ctaPrimary} onClick={ir}>Começar grátis <ArrowRight size={16} /></button>
           <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
         </div>
-        <div style={s.heroNota}>“+18% de receita média em 30 dias.” — Carol, autônoma</div>
+        <div style={s.heroNota}>”Finalmente sei quanto ganho de verdade.” — Queléen, nail designer</div>
       </section>
 
       {/* Benefícios */}
       <section id="funcionalidades" style={s.secao}>
-        <div style={s.secaoLabel}>tudo o que o seu salão precisa</div>
+        <div style={s.secaoLabel}>funcionalidades</div>
+        <h2 style={s.secaoTitulo}>Tudo que você precisa, num só app</h2>
         <div style={s.benGrid}>
           {BENEFICIOS.map(b => {
             const Ico = b.icon
@@ -162,19 +173,20 @@ export default function Landing() {
       <section style={s.secaoEquipe}>
         <div style={s.equipeInner}>
           <div style={s.secaoLabelLight}>para salões com equipe</div>
-          <h2 style={s.equipeTitulo}>Cada manicure com o próprio login.</h2>
+          <h2 style={s.equipeTitulo}>Sua equipe organizada, sem bagunça.</h2>
           <p style={s.equipeTexto}>
-            No plano Pro, dê acesso individual à sua equipe — cada profissional vê só a própria
-            agenda e o próprio faturamento. A recepção gerencia tudo pelo login de administradora.
-            Por apenas <strong>R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês por usuário</strong>.
+            No plano Pro, cada profissional tem o próprio acesso — vê só a própria agenda e o próprio financeiro.
+            Sua recepcionista gerencia tudo. Você controla todo o salão.
+            Por apenas <strong>R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês por usuário adicional</strong>.
           </p>
         </div>
       </section>
 
       {/* Planos */}
       <section id="planos" style={s.secao}>
-        <div style={s.secaoLabel}>planos para autônomas e salões</div>
-        <h2 style={s.planosTitulo}>Escolha o plano do seu momento</h2>
+        <div style={s.secaoLabel}>planos</div>
+        <h2 style={s.planosTitulo}>Simples, justo e sem surpresa</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, marginBottom: 28, marginTop: -12 }}>Para autônomas e salões com equipe. Comece grátis, cancele quando quiser.</p>
 
         {/* Toggle mensal/anual */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 }}>
@@ -235,11 +247,18 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section style={{ ...s.secao, maxWidth: 720 }}>
+        <div style={s.secaoLabel}>dúvidas frequentes</div>
+        <h2 style={{ ...s.planosTitulo, marginBottom: 32 }}>Perguntas frequentes</h2>
+        <FaqList />
+      </section>
+
       {/* CTA final */}
       <section style={s.ctaFinal}>
-        <h2 style={s.ctaFinalTitulo}>a gestão que a manicure faltava ter.</h2>
-        <p style={s.ctaFinalSub}>Comece grátis hoje. Leva menos de 1 minuto.</p>
-        <button style={s.ctaPrimary} onClick={ir}>Criar minha conta <ArrowRight size={16} /></button>
+        <h2 style={s.ctaFinalTitulo}>comece hoje. veja a diferença em 14 dias.</h2>
+        <p style={s.ctaFinalSub}>Sem cartão de crédito. Sem instalação. Cancele quando quiser.</p>
+        <button style={s.ctaPrimary} onClick={ir}>Criar minha conta grátis <ArrowRight size={16} /></button>
       </section>
 
       {/* Footer / Contato */}
@@ -312,6 +331,32 @@ export default function Landing() {
   )
 }
 
+function FaqList() {
+  const [aberto, setAberto] = useState(null)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {FAQ_ITEMS.map((item, i) => (
+        <div key={i} style={faq.card}>
+          <button style={faq.pergunta} onClick={() => setAberto(aberto === i ? null : i)}>
+            <span>{item.p}</span>
+            <span style={{ ...faq.icone, transform: aberto === i ? 'rotate(45deg)' : 'none' }}>+</span>
+          </button>
+          {aberto === i && (
+            <div style={faq.resposta}>{item.r}</div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const faq = {
+  card: { background: '#fff', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 6px rgba(139,38,85,0.05)' },
+  pergunta: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '18px 20px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: 'var(--text)', textAlign: 'left', fontFamily: 'inherit' },
+  icone: { fontSize: 22, fontWeight: 300, color: 'var(--pink)', flexShrink: 0, transition: 'transform 0.2s', lineHeight: 1 },
+  resposta: { padding: '0 20px 18px', fontSize: 14, color: 'var(--text2)', lineHeight: 1.7, borderTop: '1px solid var(--border)' },
+}
+
 function Feat({ f }) {
   const incluso = f.startsWith('✓')
   const texto = f.replace(/^[✓✗]\s/, '')
@@ -357,7 +402,8 @@ const s = {
   heroNota: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15, color: 'rgba(255,255,255,0.75)' },
 
   secao: { maxWidth: 1080, margin: '0 auto', padding: '56px 20px' },
-  secaoLabel: { fontSize: 11, fontWeight: 700, color: 'var(--pink)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center', marginBottom: 28 },
+  secaoLabel: { fontSize: 11, fontWeight: 700, color: 'var(--pink)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center', marginBottom: 12 },
+  secaoTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 28, fontWeight: 800, textAlign: 'center', letterSpacing: '-0.03em', margin: '0 0 32px', color: 'var(--text)' },
   secaoLabelLight: { fontSize: 11, fontWeight: 700, color: 'var(--gold, #E8C66A)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 14 },
   benGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 18 },
   benCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 16, padding: '22px 20px', boxShadow: '0 2px 10px rgba(139,38,85,0.05)' },
