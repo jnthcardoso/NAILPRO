@@ -61,9 +61,9 @@ export default function Login() {
         </div>
         <p style={s.sub}>iluminando a gestão, impulsionando o seu talento</p>
         <div style={{ textAlign: 'center', marginBottom: 6 }}>
-          <Link to="/lp" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
+          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
             <ChevronLeft size={13} strokeWidth={2} />
-            conhecer a Lumen
+            voltar ao site
           </Link>
         </div>
 
