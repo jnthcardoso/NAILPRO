@@ -64,7 +64,13 @@ export default function BemVindo() {
     if (form.nome_salao) {
       await supabase.from('saloes').update({ nome: form.nome_salao }).eq('dona_user_id', user.id)
     }
-    navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
+    // Se veio da landing com plano selecionado, vai para /planos
+    const temIntencao = !!sessionStorage.getItem('lumen_plano_intencao')
+    if (temIntencao) {
+      navigate('/planos', { replace: true, state: { onboardingJustCompleted: true } })
+    } else {
+      navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
+    }
   }
 
   async function pularTudo() {
@@ -79,7 +85,13 @@ export default function BemVindo() {
       user_id: user.id,
       onboarding_completo: true,
     })
-    navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
+    // Se veio da landing com plano selecionado, vai para /planos
+    const temIntencao = !!sessionStorage.getItem('lumen_plano_intencao')
+    if (temIntencao) {
+      navigate('/planos', { replace: true, state: { onboardingJustCompleted: true } })
+    } else {
+      navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
+    }
   }
 
   const totalSteps = 5

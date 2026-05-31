@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, X, Sparkles, ArrowLeft, CreditCard, Star, FileText, Zap, MessageCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -11,8 +11,21 @@ export default function Planos() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const [ciclo, setCiclo] = useState('anual') // 'anual' | 'mensal'
+  const [planoDestaque, setPlanoDestaque] = useState(null) // plano pré-selecionado da landing
   const [assinarLoading, setAssinarLoading] = useState(null)
   const [assinarErro, setAssinarErro] = useState('')
+
+  // Lê intenção de plano salva na landing
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('lumen_plano_intencao')
+      if (!raw) return
+      const { plano, ciclo: cicloSalvo } = JSON.parse(raw)
+      if (plano) setPlanoDestaque(plano)
+      if (cicloSalvo) setCiclo(cicloSalvo)
+      sessionStorage.removeItem('lumen_plano_intencao')
+    } catch { /* ignora */ }
+  }, [])
 
   async function sair() {
     await signOut()
@@ -164,6 +177,7 @@ export default function Planos() {
           ciclo={ciclo}
           isAtual={isSoloAtual}
           isPopular={false}
+          isDestaque={planoDestaque === 'solo'}
           loading={assinarLoading === 'solo'}
           onAssinar={() => handleAssinar('solo')}
         />
@@ -172,6 +186,7 @@ export default function Planos() {
           ciclo={ciclo}
           isAtual={isProAtual}
           isPopular={true}
+          isDestaque={planoDestaque === 'pro'}
           loading={assinarLoading === 'pro'}
           onAssinar={() => handleAssinar('pro')}
         />
@@ -251,13 +266,14 @@ export default function Planos() {
   )
 }
 
-function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, loading, onAssinar }) {
+function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loading, onAssinar }) {
   const precoMes = ciclo === 'anual' ? plano.precoMensalAnual : plano.precoMensalMensal
   const economiaPorc = Math.round(((plano.precoMensalMensal - plano.precoMensalAnual) / plano.precoMensalMensal) * 100)
 
   return (
-    <div style={{ ...s.planoCard, ...(isPopular ? s.planoCardPro : {}) }}>
+    <div style={{ ...s.planoCard, ...(isPopular ? s.planoCardPro : {}), ...(isDestaque && !isPopular ? s.planoCardDestaque : {}) }}>
       {isPopular && <div style={s.popularBadge}>⭐ Mais popular</div>}
+      {isDestaque && !isPopular && <div style={s.destaqueBadge}>👆 Você selecionou este</div>}
       {isAtual && <div style={s.atualBadge}>Seu plano atual</div>}
 
       <div style={s.planoNome}>{plano.nome}</div>
@@ -396,4 +412,6 @@ const s = {
   erroCard: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#B91C1C' },
   erroWpp: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#25D366', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' },
   segurancaRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--text3)', marginBottom: 24, flexWrap: 'wrap', textAlign: 'center' },
+  planoCardDestaque: { border: '2px solid #D4AF37', boxShadow: '0 12px 32px rgba(212,175,55,0.2)' },
+  destaqueBadge: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #D4AF37, #E6C260)', color: '#180712', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },
 }

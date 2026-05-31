@@ -57,8 +57,14 @@ function scrollTo(id) {
 
 export default function Landing() {
   const navigate = useNavigate()
-  const ir = () => navigate('/login')
   const [ciclo, setCiclo] = useState('anual')
+
+  // Navega para login salvando a intenção de plano no sessionStorage
+  const ir = () => navigate('/login')
+  const irComPlano = (planoId) => {
+    sessionStorage.setItem('lumen_plano_intencao', JSON.stringify({ plano: planoId, ciclo }))
+    navigate('/login')
+  }
   const [menuAberto, setMenuAberto] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -287,7 +293,7 @@ export default function Landing() {
               <span style={s.ciclo}>/mês</span>
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.solo.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
-            <button style={s.planoBtn} onClick={ir}>Começar grátis</button>
+            <button style={s.planoBtn} onClick={() => irComPlano('solo')}>Começar grátis</button>
             <div style={s.feats}>
               {PLANOS.solo.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
             </div>
@@ -303,7 +309,7 @@ export default function Landing() {
               <span style={s.ciclo}>/mês</span>
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · + usuários por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + usuários por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
-            <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={ir}>Começar grátis</button>
+            <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={() => irComPlano('pro')}>Começar grátis</button>
             <div style={s.feats}>
               {PLANOS.pro.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
             </div>
