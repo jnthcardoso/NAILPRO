@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -10,16 +11,18 @@ import { ptBR } from 'date-fns/locale'
 export default function ClienteDetalhe() {
   const { id } = useParams()
   const { user } = useAuth()
+  const { salaoId } = useSalao()
   const navigate = useNavigate()
   const { confirmar, sucesso, erro } = useToast()
   const [cliente, setCliente] = useState(null)
   const [historico, setHistorico] = useState([])
   const [arquivando, setArquivando] = useState(false)
 
-  useEffect(() => { if (user && id) { loadCliente(); loadHistorico() } }, [user, id])
+  useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico() } }, [user, id, salaoId])
 
   async function loadCliente() {
-    const { data } = await supabase.from('clientes').select('*').eq('id', id).maybeSingle()
+    const { data } = await supabase.from('clientes').select('*').eq('id', id).eq('salao_id', salaoId).maybeSingle()
+    if (!data) { navigate('/app/clientes'); return } // Bloqueia acesso a clientes de outros salões
     setCliente(data)
   }
 

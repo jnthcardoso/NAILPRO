@@ -92,7 +92,7 @@ function OnboardingGuard({ children }) {
 function RequireGerencia({ children }) {
   const { loading, gerenciaTudo } = useSalao()
   if (loading) return <PageSkeleton />
-  return gerenciaTudo ? children : <Navigate to="/agenda" replace />
+  return gerenciaTudo ? children : <Navigate to="/app/agenda" replace />
 }
 
 // Paywall: trial encerrado ou assinatura expirada → manda para /planos.

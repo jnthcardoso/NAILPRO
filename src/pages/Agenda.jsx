@@ -380,12 +380,12 @@ export default function Agenda() {
 
   function fecharPagModal() {
     if (pagModalObrigatorio) {
-      // Avisa que o agendamento ficará sem pagamento registrado
       erro('⚠️ Agendamento marcado como realizado sem pagamento. Registre depois em "💳 Pagamento" no card.')
     }
     setShowPagModal(false)
     setPagModalObrigatorio(false)
     setAgSelecionado(null)
+    setFormPag({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
   }
 
   function navegar(dir) {

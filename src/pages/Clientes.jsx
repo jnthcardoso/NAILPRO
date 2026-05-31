@@ -224,7 +224,7 @@ export default function Clientes() {
         const diasAusente = c.ultimo_atendimento ? differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) : null
         const sumida = diasAusente != null && diasAusente >= diasAlerta
         return (
-          <div key={c.id} style={s.card} onClick={() => navigate(`/clientes/${c.id}`)}>
+          <div key={c.id} style={s.card} onClick={() => navigate(`/app/clientes/${c.id}`)}>
             <div style={s.avatar}>{getInitials(c.nome)}</div>
             <div style={{ flex: 1 }}>
               <div style={s.cardName}>
@@ -314,7 +314,7 @@ export default function Clientes() {
             <div style={s.field}><label style={s.label}>Data de nascimento</label><input style={s.input} type="date" value={form.data_nascimento} onChange={e => setForm({ ...form, data_nascimento: e.target.value })} /></div>
             <div style={s.field}><label style={s.label}>Observações</label><input style={s.input} placeholder="Preferências, alergias..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} /></div>
             <button style={s.btnPrimary} onClick={salvarCliente} disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar cliente'}</button>
-            <button style={s.btnSecondary} onClick={() => setShowModal(false)}>Cancelar</button>
+            <button style={s.btnSecondary} onClick={() => { setShowModal(false); setErros({}) }}>Cancelar</button>
           </div>
         </div>
       )}

@@ -196,13 +196,14 @@ export default function Home() {
 
     // Clientes sumidas + aniversários
     const { data: clientes } = await supabase.from('clientes')
-      .select('id, nome, ultimo_atendimento, data_nascimento').eq('salao_id', salaoId)
+      .select('id, nome, ultimo_atendimento, data_nascimento, arquivada').eq('salao_id', salaoId)
     if (clientes) {
-      setClientesSumidas(clientes
+      const ativas = clientes.filter(c => !c.arquivada)
+      setClientesSumidas(ativas
         .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento)) >= limiteAlerta)
         .slice(0, 3))
       const hj = new Date()
-      setAniversarios(clientes.filter(c => {
+      setAniversarios(ativas.filter(c => {
         if (!c.data_nascimento) return false
         const nasc = new Date(c.data_nascimento + 'T12:00:00')
         const aniv = new Date(hj.getFullYear(), nasc.getMonth(), nasc.getDate())

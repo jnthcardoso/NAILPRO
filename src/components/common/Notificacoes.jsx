@@ -59,7 +59,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
         id: 'pag', icon: Clock, cor: '#D97706', bg: '#FEF3C7',
         titulo: `${pend.length} pagamento${pend.length > 1 ? 's' : ''} a receber`,
         sub: `R$ ${total.toFixed(2).replace('.', ',')} pendente${pend.length > 1 ? 's' : ''}`,
-        to: '/financeiro',
+        to: '/app/financeiro',
       })
     }
 
@@ -70,7 +70,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
       lista.push({
         id: 'hoje', icon: CheckCircle, cor: '#1E40AF', bg: '#DBEAFE',
         titulo: `${hojeAg.length} atendimento${hojeAg.length > 1 ? 's' : ''} a confirmar hoje`,
-        sub: 'Toque para ver a agenda', to: '/agenda',
+        sub: 'Toque para ver a agenda', to: '/app/agenda',
       })
     }
 
@@ -83,7 +83,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
       lista.push({
         id: 'lembr', icon: Bell, cor: '#15803D', bg: '#DCFCE7',
         titulo: `${lembr} lembrete${lembr > 1 ? 's' : ''} pra enviar`,
-        sub: 'Agendamentos de amanhã', to: '/lembretes',
+        sub: 'Agendamentos de amanhã', to: '/app/lembretes',
       })
     }
 
@@ -98,7 +98,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
         lista.push({
           id: 'sumidas', icon: UserX, cor: '#B91C1C', bg: '#FEE2E2',
           titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes sumidas' : 'cliente sumida'} +${diasAlerta}d`,
-          sub: sumidas.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/clientes',
+          sub: sumidas.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/app/clientes',
         })
       }
       const aniv = ativas.filter(c => {
@@ -112,7 +112,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
         lista.push({
           id: 'aniv', icon: Cake, cor: '#86198F', bg: '#FAE8FF',
           titulo: `${aniv.length} aniversariante${aniv.length > 1 ? 's' : ''} essa semana`,
-          sub: aniv.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/clientes',
+          sub: aniv.slice(0, 3).map(c => c.nome.split(' ')[0]).join(' · '), to: '/app/clientes',
         })
       }
     }
