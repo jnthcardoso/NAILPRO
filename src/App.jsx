@@ -32,6 +32,13 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+// Rota pública: se já logado, manda direto pro app
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <PageSkeleton />
+  return user ? <Navigate to="/app" replace /> : children
+}
+
 function OnboardingGuard({ children }) {
   const { user } = useAuth()
   const location = useLocation()
@@ -73,7 +80,7 @@ function OnboardingGuard({ children }) {
     return <Navigate to="/bem-vindo" replace />
   }
   if (status === 'done' && location.pathname === '/bem-vindo') {
-    return <Navigate to="/" replace />
+    return <Navigate to="/app" replace />
   }
 
   return children
@@ -103,14 +110,17 @@ export default function App() {
         <ToastProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/lp" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
+            {/* Rotas públicas */}
+            <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
             <Route path="/termos" element={<Termos />} />
             <Route path="/privacidade" element={<Privacidade />} />
+
+            {/* Rotas do app (pós-login) */}
             <Route path="/bem-vindo" element={<PrivateRoute><OnboardingGuard><BemVindo /></OnboardingGuard></PrivateRoute>} />
             <Route path="/planos" element={<PrivateRoute><OnboardingGuard><Planos /></OnboardingGuard></PrivateRoute>} />
-            <Route path="/" element={<PrivateRoute><OnboardingGuard><PlanoGuard><AppLayout /></PlanoGuard></OnboardingGuard></PrivateRoute>}>
+            <Route path="/app" element={<PrivateRoute><OnboardingGuard><PlanoGuard><AppLayout /></PlanoGuard></OnboardingGuard></PrivateRoute>}>
               <Route index element={<Home />} />
               <Route path="metas" element={<RequireGerencia><Metas /></RequireGerencia>} />
               <Route path="lembretes" element={<RequireGerencia><Lembretes /></RequireGerencia>} />

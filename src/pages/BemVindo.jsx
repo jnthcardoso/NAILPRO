@@ -64,7 +64,7 @@ export default function BemVindo() {
     if (form.nome_salao) {
       await supabase.from('saloes').update({ nome: form.nome_salao }).eq('dona_user_id', user.id)
     }
-    navigate('/', { replace: true, state: { onboardingJustCompleted: true } })
+    navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
   }
 
   async function pularTudo() {
@@ -79,7 +79,7 @@ export default function BemVindo() {
       user_id: user.id,
       onboarding_completo: true,
     })
-    navigate('/', { replace: true, state: { onboardingJustCompleted: true } })
+    navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
   }
 
   const totalSteps = 5

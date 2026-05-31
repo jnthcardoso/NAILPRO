@@ -10,19 +10,19 @@ import Notificacoes from '../common/Notificacoes'
 
 // Itens completos (dona / recepcionista — gerenciam tudo)
 const navItemsCompleto = [
-  { to: '/', icon: Home, label: 'Início', exact: true },
-  { to: '/agenda', icon: Calendar, label: 'Agenda' },
-  { to: '/lembretes', icon: Bell, label: 'Lembretes' },
-  { to: '/clientes', icon: Users, label: 'Clientes' },
-  { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
-  { to: '/metas', icon: Target, label: 'Metas' },
+  { to: '/app', icon: Home, label: 'Início', exact: true },
+  { to: '/app/agenda', icon: Calendar, label: 'Agenda' },
+  { to: '/app/lembretes', icon: Bell, label: 'Lembretes' },
+  { to: '/app/clientes', icon: Users, label: 'Clientes' },
+  { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/app/metas', icon: Target, label: 'Metas' },
 ]
 
 // Profissional: só a própria agenda + o próprio financeiro
 const navItemsProfissional = [
-  { to: '/', icon: Home, label: 'Início', exact: true },
-  { to: '/agenda', icon: Calendar, label: 'Agenda' },
-  { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/app', icon: Home, label: 'Início', exact: true },
+  { to: '/app/agenda', icon: Calendar, label: 'Agenda' },
+  { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
 ]
 
 
@@ -57,7 +57,7 @@ export default function AppLayout() {
 
       {/* ── Sidebar (desktop only) ───────────── */}
       <aside className="app-sidebar">
-        <NavLink to="/" style={{ ...sb.logoArea, textDecoration: 'none', display: 'block', cursor: 'pointer', ...(isSidebarCollapsed ? { padding: '24px 0', display: 'flex', justifyContent: 'center' } : {}) }}>
+        <NavLink to="/app" style={{ ...sb.logoArea, textDecoration: 'none', display: 'block', cursor: 'pointer', ...(isSidebarCollapsed ? { padding: '24px 0', display: 'flex', justifyContent: 'center' } : {}) }}>
           {isSidebarCollapsed ? (
             <LumenFlameIcon size={24} variant="reverso" />
           ) : (
@@ -121,43 +121,43 @@ export default function AppLayout() {
           <Notificacoes variant="sidebar" collapsed={isSidebarCollapsed} />
           {isAdmin && (
             <NavLink
-              to="/admin"
+              to="/app/admin"
               style={{
                 ...sb.navItem,
-                ...(isActive('/admin') ? sb.navItemActive : {}),
+                ...(isActive('/app/admin') ? sb.navItemActive : {}),
                 ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
               }}
               title={isSidebarCollapsed ? "Admin" : undefined}
             >
-              <Shield size={19} strokeWidth={isActive('/admin') ? 2.5 : 1.8} />
+              <Shield size={19} strokeWidth={isActive('/app/admin') ? 2.5 : 1.8} />
               {!isSidebarCollapsed && <span>Admin</span>}
             </NavLink>
           )}
           {podeGerenciarEquipe && (
             <NavLink
-              to="/equipe"
+              to="/app/equipe"
               style={{
                 ...sb.navItem,
-                ...(isActive('/equipe') ? sb.navItemActive : {}),
+                ...(isActive('/app/equipe') ? sb.navItemActive : {}),
                 ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
               }}
               title={isSidebarCollapsed ? "Equipe" : undefined}
             >
-              <UsersRound size={19} strokeWidth={isActive('/equipe') ? 2.5 : 1.8} />
+              <UsersRound size={19} strokeWidth={isActive('/app/equipe') ? 2.5 : 1.8} />
               {!isSidebarCollapsed && <span>Equipe</span>}
             </NavLink>
           )}
           {gerenciaTudo && (
             <NavLink
-              to="/configuracoes"
+              to="/app/configuracoes"
               style={{
                 ...sb.navItem,
-                ...(isActive('/configuracoes') ? sb.navItemActive : {}),
+                ...(isActive('/app/configuracoes') ? sb.navItemActive : {}),
                 ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
               }}
               title={isSidebarCollapsed ? "Configurações" : undefined}
             >
-              <Settings size={19} strokeWidth={isActive('/configuracoes') ? 2.5 : 1.8} />
+              <Settings size={19} strokeWidth={isActive('/app/configuracoes') ? 2.5 : 1.8} />
               {!isSidebarCollapsed && <span>Configurações</span>}
             </NavLink>
           )}
@@ -194,7 +194,7 @@ export default function AppLayout() {
         {/* Mobile header */}
         <header className="app-mobile-header">
           <div style={mh.left}>
-            <NavLink to="/" style={{ ...mh.logoRow, textDecoration: 'none' }}>
+            <NavLink to="/app" style={{ ...mh.logoRow, textDecoration: 'none' }}>
               <LumenLogo size={18} variant="reverso" />
             </NavLink>
             <div style={mh.sub}>
@@ -207,7 +207,7 @@ export default function AppLayout() {
             </div>
             <Notificacoes variant="header" />
             {gerenciaTudo && (
-              <NavLink to="/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
+              <NavLink to="/app/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
                 <Settings size={18} />
               </NavLink>
             )}
@@ -236,10 +236,10 @@ export default function AppLayout() {
         })}
         {isAdmin && (
           <NavLink
-            to="/admin"
-            style={{ ...bn.item, ...(isActive('/admin') ? bn.itemActive : {}) }}
+            to="/app/admin"
+            style={{ ...bn.item, ...(isActive('/app/admin') ? bn.itemActive : {}) }}
           >
-            <Shield size={20} strokeWidth={isActive('/admin') ? 2.5 : 1.8} />
+            <Shield size={20} strokeWidth={isActive('/app/admin') ? 2.5 : 1.8} />
             <span style={bn.label}>Admin</span>
           </NavLink>
         )}
