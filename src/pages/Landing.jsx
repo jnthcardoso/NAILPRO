@@ -34,17 +34,23 @@ export default function Landing() {
     ? formatPreco(p.precoMensalAnual)
     : formatPreco(p.precoMensalMensal)
 
-  // Libera scroll do body (o CSS do app bloqueia no desktop)
+  // Libera scroll do body/html/#root (o CSS do app bloqueia no desktop)
   useEffect(() => {
     const html = document.documentElement
     const body = document.body
-    const prevHtml = html.style.overflow
-    const prevBody = body.style.overflow
-    html.style.overflow = 'auto'
-    body.style.overflow = 'auto'
+    const root = document.getElementById('root')
+
+    html.style.cssText += ';overflow:auto!important;height:auto!important'
+    body.style.cssText += ';overflow:auto!important;height:auto!important'
+    if (root) root.style.cssText += ';overflow:auto!important;height:auto!important'
+
     return () => {
-      html.style.overflow = prevHtml
-      body.style.overflow = prevBody
+      // Restaura ao sair da landing
+      ;[html, body, root].forEach(el => {
+        if (!el) return
+        el.style.overflow = ''
+        el.style.height = ''
+      })
     }
   }, [])
 
