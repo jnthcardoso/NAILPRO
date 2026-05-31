@@ -234,6 +234,15 @@ export default function AppLayout() {
             </NavLink>
           )
         })}
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            style={{ ...bn.item, ...(isActive('/admin') ? bn.itemActive : {}) }}
+          >
+            <Shield size={20} strokeWidth={isActive('/admin') ? 2.5 : 1.8} />
+            <span style={bn.label}>Admin</span>
+          </NavLink>
+        )}
       </nav>
     </div>
   )
