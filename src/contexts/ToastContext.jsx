@@ -38,11 +38,12 @@ export function ToastProvider({ children }) {
 
   // Atalhos
   const sucesso = (mensagem, opts = {}) => toast({ tipo: 'sucesso', mensagem, ...opts })
-  const erro = (mensagem, opts = {}) => toast({ tipo: 'erro', mensagem, duracao: 5000, ...opts })
-  const info = (mensagem, opts = {}) => toast({ tipo: 'info', mensagem, ...opts })
+  const erro    = (mensagem, opts = {}) => toast({ tipo: 'erro',   mensagem, duracao: 5000, ...opts })
+  const info    = (mensagem, opts = {}) => toast({ tipo: 'info',   mensagem, ...opts })
+  const aviso   = (mensagem, opts = {}) => toast({ tipo: 'aviso',  mensagem, duracao: 5000, ...opts })
 
   return (
-    <ToastContext.Provider value={{ toast, sucesso, erro, info, confirmar, removerToast }}>
+    <ToastContext.Provider value={{ toast, sucesso, erro, info, aviso, confirmar, removerToast }}>
       {children}
       <ToastsView toasts={toasts} onClose={removerToast} />
       {confirm && <ConfirmDialog {...confirm} />}
@@ -60,9 +61,10 @@ function ToastsView({ toasts, onClose }) {
 
 function ToastItem({ toast, onClose }) {
   const TIPOS = {
-    sucesso: { icon: Check, bg: '#DCFCE7', border: '#86EFAC', color: '#15803D' },
-    erro:    { icon: AlertCircle, bg: '#FEE2E2', border: '#FCA5A5', color: '#B91C1C' },
-    info:    { icon: Info, bg: '#DBEAFE', border: '#93C5FD', color: '#1E40AF' },
+    sucesso: { icon: Check,        bg: '#DCFCE7', border: '#86EFAC', color: '#15803D' },
+    erro:    { icon: AlertCircle,  bg: '#FEE2E2', border: '#FCA5A5', color: '#B91C1C' },
+    info:    { icon: Info,         bg: '#DBEAFE', border: '#93C5FD', color: '#1E40AF' },
+    aviso:   { icon: AlertCircle,  bg: '#FEF3C7', border: '#FCD34D', color: '#92400E' },
   }
   const cfg = TIPOS[toast.tipo] || TIPOS.info
   const Icon = cfg.icon

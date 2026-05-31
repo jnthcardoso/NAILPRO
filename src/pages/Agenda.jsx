@@ -32,7 +32,7 @@ const VIEWS = ['Dia', 'Semana', 'Mês']
 export default function Agenda() {
   const { user } = useAuth()
   const { salaoId, membroId, gerenciaTudo, isProfissional } = useSalao()
-  const { sucesso, erro, confirmar } = useToast()
+  const { sucesso, erro, aviso, confirmar } = useToast()
   const [view, setView] = useState('Semana')
   const [dataSel, setDataSel] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState([])
@@ -364,10 +364,11 @@ export default function Agenda() {
         if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
       }
 
-      const msgSucesso = formPag.status === 'pendente'
-        ? '⏳ Pagamento pendente registrado — aparece em "A receber" no financeiro'
-        : formPag.modo === 'duplo' ? '✓ Pagamento em 2 formas confirmado' : '✓ Pagamento confirmado'
-      sucesso(msgSucesso)
+      if (formPag.status === 'pendente') {
+        aviso('⏳ Pagamento pendente registrado — aparece em "A receber" no financeiro')
+      } else {
+        sucesso(formPag.modo === 'duplo' ? '✓ Pagamento em 2 formas confirmado' : '✓ Pagamento confirmado')
+      }
       setShowPagModal(false)
       setPagModalObrigatorio(false)
       setAgSelecionado(null)
