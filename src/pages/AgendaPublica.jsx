@@ -46,10 +46,16 @@ export default function AgendaPublica() {
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
   const [tentativas, setTentativas] = useState(0)
-  const [bloqueadoAte, setBloqueadoAte] = useState(null)
+  const [bloqueadoAte, setBloqueadoAte] = useState(() => {
+    try { const t = localStorage.getItem(`agenda_block_${slug}`); return t ? new Date(Number(t)) : null } catch { return null }
+  })
+  const [ocupadosPeriodo, setOcupadosPeriodo] = useState({})
+  const [ocupadosCarregados, setOcupadosCarregados] = useState(false)
 
   useEffect(() => { loadConfig() }, [slug])
   useEffect(() => { if (dataSel && config) carregarSlotsOcupados() }, [dataSel])
+  // Ocupação do mês visível (para cinzar dias lotados no calendário)
+  useEffect(() => { if (config && !config.agenda_externa_url) carregarOcupadosMes() }, [mesAtual, config])
 
   async function loadConfig() {
     // Apenas colunas públicas - não expor meta_mensal, configs internas etc
@@ -74,6 +80,27 @@ export default function AgendaPublica() {
     setLoadingSlots(false)
   }
 
+  async function carregarOcupadosMes() {
+    const inicio = format(startOfMonth(mesAtual), 'yyyy-MM-dd')
+    const fim = format(endOfMonth(mesAtual), 'yyyy-MM-dd')
+    const { data } = await supabase.rpc('agenda_publica_ocupados_periodo', {
+      p_slug: slug, p_inicio: inicio, p_fim: fim,
+    })
+    const mapa = {}
+    ;(data || []).forEach(r => {
+      const h = r.horario.slice(0, 5)
+      if (!mapa[r.data]) mapa[r.data] = new Set()
+      mapa[r.data].add(h)
+    })
+    setOcupadosPeriodo(mapa)
+    setOcupadosCarregados(true)
+  }
+
+  function novoAgendamento() {
+    setStep(1); setDataSel(null); setHorarioSel(null)
+    setForm({ nome: '', telefone: '', servico: '', observacoes: '' }); setErros({})
+  }
+
   async function confirmar() {
     // Rate limiting: máx 3 tentativas em 5 minutos
     if (bloqueadoAte && new Date() < bloqueadoAte) {
@@ -92,7 +119,9 @@ export default function AgendaPublica() {
     const novasTentativas = tentativas + 1
     setTentativas(novasTentativas)
     if (novasTentativas >= 3) {
-      setBloqueadoAte(new Date(Date.now() + 5 * 60 * 1000))
+      const ate = new Date(Date.now() + 5 * 60 * 1000)
+      setBloqueadoAte(ate)
+      try { localStorage.setItem(`agenda_block_${slug}`, String(ate.getTime())) } catch { /* ignore */ }
       setTentativas(0)
     }
 
@@ -118,19 +147,50 @@ export default function AgendaPublica() {
     setSaving(false)
   }
 
-  function diaDisponivel(dia) {
-    if (isBefore(dia, startOfDay(new Date()))) return false
-    const diasAtivos = config?.dias_semana || [1, 2, 3, 4, 5]
-    return diasAtivos.includes(getDay(dia))
-  }
-
   const todosSlots = config ? gerarSlots(
     config.horario_inicio?.slice(0, 5),
     config.horario_fim?.slice(0, 5),
     config.duracao_atendimento || 60
   ) : []
-  const slotsDisponiveis = todosSlots.filter(s => !slotsOcupados.includes(s))
   const nomeSalao = config?.nome_salao || 'Agenda Online'
+  const hojeStr = format(new Date(), 'yyyy-MM-dd')
+  const agoraMin = new Date().getHours() * 60 + new Date().getMinutes()
+
+  // Horários livres de um dia: tira os ocupados e, se for hoje, os que já passaram.
+  function slotsLivres(diaStr, ocupados) {
+    const ehHoje = diaStr === hojeStr
+    return todosSlots.filter(slot => {
+      if (ocupados.has(slot)) return false
+      if (ehHoje) {
+        const [h, m] = slot.split(':').map(Number)
+        if (h * 60 + m <= agoraMin) return false
+      }
+      return true
+    })
+  }
+
+  function diaDisponivel(dia) {
+    if (isBefore(dia, startOfDay(new Date()))) return false
+    const diasAtivos = config?.dias_semana || [1, 2, 3, 4, 5]
+    if (!diasAtivos.includes(getDay(dia))) return false
+    // Já carregou a ocupação do mês? Esconde dias sem nenhum horário livre.
+    if (ocupadosCarregados) {
+      const dStr = format(dia, 'yyyy-MM-dd')
+      if (slotsLivres(dStr, ocupadosPeriodo[dStr] || new Set()).length === 0) return false
+    }
+    return true
+  }
+
+  // Horários do dia selecionado (ocupação "fresca" + remove passados se for hoje).
+  const slotsDisponiveis = slotsLivres(
+    dataSel ? format(dataSel, 'yyyy-MM-dd') : '',
+    new Set(slotsOcupados)
+  )
+
+  // Navegação do calendário: do mês atual até 3 meses à frente.
+  const mesAtualInicio = startOfMonth(mesAtual)
+  const podeVoltar = isBefore(startOfMonth(new Date()), mesAtualInicio)
+  const podeAvancar = isBefore(mesAtualInicio, startOfMonth(addMonths(new Date(), 3)))
 
   if (loading) return (
     <div style={s.center}>
@@ -252,13 +312,23 @@ export default function AgendaPublica() {
             <div style={s.cardTitle}>Escolha uma data</div>
 
             <div style={s.calNav}>
-              <button style={s.iconBtn} onClick={() => setMesAtual(m => subMonths(m, 1))}>
+              <button
+                style={{ ...s.iconBtn, ...(!podeVoltar ? s.iconBtnOff : {}) }}
+                onClick={() => podeVoltar && setMesAtual(m => subMonths(m, 1))}
+                disabled={!podeVoltar}
+                aria-label="Mês anterior"
+              >
                 <ChevronLeft size={18} />
               </button>
               <span style={s.calNavLabel}>
                 {format(mesAtual, "MMMM 'de' yyyy", { locale: ptBR })}
               </span>
-              <button style={s.iconBtn} onClick={() => setMesAtual(m => addMonths(m, 1))}>
+              <button
+                style={{ ...s.iconBtn, ...(!podeAvancar ? s.iconBtnOff : {}) }}
+                onClick={() => podeAvancar && setMesAtual(m => addMonths(m, 1))}
+                disabled={!podeAvancar}
+                aria-label="Próximo mês"
+              >
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -284,8 +354,12 @@ export default function AgendaPublica() {
                     const sel = dataSel && format(dia, 'yyyy-MM-dd') === format(dataSel, 'yyyy-MM-dd')
                     const hoje = isToday(dia)
                     return (
-                      <div
+                      <button
                         key={dia.toISOString()}
+                        type="button"
+                        disabled={!disp}
+                        aria-label={format(dia, "d 'de' MMMM", { locale: ptBR }) + (disp ? '' : ' — indisponível')}
+                        aria-pressed={!!sel}
                         style={{
                           ...s.calCell,
                           ...(!doMes ? { opacity: 0, pointerEvents: 'none' } : {}),
@@ -301,7 +375,7 @@ export default function AgendaPublica() {
                         }}
                       >
                         {format(dia, 'd')}
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -456,8 +530,21 @@ export default function AgendaPublica() {
               <div style={s.summaryRow}><span>💅 Serviço</span><strong>{form.servico}</strong></div>
             </div>
             <div style={s.footNote}>
-              Salve o contato da profissional para receber a confirmação pelo WhatsApp.
+              Seu horário ainda não está confirmado — a profissional vai confirmar pelo WhatsApp.
             </div>
+            {(() => {
+              const wpp = (config?.whatsapp || '').replace(/\D/g, '')
+              if (!wpp) return null
+              const msg = encodeURIComponent(
+                `Olá! Acabei de solicitar um agendamento para ${format(dataSel, 'dd/MM/yyyy')} às ${horarioSel} (${form.servico}). Pode confirmar?`
+              )
+              return (
+                <a href={`https://wa.me/55${wpp}?text=${msg}`} target="_blank" rel="noreferrer" style={s.btnWhats}>
+                  💬 Confirmar pelo WhatsApp
+                </a>
+              )
+            })()}
+            <button style={s.btnSec} onClick={novoAgendamento}>Fazer outro agendamento</button>
           </div>
         )}
       </div>
@@ -482,7 +569,7 @@ const s = {
   stepDot: { width: 26, height: 26, borderRadius: '50%', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#AAA', flexShrink: 0 },
   stepDotActive: { background: 'var(--pink, #8B2655)', color: 'white' },
   stepDotDone: { background: '#2E7D32', color: 'white' },
-  stepLabel: { fontSize: 12, fontWeight: 500, color: '#AAA', marginRight: 6 },
+  stepLabel: { fontSize: 12, fontWeight: 500, color: '#6B7280', marginRight: 6 },
   stepLine: { width: 28, height: 2, background: '#E0E0E0', borderRadius: 1 },
   stepLineDone: { background: '#2E7D32' },
   content: { flex: 1, padding: '16px 16px 32px', maxWidth: 440, margin: '0 auto', width: '100%' },
@@ -491,12 +578,13 @@ const s = {
   backBtn: { display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: 'var(--pink, #8B2655)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', alignSelf: 'flex-start' },
   calNav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   iconBtn: { background: 'none', border: 'none', cursor: 'pointer', color: '#555', display: 'flex', padding: 4 },
+  iconBtnOff: { color: '#D0D0D0', cursor: 'not-allowed' },
   calNavLabel: { fontSize: 14, fontWeight: 600, textTransform: 'capitalize', color: '#1A1A1A' },
   calHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' },
-  calHeaderCell: { fontSize: 11, fontWeight: 600, color: '#AAA', padding: '4px 0', textTransform: 'uppercase' },
+  calHeaderCell: { fontSize: 11, fontWeight: 600, color: '#6B7280', padding: '4px 0', textTransform: 'uppercase' },
   calRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 },
-  calCell: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, fontSize: 13, fontWeight: 500, color: '#CCC', cursor: 'default', userSelect: 'none' },
-  calCellOff: { color: '#DDD' },
+  calCell: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, fontSize: 13, fontWeight: 500, color: '#C0C0C0', cursor: 'default', userSelect: 'none', border: 'none', background: 'transparent', fontFamily: 'inherit', padding: 0 },
+  calCellOff: { color: '#D0D0D0' },
   calCellOn: { color: '#1A1A1A', background: '#F5F5F5', cursor: 'pointer' },
   calCellHoje: { color: 'var(--pink, #8B2655)', fontWeight: 700, border: '2px solid var(--pink, #8B2655)', background: 'white' },
   calCellSel: { background: 'var(--pink, #8B2655)', color: 'white', fontWeight: 700 },
@@ -515,14 +603,15 @@ const s = {
   btn: { background: 'var(--pink, #8B2655)', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s', fontFamily: 'inherit' },
   btnOff: { background: '#E0E0E0', boxShadow: 'none', cursor: 'not-allowed', color: '#AAA' },
   btnSec: { background: '#F5F5F5', color: '#555', border: 'none', borderRadius: 10, padding: '11px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  btnWhats: { display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', background: '#25D366', color: 'white', borderRadius: 12, padding: '13px', fontSize: 15, fontWeight: 700, textDecoration: 'none', marginTop: 4, fontFamily: "'Bricolage Grotesque', sans-serif" },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0', color: '#888', fontSize: 14, textAlign: 'center' },
   successIcon: { fontSize: 56, marginBottom: 4 },
   h2: { fontSize: 22, fontWeight: 800, color: '#1A1A1A', fontFamily: "'Bricolage Grotesque', sans-serif" },
   sub: { fontSize: 14, color: '#555', lineHeight: 1.6 },
   summaryBox: { background: 'var(--pink-light, #FAF6F6)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 9, width: '100%' },
   summaryRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: '#333' },
-  footNote: { fontSize: 12, color: '#AAA', textAlign: 'center' },
-  footer: { padding: '16px', textAlign: 'center', fontSize: 12, color: '#AAA' },
+  footNote: { fontSize: 12, color: '#6B7280', textAlign: 'center' },
+  footer: { padding: '16px', textAlign: 'center', fontSize: 12, color: '#6B7280' },
 }
 
 // ✨ Estilos da landing "Link Externo" (linktree-style)
