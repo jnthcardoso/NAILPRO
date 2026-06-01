@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard, MessageCircle, Pencil, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -31,7 +31,7 @@ const VIEWS = ['Dia', 'Semana', 'Mês']
 
 export default function Agenda() {
   const { user } = useAuth()
-  const { salaoId, membroId, gerenciaTudo, isProfissional } = useSalao()
+  const { salaoId, membroId, gerenciaTudo, isProfissional, isDona } = useSalao()
   const { sucesso, erro, aviso, confirmar } = useToast()
   const [view, setView] = useState('Semana')
   const [dataSel, setDataSel] = useState(new Date())
@@ -67,7 +67,19 @@ export default function Agenda() {
 
   const buscaAtiva = busca.trim().length >= 2
 
+  // Controle do auto-sync com Google (evita repetir/loopar tentativas)
+  const sincronizandoRef = useRef(false)
+  const tentadosGoogleRef = useRef(new Set())
+
   useEffect(() => { if (salaoId) loadAgendamentos() }, [salaoId, dataSel, view, filtroProf])
+
+  // Auto-sync: empurra para o Google Agenda os agendamentos ainda sem evento
+  // (inclui os vindos da agenda pública). Só a dona sincroniza — a integração
+  // é single-account, então evitamos duplicar em contas diferentes.
+  useEffect(() => {
+    if (isDona && googleConectado && agendamentos.length) sincronizarGoogle(agendamentos)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agendamentos, googleConectado, isDona, googlePronto])
 
   // ── Busca por cliente/serviço (todas as datas) ──
   useEffect(() => {
@@ -111,8 +123,8 @@ export default function Agenda() {
     let inicio, fim
     if (view === 'Dia') { inicio = fim = format(dataSel, 'yyyy-MM-dd') }
     else if (view === 'Semana') {
-      inicio = format(startOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd')
-      fim = format(endOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd')
+      inicio = format(startOfWeek(dataSel, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+      fim = format(endOfWeek(dataSel, { weekStartsOn: 1 }), 'yyyy-MM-dd')
     } else {
       inicio = format(startOfMonth(dataSel), 'yyyy-MM-dd')
       fim = format(endOfMonth(dataSel), 'yyyy-MM-dd')
@@ -148,6 +160,40 @@ export default function Agenda() {
     setTimeout(() => setGoogleMsg(null), 4000)
   }
 
+  // Empurra para o Google Agenda os agendamentos futuros sem google_event_id.
+  // Best-effort: se o token não estiver disponível, para sem incomodar.
+  async function sincronizarGoogle(lista) {
+    if (sincronizandoRef.current) return
+    const hoje = format(new Date(), 'yyyy-MM-dd')
+    const pendentes = lista.filter(a =>
+      !a.google_event_id &&
+      a.status !== 'cancelado' &&
+      a.data >= hoje &&
+      !tentadosGoogleRef.current.has(a.id)
+    )
+    if (pendentes.length === 0) return
+
+    sincronizandoRef.current = true
+    let ok = 0
+    for (let i = 0; i < pendentes.length; i++) {
+      const ag = pendentes[i]
+      tentadosGoogleRef.current.add(ag.id)
+      try {
+        const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
+        await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
+        setAgendamentos(prev => prev.map(x => x.id === ag.id ? { ...x, google_event_id: evento.id } : x))
+        ok++
+      } catch (e) {
+        console.error('Auto-sync Google falhou:', e)
+        // Marca o restante como "tentado" para não martelar a API nesta sessão.
+        pendentes.slice(i + 1).forEach(x => tentadosGoogleRef.current.add(x.id))
+        break
+      }
+    }
+    sincronizandoRef.current = false
+    if (ok > 0) showGoogleMsg(`${ok} agendamento(s) enviados ao Google Agenda ✓`, 'success')
+  }
+
   async function loadGoogleConfig() {
     const { data } = await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('salao_id', salaoId).maybeSingle()
     if (data?.duracao_atendimento) setDuracaoAtend(data.duracao_atendimento)
@@ -168,8 +214,10 @@ export default function Agenda() {
     try {
       initTokenClient((ok) => setGooglePronto(ok))
       await conectarGoogle()
+      tentadosGoogleRef.current = new Set() // token novo: permite retentar os que falharam
       setGooglePronto(true)
       showGoogleMsg('Google Agenda reconectado ✓', 'success')
+      sincronizarGoogle(agendamentos)
     } catch (e) {
       showGoogleMsg('Falha ao reconectar Google Agenda', 'error')
     }
@@ -793,7 +841,7 @@ export default function Agenda() {
               {/* Ações secundárias */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: '1 1 auto' }}
-                  onClick={() => { setAgDetalhe(null); setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || '') }); setShowPagModal(true) }}>
+                  onClick={() => { setAgDetalhe(null); setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' }); setShowPagModal(true) }}>
                   <CreditCard size={13} />{pag ? 'Editar pagamento' : 'Registrar pagamento'}
                 </button>
                 <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: '1 1 auto' }}
