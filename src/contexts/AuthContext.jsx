@@ -50,8 +50,22 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => { await supabase.auth.signOut() }
 
+  // Envia e-mail com link para redefinir a senha
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    })
+    return { error }
+  }
+
+  // Define a nova senha (usado na tela /redefinir-senha, com sessão de recuperação)
+  const updatePassword = async (password) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    return { error }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

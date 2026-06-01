@@ -20,6 +20,7 @@ import Avisos from './pages/Avisos'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import Landing from './pages/Landing'
+import RedefinirSenha from './pages/RedefinirSenha'
 import { AssinaturaProvider, useAssinatura } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/termos" element={<Termos />} />
             <Route path="/privacidade" element={<Privacidade />} />
 

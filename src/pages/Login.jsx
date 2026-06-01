@@ -7,7 +7,7 @@ import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
 import { trackCadastro } from '../lib/analytics'
 
 export default function Login() {
-  const { user, signIn, signUp } = useAuth()
+  const { user, signIn, signUp, resetPassword } = useAuth()
   // Se vier com ?modo=cadastro (ex: botão "Começar grátis" da landing), abre signup direto
   const [mode, setMode] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -17,8 +17,22 @@ export default function Login() {
   const [aceitouTermos, setAceitouTermos] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [msg, setMsg] = useState('') // mensagem de sucesso (ex: recuperação enviada)
 
   if (user) return <Navigate to="/app" replace />
+
+  const handleRecuperar = async (e) => {
+    e.preventDefault()
+    setError(''); setMsg('')
+    if (!validarEmail(form.email)) { setError('Digite um e-mail válido.'); return }
+    setLoading(true)
+    const { error } = await resetPassword(form.email)
+    setLoading(false)
+    if (error) { setError('Não foi possível enviar. Tente novamente.'); return }
+    setMsg('Pronto! Se este e-mail tiver conta, enviamos um link para redefinir a senha. Confira sua caixa de entrada (e o spam).')
+  }
+
+  const irPara = (novoModo) => { setMode(novoModo); setError(''); setMsg('') }
 
   const handle = async (e) => {
     e.preventDefault()
@@ -69,88 +83,124 @@ export default function Login() {
           </Link>
         </div>
 
-        <div style={s.tabs}>
-          <button 
-            style={{ ...s.tab, ...(mode === 'login' ? s.tabActive : {}) }} 
-            onClick={() => setMode('login')}
-          >
-            Entrar
-          </button>
-          <button 
-            style={{ ...s.tab, ...(mode === 'signup' ? s.tabActive : {}) }} 
-            onClick={() => setMode('signup')}
-          >
-            Criar conta
-          </button>
-        </div>
+        {mode !== 'recuperar' && (
+          <div style={s.tabs}>
+            <button
+              style={{ ...s.tab, ...(mode === 'login' ? s.tabActive : {}) }}
+              onClick={() => irPara('login')}
+            >
+              Entrar
+            </button>
+            <button
+              style={{ ...s.tab, ...(mode === 'signup' ? s.tabActive : {}) }}
+              onClick={() => irPara('signup')}
+            >
+              Criar conta
+            </button>
+          </div>
+        )}
 
-        <form onSubmit={handle} style={s.form}>
-          {mode === 'signup' && (
+        {mode === 'recuperar' ? (
+          <form onSubmit={handleRecuperar} style={s.form}>
+            <p style={s.recuperarTexto}>
+              Informe o e-mail da sua conta e enviaremos um link para você criar uma nova senha.
+            </p>
             <div style={s.field}>
-              <label htmlFor="login-name" style={s.label}>Seu nome</label>
+              <label htmlFor="rec-email" style={s.label}>E-mail</label>
               <input
-                id="login-name"
+                id="rec-email"
                 style={s.input}
-                type="text"
-                placeholder="Ex: Camila Souza"
-                autoComplete="name"
+                type="email"
+                placeholder="seu@email.com"
+                autoComplete="email"
                 required
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
               />
             </div>
-          )}
-          <div style={s.field}>
-            <label htmlFor="login-email" style={s.label}>E-mail</label>
-            <input
-              id="login-email"
-              style={s.input}
-              type="email"
-              placeholder="seu@email.com"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-            />
-          </div>
-          <div style={s.field}>
-            <label htmlFor="login-password" style={s.label}>Senha</label>
-            <input
-              id="login-password"
-              style={s.input}
-              type="password"
-              placeholder="••••••••"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              required
-              value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-            />
-          </div>
-          {mode === 'signup' && (
-            <label style={s.termosRow}>
+            {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+            {msg && <div style={s.success}>{msg}</div>}
+            <button style={s.btn} type="submit" disabled={loading}>
+              {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+            </button>
+            <button type="button" style={s.linkBtn} onClick={() => irPara('login')}>
+              ← Voltar para o login
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handle} style={s.form}>
+            {mode === 'signup' && (
+              <div style={s.field}>
+                <label htmlFor="login-name" style={s.label}>Seu nome</label>
+                <input
+                  id="login-name"
+                  style={s.input}
+                  type="text"
+                  placeholder="Ex: Camila Souza"
+                  autoComplete="name"
+                  required
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                />
+              </div>
+            )}
+            <div style={s.field}>
+              <label htmlFor="login-email" style={s.label}>E-mail</label>
               <input
-                type="checkbox"
-                checked={aceitouTermos}
-                onChange={e => setAceitouTermos(e.target.checked)}
-                style={s.checkbox}
+                id="login-email"
+                style={s.input}
+                type="email"
+                placeholder="seu@email.com"
+                autoComplete="email"
+                required
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
               />
-              <span>
-                Li e aceito os{' '}
-                <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
-                {' '}e a{' '}
-                <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
-              </span>
-            </label>
-          )}
-          {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
-          <button
-            style={s.btn}
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
-          </button>
-        </form>
+            </div>
+            <div style={s.field}>
+              <label htmlFor="login-password" style={s.label}>Senha</label>
+              <input
+                id="login-password"
+                style={s.input}
+                type="password"
+                placeholder="••••••••"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                required
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+              />
+            </div>
+            {mode === 'login' && (
+              <button type="button" style={s.esqueciBtn} onClick={() => irPara('recuperar')}>
+                Esqueci minha senha
+              </button>
+            )}
+            {mode === 'signup' && (
+              <label style={s.termosRow}>
+                <input
+                  type="checkbox"
+                  checked={aceitouTermos}
+                  onChange={e => setAceitouTermos(e.target.checked)}
+                  style={s.checkbox}
+                />
+                <span>
+                  Li e aceito os{' '}
+                  <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
+                  {' '}e a{' '}
+                  <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
+                </span>
+              </label>
+            )}
+            {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+            <button
+              style={s.btn}
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
+            </button>
+          </form>
+        )}
 
         <div style={s.footer}>
           <Link to="/termos" style={s.footerLink}>Termos</Link>
@@ -241,14 +291,51 @@ const s = {
     outline: 'none',
     transition: 'all 0.22s ease',
   },
-  error: { 
-    background: 'rgba(185, 28, 28, 0.15)', 
-    color: '#FF8A8A', 
-    fontSize: 13, 
-    padding: '10px 14px', 
-    borderRadius: 'var(--radius-sm)', 
-    border: '1px solid rgba(185, 28, 28, 0.3)', 
-    fontWeight: 500 
+  error: {
+    background: 'rgba(185, 28, 28, 0.15)',
+    color: '#FF8A8A',
+    fontSize: 13,
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid rgba(185, 28, 28, 0.3)',
+    fontWeight: 500
+  },
+  success: {
+    background: 'rgba(21, 128, 61, 0.18)',
+    color: '#86EFAC',
+    fontSize: 13,
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid rgba(21,128,61,0.35)',
+    fontWeight: 500,
+    lineHeight: 1.5,
+  },
+  recuperarTexto: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: 1.55,
+    margin: '0 0 2px',
+  },
+  esqueciBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--gold, #E6C260)',
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    alignSelf: 'flex-end',
+    padding: 0,
+    marginTop: -4,
+  },
+  linkBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    marginTop: 2,
   },
   btn: {
     background: 'var(--gold, #E6C260)',
