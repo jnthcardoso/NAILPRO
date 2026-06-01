@@ -165,6 +165,7 @@ export default function Login() {
 const s = {
   root: {
     minHeight: '100vh',
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

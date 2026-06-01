@@ -557,11 +557,11 @@ export default function AgendaPublica() {
 }
 
 const s = {
-  page: { minHeight: '100vh', background: 'var(--bg, #FAF6F6)', fontFamily: 'var(--font)', display: 'flex', flexDirection: 'column' },
+  page: { minHeight: '100vh', height: '100%', overflowY: 'auto', background: 'var(--bg, #FAF6F6)', fontFamily: 'var(--font)', display: 'flex', flexDirection: 'column' },
   center: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 8, textAlign: 'center', padding: 24 },
   centerMini: { display: 'flex', justifyContent: 'center', padding: '24px 0' },
   spinner: { width: 28, height: 28, borderRadius: '50%', border: '3px solid var(--pink-light, #FAF6F6)', borderTopColor: 'var(--pink, #8B2655)', animation: 'spin 0.8s linear infinite' },
-  header: { background: 'var(--pink, #8B2655)', padding: '28px 20px 22px', color: 'white', textAlign: 'center', boxShadow: '0 4px 20px rgba(139,38,85,0.15)' },
+  header: { background: 'var(--pink, #8B2655)', padding: '16px 20px 13px', color: 'white', textAlign: 'center', boxShadow: '0 4px 20px rgba(139,38,85,0.15)' },
   headerName: { fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', fontFamily: "'Bricolage Grotesque', sans-serif" },
   headerSub: { fontSize: 13, opacity: 0.8, marginTop: 2, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic' },
   steps: { display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '14px 20px', gap: 0, boxShadow: '0 1px 8px rgba(0,0,0,0.06)' },
@@ -572,8 +572,8 @@ const s = {
   stepLabel: { fontSize: 12, fontWeight: 500, color: '#6B7280', marginRight: 6 },
   stepLine: { width: 28, height: 2, background: '#E0E0E0', borderRadius: 1 },
   stepLineDone: { background: '#2E7D32' },
-  content: { flex: 1, padding: '16px 16px 32px', maxWidth: 440, margin: '0 auto', width: '100%' },
-  card: { background: 'white', borderRadius: 18, padding: '22px 18px', boxShadow: '0 4px 24px rgba(139,38,85,0.08)', display: 'flex', flexDirection: 'column', gap: 14, border: '1px solid var(--border)' },
+  content: { flex: 1, padding: '12px 16px 24px', maxWidth: 440, margin: '0 auto', width: '100%' },
+  card: { background: 'white', borderRadius: 18, padding: '16px 16px', boxShadow: '0 4px 24px rgba(139,38,85,0.08)', display: 'flex', flexDirection: 'column', gap: 10, border: '1px solid var(--border)' },
   cardTitle: { fontSize: 17, fontWeight: 700, color: '#1A1A1A' },
   backBtn: { display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: 'var(--pink, #8B2655)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', alignSelf: 'flex-start' },
   calNav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
@@ -583,7 +583,7 @@ const s = {
   calHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' },
   calHeaderCell: { fontSize: 11, fontWeight: 600, color: '#6B7280', padding: '4px 0', textTransform: 'uppercase' },
   calRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 },
-  calCell: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, fontSize: 13, fontWeight: 500, color: '#C0C0C0', cursor: 'default', userSelect: 'none', border: 'none', background: 'transparent', fontFamily: 'inherit', padding: 0 },
+  calCell: { height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, fontSize: 13, fontWeight: 500, color: '#C0C0C0', cursor: 'default', userSelect: 'none', border: 'none', background: 'transparent', fontFamily: 'inherit', padding: 0 },
   calCellOff: { color: '#D0D0D0' },
   calCellOn: { color: '#1A1A1A', background: '#F5F5F5', cursor: 'pointer' },
   calCellHoje: { color: 'var(--pink, #8B2655)', fontWeight: 700, border: '2px solid var(--pink, #8B2655)', background: 'white' },
