@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check, Sparkles, MessageCircle, Scissors, Target, Users, Calendar, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { formatTelefone, unformatTelefone } from '../lib/formatters'
 
@@ -20,6 +21,7 @@ const METAS_SUGERIDAS = [
 
 export default function BemVindo() {
   const { user } = useAuth()
+  const { papel } = useSalao()
   const { confirmar, erro: toastErro } = useToast()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -36,6 +38,11 @@ export default function BemVindo() {
   useEffect(() => {
     if (!user) navigate('/login')
   }, [user, navigate])
+
+  // Segurança: profissional/recepcionista não faz onboarding — redireciona direto
+  useEffect(() => {
+    if (papel && papel !== 'dona') navigate('/app', { replace: true })
+  }, [papel, navigate])
 
   function toggleServico(sv) {
     setForm(f => ({
@@ -81,10 +88,14 @@ export default function BemVindo() {
       cancelarLabel: 'Continuar setup',
     })
     if (!ok) return
-    await supabase.from('configuracoes').upsert({
+    const { error } = await supabase.from('configuracoes').upsert({
       user_id: user.id,
       onboarding_completo: true,
     })
+    if (error) {
+      toastErro('Erro ao salvar: ' + error.message)
+      return
+    }
     // Se veio da landing com plano selecionado, vai para /planos
     const temIntencao = !!sessionStorage.getItem('lumen_plano_intencao')
     if (temIntencao) {

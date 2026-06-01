@@ -43,6 +43,7 @@ function PublicRoute({ children }) {
 
 function OnboardingGuard({ children }) {
   const { user } = useAuth()
+  const { papel, loading: salaoLoading } = useSalao()
   const location = useLocation()
   // status: 'checking' | 'needs' | 'done'
   const justCompleted = location.state?.onboardingJustCompleted === true
@@ -50,13 +51,15 @@ function OnboardingGuard({ children }) {
 
   useEffect(() => {
     // Se acabou de completar, pula o check do DB (evita race condition)
-    if (justCompleted) {
-      setStatus('done')
-      return
-    }
-    if (!user?.id) return
-    let cancelled = false
+    if (justCompleted) { setStatus('done'); return }
+    if (!user?.id || salaoLoading) return
 
+    // Profissionais e recepcionistas não fazem onboarding — só a dona configura
+    // o salão. Sem isso, membros convidados ficavam presos em loop no /bem-vindo
+    // porque não têm permissão de INSERT em configuracoes.
+    if (papel && papel !== 'dona') { setStatus('done'); return }
+
+    let cancelled = false
     supabase.from('configuracoes')
       .select('onboarding_completo')
       .maybeSingle()
@@ -72,7 +75,7 @@ function OnboardingGuard({ children }) {
       })
 
     return () => { cancelled = true }
-  }, [user?.id, justCompleted])
+  }, [user?.id, salaoLoading, papel, justCompleted])
 
   if (status === 'checking') {
     return <PageSkeleton />
