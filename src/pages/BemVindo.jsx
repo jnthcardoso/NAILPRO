@@ -21,7 +21,7 @@ const METAS_SUGERIDAS = [
 
 export default function BemVindo() {
   const { user } = useAuth()
-  const { papel } = useSalao()
+  const { papel, salaoId } = useSalao()
   const { confirmar, erro: toastErro } = useToast()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -57,6 +57,7 @@ export default function BemVindo() {
     setSaving(true)
     const { error } = await supabase.from('configuracoes').upsert({
       user_id: user.id,
+      salao_id: salaoId,
       nome_salao: form.nome_salao,
       whatsapp: form.whatsapp.replace(/\D/g, ''),
       servicos_padrao: form.servicos_padrao,
@@ -90,6 +91,7 @@ export default function BemVindo() {
     if (!ok) return
     const { error } = await supabase.from('configuracoes').upsert({
       user_id: user.id,
+      salao_id: salaoId,
       onboarding_completo: true,
     })
     if (error) {
