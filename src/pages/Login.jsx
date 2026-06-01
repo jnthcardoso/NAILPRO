@@ -58,8 +58,8 @@ export default function Login() {
   return (
     <div style={s.root}>
       <div className="fade-in" style={s.card}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          <LumenLogo size={36} variant="reverso" layout="horizontal" />
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+          <LumenLogo size={32} variant="reverso" layout="horizontal" />
         </div>
         <p style={s.sub}>iluminando a gestão, impulsionando o seu talento</p>
         <div style={{ textAlign: 'center', marginBottom: 6 }}>
@@ -170,36 +170,38 @@ const s = {
     justifyContent: 'center',
     background: 'radial-gradient(circle at top, #2C1422 0%, var(--brand-dark-bg, #170D14) 100%)',
     padding: 20,
+    overflowY: 'auto',
   },
   card: {
     background: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 24,
-    padding: '40px 32px',
+    padding: '24px 28px',
     width: '100%',
     maxWidth: 390,
+    margin: 'auto',
     border: '1px solid rgba(255, 255, 255, 0.07)',
     boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
   },
-  sub: { 
-    textAlign: 'center', 
-    fontSize: 13, 
-    color: 'rgba(255, 255, 255, 0.55)', 
-    marginTop: 6,
-    marginBottom: 28,
+  sub: {
+    textAlign: 'center',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.55)',
+    marginTop: 4,
+    marginBottom: 14,
     fontFamily: "'Instrument Serif', serif",
     fontStyle: 'italic',
     letterSpacing: '0.5px'
   },
-  tabs: { 
-    display: 'flex', 
-    background: 'rgba(255, 255, 255, 0.04)', 
-    borderRadius: 'var(--radius-sm)', 
-    padding: 3, 
-    marginBottom: 24, 
-    gap: 3, 
-    border: '1px solid rgba(255, 255, 255, 0.06)' 
+  tabs: {
+    display: 'flex',
+    background: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 'var(--radius-sm)',
+    padding: 3,
+    marginBottom: 16,
+    gap: 3,
+    border: '1px solid rgba(255, 255, 255, 0.06)'
   },
   tab: { 
     flex: 1, 
@@ -220,17 +222,17 @@ const s = {
     boxShadow: 'var(--shadow-gold)', 
     fontWeight: 800 
   },
-  form: { display: 'flex', flexDirection: 'column', gap: 18 },
-  field: { display: 'flex', flexDirection: 'column', gap: 6 },
+  form: { display: 'flex', flexDirection: 'column', gap: 12 },
+  field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { 
     fontSize: 12, 
     fontWeight: 600, 
     color: 'rgba(255, 255, 255, 0.85)',
     letterSpacing: '0.3px'
   },
-  input: { 
-    padding: '12px 16px', 
-    borderRadius: 'var(--radius-sm)', 
+  input: {
+    padding: '11px 14px',
+    borderRadius: 'var(--radius-sm)',
     border: '1px solid rgba(255, 255, 255, 0.1)', 
     fontSize: 14, 
     color: '#FFFFFF', 
@@ -252,11 +254,11 @@ const s = {
     color: 'var(--brand-dark-bg, #170D14)',
     border: 'none',
     borderRadius: 'var(--radius-sm)',
-    padding: '14px 0',
+    padding: '13px 0',
     fontSize: 14,
     fontWeight: 800,
     cursor: 'pointer',
-    marginTop: 8,
+    marginTop: 4,
     boxShadow: 'var(--shadow-gold)',
     transition: 'all 0.2s ease',
     fontFamily: "'Bricolage Grotesque', sans-serif",
@@ -289,7 +291,7 @@ const s = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    marginTop: 24,
+    marginTop: 16,
     fontSize: 12,
   },
   footerLink: {
