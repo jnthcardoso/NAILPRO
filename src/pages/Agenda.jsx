@@ -6,6 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
+import { CardSkeleton } from '../components/common/Skeleton'
 import { inputBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
 import {
@@ -38,6 +39,7 @@ export default function Agenda() {
   const [view, setView] = useState('Semana')
   const [dataSel, setDataSel] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState([])
+  const [loadingAgenda, setLoadingAgenda] = useState(true)
   const [clientes, setClientes] = useState([])
   const [profissionais, setProfissionais] = useState([])
   const [filtroProf, setFiltroProf] = useState('') // '' = todas
@@ -137,7 +139,9 @@ export default function Agenda() {
       .eq('salao_id', salaoId)
       .gte('data', inicio).lte('data', fim)
     if (filtroProf) q = q.eq('profissional_id', filtroProf)
-    const { data } = await q.order('data').order('horario')
+    const { data, error } = await q.order('data').order('horario')
+    setLoadingAgenda(false)
+    if (error) { erro('Erro ao carregar a agenda: ' + error.message); return }
     setAgendamentos(data || [])
   }
 
@@ -773,7 +777,7 @@ export default function Agenda() {
         </div>
       )}
 
-      {buscaAtiva ? <ViewBusca /> : (
+      {loadingAgenda && !buscaAtiva ? <CardSkeleton count={4} /> : buscaAtiva ? <ViewBusca /> : (
         <>
           {view === 'Dia' && <ViewDia />}
           {view === 'Semana' && <ViewSemana />}
