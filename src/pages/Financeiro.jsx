@@ -11,6 +11,7 @@ import { useAssinatura } from '../contexts/AssinaturaContext'
 import { formatBRL } from '../lib/formatters'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
+import { CardSkeleton } from '../components/common/Skeleton'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -219,6 +220,7 @@ export default function Financeiro() {
   const [showDespesaModal, setShowDespesaModal] = useState(false)
   const [editandoDespesa, setEditandoDespesa] = useState(null)
   const [agendamentos, setAgendamentos] = useState([])
+  const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
   const [saving, setSaving] = useState(false)
@@ -244,7 +246,11 @@ export default function Financeiro() {
   // Data de referência (para janela de 6 meses e relatório anual)
   const refDate = (rangeMode === 'custom' && customFim) ? new Date(customFim + 'T12:00:00') : periodoSel
 
-  useEffect(() => { if (salaoId) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
+  useEffect(() => {
+    if (!salaoId) return
+    setLoading(true)
+    Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas()]).finally(() => setLoading(false))
+  }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
@@ -505,8 +511,10 @@ export default function Financeiro() {
         })}
       </div>
 
+      {loading && <div style={s.tabContent}><CardSkeleton count={4} /></div>}
+
       {/* ── ABA: Resumo ── */}
-      {tab === 'resumo' && (
+      {!loading && tab === 'resumo' && (
         <div style={s.tabContent}>
           {/* KPIs */}
           <div style={s.grid4}>
@@ -562,7 +570,7 @@ export default function Financeiro() {
       )}
 
       {/* ── ABA: Análises ── */}
-      {tab === 'analises' && (
+      {!loading && tab === 'analises' && (
         <div style={s.tabContent}>
           <div style={s.graficosGrid}>
             <div style={s.graficoCard}>
@@ -594,7 +602,7 @@ export default function Financeiro() {
       )}
 
       {/* ── ABA: Receitas ── */}
-      {tab === 'receitas' && (
+      {!loading && tab === 'receitas' && (
         <div style={s.tabContent}>
           <div style={s.colHeader}>
             <div style={s.colTitulo}>
@@ -644,7 +652,7 @@ export default function Financeiro() {
       )}
 
       {/* ── ABA: Despesas ── */}
-      {tab === 'despesas' && (
+      {!loading && tab === 'despesas' && (
         <div style={s.tabContent}>
           <div style={s.colHeader}>
             <div style={s.colTitulo}>

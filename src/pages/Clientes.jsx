@@ -8,6 +8,7 @@ import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
+import { CardSkeleton } from '../components/common/Skeleton'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
@@ -20,6 +21,7 @@ export default function Clientes() {
   const { plano, dentroDoLimite } = useAssinatura()
   const { sucesso, erro } = useToast()
   const [clientes, setClientes] = useState([])
+  const [loading, setLoading] = useState(true)
   const [buscaInput, setBuscaInput] = useState('')
   const [busca, setBusca] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -53,6 +55,7 @@ export default function Clientes() {
 
   async function loadClientes() {
     const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno').eq('salao_id', salaoId).order('nome')
+    setLoading(false)
     if (error) { erro('Erro ao carregar clientes: ' + error.message); return }
     setClientes(data || [])
   }
@@ -227,6 +230,7 @@ export default function Clientes() {
         </select>
       </div>
 
+      {loading ? <CardSkeleton count={5} /> : <>
       <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
 
       {filtradaExibidas.map(c => {
@@ -265,6 +269,7 @@ export default function Clientes() {
       {filtradas.length === 0 && (
         <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma cliente encontrada</p></div>
       )}
+      </>}
 
       {temMais && (
         <button style={s.verMaisBtn} onClick={() => setPagina(p => p + 1)}>
