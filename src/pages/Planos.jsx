@@ -49,7 +49,7 @@ export default function Planos() {
     setAssinarErro('')
     setAssinarLoading(planoId)
     // Dispara evento de inicio de checkout
-    const precos = { solo_mensal: 127, solo_anual: 97, pro_mensal: 229, pro_anual: 179 }
+    const precos = { solo_mensal: 127, solo_anual: 97, pro_mensal: 229, pro_anual: 179, salao_mensal: 249, salao_anual: 199 }
     trackInicioAssinatura(planoId, ciclo, precos[`${planoId}_${ciclo}`] ?? 0)
     try {
       const { data, error } = await supabase.functions.invoke('mp-criar-assinatura', {
@@ -71,8 +71,9 @@ export default function Planos() {
     window.open(link, '_blank')
   }
 
-  const isSoloAtual = isActive && (assinatura?.plano === 'solo' || assinatura?.plano === 'starter')
-  const isProAtual  = isActive && assinatura?.plano === 'pro'
+  const isSoloAtual  = isActive && (assinatura?.plano === 'solo' || assinatura?.plano === 'starter')
+  const isProAtual   = isActive && assinatura?.plano === 'pro'
+  const isSalaoAtual = isActive && assinatura?.plano === 'salao'
 
   // Economia anual vs mensal
   const economiaSolo = Math.round(((PLANOS.solo.precoMensalMensal - PLANOS.solo.precoMensalAnual) / PLANOS.solo.precoMensalMensal) * 100)
@@ -197,6 +198,15 @@ export default function Planos() {
           loading={assinarLoading === 'pro'}
           onAssinar={() => handleAssinar('pro')}
         />
+        <PlanoCard
+          plano={PLANOS.salao}
+          ciclo={ciclo}
+          isAtual={isSalaoAtual}
+          isPopular={false}
+          isDestaque={planoDestaque === 'salao'}
+          loading={assinarLoading === 'salao'}
+          onAssinar={() => handleAssinar('salao')}
+        />
       </div>
 
       {/* Segurança */}
@@ -206,22 +216,22 @@ export default function Planos() {
         <span>· Cartão de crédito com cobrança mensal automática</span>
       </div>
 
-      {/* Studio — equipe */}
+      {/* Salão — equipe */}
       <div style={s.studioBanner}>
         <div style={s.studioHeader}>
           <Zap size={18} color="var(--gold, #E6C260)" />
-          <span style={s.studioTitulo}>Studio — para salões com equipe</span>
+          <span style={s.studioTitulo}>Salão — para equipes</span>
         </div>
         <p style={s.studioTexto}>
-          No plano <strong>Pro</strong>, dê um <strong>login próprio</strong> para cada profissional por
-          apenas <strong>R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês por usuário</strong>.
-          A dona/admin não paga login adicional.
+          O plano <strong>Salão</strong> já inclui o login da <strong>dona</strong> e da <strong>recepcionista</strong>.
+          Cada <strong>manicure</strong> a mais (com a própria agenda e financeiro) custa apenas
+          <strong> R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</strong>.
         </p>
         <div style={s.studioExemplos}>
           {[
-            { label: 'Você sozinha', valor: PLANOS.pro.precoMensalAnual },
-            { label: '+ 1 profissional', valor: PLANOS.pro.precoMensalAnual + PRECO_USUARIO_ADICIONAL },
-            { label: '+ 3 profissionais', valor: PLANOS.pro.precoMensalAnual + 3 * PRECO_USUARIO_ADICIONAL },
+            { label: 'Dona + recepção', valor: PLANOS.salao.precoMensalAnual },
+            { label: '+ 1 manicure', valor: PLANOS.salao.precoMensalAnual + PRECO_USUARIO_ADICIONAL },
+            { label: '+ 3 manicures', valor: PLANOS.salao.precoMensalAnual + 3 * PRECO_USUARIO_ADICIONAL },
           ].map(ex => (
             <div key={ex.label} style={s.studioExemplo}>
               <div style={s.studioExemploLabel}>{ex.label}</div>
@@ -229,8 +239,8 @@ export default function Planos() {
             </div>
           ))}
         </div>
-        <button style={s.studioBtn} onClick={() => handleAssinar('pro')}>
-          <MessageCircle size={14} /> Falar sobre plano Studio
+        <button style={s.studioBtn} onClick={() => handleAssinar('salao')}>
+          <MessageCircle size={14} /> Assinar o plano Salão
         </button>
       </div>
 
@@ -259,7 +269,11 @@ export default function Planos() {
         />
         <FaqItem
           q="Como funciona pra salão com várias manicures?"
-          a={`No plano Pro você pode dar login individual para cada profissional (cada uma vê só a própria agenda e o próprio financeiro) por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}/mês por usuário. A dona/admin não paga login adicional. Ex.: salão com 3 manicures = R$ ${formatPreco(PLANOS.pro.precoMensalAnual)} + 2 × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(PLANOS.pro.precoMensalAnual + 2 * PRECO_USUARIO_ADICIONAL)}/mês.`}
+          a={`O plano Salão já inclui o login da dona e da recepcionista. Cada manicure a mais (que vê só a própria agenda e o próprio financeiro) custa R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}/mês. Ex.: salão com dona + recepcionista + 3 manicures = R$ ${formatPreco(PLANOS.salao.precoMensalAnual)} + 3 × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(PLANOS.salao.precoMensalAnual + 3 * PRECO_USUARIO_ADICIONAL)}/mês.`}
+        />
+        <FaqItem
+          q="Qual a diferença entre o Pro e o Salão?"
+          a="O Pro é individual: 1 login, ideal pra quem atende sozinha, com todas as funcionalidades avançadas (agenda online, lembretes WhatsApp, Google Calendar, relatórios PDF). O Salão é multiusuário: inclui dona + recepcionista e permite adicionar manicures com login próprio, cada uma com papel e acesso definidos."
         />
       </div>
 
@@ -303,8 +317,8 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loa
           </>
         )}
         {plano.limites?.usuariosAdicionais
-          ? <div style={s.usuarioNota}>+ usuários adicionais por R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</div>
-          : <div style={s.usuarioNota}>Inclui 1 login de administrador</div>}
+          ? <div style={s.usuarioNota}>Dona + recepcionista inclusas · manicure +R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</div>
+          : <div style={s.usuarioNota}>Inclui 1 login</div>}
       </div>
 
       <button

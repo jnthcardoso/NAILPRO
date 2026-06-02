@@ -56,12 +56,11 @@ export const PLANOS = {
       googleCalendar: true,
       exportPDF: true,
       relatoriosAvancados: true,
-      usuariosAdicionais: true,
+      usuariosAdicionais: false,
     },
     features: [
       '✓ Clientes ilimitadas',
-      '✓ Login de administrador + equipe',
-      `✓ Usuários adicionais (R$ 44,90/mês cada)`,
+      '✓ 1 login (ideal pra quem atende sozinha)',
       '✓ Agenda completa (dia, semana, mês)',
       '✓ Pagamento em até 2 formas (PIX, crédito, débito, dinheiro)',
       '✓ Financeiro completo com DRE',
@@ -72,6 +71,41 @@ export const PLANOS = {
       '✓ Lembretes WhatsApp automáticos',
       '✓ Avisos e alertas do salão',
       '✓ Alertas de clientes sumidas e aniversariantes',
+      '✓ Agenda online (link público)',
+      '✓ Integração Google Calendar',
+      '✓ Suporte prioritário via WhatsApp',
+      '✗ Logins para equipe (disponível no Salão)',
+    ],
+  },
+  salao: {
+    id: 'salao',
+    nome: 'Salão',
+    precoMensalAnual: 19900,   // R$ 199,00/mês — cobrado anualmente
+    precoMensalMensal: 24900,  // R$ 249,00/mês — cobrado mensalmente (sem fidelidade)
+    precoAnual: 238800,        // R$ 199 × 12 = R$ 2.388,00/ano
+    cor: '#6366F1',
+    limites: {
+      clientes: Infinity,
+      agendaPublica: true,
+      lembretesWhatsapp: true,
+      googleCalendar: true,
+      exportPDF: true,
+      relatoriosAvancados: true,
+      usuariosAdicionais: true,
+    },
+    features: [
+      '✓ Tudo do Pro, para o salão inteiro',
+      '✓ Login da dona + recepcionista inclusos',
+      `✓ Manicures adicionais (R$ 44,90/mês cada)`,
+      '✓ Papéis: dona, recepcionista e profissional',
+      '✓ Cada profissional vê só a própria agenda e financeiro',
+      '✓ Recepcionista gerencia agenda e financeiro de todas',
+      '✓ Clientes ilimitadas',
+      '✓ Financeiro completo com DRE',
+      '✓ Metas com projeção inteligente',
+      '✓ KPIs avançados (retenção, novas clientes, faturamento por serviço)',
+      '✓ Exportar relatórios PDF (mensal e anual)',
+      '✓ Lembretes WhatsApp automáticos',
       '✓ Agenda online (link público)',
       '✓ Integração Google Calendar',
       '✓ Suporte prioritário via WhatsApp',
@@ -218,7 +252,7 @@ export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuari
   const emailSeguro = sanitizarTexto(emailUsuario)
 
   const linhaUsuarios = qtdUsuarios > 0
-    ? `\n👥 Usuários adicionais: ${qtdUsuarios} × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(usuariosMes)}/mês`
+    ? `\n👥 Manicures adicionais: ${qtdUsuarios} × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(usuariosMes)}/mês`
     : ''
 
   const descricaoCiclo = isAnual ? 'Anual — fidelidade 12 meses' : 'Mensal — sem fidelidade'
