@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
+import { useToast } from '../contexts/ToastContext'
 import { UpgradeBlock } from '../components/common/UpgradeBlock'
 import { format, addDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -20,6 +21,7 @@ export default function Lembretes() {
   const { user } = useAuth()
   const { salaoId } = useSalao()
   const navigate = useNavigate()
+  const { erro } = useToast()
   const { temAcesso, loading: loadingAssinatura } = useAssinatura()
   const [tab, setTab] = useState('amanha')
   const [config, setConfig] = useState({ mensagem_lembrete: '', nome_salao: '', lembretes_ativos: true })
@@ -47,13 +49,14 @@ export default function Lembretes() {
       dataFim = format(addDays(new Date(), 7), 'yyyy-MM-dd')
     }
 
-    const { data } = await supabase.from('agendamentos')
+    const { data, error } = await supabase.from('agendamentos')
       .select('*, clientes(nome, telefone)')
       .eq('salao_id', salaoId)
       .gte('data', dataInicio).lte('data', dataFim)
       .in('status', ['pendente', 'confirmado'])
       .order('data').order('horario')
 
+    if (error) { erro('Erro ao carregar lembretes: ' + error.message); return }
     const lista = data || []
     setAgendamentos(lista.filter(a => a.clientes?.telefone))
     setSemTelefone(lista.filter(a => !a.clientes?.telefone))
@@ -80,12 +83,19 @@ export default function Lembretes() {
     return linkWhatsApp(ag.clientes?.telefone, msg)
   }
 
+  // O WhatsApp já abriu — se o registro do "enviado" falhar, o card só
+  // continua como pendente (auto-corrige). Logamos sem alarmar a usuária.
+  async function marcarEnviado(filtro) {
+    const { error } = await filtro(
+      supabase.from('agendamentos').update({ lembrete_enviado_em: new Date().toISOString() })
+    ).eq('salao_id', salaoId)
+    if (error) console.warn('Lembretes: falha ao marcar enviado —', error.message)
+    load()
+  }
+
   async function enviarUm(ag) {
     window.open(buildLink(ag), '_blank')
-    await supabase.from('agendamentos')
-      .update({ lembrete_enviado_em: new Date().toISOString() })
-      .eq('id', ag.id)
-    load()
+    await marcarEnviado(q => q.eq('id', ag.id))
   }
 
   async function enviarTodos() {
@@ -94,20 +104,13 @@ export default function Lembretes() {
       window.open(buildLink(pendentes[i]), '_blank')
       await new Promise(r => setTimeout(r, 600))
     }
-    const ids = pendentes.map(a => a.id)
-    await supabase.from('agendamentos')
-      .update({ lembrete_enviado_em: new Date().toISOString() })
-      .in('id', ids)
+    await marcarEnviado(q => q.in('id', pendentes.map(a => a.id)))
     setEnviandoTodos(false)
-    load()
   }
 
   async function reenviarUm(ag) {
     window.open(buildLink(ag), '_blank')
-    await supabase.from('agendamentos')
-      .update({ lembrete_enviado_em: new Date().toISOString() })
-      .eq('id', ag.id)
-    load()
+    await marcarEnviado(q => q.eq('id', ag.id))
   }
 
   const pendentes = agendamentos.filter(a => !a.lembrete_enviado_em)

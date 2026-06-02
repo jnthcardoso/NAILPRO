@@ -140,7 +140,7 @@ export default function Metas() {
     setSaving(true)
     const dados = { user_id: user.id, salao_id: salaoId, tipo: form.tipo, periodo: form.periodo, valor_meta: parseFloat(form.valor_meta) }
     const resp = editando
-      ? await supabase.from('metas').update(dados).eq('id', editando.id)
+      ? await supabase.from('metas').update(dados).eq('id', editando.id).eq('salao_id', salaoId)
       : await supabase.from('metas').insert(dados)
     setSaving(false)
     if (resp.error) { toastErro('Erro ao salvar'); return }
@@ -173,7 +173,8 @@ export default function Metas() {
     })
     if (!ok) return
     const metaAnterior = meta
-    await supabase.from('metas').delete().eq('id', meta.id)
+    const { error } = await supabase.from('metas').delete().eq('id', meta.id).eq('salao_id', salaoId)
+    if (error) { toastErro('Erro ao excluir meta: ' + error.message); return }
     setMetas(m => m.filter(x => x.id !== meta.id))
     sucesso('Meta excluída', {
       duracao: 5000, acaoLabel: 'Desfazer',

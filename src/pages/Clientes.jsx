@@ -9,7 +9,7 @@ import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
-import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
@@ -51,15 +51,9 @@ export default function Clientes() {
   // Reset paginação quando filtro/ordenação muda
   useEffect(() => { setPagina(1) }, [filtro, ordenacao])
 
-  // Fechar modal com Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape' && showModal) setShowModal(false) }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [showModal])
-
   async function loadClientes() {
-    const { data } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno').eq('salao_id', salaoId).order('nome')
+    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno').eq('salao_id', salaoId).order('nome')
+    if (error) { erro('Erro ao carregar clientes: ' + error.message); return }
     setClientes(data || [])
   }
 
@@ -106,7 +100,7 @@ export default function Clientes() {
   }
 
   // ── UTC-safe date parse ──
-  const parseUADate = (d) => d ? new Date(d + 'T12:00:00') : null
+  const parseUADate = (d) => d ? dataParaDate(d) : null
 
   // Cliente "sumida": passou do ciclo de retorno individual (dias_retorno)
   // ou, na ausência dele, do padrão do salão (diasAlerta).
