@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, formatBRL, linkWhatsApp } from '../lib/formatters'
 import Modal from '../components/common/Modal'
+import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 export default function ClienteDetalhe() {
@@ -379,13 +380,13 @@ const s = {
   modal: { background: 'var(--surface)', borderRadius: 18, padding: '18px 18px 20px', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '92vh', overflowY: 'auto' },
   modalTitle: { fontSize: 16, fontWeight: 700, marginBottom: 2 },
   field: { display: 'flex', flexDirection: 'column', gap: 3 },
-  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '9px 12px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', transition: 'border 0.15s' },
+  label: labelBase,
+  input: { ...inputBase, padding: '9px 12px', outline: 'none', transition: 'border 0.15s' },
   inputErro: { border: '1.5px solid #FCA5A5', background: '#FEF2F2' },
   erroMsg: { fontSize: 11, color: '#B91C1C', fontWeight: 600, marginTop: 2 },
   hint: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  btnPrimary: { ...btnPrimaryBase, padding: '12px' },
+  btnSecondary: { ...btnSecondaryBase, padding: '10px' },
   sectionTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 12px' },
   cancelInfo: { color: '#B91C1C', fontWeight: 600 },
   resumoGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 18 },

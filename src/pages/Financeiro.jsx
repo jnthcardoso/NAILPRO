@@ -11,6 +11,7 @@ import { useAssinatura } from '../contexts/AssinaturaContext'
 import { formatBRL } from '../lib/formatters'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
+import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
@@ -851,11 +852,11 @@ const s = {
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
-  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
+  label: labelBase,
+  input: inputBase,
   row: { display: 'flex', gap: 10 },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  btnPrimary: btnPrimaryBase,
+  btnSecondary: btnSecondaryBase,
 }
 
 const tabs = {

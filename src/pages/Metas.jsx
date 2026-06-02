@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
+import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import {
   format, endOfMonth, endOfYear, startOfMonth, startOfYear,
   endOfWeek, startOfWeek, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
@@ -709,8 +710,8 @@ const s = {
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 13 },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 2 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
-  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)' },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  label: labelBase,
+  input: inputBase,
+  btnPrimary: { ...btnPrimaryBase, transition: undefined },
+  btnSecondary: btnSecondaryBase,
 }
