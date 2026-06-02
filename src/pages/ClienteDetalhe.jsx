@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, formatBRL, linkWhatsApp } from '../lib/formatters'
+import Modal from '../components/common/Modal'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 export default function ClienteDetalhe() {
@@ -276,8 +277,7 @@ export default function ClienteDetalhe() {
 
       {/* ── Modal de edição ───────────────────── */}
       {showEdit && (
-        <div style={s.overlay} onClick={() => setShowEdit(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={() => setShowEdit(false)} boxStyle={s.modal}>
             <div style={s.modalTitle}>Editar cliente</div>
             <div style={s.field}>
               <label style={s.label}>Nome *</label>
@@ -337,8 +337,7 @@ export default function ClienteDetalhe() {
             </div>
             <button style={s.btnPrimary} onClick={salvarEdicao} disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
             <button style={s.btnSecondary} onClick={() => setShowEdit(false)}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
@@ -377,7 +376,6 @@ const s = {
   retornoUnidade: { fontSize: 11, color: 'var(--text3)', fontWeight: 600 },
   editBtn: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, cursor: 'pointer', color: 'var(--text)', display: 'flex', padding: '6px 8px' },
   /* Modal de edição */
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 },
   modal: { background: 'var(--surface)', borderRadius: 18, padding: '18px 18px 20px', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '92vh', overflowY: 'auto' },
   modalTitle: { fontSize: 16, fontWeight: 700, marginBottom: 2 },
   field: { display: 'flex', flexDirection: 'column', gap: 3 },

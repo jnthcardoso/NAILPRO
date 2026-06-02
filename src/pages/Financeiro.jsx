@@ -10,6 +10,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
 import { formatBRL } from '../lib/formatters'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
+import Modal from '../components/common/Modal'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
@@ -703,8 +704,7 @@ export default function Financeiro() {
 
       {/* Modal Pagamento */}
       {showModal && (
-        <div style={s.overlay} onClick={() => setShowModal(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={() => setShowModal(false)} variant="sheet" boxStyle={s.modal}>
             <div style={s.modalTitle}>💰 Registrar pagamento</div>
             <div style={s.field}>
               <label style={s.label}>Atendimento (opcional)</label>
@@ -745,14 +745,12 @@ export default function Financeiro() {
             </div>
             <button style={s.btnPrimary} onClick={salvarPagamento} disabled={saving}>{saving ? 'Salvando...' : 'Registrar'}</button>
             <button style={s.btnSecondary} onClick={() => setShowModal(false)}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Modal Despesa */}
       {showDespesaModal && (
-        <div style={s.overlay} onClick={fecharDespesaModal}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={fecharDespesaModal} variant="sheet" boxStyle={s.modal}>
             <div style={s.modalTitle}>{editandoDespesa ? '✏️ Editar despesa' : '📉 Nova despesa'}</div>
             <div style={s.field}>
               <label style={s.label}>Descrição *</label>
@@ -790,8 +788,7 @@ export default function Financeiro() {
             </div>
             <button style={s.btnPrimary} onClick={salvarDespesa} disabled={savingDespesa}>{savingDespesa ? 'Salvando...' : editandoDespesa ? 'Salvar alterações' : 'Registrar despesa'}</button>
             <button style={s.btnSecondary} onClick={fecharDespesaModal}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
@@ -851,7 +848,6 @@ const s = {
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   empty: { color: 'var(--text3)', fontSize: 13, textAlign: 'center', padding: '24px 0', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border2)' },
   /* Modal */
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },

@@ -7,6 +7,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
+import Modal from '../components/common/Modal'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
@@ -288,8 +289,7 @@ export default function Clientes() {
       />
 
       {showModal && (
-        <div style={s.overlay} onClick={() => setShowModal(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={() => setShowModal(false)} variant="sheet" boxStyle={s.modal}>
             <div style={s.modalTitle}>Nova cliente</div>
             <div style={s.field}>
               <label style={s.label}>Nome *</label>
@@ -343,8 +343,7 @@ export default function Clientes() {
             </div>
             <button style={s.btnPrimary} onClick={salvarCliente} disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar cliente'}</button>
             <button style={s.btnSecondary} onClick={() => { setShowModal(false); setErros({}) }}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
@@ -378,7 +377,6 @@ const s = {
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   empty: { padding: '40px 0', textAlign: 'center' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
