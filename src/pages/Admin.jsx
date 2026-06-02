@@ -147,7 +147,13 @@ export default function Admin() {
     inativos: inativos.length,
     mrrCentavos: usuarios
       .filter(u => u.assinatura_status === 'active')
-      .reduce((s, u) => s + (u.assinatura_plano === 'pro' ? 17900 : 9700), 0),
+      .reduce((s, u) => {
+        const base = u.assinatura_plano === 'pro' ? 17900
+          : u.assinatura_plano === 'salao' ? 19900
+          : 9700
+        const extras = (u.licencas_adicionais || 0) * 4490
+        return s + base + extras
+      }, 0),
   }
 
   if (loading) {
@@ -170,7 +176,7 @@ export default function Admin() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={s.userNome}>
               {u.nome || u.email?.split('@')[0]}
-              {u.assinatura_plano === 'pro' && u.assinatura_status === 'active' && (
+              {['pro', 'salao'].includes(u.assinatura_plano) && u.assinatura_status === 'active' && (
                 <Crown size={13} color="var(--gold, #D4AF37)" style={{ marginLeft: 6 }} />
               )}
               {notaExiste && (
@@ -190,7 +196,7 @@ export default function Admin() {
           <div style={s.userRight}>
             <span style={{ ...s.statusBadge, background: st.bg, color: st.color }}>{st.label}</span>
             <div style={s.planoTexto}>
-              {u.assinatura_plano?.toUpperCase() || '—'}
+              {u.assinatura_plano === 'salao' ? 'SALÃO' : u.assinatura_plano?.toUpperCase() || '—'}
               {u.assinatura_ciclo && <span style={{ color: 'var(--text3)' }}> · {u.assinatura_ciclo}</span>}
             </div>
             {u.assinatura_status === 'trialing' && diasTrial !== null && (
@@ -240,6 +246,9 @@ export default function Admin() {
         {aberto && (
           <div style={s.acoes}>
             <div style={s.acoesGrid}>
+              <button style={s.acaoBtn} onClick={() => ativar(u.user_id, 'salao', 'anual')} disabled={acaoLoading}>
+                ✓ Ativar Salão Anual (R$ 199/mês)
+              </button>
               <button style={s.acaoBtn} onClick={() => ativar(u.user_id, 'pro', 'anual')} disabled={acaoLoading}>
                 ✓ Ativar Pro Anual (R$ 179/mês)
               </button>
