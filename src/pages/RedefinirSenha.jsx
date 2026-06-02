@@ -85,7 +85,7 @@ export default function RedefinirSenha() {
               </div>
             )}
 
-            <button style={s.btn} type="submit" disabled={loading}>
+            <button style={{ ...s.btn, ...(semSessao ? { opacity: 0.5, cursor: 'not-allowed' } : {}) }} type="submit" disabled={loading || semSessao}>
               {loading ? 'Salvando...' : 'Salvar nova senha'}
             </button>
             <button type="button" style={s.voltar} onClick={() => navigate('/login')}>

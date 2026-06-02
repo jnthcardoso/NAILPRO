@@ -63,8 +63,12 @@ export default function Login() {
       if (error) setError('E-mail ou senha incorretos.')
     } else {
       const { error } = await signUp(form.email, form.password, form.name)
-      if (error) setError(error.message)
-      else trackCadastro()
+      if (error) {
+        // Traduz a causa mais comum; evita expor a mensagem técnica em inglês.
+        setError(/already registered|already exists|user already/i.test(error.message)
+          ? 'Este e-mail já tem conta. Tente entrar.'
+          : 'Não foi possível criar a conta. Tente novamente.')
+      } else trackCadastro()
     }
     setLoading(false)
   }
