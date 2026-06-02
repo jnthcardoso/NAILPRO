@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock } from 'lucide-react'
+import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { format, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -106,6 +106,33 @@ export default function Admin() {
     load()
   }
 
+  async function excluir(userId, email) {
+    const ok = await confirmar({
+      titulo: 'Excluir conta permanentemente?',
+      mensagem: `Todos os dados de ${email} (clientes, agenda, financeiro, login) serão apagados para sempre. Esta ação NÃO pode ser desfeita.`,
+      confirmarLabel: 'Sim, excluir tudo',
+      tipo: 'perigo',
+    })
+    if (!ok) return
+    setAcaoLoading(true)
+    const { error } = await supabase.rpc('admin_excluir_usuario', { p_user_id: userId })
+    setAcaoLoading(false)
+    if (error) { toastErro('Erro: ' + error.message); return }
+    sucesso('Conta excluída ✓')
+    setAcaoUserId(null)
+    load()
+  }
+
+  async function definirCortesia(userId, novoValor) {
+    setAcaoLoading(true)
+    const { error } = await supabase.rpc('admin_definir_cortesia', { p_user_id: userId, p_cortesia: novoValor })
+    setAcaoLoading(false)
+    if (error) { toastErro('Erro: ' + error.message); return }
+    sucesso(novoValor ? 'Conta marcada como cortesia (fora do MRR) ✓' : 'Cortesia removida — conta volta ao MRR ✓')
+    setAcaoUserId(null)
+    load()
+  }
+
   function abrirNota(userId) {
     setNotaEditando(userId)
     setNotaTexto(notas[userId] || '')
@@ -146,7 +173,7 @@ export default function Admin() {
     trial: usuarios.filter(u => u.assinatura_status === 'trialing').length,
     inativos: inativos.length,
     mrrCentavos: usuarios
-      .filter(u => u.assinatura_status === 'active')
+      .filter(u => u.assinatura_status === 'active' && !u.cortesia)
       .reduce((s, u) => {
         const base = u.assinatura_plano === 'pro' ? 17900
           : u.assinatura_plano === 'salao' ? 19900
@@ -183,7 +210,14 @@ export default function Admin() {
                 <StickyNote size={11} color="#D4AF37" style={{ marginLeft: 5 }} title="Tem nota interna" />
               )}
             </div>
-            <div style={s.userEmail}>{u.email}</div>
+            <div style={s.userEmail}>
+              {u.email}
+              {u.cortesia && (
+                <span style={s.cortesiaTag} title="Conta cortesia — não entra no MRR">
+                  <Gift size={9} /> cortesia
+                </span>
+              )}
+            </div>
             {u.nome_salao && <div style={s.userSalao}>🏪 {u.nome_salao}</div>}
             <div style={s.userMeta}>
               📅 {format(new Date(u.user_created_at), "dd/MM/yyyy", { locale: ptBR })}
@@ -274,10 +308,22 @@ export default function Admin() {
                 📝 {notaExiste ? 'Editar nota' : 'Adicionar nota'}
               </button>
               <button
+                style={{ ...s.acaoBtn, background: '#F5F3FF', color: '#6D28D9', border: '1px solid #C4B5FD' }}
+                onClick={() => definirCortesia(u.user_id, !u.cortesia)} disabled={acaoLoading}
+              >
+                🎁 {u.cortesia ? 'Remover cortesia (volta ao MRR)' : 'Marcar como cortesia (fora do MRR)'}
+              </button>
+              <button
                 style={{ ...s.acaoBtn, background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5' }}
                 onClick={() => cancelar(u.user_id)} disabled={acaoLoading}
               >
                 ✗ Cancelar assinatura
+              </button>
+              <button
+                style={{ ...s.acaoBtn, gridColumn: '1 / -1', background: '#7F1D1D', color: 'white', border: '1px solid #7F1D1D', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                onClick={() => excluir(u.user_id, u.email)} disabled={acaoLoading}
+              >
+                <Trash2 size={12} /> Excluir conta permanentemente
               </button>
             </div>
           </div>
@@ -441,7 +487,8 @@ const s = {
   userCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 14, marginBottom: 8, boxShadow: 'var(--shadow-xs)' },
   userMain: { display: 'flex', alignItems: 'flex-start', gap: 10 },
   userNome: { fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 },
-  userEmail: { fontSize: 12, color: 'var(--text2)', marginTop: 2 },
+  userEmail: { fontSize: 12, color: 'var(--text2)', marginTop: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5 },
+  cortesiaTag: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, color: '#6D28D9', background: '#F5F3FF', border: '1px solid #C4B5FD', borderRadius: 'var(--radius-pill)', padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.3px' },
   userSalao: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
   userMeta: { fontSize: 10, color: 'var(--text3)', marginTop: 4, lineHeight: 1.6 },
   userRight: { textAlign: 'right', flexShrink: 0 },
