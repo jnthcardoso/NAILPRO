@@ -240,7 +240,7 @@ export default function Planos() {
           ))}
         </div>
         <button style={s.studioBtn} onClick={() => handleAssinar('salao')}>
-          <MessageCircle size={14} /> Assinar o plano Salão
+          <MessageCircle size={14} /> Assinar o plano Salão ({ciclo === 'anual' ? 'anual' : 'mensal'})
         </button>
       </div>
 

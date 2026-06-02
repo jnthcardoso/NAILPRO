@@ -277,7 +277,7 @@ export default function Landing() {
               style={{ ...s.toggleBtn, ...(ciclo === 'anual' ? s.toggleBtnActive : {}) }}
               onClick={() => setCiclo('anual')}
             >
-              Anual <span style={s.economiaBadge}>-22%</span>
+              Anual <span style={s.economiaBadge}>até -24%</span>
             </button>
             <button
               style={{ ...s.toggleBtn, ...(ciclo === 'mensal' ? s.toggleBtnActive : {}) }}

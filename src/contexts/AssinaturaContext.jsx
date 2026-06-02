@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import { differenceInDays } from 'date-fns'
 
-// Preço de cada usuário adicional (login próprio além da dona/admin) — só no Pro
+// Preço de cada manicure adicional (login próprio além da dona/recepcionista) — só no Salão
 export const PRECO_USUARIO_ADICIONAL = 4490 // R$ 44,90/mês por usuário
 
 export const PLANOS = {
