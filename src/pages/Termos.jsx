@@ -37,10 +37,10 @@ export default function Termos() {
 
           <h2 style={s.h2}>4. Período de Teste e Assinatura</h2>
           <ul style={s.lista}>
-            <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito ao plano Pro.</li>
+            <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito.</li>
             <li>Após o período de teste, é necessário assinar um plano pago para manter o acesso completo.</li>
             <li>Os planos são <strong>anuais</strong>, com fidelidade de 12 meses, podendo ser pagos à vista ou em parcelas mensais.</li>
-            <li>O plano <strong>Pro</strong> permite adicionar usuários (logins individuais) por um valor mensal por usuário, conforme a <a href="/planos" style={s.link}>página de planos</a>. O plano <strong>Starter</strong> inclui apenas o login de administrador.</li>
+            <li>O plano <strong>Solo</strong> inclui 1 login. O plano <strong>Pro</strong> inclui 1 login com todas as funcionalidades avançadas. O plano <strong>Salão</strong> inclui os logins de dona e recepcionista, com possibilidade de adicionar profissionais por valor mensal por usuário, conforme a <a href="/planos" style={s.link}>página de planos</a>.</li>
             <li>Pagamentos são realizados via PIX, cartão ou boleto, sob solicitação no WhatsApp de atendimento.</li>
           </ul>
 

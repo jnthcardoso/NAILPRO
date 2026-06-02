@@ -257,9 +257,9 @@ export default function Landing() {
           <div style={s.secaoLabelLight}>para salões com equipe</div>
           <h2 style={s.equipeTitulo}>Sua equipe organizada, sem bagunça.</h2>
           <p style={s.equipeTexto}>
-            No plano Pro, cada profissional tem o próprio acesso — vê só a própria agenda e o próprio financeiro.
+            No plano Salão, cada profissional tem o próprio acesso — vê só a própria agenda e o próprio financeiro.
             Sua recepcionista gerencia tudo. Você controla todo o salão.
-            Por apenas <strong>R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês por usuário adicional</strong>.
+            Dona e recepcionista inclusas; cada <strong>manicure a mais por R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</strong>.
           </p>
         </div>
       </section>
@@ -277,7 +277,7 @@ export default function Landing() {
               style={{ ...s.toggleBtn, ...(ciclo === 'anual' ? s.toggleBtnActive : {}) }}
               onClick={() => setCiclo('anual')}
             >
-              Anual <span style={s.economiaBadge}>-22%</span>
+              Anual <span style={s.economiaBadge}>até -24%</span>
             </button>
             <button
               style={{ ...s.toggleBtn, ...(ciclo === 'mensal' ? s.toggleBtnActive : {}) }}
@@ -316,10 +316,25 @@ export default function Landing() {
               <span style={s.valor}>{precoMes(PLANOS.pro)}</span>
               <span style={s.ciclo}>/mês</span>
             </div>
-            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · + usuários por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + usuários por R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
+            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
             <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={() => irComPlano('pro')}>Começar grátis</button>
             <div style={s.feats}>
               {PLANOS.pro.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
+            </div>
+          </div>
+
+          {/* Salão */}
+          <div style={s.planoCard}>
+            <div style={s.planoNome}>{PLANOS.salao.nome}</div>
+            <div style={s.planoPreco}>
+              <span style={s.moeda}>R$</span>
+              <span style={s.valor}>{precoMes(PLANOS.salao)}</span>
+              <span style={s.ciclo}>/mês</span>
+            </div>
+            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.salao.precoAnual)}/ano · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
+            <button style={s.planoBtn} onClick={() => irComPlano('salao')}>Começar grátis</button>
+            <div style={s.feats}>
+              {PLANOS.salao.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
             </div>
           </div>
         </div>
@@ -584,7 +599,7 @@ const s = {
   toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'var(--text3, #8B6070)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
   toggleBtnActive: { background: 'var(--pink, #8B2655)', color: '#fff', boxShadow: '0 3px 10px rgba(139,38,85,0.25)' },
   economiaBadge: { background: 'var(--gold, #E6C260)', color: '#170D14', borderRadius: 'var(--radius-pill)', padding: '1px 7px', fontSize: 10, fontWeight: 800 },
-  planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, maxWidth: 760, margin: '0 auto' },
+  planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18, maxWidth: 1100, margin: '0 auto' },
   planoCard: { position: 'relative', background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, padding: '26px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)' },
   planoCardPro: { border: `2px solid ${BERRY}`, boxShadow: '0 14px 36px rgba(139,38,85,0.18)' },
   popular: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: `linear-gradient(135deg, ${BERRY}, #C73B6F)`, color: '#fff', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },

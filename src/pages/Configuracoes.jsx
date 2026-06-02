@@ -927,8 +927,8 @@ export default function Configuracoes() {
       <UpgradeModal
         aberto={showUpgrade.aberto}
         onClose={() => setShowUpgrade({ aberto: false, feature: '' })}
-        titulo={`${showUpgrade.feature} é Pro`}
-        descricao={`Faça upgrade pro plano Pro pra desbloquear ${showUpgrade.feature} e todas as outras features premium.`}
+        titulo={`${showUpgrade.feature} é Pro ou Salão`}
+        descricao={`Faça upgrade pro plano Pro ou Salão pra desbloquear ${showUpgrade.feature} e todas as outras features premium.`}
       />
 
     </div>
