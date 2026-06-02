@@ -8,6 +8,7 @@ import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
+import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
@@ -380,11 +381,11 @@ const s = {
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
-  label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', transition: 'border 0.15s' },
+  label: labelBase,
+  input: { ...inputBase, outline: 'none', transition: 'border 0.15s' },
   inputErro: { border: '1.5px solid #FCA5A5', background: '#FEF2F2' },
   erroMsg: { fontSize: 11, color: '#B91C1C', fontWeight: 600, marginTop: 4 },
   hint: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  btnPrimary: btnPrimaryBase,
+  btnSecondary: btnSecondaryBase,
 }

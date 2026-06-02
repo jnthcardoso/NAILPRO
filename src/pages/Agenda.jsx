@@ -6,6 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
+import { inputBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
@@ -1241,10 +1242,10 @@ const s = {
   statusPendenteActive: { border: '1.5px solid #FCD34D', background: '#FEF3C7', color: '#92400E', fontWeight: 700 },
   field: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: { fontSize: 11, fontWeight: 600, color: 'var(--text2)' },
-  input: { padding: '10px 13px', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit' },
+  input: inputBase,
   row: { display: 'flex', gap: 10 },
-  btnPrimary: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: 'var(--shadow-pink)', transition: 'background 0.15s' },
-  btnSecondary: { background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+  btnPrimary: btnPrimaryBase,
+  btnSecondary: btnSecondaryBase,
   linkBtn: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--pink)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 },
   miniForm: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '13px', border: '1px solid var(--pink-mid)' },
 }
