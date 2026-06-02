@@ -36,6 +36,7 @@ export default function AgendaPublica() {
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [erroRede, setErroRede] = useState(false)
   const [step, setStep] = useState(1)
   const [mesAtual, setMesAtual] = useState(new Date())
   const [dataSel, setDataSel] = useState(null)
@@ -58,34 +59,42 @@ export default function AgendaPublica() {
   useEffect(() => { if (config && !config.agenda_externa_url) carregarOcupadosMes() }, [mesAtual, config])
 
   async function loadConfig() {
+    setErroRede(false)
     // Apenas colunas públicas - não expor meta_mensal, configs internas etc
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('configuracoes')
       .select('user_id, slug, nome_salao, whatsapp, servicos_padrao, horario_inicio, horario_fim, duracao_atendimento, dias_semana, agenda_externa_url, agenda_publica_ativa')
       .eq('slug', slug)
       .eq('agenda_publica_ativa', true)
       .maybeSingle()
-    if (!data) { setNotFound(true) } else { setConfig(data) }
     setLoading(false)
+    // Erro de rede ≠ agenda inexistente — não mostrar "não encontrada" indevidamente
+    if (error) { setErroRede(true); return }
+    if (!data) { setNotFound(true) } else { setConfig(data) }
   }
 
   async function carregarSlotsOcupados() {
     setLoadingSlots(true)
     // 🔒 RPC seguro: retorna apenas horários, sem expor dados de clientes
-    const { data } = await supabase.rpc('agenda_publica_horarios_ocupados', {
+    const { data, error } = await supabase.rpc('agenda_publica_horarios_ocupados', {
       p_slug: slug,
       p_data: format(dataSel, 'yyyy-MM-dd'),
     })
-    setSlotsOcupados(data?.map(a => a.horario.slice(0, 5)) || [])
     setLoadingSlots(false)
+    // Se falhar, avisa em vez de mostrar todos os horários como livres (evita
+    // que a cliente escolha um horário ja ocupado e so descubra ao confirmar).
+    if (error) { toastErro('Não foi possível carregar os horários. Tente novamente.'); return }
+    setSlotsOcupados(data?.map(a => a.horario.slice(0, 5)) || [])
   }
 
   async function carregarOcupadosMes() {
     const inicio = format(startOfMonth(mesAtual), 'yyyy-MM-dd')
     const fim = format(endOfMonth(mesAtual), 'yyyy-MM-dd')
-    const { data } = await supabase.rpc('agenda_publica_ocupados_periodo', {
+    const { data, error } = await supabase.rpc('agenda_publica_ocupados_periodo', {
       p_slug: slug, p_inicio: inicio, p_fim: fim,
     })
+    // Não-crítico (só cinza dias lotados no calendário); não duplica o toast dos slots.
+    if (error) { console.warn('AgendaPublica: falha ao carregar ocupação do mês —', error.message); return }
     const mapa = {}
     ;(data || []).forEach(r => {
       const h = r.horario.slice(0, 5)
@@ -116,15 +125,6 @@ export default function AgendaPublica() {
     if (!form.servico) errosNovos.servico = 'Selecione um serviço'
     if (Object.keys(errosNovos).length > 0) { setErros(errosNovos); return }
 
-    const novasTentativas = tentativas + 1
-    setTentativas(novasTentativas)
-    if (novasTentativas >= 3) {
-      const ate = new Date(Date.now() + 5 * 60 * 1000)
-      setBloqueadoAte(ate)
-      try { localStorage.setItem(`agenda_block_${slug}`, String(ate.getTime())) } catch { /* ignore */ }
-      setTentativas(0)
-    }
-
     setSaving(true)
     const telLimpo = unformatTelefone(form.telefone)
 
@@ -138,13 +138,24 @@ export default function AgendaPublica() {
       p_horario: horarioSel + ':00',
       p_observacoes: form.observacoes || null,
     })
+    setSaving(false)
 
     if (error) {
+      // Rate limiting: conta só tentativas que FALHARAM (não penaliza quem
+      // agenda varias vezes com sucesso — ex.: marcando para mais de uma pessoa).
+      const novasTentativas = tentativas + 1
+      if (novasTentativas >= 3) {
+        const ate = new Date(Date.now() + 5 * 60 * 1000)
+        setBloqueadoAte(ate)
+        try { localStorage.setItem(`agenda_block_${slug}`, String(ate.getTime())) } catch { /* ignore */ }
+        setTentativas(0)
+      } else {
+        setTentativas(novasTentativas)
+      }
       toastErro('Erro ao criar agendamento: ' + error.message)
-    } else {
-      setStep(4)
+      return
     }
-    setSaving(false)
+    setStep(4)
   }
 
   const todosSlots = config ? gerarSlots(
@@ -195,6 +206,17 @@ export default function AgendaPublica() {
   if (loading) return (
     <div style={s.center}>
       <div style={s.spinner} />
+    </div>
+  )
+
+  if (erroRede) return (
+    <div style={s.center} className="fade-in">
+      <div style={{ marginBottom: 18 }} className="pulse-soft">
+        <LumenFlameIcon size={64} />
+      </div>
+      <div style={s.h2}>não foi possível carregar</div>
+      <div style={s.sub}>Verifique sua conexão e tente novamente</div>
+      <button style={s.btn} onClick={() => { setLoading(true); loadConfig() }}>Tentar novamente</button>
     </div>
   )
 
