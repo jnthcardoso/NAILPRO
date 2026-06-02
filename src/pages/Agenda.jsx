@@ -357,7 +357,8 @@ export default function Agenda() {
     }
 
     const statusAnterior = ag.status
-    await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id)
+    const { error: statusError } = await supabase.from('agendamentos').update({ status: novoStatus }).eq('id', ag.id).eq('salao_id', salaoId)
+    if (statusError) { erro('Erro ao atualizar status. Tente novamente.'); return }
 
     if (novoStatus === 'cancelado') {
       if (ag.google_event_id && googleConectado) {
@@ -368,7 +369,7 @@ export default function Agenda() {
         duracao: 5000,
         acaoLabel: 'Desfazer',
         acao: async () => {
-          await supabase.from('agendamentos').update({ status: statusAnterior }).eq('id', ag.id)
+          await supabase.from('agendamentos').update({ status: statusAnterior }).eq('id', ag.id).eq('salao_id', salaoId)
           loadAgendamentos()
         },
       })

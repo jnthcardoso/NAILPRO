@@ -28,15 +28,9 @@ export default function ClienteDetalhe() {
 
   useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico() } }, [user, id, salaoId])
 
-  // Fechar modal de edição com Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape' && showEdit) setShowEdit(false) }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [showEdit])
-
   async function loadCliente() {
-    const { data } = await supabase.from('clientes').select('*').eq('id', id).eq('salao_id', salaoId).maybeSingle()
+    const { data, error } = await supabase.from('clientes').select('*').eq('id', id).eq('salao_id', salaoId).maybeSingle()
+    if (error) { erro('Erro ao carregar cliente: ' + error.message); return } // erro de rede ≠ cliente inexistente
     if (!data) { navigate('/app/clientes'); return } // Bloqueia acesso a clientes de outros salões
     setCliente(data)
   }
@@ -81,12 +75,13 @@ export default function ClienteDetalhe() {
   }
 
   async function loadHistorico() {
-    const { data } = await supabase.from('agendamentos')
+    const { data, error } = await supabase.from('agendamentos')
       .select('*, pagamentos(status, valor, forma)')
       .eq('cliente_id', id)
       .order('data', { ascending: false })
       .order('horario', { ascending: false })
       .limit(50)
+    if (error) { erro('Erro ao carregar histórico: ' + error.message); return }
     setHistorico(data || [])
   }
 
@@ -106,7 +101,7 @@ export default function ClienteDetalhe() {
       if (!ok) return
     }
     setArquivando(true)
-    const { error } = await supabase.from('clientes').update({ arquivada: arquivar }).eq('id', id)
+    const { error } = await supabase.from('clientes').update({ arquivada: arquivar }).eq('id', id).eq('salao_id', salaoId)
     setArquivando(false)
     if (error) { erro('Erro: ' + error.message); return }
     if (arquivar) {

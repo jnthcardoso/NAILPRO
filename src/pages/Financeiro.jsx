@@ -246,20 +246,10 @@ export default function Financeiro() {
 
   useEffect(() => { if (salaoId) { loadPagamentos(); loadAgendamentos(); loadDespesas() } }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
-  // Fechar modais com Escape
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key !== 'Escape') return
-      if (showDespesaModal) { fecharDespesaModal(); return }
-      if (showModal) { setShowModal(false); return }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [showModal, showDespesaModal])
-
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
-    const { data } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    if (error) { toastErro('Erro ao carregar pagamentos: ' + error.message); return }
     setPagamentos(data || [])
 
     const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
@@ -277,9 +267,10 @@ export default function Financeiro() {
 
   async function loadDespesas() {
     const { inicio, fim } = getRange()
-    const { data } = await supabase.from('despesas')
+    const { data, error } = await supabase.from('despesas')
       .select('*').eq('salao_id', salaoId)
       .gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    if (error) { toastErro('Erro ao carregar despesas: ' + error.message); return }
     setDespesas(data || [])
   }
 
@@ -291,8 +282,9 @@ export default function Financeiro() {
   async function salvarPagamento() {
     if (!form.valor) return
     setSaving(true)
-    await supabase.from('pagamentos').insert({ ...form, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
+    const { error } = await supabase.from('pagamentos').insert({ ...form, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
     setSaving(false)
+    if (error) { toastErro('Erro ao registrar pagamento: ' + error.message); return }
     setShowModal(false)
     setForm({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
     loadPagamentos()
@@ -317,7 +309,7 @@ export default function Financeiro() {
       observacoes: formDespesa.observacoes || null,
     }
     const resp = editandoDespesa
-      ? await supabase.from('despesas').update(dados).eq('id', editandoDespesa.id)
+      ? await supabase.from('despesas').update(dados).eq('id', editandoDespesa.id).eq('salao_id', salaoId)
       : await supabase.from('despesas').insert(dados)
     setSavingDespesa(false)
     if (resp.error) {
@@ -363,7 +355,8 @@ export default function Financeiro() {
       tipo: 'perigo',
     })
     if (!ok) return
-    await supabase.from('despesas').delete().eq('id', despesa.id)
+    const { error } = await supabase.from('despesas').delete().eq('id', despesa.id).eq('salao_id', salaoId)
+    if (error) { toastErro('Erro ao excluir despesa: ' + error.message); return }
     sucesso('Despesa excluída', {
       acaoLabel: 'Desfazer',
       acao: async () => {
@@ -376,7 +369,8 @@ export default function Financeiro() {
   }
 
   async function togglePago(pag) {
-    await supabase.from('pagamentos').update({ status: pag.status === 'pago' ? 'pendente' : 'pago' }).eq('id', pag.id)
+    const { error } = await supabase.from('pagamentos').update({ status: pag.status === 'pago' ? 'pendente' : 'pago' }).eq('id', pag.id).eq('salao_id', salaoId)
+    if (error) { toastErro('Erro ao atualizar pagamento: ' + error.message); return }
     loadPagamentos()
   }
 
