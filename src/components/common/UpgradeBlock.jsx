@@ -11,14 +11,14 @@ export function UpgradeBlock({ titulo, descricao, feature, icon: Icon = Lock }) 
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.iconBox}><Icon size={32} color="white" /></div>
-        <div style={s.proBadge}><Crown size={12} /> Recurso Pro</div>
-        <h1 style={s.titulo}>{titulo || 'Esta funcionalidade é exclusiva do Pro'}</h1>
+        <div style={s.proBadge}><Crown size={12} /> Recurso Premium</div>
+        <h1 style={s.titulo}>{titulo || 'Esta funcionalidade é exclusiva do Pro e do Salão'}</h1>
         <p style={s.descricao}>
-          {descricao || 'Faça upgrade pro plano Pro pra desbloquear esta e outras funcionalidades.'}
+          {descricao || 'Faça upgrade pro plano Pro ou Salão pra desbloquear esta e outras funcionalidades.'}
         </p>
         {feature && <div style={s.featureName}>🔓 {feature}</div>}
         <button style={s.btn} onClick={() => navigate('/planos')}>
-          <Sparkles size={15} /> Fazer upgrade pra Pro <ArrowRight size={15} />
+          <Sparkles size={15} /> Ver planos <ArrowRight size={15} />
         </button>
         <button style={s.btnGhost} onClick={() => navigate(-1)}>Voltar</button>
       </div>
@@ -39,8 +39,8 @@ export function UpgradeModal({ aberto, onClose, titulo, descricao }) {
       <div style={s.modal} onClick={e => e.stopPropagation()}>
         <button style={s.closeBtn} onClick={onClose}><X size={18} /></button>
         <div style={s.iconBox}><Crown size={32} color="white" /></div>
-        <div style={s.proBadge}><Crown size={12} /> Recurso Pro</div>
-        <h2 style={s.modalTitulo}>{titulo || 'Disponível no plano Pro'}</h2>
+        <div style={s.proBadge}><Crown size={12} /> Recurso Premium</div>
+        <h2 style={s.modalTitulo}>{titulo || 'Disponível no Pro e no Salão'}</h2>
         <p style={s.descricao}>
           {descricao || 'Faça upgrade pra desbloquear esta funcionalidade agora mesmo.'}
         </p>
