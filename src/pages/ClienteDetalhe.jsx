@@ -7,7 +7,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, formatBRL, linkWhatsApp } from '../lib/formatters'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 export default function ClienteDetalhe() {
@@ -143,7 +143,7 @@ export default function ClienteDetalhe() {
           <span style={s.vipBadge}>✦ VIP</span>
         )}
         {cliente.telefone && (
-          <a href={`https://wa.me/55${cliente.telefone.replace(/\D/g, '')}`} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
+          <a href={linkWhatsApp(cliente.telefone)} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
             <Phone size={14} /> {cliente.telefone}
           </a>
         )}
@@ -243,7 +243,7 @@ export default function ClienteDetalhe() {
                     </div>
                     {!cancelado && (h.valor > 0 || pag) && (
                       <div style={s.tlPagRow}>
-                        <span style={s.histValor}>R$ {(pag?.valor ?? h.valor ?? 0).toFixed(2).replace('.', ',')}</span>
+                        <span style={s.histValor}>{formatBRL(pag?.valor ?? h.valor ?? 0)}</span>
                         {pag && (
                           <span style={{ ...s.badge, ...(pago ? s.badgePago : s.badgePendente) }}>
                             {pago ? '✓ Pago' : '⏳ Pendente'}{pag.forma ? ` · ${FORMA_LABEL[pag.forma] || pag.forma}` : ''}

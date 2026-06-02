@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useSalao } from '../../contexts/SalaoContext'
 import { differenceInDays, format, addDays } from 'date-fns'
 import { DIAS_RETORNO_PADRAO } from '../../lib/constants'
+import { formatBRL } from '../../lib/formatters'
 
 const SEEN_KEY = 'notif_seen_ids'
 
@@ -56,7 +57,7 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
       lista.push({
         id: 'pag', icon: Clock, cor: '#D97706', bg: '#FEF3C7',
         titulo: `${pend.length} pagamento${pend.length > 1 ? 's' : ''} a receber`,
-        sub: `R$ ${total.toFixed(2).replace('.', ',')} pendente${pend.length > 1 ? 's' : ''}`,
+        sub: `${formatBRL(total)} pendente${pend.length > 1 ? 's' : ''}`,
         to: '/app/financeiro',
       })
     }

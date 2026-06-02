@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
+import { linkWhatsApp } from '../lib/formatters'
 
 const PAPEIS = {
   dona: { label: 'Dona', icon: Crown, cor: '#D4AF37', desc: 'Acesso total + gestão da equipe e licença' },
@@ -29,9 +30,7 @@ function gerarConviteWhatsapp({ nome, email, papel, nomeSalao, whatsappMembro })
     `Qualquer dúvida é só me chamar! 😊`,
   ].join('\n')
 
-  const tel = (whatsappMembro || '').replace(/\D/g, '')
-  if (tel) return `https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`
-  return `https://wa.me/?text=${encodeURIComponent(msg)}`
+  return linkWhatsApp(whatsappMembro, msg)
 }
 
 export default function Equipe() {

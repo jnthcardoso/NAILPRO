@@ -8,6 +8,7 @@ import { useAssinatura } from '../contexts/AssinaturaContext'
 import { UpgradeBlock } from '../components/common/UpgradeBlock'
 import { format, addDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { linkWhatsApp, dataParaDate } from '../lib/formatters'
 
 const TABS = [
   { id: 'amanha', label: 'Amanhã', dias: 1 },
@@ -75,9 +76,8 @@ export default function Lembretes() {
   }
 
   function buildLink(ag) {
-    const tel = (ag.clientes?.telefone || '').replace(/\D/g, '')
     const msg = montarMensagem(ag)
-    return `https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`
+    return linkWhatsApp(ag.clientes?.telefone, msg)
   }
 
   async function enviarUm(ag) {
@@ -201,8 +201,8 @@ export default function Lembretes() {
           {pendentes.map(ag => (
             <div key={ag.id} style={s.item}>
               <div style={s.itemDia}>
-                <div style={s.itemDiaLabel}>{format(new Date(ag.data + 'T12:00:00'), 'EEE', { locale: ptBR }).toUpperCase()}</div>
-                <div style={s.itemDiaNum}>{format(new Date(ag.data + 'T12:00:00'), 'dd/MM')}</div>
+                <div style={s.itemDiaLabel}>{format(dataParaDate(ag.data), 'EEE', { locale: ptBR }).toUpperCase()}</div>
+                <div style={s.itemDiaNum}>{format(dataParaDate(ag.data), 'dd/MM')}</div>
                 <div style={s.itemHorario}>{ag.horario?.slice(0, 5)}</div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -229,8 +229,8 @@ export default function Lembretes() {
           {enviados.map(ag => (
             <div key={ag.id} style={{ ...s.item, opacity: 0.85 }}>
               <div style={{ ...s.itemDia, background: '#DCFCE7' }}>
-                <div style={{ ...s.itemDiaLabel, color: '#15803D' }}>{format(new Date(ag.data + 'T12:00:00'), 'EEE', { locale: ptBR }).toUpperCase()}</div>
-                <div style={{ ...s.itemDiaNum, color: '#15803D' }}>{format(new Date(ag.data + 'T12:00:00'), 'dd/MM')}</div>
+                <div style={{ ...s.itemDiaLabel, color: '#15803D' }}>{format(dataParaDate(ag.data), 'EEE', { locale: ptBR }).toUpperCase()}</div>
+                <div style={{ ...s.itemDiaNum, color: '#15803D' }}>{format(dataParaDate(ag.data), 'dd/MM')}</div>
                 <div style={{ ...s.itemHorario, color: '#15803D' }}>{ag.horario?.slice(0, 5)}</div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -265,8 +265,8 @@ export default function Lembretes() {
           {semTelefone.map(ag => (
             <div key={ag.id} style={{ ...s.item, background: '#FFFBEB' }}>
               <div style={s.itemDia}>
-                <div style={s.itemDiaLabel}>{format(new Date(ag.data + 'T12:00:00'), 'EEE', { locale: ptBR }).toUpperCase()}</div>
-                <div style={s.itemDiaNum}>{format(new Date(ag.data + 'T12:00:00'), 'dd/MM')}</div>
+                <div style={s.itemDiaLabel}>{format(dataParaDate(ag.data), 'EEE', { locale: ptBR }).toUpperCase()}</div>
+                <div style={s.itemDiaNum}>{format(dataParaDate(ag.data), 'dd/MM')}</div>
                 <div style={s.itemHorario}>{ag.horario?.slice(0, 5)}</div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
