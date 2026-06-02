@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
+import Modal from '../components/common/Modal'
 import {
   format, endOfMonth, endOfYear, startOfMonth, startOfYear,
   endOfWeek, startOfWeek, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
@@ -48,12 +49,6 @@ export default function Metas() {
   // retencaoDias → só recarrega retenção
   useEffect(() => { if (salaoId && tab === 'kpis') loadRetencaoKpi() }, [retencaoDias])
 
-  // Fechar modal com Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape' && showModal) fecharModal() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [showModal])
 
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
@@ -623,8 +618,7 @@ export default function Metas() {
 
       {/* ── Modal de meta ──────────────────────────────── */}
       {showModal && (
-        <div style={s.overlay} onClick={fecharModal}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={fecharModal} variant="sheet" boxStyle={s.modal}>
             <div style={s.modalTitle}>{editando ? '✏️ Editar meta' : '🎯 Nova meta'}</div>
             <div style={s.field}>
               <label style={s.label}>Tipo</label>
@@ -652,8 +646,7 @@ export default function Metas() {
             </div>
             <button style={s.btnPrimary} onClick={salvarMeta} disabled={saving}>{saving ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar meta'}</button>
             <button style={s.btnSecondary} onClick={fecharModal}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
@@ -713,7 +706,6 @@ const s = {
   skeletonLine: { height: 12, borderRadius: 6, background: 'var(--border)', width: '80%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
   // Modal
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', textAlign: 'center' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 13 },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 2 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },

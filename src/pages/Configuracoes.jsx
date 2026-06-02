@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
+import Modal from '../components/common/Modal'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
@@ -879,8 +880,12 @@ export default function Configuracoes() {
 
       {/* Modal de confirmação de exclusão */}
       {showExcluir && (
-        <div style={s.overlayDelete} onClick={() => !excluindo && setShowExcluir(false)}>
-          <div style={s.modalDelete} onClick={e => e.stopPropagation()}>
+        <Modal
+          onClose={() => !excluindo && setShowExcluir(false)}
+          boxStyle={s.modalDelete}
+          zIndex={300}
+          overlayStyle={{ background: 'rgba(24,7,18,0.75)', padding: 20, backdropFilter: 'blur(4px)' }}
+        >
             <div style={s.iconDelete}><AlertTriangle size={28} color="white" /></div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
               Tem certeza absoluta?
@@ -920,8 +925,7 @@ export default function Configuracoes() {
             >
               Cancelar
             </button>
-          </div>
-        </div>
+        </Modal>
       )}
 
       <UpgradeModal
@@ -1023,7 +1027,6 @@ const s = {
   googleCard: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px' },
   googleConBtn: { background: '#4285F4', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
   googleDesconBtn: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FFCDD2', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
-  overlayDelete: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.75)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' },
   modalDelete: { background: 'var(--surface)', borderRadius: 20, padding: '28px 24px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' },
   iconDelete: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #B91C1C 0%, #DC2626 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 20px rgba(185,28,28,0.3)' },
 }

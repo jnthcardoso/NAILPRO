@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
+import Modal from '../components/common/Modal'
 import { formatTelefone, unformatTelefone, formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
@@ -788,8 +789,7 @@ export default function Agenda() {
         const waDirectUrl = tel ? linkWhatsApp(tel) : null
         const dataFmt = dataBR(ag.data)
         return (
-          <div style={s.overlay} onClick={() => setAgDetalhe(null)}>
-            <div style={s.modal} onClick={e => e.stopPropagation()}>
+          <Modal onClose={() => setAgDetalhe(null)} boxStyle={s.modal}>
               {/* Header do drawer */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                 <div>
@@ -875,8 +875,7 @@ export default function Agenda() {
                 </button>
               )}
               <button style={s.btnSecondary} onClick={() => setAgDetalhe(null)}>Fechar</button>
-            </div>
-          </div>
+          </Modal>
         )
       })()}
 
@@ -899,8 +898,7 @@ export default function Agenda() {
 
       {/* ── Modal de edição ────────────────────── */}
       {editando && (
-        <div style={s.overlay} onClick={() => setEditando(null)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={() => setEditando(null)} boxStyle={s.modal}>
             <div style={s.modalTitle}>✏️ Editar agendamento</div>
 
             <div style={s.field}>
@@ -969,14 +967,12 @@ export default function Agenda() {
 
             <button style={s.btnPrimary} onClick={atualizarAgendamento} disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
             <button style={s.btnSecondary} onClick={() => setEditando(null)}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Modal de pagamento ──────────────── */}
       {showPagModal && agSelecionado && (
-        <div style={s.overlay} onClick={fecharPagModal}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={fecharPagModal} boxStyle={s.modal}>
             <div style={s.modalTitle}>💳 Registrar pagamento</div>
 
             <div style={s.pagInfo}>
@@ -1077,14 +1073,12 @@ export default function Agenda() {
             <button style={s.btnSecondary} onClick={fecharPagModal}>
               {pagModalObrigatorio ? 'Registrar depois' : 'Fechar'}
             </button>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Modal novo agendamento ──────────── */}
       {showModal && (
-        <div style={s.overlay} onClick={() => setShowModal(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <Modal onClose={() => setShowModal(false)} boxStyle={s.modal}>
             <div style={s.modalTitle}>Novo agendamento</div>
 
             <div style={s.field}>
@@ -1161,8 +1155,7 @@ export default function Agenda() {
             </div>
             <button style={s.btnPrimary} onClick={salvarAgendamento} disabled={saving}>{saving ? 'Salvando...' : 'Salvar agendamento'}</button>
             <button style={s.btnSecondary} onClick={() => setShowModal(false)}>Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
@@ -1234,7 +1227,6 @@ const s = {
   cardCompactoServ: { fontSize: 10, color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' },
   emptyBtn: { marginTop: 14, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' },
   modal: { background: 'var(--surface)', borderRadius: 18, padding: '18px 16px 20px', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '92vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 2 },
   pagInfo: { background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', border: '1px solid var(--border)' },
