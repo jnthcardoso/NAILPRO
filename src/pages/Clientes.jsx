@@ -7,7 +7,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
-import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
@@ -148,7 +148,7 @@ export default function Clientes() {
   function handleWhatsApp(e, telefone) {
     e.stopPropagation()
     const tel = (telefone || '').replace(/\D/g, '')
-    if (tel) window.open(`https://wa.me/55${tel}`, '_blank')
+    if (tel) window.open(linkWhatsApp(tel), '_blank')
   }
 
   return (

@@ -4,6 +4,7 @@ import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldC
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
+import { linkWhatsAppCompleto } from '../lib/formatters'
 
 const BENEFICIOS = [
   { icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Veja todos os atendimentos por dia, semana ou mês. Chega de caderninho, borracha e horário esquecido.' },
@@ -104,7 +105,7 @@ export default function Landing() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const whatsappContato = `https://wa.me/${SUPORTE_WHATSAPP}?text=${encodeURIComponent('Olá! Quero saber mais sobre a Lumen 💅')}`
+  const whatsappContato = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Quero saber mais sobre a Lumen 💅')
 
   const abrirWhatsapp = (e) => { trackFaleConosco(); window.open(whatsappContato, '_blank') }
   const irPlanos = () => { trackVerPlanos(); scrollTo('planos') }
@@ -399,7 +400,7 @@ export default function Landing() {
             </div>
             <div style={s.footerContato}>
               <Phone size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-              <a href={`https://wa.me/${SUPORTE_WHATSAPP}`} target="_blank" rel="noreferrer" style={s.footerContatoLink}>
+              <a href={linkWhatsAppCompleto(SUPORTE_WHATSAPP)} target="_blank" rel="noreferrer" style={s.footerContatoLink}>
                 WhatsApp de suporte
               </a>
             </div>

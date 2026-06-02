@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import { differenceInDays } from 'date-fns'
+import { formatReais, linkWhatsAppCompleto } from '../lib/formatters'
 
 // Preço de cada manicure adicional (login próprio além da dona/recepcionista) — só no Salão
 export const PRECO_USUARIO_ADICIONAL = 4490 // R$ 44,90/mês por usuário
@@ -119,8 +120,9 @@ PLANOS.starter = { ...PLANOS.solo, id: 'starter', nome: 'Solo' }
 // WhatsApp do suporte para assinaturas (você recebe as solicitações aqui)
 export const SUPORTE_WHATSAPP = import.meta.env.VITE_SUPORTE_WHATSAPP || '5554999419628'
 
+// Centavos → "127,50" (sem símbolo). Reaproveita o util compartilhado.
 function formatPreco(centavos) {
-  return (centavos / 100).toFixed(2).replace('.', ',')
+  return formatReais((centavos || 0) / 100)
 }
 
 export { formatPreco }
@@ -270,5 +272,5 @@ export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuari
 
 Pode me enviar o PIX/link de pagamento? Obrigada!`
 
-  return `https://wa.me/${SUPORTE_WHATSAPP}?text=${encodeURIComponent(msg)}`
+  return linkWhatsAppCompleto(SUPORTE_WHATSAPP, msg)
 }

@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
-import { formatTelefone, unformatTelefone } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -460,7 +460,7 @@ export default function Agenda() {
     const dataFmt = `${d}/${m}`
     const horario = ag.horario?.slice(0, 5)
     const msg = `Olá ${nome}! Confirmando seu horário para ${dataFmt} às ${horario} - ${ag.servico}. Pode confirmar presença? 💅`
-    return `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`
+    return linkWhatsApp(telefone, msg)
   }
 
   // Estado de pagamento de um agendamento (para o filtro)
@@ -508,7 +508,7 @@ export default function Agenda() {
         </div>
         {ag.valor > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>
+            <div style={s.cardValor}>{formatBRL(ag.valor)}</div>
             {pag && (
               <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
                 {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
@@ -688,7 +688,7 @@ export default function Agenda() {
         </div>
         {ag.valor > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={s.cardValor}>R$ {ag.valor.toFixed(2).replace('.', ',')}</div>
+            <div style={s.cardValor}>{formatBRL(ag.valor)}</div>
             {pag && (
               <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
                 {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'}
@@ -785,9 +785,8 @@ export default function Agenda() {
         const pag = ag.pagamentos?.[0]
         const waConfirm = buildWhatsAppConfirm(ag)
         const tel = (ag.clientes?.telefone || '').replace(/\D/g, '')
-        const waDirectUrl = tel ? `https://wa.me/55${tel}` : null
-        const [y, m, d] = ag.data.split('-')
-        const dataFmt = `${d}/${m}/${y}`
+        const waDirectUrl = tel ? linkWhatsApp(tel) : null
+        const dataFmt = dataBR(ag.data)
         return (
           <div style={s.overlay} onClick={() => setAgDetalhe(null)}>
             <div style={s.modal} onClick={e => e.stopPropagation()}>
@@ -810,7 +809,7 @@ export default function Agenda() {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
                     <CreditCard size={14} color="var(--text3)" />
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: 'var(--pink)' }}>
-                      R$ {ag.valor.toFixed(2).replace('.', ',')}
+                      {formatBRL(ag.valor)}
                     </span>
                     {pag && (
                       <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>

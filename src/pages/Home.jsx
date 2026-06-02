@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
+import { formatBRL } from '../lib/formatters'
 import {
   format, addDays, subDays, differenceInDays, startOfDay, endOfDay,
   startOfMonth, endOfMonth, subMonths, subWeeks, eachDayOfInterval, getDay,
@@ -514,7 +515,7 @@ export default function Home() {
           </div>
           <div style={s.kpiLabel}>Receita hoje</div>
           <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--green)', fontSize: 17 }}>
-            R$ {stats.receitaHoje.toFixed(2).replace('.', ',')}
+            {formatBRL(stats.receitaHoje)}
           </div>
           <div style={s.kpiSub}>
             {variacaoReceita !== null
@@ -532,7 +533,7 @@ export default function Home() {
           </div>
           <div style={s.kpiLabel}>A receber este mês</div>
           <div style={{ ...s.kpiValue, ...s.mono, color: stats.aReceber > 0 ? 'var(--amber, #D97706)' : 'var(--text3)', fontSize: 17 }}>
-            R$ {stats.aReceber.toFixed(2).replace('.', ',')}
+            {formatBRL(stats.aReceber)}
           </div>
           <div style={s.kpiSub}>
             {stats.qtdAReceber > 0 ? `${stats.qtdAReceber} ${stats.qtdAReceber === 1 ? 'pagamento' : 'pagamentos'}` : 'nada pendente'}

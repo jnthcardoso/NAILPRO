@@ -9,7 +9,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 import { LumenLogo, LumenFlameIcon } from '../components/common/Brand'
-import { formatTelefone, unformatTelefone, validarTelefone } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, validarTelefone, linkWhatsApp } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 
 const DIAS_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -236,7 +236,7 @@ export default function AgendaPublica() {
           {/* Botão WhatsApp */}
           {whatsapp && (
             <a
-              href={`https://wa.me/55${whatsapp}`}
+              href={linkWhatsApp(whatsapp)}
               target="_blank"
               rel="noreferrer"
               style={ext.btnSecundario}
@@ -535,11 +535,9 @@ export default function AgendaPublica() {
             {(() => {
               const wpp = (config?.whatsapp || '').replace(/\D/g, '')
               if (!wpp) return null
-              const msg = encodeURIComponent(
-                `Olá! Acabei de solicitar um agendamento para ${format(dataSel, 'dd/MM/yyyy')} às ${horarioSel} (${form.servico}). Pode confirmar?`
-              )
+              const msg = `Olá! Acabei de solicitar um agendamento para ${format(dataSel, 'dd/MM/yyyy')} às ${horarioSel} (${form.servico}). Pode confirmar?`
               return (
-                <a href={`https://wa.me/55${wpp}?text=${msg}`} target="_blank" rel="noreferrer" style={s.btnWhats}>
+                <a href={linkWhatsApp(wpp, msg)} target="_blank" rel="noreferrer" style={s.btnWhats}>
                   💬 Confirmar pelo WhatsApp
                 </a>
               )

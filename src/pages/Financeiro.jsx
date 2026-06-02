@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
+import { formatBRL } from '../lib/formatters'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -633,7 +634,7 @@ export default function Financeiro() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
-                      R$ {(p.valor ?? 0).toFixed(2).replace('.', ',')}
+                      {formatBRL(p.valor ?? 0)}
                     </div>
                     <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
                       {pago ? '✓ Pago' : '⏳ Pendente'}
@@ -676,7 +677,7 @@ export default function Financeiro() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− R$ {(d.valor ?? 0).toFixed(2).replace('.', ',')}</div>
+                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− {formatBRL(d.valor ?? 0)}</div>
                     <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
                       <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
                         <Pencil size={11} />

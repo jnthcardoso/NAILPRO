@@ -6,6 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { differenceInDays, format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
+import { formatBRL } from '../lib/formatters'
 
 export default function Avisos() {
   const { salaoId, isProfissional } = useSalao()
@@ -31,7 +32,7 @@ export default function Avisos() {
       lista.push({
         id: 'pag', icon: Clock, cor: '#D97706', bg: '#FEF3C7',
         titulo: `${pend.length} pagamento${pend.length > 1 ? 's' : ''} a receber`,
-        sub: `R$ ${total.toFixed(2).replace('.', ',')} pendentes no financeiro`,
+        sub: `${formatBRL(total)} pendentes no financeiro`,
         detalhe: pend.slice(0, 4).map(p => p.agendamentos?.clientes?.nome?.split(' ')[0]).filter(Boolean).join(', '),
         to: '/app/financeiro',
         urgente: true,
