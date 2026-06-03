@@ -107,7 +107,7 @@ export default function AppLayout() {
                 style={{ 
                   ...sb.navItem, 
                   ...(active ? sb.navItemActive : {}),
-                  ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+                  ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
                 }}
                 title={isSidebarCollapsed ? label : undefined}
               >
@@ -127,7 +127,7 @@ export default function AppLayout() {
               style={{
                 ...sb.navItem,
                 ...(isActive('/app/admin') ? sb.navItemActive : {}),
-                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
               }}
               title={isSidebarCollapsed ? "Admin" : undefined}
             >
@@ -141,7 +141,7 @@ export default function AppLayout() {
               style={{
                 ...sb.navItem,
                 ...(isActive('/app/equipe') ? sb.navItemActive : {}),
-                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
               }}
               title={isSidebarCollapsed ? "Equipe" : undefined}
             >
@@ -155,7 +155,7 @@ export default function AppLayout() {
               style={{
                 ...sb.navItem,
                 ...(isActive('/app/configuracoes') ? sb.navItemActive : {}),
-                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+                ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
               }}
               title={isSidebarCollapsed ? "Configurações" : undefined}
             >
@@ -169,7 +169,7 @@ export default function AppLayout() {
             style={{
               ...sb.navItem,
               ...sb.sairBtn,
-              ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '11px 0' } : {})
+              ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
             }}
             title={isSidebarCollapsed ? "Sair" : undefined}
           >
@@ -255,7 +255,7 @@ export default function AppLayout() {
 
 /* Sidebar styles */
 const sb = {
-  logoArea: { padding: '26px 20px 14px', transition: 'padding 0.28s' },
+  logoArea: { padding: '18px 20px 10px', transition: 'padding 0.28s' },
   logoRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 },
   logoText: {
     fontFamily: "var(--font)",
@@ -266,8 +266,8 @@ const sb = {
     lineHeight: 1,
   },
   logoTagline: { fontSize: 10, color: 'rgba(255, 255, 255, 0.45)', fontWeight: 400, marginLeft: 2, textTransform: 'uppercase', letterSpacing: '0.4px' },
-  userCard: { display: 'flex', alignItems: 'center', gap: 11, margin: '4px 14px 14px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, padding: '10px 12px', border: '1px solid rgba(255, 255, 255, 0.04)', transition: 'all 0.28s' },
-  userCardCollapsed: { background: 'transparent', margin: '4px 0 14px', padding: '10px 0', justifyContent: 'center', border: '1px solid transparent' },
+  userCard: { display: 'flex', alignItems: 'center', gap: 11, margin: '2px 14px 10px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, padding: '9px 12px', border: '1px solid rgba(255, 255, 255, 0.04)', transition: 'all 0.28s' },
+  userCardCollapsed: { background: 'transparent', margin: '2px 0 8px', padding: '8px 0', justifyContent: 'center', border: '1px solid transparent' },
   userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, overflow: 'hidden', border: '1.5px solid rgba(255, 255, 255, 0.15)' },
   userName: {
     fontFamily: "var(--font-display)",
@@ -277,12 +277,12 @@ const sb = {
     lineHeight: 1.3,
   },
   userDate: { fontSize: 10, color: 'rgba(255, 255, 255, 0.4)', marginTop: 3, textTransform: 'capitalize', lineHeight: 1.2 },
-  divider: { height: 1, background: 'rgba(255, 255, 255, 0.06)', margin: '0 14px 10px', transition: 'margin 0.28s' },
-  nav: { display: 'flex', flexDirection: 'column', gap: 3, padding: '0 10px' },
-  navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
+  divider: { height: 1, background: 'rgba(255, 255, 255, 0.06)', margin: '0 14px 8px', transition: 'margin 0.28s' },
+  nav: { display: 'flex', flexDirection: 'column', gap: 2, padding: '0 10px' },
+  navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
   navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 38, 85, 0.4)' },
   sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
-  toggleFloatBtn: { width: 28, height: 28, borderRadius: '50%', background: '#2A0F22', border: '1px solid rgba(255, 255, 255, 0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.85)', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.35)', outline: 'none', padding: 0 },
+  toggleFloatBtn: { width: 30, height: 30, borderRadius: 9, background: 'var(--pink)', border: '2px solid var(--bg, #FBF6F8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', boxShadow: '0 3px 12px rgba(139, 38, 85, 0.45)', outline: 'none', padding: 0 },
 }
 
 /* Mobile header styles */
