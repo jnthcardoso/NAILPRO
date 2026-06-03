@@ -30,5 +30,17 @@ que as cumpra automaticamente.
   cobrança automaticamente, e controlar pago/pendente. A base (campo de indicação)
   já está pronta para isso.
 
+## 4. Refatoração profunda das telas grandes (split em componentes)
+- **Situação atual:** os estilos de Agenda e Configurações já foram separados em
+  arquivos próprios (`*.styles.js`), enxugando os arquivos. A lógica/JSX ainda é
+  grande (Agenda ~1.170 linhas; Configurações ~940).
+- **A evoluir no futuro:** quebrar essas telas em componentes menores (ex.: cada
+  modal da Agenda e cada aba das Configurações em seu próprio arquivo), para
+  acelerar a manutenção.
+- **Cuidado importante:** essas telas ficam atrás de login e mudam comportamento
+  real (a Agenda é a tela mais usada). O split deve ser feito **incrementalmente
+  e com validação** (testar cada passo numa conta real), não "no escuro". É
+  melhoria interna de manutenção — não bloqueia nada nem afeta a usuária.
+
 ---
 _Registrado em 03/06/2026. Atualizar/remover itens conforme forem resolvidos._
