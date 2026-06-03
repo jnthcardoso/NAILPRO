@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
@@ -395,12 +395,17 @@ export default function Landing() {
                 {l.label}
               </button>
             ))}
-            <Link to="/indicacao" style={{ ...s.footerNavLink, textDecoration: 'none' }}>🎁 Indique e ganhe</Link>
+            <Link to="/indicacao" style={{ ...s.footerNavLink, textDecoration: 'none' }}>Indique e ganhe</Link>
           </div>
 
           {/* Col 3 — Contato */}
           <div style={s.footerCol}>
-            <div style={s.footerColTitulo}>Contato</div>
+            <div style={{ ...s.footerColTitulo, display: 'flex', alignItems: 'center', gap: 7 }}>
+              Contato
+              <Link to="/indicacao" title="Indique e ganhe" aria-label="Indique e ganhe" style={s.indicaIcon}>
+                <Gift size={15} />
+              </Link>
+            </div>
             <div style={s.footerContato}>
               <Mail size={15} style={{ flexShrink: 0, marginTop: 1 }} />
               <a href="mailto:suporte@lumengestaoempresarial.com.br" style={s.footerContatoLink}>
@@ -655,6 +660,7 @@ const s = {
   footerRedes: { display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 },
   footerInsta: { display: 'inline-flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', width: 'fit-content' },
   footerColTitulo: { fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' },
+  indicaIcon: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(230,194,96,0.15)', border: '1px solid rgba(230,194,96,0.3)', color: 'var(--gold, #E6C260)', textDecoration: 'none' },
   footerNavLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', padding: '3px 0', lineHeight: 1.6 },
   footerContato: { display: 'flex', alignItems: 'flex-start', gap: 9, color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 1.5 },
   footerContatoLink: { color: 'rgba(255,255,255,0.75)', textDecoration: 'none', wordBreak: 'break-all' },
