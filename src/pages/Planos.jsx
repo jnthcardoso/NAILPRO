@@ -57,7 +57,7 @@ export default function Planos() {
       })
       if (error) throw error
       if (!data?.url) throw new Error('URL de pagamento não recebida')
-      // Redireciona para o checkout do Mercado Pago
+      // Redireciona para o checkout do Asaas
       window.location.href = data.url
     } catch (err) {
       console.error('Erro ao criar assinatura:', err)
@@ -201,8 +201,8 @@ export default function Planos() {
       {/* Segurança */}
       <div style={s.segurancaRow}>
         <span>🔒 Pagamento seguro via</span>
-        <strong>Mercado Pago</strong>
-        <span>· Cartão de crédito com cobrança mensal automática</span>
+        <strong>Asaas</strong>
+        <span>· Cartão de crédito com renovação automática</span>
       </div>
 
       {/* Salão — equipe */}

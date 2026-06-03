@@ -30,7 +30,7 @@ export default function Home() {
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
 
-  // Banner de sucesso apos pagamento no Mercado Pago
+  // Banner de sucesso apos pagamento (retorno do checkout Asaas)
   const [pagamentoSucesso, setPagamentoSucesso] = useState(() => {
     const p = new URLSearchParams(window.location.search).get('pagamento')
     if (p === 'sucesso') {
