@@ -146,6 +146,9 @@ export default function Landing() {
             {NAV_LINKS.map(l => (
               <button key={l.label} style={s.navLink} onClick={() => scrollTo(l.id)}>{l.label}</button>
             ))}
+            <Link to="/indicacao" style={s.navLinkIndica} title="Indique e ganhe">
+              <Gift size={15} /> Indique e ganhe
+            </Link>
           </nav>
 
           {/* Botões — desktop */}
@@ -171,6 +174,9 @@ export default function Landing() {
                 {l.label}
               </button>
             ))}
+            <Link to="/indicacao" style={{ ...s.mobileLink, display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }} onClick={() => setMenuAberto(false)}>
+              <Gift size={15} /> Indique e ganhe
+            </Link>
             <div style={s.mobileDivider} />
             <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.mobileBtnWhats}>
               <MessageCircle size={14} /> Fale conosco
@@ -591,6 +597,7 @@ const s = {
   navLinks: { display: 'flex', gap: 8, '@media(max-width:768px)': { display: 'none' } },
   logoBtn: { background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 },
   navLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: 500, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' },
+  navLinkIndica: { display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold, #E6C260)', fontSize: 14, fontWeight: 700, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' },
   navBtns: { display: 'flex', gap: 8, alignItems: 'center' },
   navBtnWhats: { display: 'flex', alignItems: 'center', gap: 6, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' },
   navBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
