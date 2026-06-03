@@ -52,7 +52,7 @@ export default function Planos() {
     const precos = { solo_mensal: 127, solo_anual: 97, pro_mensal: 229, pro_anual: 179, salao_mensal: 249, salao_anual: 199 }
     trackInicioAssinatura(planoId, ciclo, precos[`${planoId}_${ciclo}`] ?? 0)
     try {
-      const { data, error } = await supabase.functions.invoke('mp-criar-assinatura', {
+      const { data, error } = await supabase.functions.invoke('asaas-criar-checkout', {
         body: { plano: planoId, ciclo },
       })
       if (error) throw error
