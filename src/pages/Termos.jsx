@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileText } from 'lucide-react'
 
-export const TERMOS_VERSAO = '1.0.0'
-export const TERMOS_DATA = '26 de Maio de 2026'
+export const TERMOS_VERSAO = '1.1.0'
+export const TERMOS_DATA = '3 de Junho de 2026'
 
 export default function Termos() {
   const navigate = useNavigate()
@@ -37,17 +37,18 @@ export default function Termos() {
 
           <h2 style={s.h2}>4. Período de Teste e Assinatura</h2>
           <ul style={s.lista}>
-            <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito.</li>
+            <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito, sem necessidade de cartão de crédito.</li>
             <li>Após o período de teste, é necessário assinar um plano pago para manter o acesso completo.</li>
-            <li>Os planos são <strong>anuais</strong>, com fidelidade de 12 meses, podendo ser pagos à vista ou em parcelas mensais.</li>
+            <li>Cada plano pode ser contratado em dois ciclos: <strong>mensal</strong> (sem fidelidade, cancele quando quiser) ou <strong>anual</strong> (com valor reduzido e fidelidade de 12 meses).</li>
             <li>O plano <strong>Solo</strong> inclui 1 login. O plano <strong>Pro</strong> inclui 1 login com todas as funcionalidades avançadas. O plano <strong>Salão</strong> inclui os logins de dona e recepcionista, com possibilidade de adicionar profissionais por valor mensal por usuário, conforme a <a href="/planos" style={s.link}>página de planos</a>.</li>
-            <li>Pagamentos são realizados via PIX, cartão ou boleto, sob solicitação no WhatsApp de atendimento.</li>
+            <li>Os pagamentos são processados de forma segura por gateway de pagamento (Mercado Pago), com cartão de crédito ou PIX. A Lumen não armazena os dados do seu cartão.</li>
           </ul>
 
           <h2 style={s.h2}>5. Fidelidade, Cancelamento e Reembolso</h2>
           <ul style={s.lista}>
             <li><strong>Garantia de 7 dias:</strong> você pode cancelar em até 7 (sete) dias após a primeira cobrança e receber reembolso integral, sem qualquer custo (direito de arrependimento, CDC Art. 49).</li>
-            <li>Os planos têm fidelidade de 12 meses. O cancelamento após o período de garantia e antes do fim do contrato está sujeito a <strong>multa de 50% (cinquenta por cento) sobre o valor restante do contrato</strong>.</li>
+            <li>No plano <strong>mensal</strong>, você cancela a qualquer momento, sem multa — o acesso permanece até o fim do período já pago.</li>
+            <li>No plano <strong>anual</strong>, há fidelidade de 12 meses. O cancelamento após o período de garantia e antes do fim do contrato está sujeito a <strong>multa de 50% (cinquenta por cento) sobre o valor restante do contrato</strong>.</li>
             <li>Você pode visualizar a data de término da fidelidade e a multa estimada a qualquer momento na página de planos.</li>
             <li>Após o cancelamento, seus dados ficam guardados por 90 dias para eventual reativação.</li>
           </ul>
@@ -101,6 +102,8 @@ export default function Termos() {
           <ul style={s.lista}>
             <li>WhatsApp: (54) 99941-9628</li>
             <li>E-mail: suporte@lumengestaoempresarial.com.br</li>
+            <li>Instagram: <a href="https://instagram.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>@lumengestaoempresarial</a></li>
+            <li>Facebook: <a href="https://facebook.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>/lumengestaoempresarial</a></li>
           </ul>
 
         </div>

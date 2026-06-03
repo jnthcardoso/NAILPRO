@@ -13,7 +13,7 @@ export default function Privacidade() {
         <div style={s.header}>
           <div style={s.icon}><Lock size={26} color="white" /></div>
           <h1 style={s.titulo}>Política de Privacidade</h1>
-          <p style={s.versao}>Atualizado em 26 de Maio de 2026 · Em conformidade com a LGPD (Lei 13.709/18)</p>
+          <p style={s.versao}>Atualizado em 3 de Junho de 2026 · Em conformidade com a LGPD (Lei 13.709/18)</p>
         </div>
 
         <div style={s.conteudo}>
@@ -28,7 +28,7 @@ export default function Privacidade() {
             <li><strong>Cadastro:</strong> nome, e-mail, senha (criptografada);</li>
             <li><strong>Perfil:</strong> nome do salão, WhatsApp, foto de perfil (opcional);</li>
             <li><strong>Uso:</strong> data/hora de login, ações realizadas no app;</li>
-            <li><strong>Pagamento:</strong> não armazenamos dados de cartão. Pagamentos são processados via PIX/transferência bancária.</li>
+            <li><strong>Pagamento:</strong> a Lumen <strong>não armazena os dados do seu cartão</strong>. As cobranças (cartão de crédito ou PIX) são processadas por gateway de pagamento (Mercado Pago), que trata esses dados com segurança.</li>
           </ul>
 
           <h3 style={s.h3}>2.2. Sobre suas clientes (cadastradas por você)</h3>
@@ -53,6 +53,7 @@ export default function Privacidade() {
           <ul style={s.lista}>
             <li><strong>Supabase</strong> (infraestrutura de banco de dados e autenticação) — opera em conformidade com GDPR/LGPD;</li>
             <li><strong>Vercel</strong> (hospedagem do app);</li>
+            <li><strong>Mercado Pago</strong> (processamento de pagamentos com cartão e PIX);</li>
             <li><strong>Google Calendar</strong> e <strong>WhatsApp</strong> — apenas se você ativar as integrações.</li>
             <li><strong>Autoridades</strong>, quando legalmente exigido (ordem judicial).</li>
           </ul>
@@ -104,7 +105,9 @@ export default function Privacidade() {
           <h2 style={s.h2}>13. Encarregado de Dados (DPO)</h2>
           <p>Jonathan Cardoso<br />
           E-mail: suporte@lumengestaoempresarial.com.br<br />
-          WhatsApp: (54) 99941-9628</p>
+          WhatsApp: (54) 99941-9628<br />
+          Instagram: <a href="https://instagram.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>@lumengestaoempresarial</a><br />
+          Facebook: <a href="https://facebook.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>/lumengestaoempresarial</a></p>
 
           <h2 style={s.h2}>14. ANPD</h2>
           <p>Caso suas dúvidas não sejam resolvidas, você pode contatar a <a href="https://www.gov.br/anpd/pt-br" target="_blank" rel="noreferrer" style={s.link}>Autoridade Nacional de Proteção de Dados (ANPD)</a>.</p>
