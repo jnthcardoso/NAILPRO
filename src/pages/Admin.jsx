@@ -263,6 +263,11 @@ export default function Admin() {
               {' · '}
               <span title="Última ação nos dados (agendamento, pagamento, cliente...)"><Activity size={10} style={{ verticalAlign: -1 }} /> ativo {quando(u.ultima_atividade) || '—'}</span>
             </div>
+            {u.indicado_por && (
+              <div style={s.indicadoTag} title="Quem indicou esta conta (programa de indicação)">
+                🎁 Indicada por: <strong>{u.indicado_por}</strong>
+              </div>
+            )}
           </div>
 
           <div style={s.userRight}>
@@ -574,6 +579,7 @@ const s = {
   userSalao: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
   userMeta: { fontSize: 10, color: 'var(--text3)', marginTop: 4, lineHeight: 1.6 },
   userAcesso: { fontSize: 10, color: 'var(--text2)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', fontWeight: 600 },
+  indicadoTag: { display: 'inline-block', marginTop: 5, fontSize: 11, color: '#6D28D9', background: '#F5F3FF', border: '1px solid #C4B5FD', borderRadius: 'var(--radius-pill)', padding: '2px 9px' },
   /* Feed de atividade */
   ativModal: { background: 'var(--surface)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 460, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' },
   ativHeader: { display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 12, borderBottom: '1px solid var(--border)', marginBottom: 4 },

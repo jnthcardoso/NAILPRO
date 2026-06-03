@@ -13,7 +13,11 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search)
     return params.get('modo') === 'cadastro' ? 'signup' : 'login'
   })
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [form, setForm] = useState(() => {
+    // Pré-preenche "quem indicou" se a pessoa chegou por um link ?indicacao=...
+    const indic = new URLSearchParams(window.location.search).get('indicacao') || ''
+    return { name: '', email: '', password: '', indicadoPor: indic }
+  })
   const [aceitouTermos, setAceitouTermos] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -62,7 +66,7 @@ export default function Login() {
       const { error } = await signIn(form.email, form.password)
       if (error) setError('E-mail ou senha incorretos.')
     } else {
-      const { error } = await signUp(form.email, form.password, form.name)
+      const { error } = await signUp(form.email, form.password, form.name, form.indicadoPor)
       if (error) {
         // Traduz a causa mais comum; evita expor a mensagem técnica em inglês.
         setError(/already registered|already exists|user already/i.test(error.message)
@@ -178,6 +182,19 @@ export default function Login() {
               <button type="button" style={s.esqueciBtn} onClick={() => irPara('recuperar')}>
                 Esqueci minha senha
               </button>
+            )}
+            {mode === 'signup' && (
+              <div style={s.field}>
+                <label htmlFor="login-indicacao" style={s.label}>Quem te indicou? <span style={{ opacity: 0.6, fontWeight: 400 }}>(opcional)</span></label>
+                <input
+                  id="login-indicacao"
+                  style={s.input}
+                  type="text"
+                  placeholder="Nome ou WhatsApp de quem indicou"
+                  value={form.indicadoPor}
+                  onChange={e => setForm({ ...form, indicadoPor: e.target.value })}
+                />
+              </div>
             )}
             {mode === 'signup' && (
               <label style={s.termosRow}>
