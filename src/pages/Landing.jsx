@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
@@ -363,14 +363,16 @@ export default function Landing() {
             <p style={s.footerDesc}>
               O app de gestão feito para nail designers — agenda, financeiro e clientes num só lugar.
             </p>
-            <div style={s.footerSocial}>
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" style={s.socialIcon} title="Instagram">
-                <Instagram size={18} />
-              </a>
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" style={s.socialIcon} title="Facebook">
-                <Facebook size={18} />
-              </a>
-            </div>
+            <a
+              href="https://instagram.com/lumengestaoempresarial"
+              target="_blank"
+              rel="noreferrer"
+              style={s.footerInsta}
+              title="Instagram"
+            >
+              <Instagram size={18} />
+              <span>@lumengestaoempresarial</span>
+            </a>
           </div>
 
           {/* Col 2 — Navegação */}
@@ -637,8 +639,7 @@ const s = {
   footerInner: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40, padding: '56px 40px 40px', maxWidth: 1100, margin: '0 auto' },
   footerCol: { display: 'flex', flexDirection: 'column', gap: 10 },
   footerDesc: { fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, margin: '8px 0 0' },
-  footerSocial: { display: 'flex', gap: 10, marginTop: 4 },
-  socialIcon: { width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', transition: 'background 0.15s' },
+  footerInsta: { display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 8, color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', width: 'fit-content' },
   footerColTitulo: { fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' },
   footerNavLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', padding: '3px 0', lineHeight: 1.6 },
   footerContato: { display: 'flex', alignItems: 'flex-start', gap: 9, color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 1.5 },
