@@ -15,6 +15,17 @@ export const PLANOS = {
     precoMensalMensal: 12700,  // R$ 127,00/mês — cobrado mensalmente (sem fidelidade)
     precoAnual: 116400,        // R$ 97 × 12 = R$ 1.164,00/ano
     cor: '#8B2655',
+    subtitulo: 'Pra quem está começando',
+    heranca: null,
+    diferenciais: [
+      'Até 40 clientes',
+      'Agenda completa (dia, semana, mês)',
+      'Financeiro completo com DRE',
+      'Controle de despesas por categoria',
+      'Metas com projeção inteligente',
+      'Pagamento em até 2 formas (PIX, crédito, débito, dinheiro)',
+      'Avisos e alertas do salão',
+    ],
     limites: {
       clientes: 40,
       agendaPublica: false,
@@ -50,6 +61,17 @@ export const PLANOS = {
     precoMensalMensal: 22900,  // R$ 229,00/mês — cobrado mensalmente (sem fidelidade)
     precoAnual: 214800,        // R$ 179 × 12 = R$ 2.148,00/ano
     cor: '#D4AF37',
+    subtitulo: 'Pra quem atende sozinha e quer tudo',
+    heranca: 'Solo',
+    diferenciais: [
+      'Clientes ilimitadas',
+      'Lembrete no WhatsApp automático',
+      'Página de agendamento online (link público)',
+      'Integração com Google Calendar',
+      'Relatórios em PDF (mensal e anual)',
+      'KPIs avançados (retenção, novas clientes)',
+      'Suporte prioritário no WhatsApp',
+    ],
     limites: {
       clientes: Infinity,
       agendaPublica: true,
@@ -85,6 +107,15 @@ export const PLANOS = {
     precoMensalMensal: 24900,  // R$ 249,00/mês — cobrado mensalmente (sem fidelidade)
     precoAnual: 238800,        // R$ 199 × 12 = R$ 2.388,00/ano
     cor: '#6366F1',
+    subtitulo: 'Pra quem tem equipe',
+    heranca: 'Pro',
+    diferenciais: [
+      'Logins para a equipe (recepcionista já incluso)',
+      'Manicures adicionais (R$ 44,90/mês cada)',
+      'Papéis: dona, recepcionista e profissional',
+      'Cada profissional vê só a própria agenda e financeiro',
+      'Recepcionista gerencia a agenda e o financeiro de todas',
+    ],
     limites: {
       clientes: Infinity,
       agendaPublica: true,

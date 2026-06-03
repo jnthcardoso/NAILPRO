@@ -303,9 +303,7 @@ export default function Landing() {
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.solo.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
             <button style={s.planoBtn} onClick={() => irComPlano('solo')}>Começar grátis</button>
-            <div style={s.feats}>
-              {PLANOS.solo.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
-            </div>
+            <PlanoFeats plano={PLANOS.solo} />
           </div>
 
           {/* Pro */}
@@ -319,9 +317,7 @@ export default function Landing() {
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
             <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={() => irComPlano('pro')}>Começar grátis</button>
-            <div style={s.feats}>
-              {PLANOS.pro.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
-            </div>
+            <PlanoFeats plano={PLANOS.pro} />
           </div>
 
           {/* Salão */}
@@ -334,9 +330,7 @@ export default function Landing() {
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.salao.precoAnual)}/ano · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
             <button style={s.planoBtn} onClick={() => irComPlano('salao')}>Começar grátis</button>
-            <div style={s.feats}>
-              {PLANOS.salao.features.slice(0, 9).map((f, i) => <Feat key={i} f={f} />)}
-            </div>
+            <PlanoFeats plano={PLANOS.salao} />
           </div>
         </div>
         <div style={s.garantia}>
@@ -547,6 +541,23 @@ function Feat({ f }) {
   )
 }
 
+// Lista de planos focada nos DIFERENCIAIS: cada plano superior mostra
+// "Tudo do <anterior>, e mais:" e só o que ele adiciona — em vez de repetir
+// as mesmas features básicas nos três cards.
+function PlanoFeats({ plano }) {
+  return (
+    <>
+      {plano.subtitulo && <div style={s.planoSubtitulo}>{plano.subtitulo}</div>}
+      {plano.heranca && (
+        <div style={s.heranca}>✨ Tudo do <strong>{plano.heranca}</strong>, e mais:</div>
+      )}
+      <div style={s.feats}>
+        {(plano.diferenciais || []).map((f, i) => <Feat key={i} f={`✓ ${f}`} />)}
+      </div>
+    </>
+  )
+}
+
 const BERRY = '#8B2655'
 const NOIR = '#180712'
 
@@ -613,6 +624,8 @@ const s = {
   planoBtn: { width: '100%', background: 'var(--surface2, #F6EEF1)', color: 'var(--text)', border: '1.5px solid var(--border2, #E2d3da)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 18 },
   planoBtnPro: { background: `linear-gradient(135deg, ${BERRY}, #C73B6F)`, color: '#fff', border: 'none', boxShadow: '0 6px 16px rgba(139,38,85,0.3)' },
   feats: { display: 'flex', flexDirection: 'column', gap: 10 },
+  planoSubtitulo: { fontSize: 12.5, fontWeight: 600, color: 'var(--text3, #9b8690)', marginBottom: 12 },
+  heranca: { fontSize: 13, color: 'var(--text)', background: 'rgba(139,38,85,0.06)', border: '1px solid rgba(139,38,85,0.15)', borderRadius: 10, padding: '8px 12px', marginBottom: 12 },
   garantia: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 28, fontSize: 14, color: 'var(--text2, #6b5560)' },
 
   ctaFinal: { textAlign: 'center', padding: '64px 20px', maxWidth: 640, margin: '0 auto' },

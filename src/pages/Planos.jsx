@@ -336,19 +336,17 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loa
           : <><CreditCard size={15} /> Assinar com cartão</>}
       </button>
 
+      {plano.subtitulo && <div style={s.planoSubtitulo}>{plano.subtitulo}</div>}
+      {plano.heranca && (
+        <div style={s.heranca}>✨ Tudo do <strong>{plano.heranca}</strong>, e mais:</div>
+      )}
       <div style={s.featuresList}>
-        {plano.features.map((f, i) => {
-          const isIncluso = f.startsWith('✓')
-          const texto = f.replace(/^[✓✗]\s/, '')
-          return (
-            <div key={i} style={{ ...s.featureItem, opacity: isIncluso ? 1 : 0.45 }}>
-              {isIncluso
-                ? <Check size={14} color="#15803D" style={{ flexShrink: 0 }} />
-                : <X size={14} color="var(--text3)" style={{ flexShrink: 0 }} />}
-              <span style={{ textDecoration: isIncluso ? 'none' : 'line-through' }}>{texto}</span>
-            </div>
-          )
-        })}
+        {(plano.diferenciais || []).map((texto, i) => (
+          <div key={i} style={s.featureItem}>
+            <Check size={14} color="#15803D" style={{ flexShrink: 0 }} />
+            <span>{texto}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -410,6 +408,8 @@ const s = {
   btnAssinar: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--surface2)', color: 'var(--text)', border: '1.5px solid var(--border2)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 18, fontFamily: 'inherit', transition: 'all 0.15s' },
   btnAssinarPro: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', border: 'none', boxShadow: '0 6px 16px rgba(139,38,85,0.3)' },
   btnAssinarAtual: { background: 'var(--green-bg)', color: 'var(--green)', border: '1.5px solid var(--green)', cursor: 'default', boxShadow: 'none' },
+  planoSubtitulo: { fontSize: 12.5, fontWeight: 600, color: 'var(--text3)', marginBottom: 12 },
+  heranca: { fontSize: 13, color: 'var(--text)', background: 'var(--pink-light)', border: '1px solid var(--border2)', borderRadius: 10, padding: '8px 12px', marginBottom: 12 },
   featuresList: { display: 'flex', flexDirection: 'column', gap: 9, marginTop: 4 },
   featureItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text)', lineHeight: 1.4 },
 
