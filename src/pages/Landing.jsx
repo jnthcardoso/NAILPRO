@@ -375,14 +375,14 @@ export default function Landing() {
                 <span>@lumengestaoempresarial</span>
               </a>
               <a
-                href="https://www.facebook.com/profile.php?id=61590258852911"
+                href="https://facebook.com/lumengestaoempresarial"
                 target="_blank"
                 rel="noreferrer"
                 style={s.footerInsta}
                 title="Facebook"
               >
                 <Facebook size={18} />
-                <span>Lumen no Facebook</span>
+                <span>/lumengestaoempresarial</span>
               </a>
             </div>
           </div>
