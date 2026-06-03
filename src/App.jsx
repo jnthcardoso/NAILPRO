@@ -1,26 +1,29 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import AppLayout from './components/layout/AppLayout'
-import Login from './pages/Login'
-import Home from './pages/Home'
-import Agenda from './pages/Agenda'
-import Clientes from './pages/Clientes'
-import ClienteDetalhe from './pages/ClienteDetalhe'
-import Financeiro from './pages/Financeiro'
-import Configuracoes from './pages/Configuracoes'
-import AgendaPublica from './pages/AgendaPublica'
-import Metas from './pages/Metas'
-import BemVindo from './pages/BemVindo'
-import Lembretes from './pages/Lembretes'
-import Planos from './pages/Planos'
-import Admin from './pages/Admin'
-import Equipe from './pages/Equipe'
-import Avisos from './pages/Avisos'
-import Termos from './pages/Termos'
-import Privacidade from './pages/Privacidade'
-import Landing from './pages/Landing'
-import RedefinirSenha from './pages/RedefinirSenha'
+// Páginas carregadas sob demanda (code-splitting): cada rota baixa só o seu
+// código. Assim a landing/login/agenda pública não carregam as telas internas
+// pesadas (Agenda, Financeiro, etc.) e abrem muito mais rápido no celular.
+const Login = lazy(() => import('./pages/Login'))
+const Home = lazy(() => import('./pages/Home'))
+const Agenda = lazy(() => import('./pages/Agenda'))
+const Clientes = lazy(() => import('./pages/Clientes'))
+const ClienteDetalhe = lazy(() => import('./pages/ClienteDetalhe'))
+const Financeiro = lazy(() => import('./pages/Financeiro'))
+const Configuracoes = lazy(() => import('./pages/Configuracoes'))
+const AgendaPublica = lazy(() => import('./pages/AgendaPublica'))
+const Metas = lazy(() => import('./pages/Metas'))
+const BemVindo = lazy(() => import('./pages/BemVindo'))
+const Lembretes = lazy(() => import('./pages/Lembretes'))
+const Planos = lazy(() => import('./pages/Planos'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Equipe = lazy(() => import('./pages/Equipe'))
+const Avisos = lazy(() => import('./pages/Avisos'))
+const Termos = lazy(() => import('./pages/Termos'))
+const Privacidade = lazy(() => import('./pages/Privacidade'))
+const Landing = lazy(() => import('./pages/Landing'))
+const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha'))
 import { AssinaturaProvider, useAssinatura } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -114,6 +117,7 @@ export default function App() {
       <AssinaturaProvider>
         <ToastProvider>
         <BrowserRouter>
+          <Suspense fallback={<PageSkeleton />}>
           <Routes>
             {/* Rotas públicas */}
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
@@ -140,6 +144,7 @@ export default function App() {
               <Route path="avisos" element={<Avisos />} />
             </Route>
           </Routes>
+          </Suspense>
         </BrowserRouter>
         </ToastProvider>
       </AssinaturaProvider>
