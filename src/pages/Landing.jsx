@@ -187,7 +187,7 @@ export default function Landing() {
         <div className="hero-inner">
           {/* Texto */}
           <div className="hero-text">
-            <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> 14 dias grátis · sem cartão</div>
+            <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> 14 dias grátis · sem cartão pra testar</div>
             <h1 style={{ ...s.heroTitle, textAlign: 'left', maxWidth: 520 }}>
               você não é só manicure.<br /><em style={s.heroEm}>é dona.</em>
             </h1>
@@ -349,7 +349,7 @@ export default function Landing() {
       {/* CTA final */}
       <section style={s.ctaFinal}>
         <h2 style={s.ctaFinalTitulo}>comece hoje. veja a diferença em 14 dias.</h2>
-        <p style={s.ctaFinalSub}>Sem cartão de crédito. Sem instalação. Cancele quando quiser.</p>
+        <p style={s.ctaFinalSub}>Sem cartão pra testar. Sem instalação. Cancele quando quiser.</p>
         <button style={s.ctaPrimary} onClick={ir}>Criar minha conta grátis <ArrowRight size={16} /></button>
       </section>
 
