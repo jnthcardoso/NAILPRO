@@ -18,7 +18,7 @@ const FAQ_ITEMS = [
   { p: 'Preciso de cartão de crédito para testar?', r: 'Não. Os 14 dias de teste são 100% grátis e sem necessidade de cartão. Você só paga se quiser continuar.' },
   { p: 'Posso cancelar quando quiser?', r: 'Sim. No plano mensal, você cancela a qualquer momento sem multa. No plano anual, há fidelidade de 12 meses.' },
   { p: 'Funciona bem no celular?', r: 'Perfeitamente. A Lumen foi feita pensando em quem trabalha com as mãos e usa o celular para tudo — é rápida e fácil de usar na tela pequena.' },
-  { p: 'O que acontece quando os 14 dias acabam?', r: 'Você escolhe um plano e continua usando normalmente. Se não quiser continuar, seus dados ficam salvos por 30 dias.' },
+  { p: 'O que acontece quando os 14 dias acabam?', r: 'Você escolhe um plano e continua de onde parou. Se preferir não seguir, seus dados ficam guardados com segurança caso você queira voltar depois.' },
   { p: 'Como funciona o suporte?', r: 'Atendimento direto pelo WhatsApp, de segunda a sábado. Sem robô, sem espera interminável — você fala com a equipe da Lumen.' },
   { p: 'Meus dados ficam seguros?', r: 'Sim. Seus dados ficam salvos na nuvem com backup automático e criptografia. Você nunca perde nada — mesmo que troque de celular.' },
 ]
