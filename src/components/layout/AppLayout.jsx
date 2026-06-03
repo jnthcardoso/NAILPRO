@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin } from '../../contexts/AssinaturaContext'
@@ -9,12 +9,13 @@ import { LumenLogo, LumenFlameIcon } from '../common/Brand'
 import Notificacoes from '../common/Notificacoes'
 
 // Itens completos (dona / recepcionista — gerenciam tudo)
+// `primary` = aparece fixo na barra inferior do celular; o resto vai pro menu "Mais".
 const navItemsCompleto = [
-  { to: '/app', icon: Home, label: 'Início', exact: true },
-  { to: '/app/agenda', icon: Calendar, label: 'Agenda' },
+  { to: '/app', icon: Home, label: 'Início', exact: true, primary: true },
+  { to: '/app/agenda', icon: Calendar, label: 'Agenda', primary: true },
   { to: '/app/lembretes', icon: Bell, label: 'Lembretes' },
-  { to: '/app/clientes', icon: Users, label: 'Clientes' },
-  { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/app/clientes', icon: Users, label: 'Clientes', primary: true },
+  { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro', primary: true },
   { to: '/app/metas', icon: Target, label: 'Metas' },
   { to: '/app/avisos', icon: Bell, label: 'Avisos' },
   { to: '/indicacao', icon: Gift, label: 'Indique e ganhe' },
@@ -22,10 +23,10 @@ const navItemsCompleto = [
 
 // Profissional: só a própria agenda + o próprio financeiro
 const navItemsProfissional = [
-  { to: '/app', icon: Home, label: 'Início', exact: true },
-  { to: '/app/agenda', icon: Calendar, label: 'Agenda' },
-  { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
-  { to: '/indicacao', icon: Gift, label: 'Indique e ganhe' },
+  { to: '/app', icon: Home, label: 'Início', exact: true, primary: true },
+  { to: '/app/agenda', icon: Calendar, label: 'Agenda', primary: true },
+  { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro', primary: true },
+  { to: '/indicacao', icon: Gift, label: 'Indique e ganhe', primary: true },
 ]
 
 
@@ -52,8 +53,23 @@ export default function AppLayout() {
     localStorage.setItem('sidebar-collapsed', isSidebarCollapsed)
   }, [isSidebarCollapsed])
 
+  // Painel "Mais" (barra inferior do celular)
+  const [maisAberto, setMaisAberto] = useState(false)
+  // Fecha o painel sempre que a rota muda (ex: ao tocar num item dele)
+  useEffect(() => { setMaisAberto(false) }, [location.pathname])
+
   const isActive = (to, exact) =>
     exact ? location.pathname === to : location.pathname.startsWith(to)
+
+  // Barra inferior: itens fixos + tudo que sobra vai pro menu "Mais"
+  const primaryItems = navItems.filter(i => i.primary)
+  const maisItems = [
+    ...navItems.filter(i => !i.primary),
+    ...(isAdmin ? [{ to: '/app/admin', icon: Shield, label: 'Admin' }] : []),
+    ...(podeGerenciarEquipe ? [{ to: '/app/equipe', icon: UsersRound, label: 'Equipe' }] : []),
+    ...(gerenciaTudo ? [{ to: '/app/configuracoes', icon: Settings, label: 'Configurações' }] : []),
+  ]
+  const maisAtivo = maisItems.some(i => isActive(i.to, i.exact))
 
   return (
     <div className="app-root" style={{ '--sidebar-width': isSidebarCollapsed ? '72px' : '244px' }}>
@@ -224,9 +240,9 @@ export default function AppLayout() {
         </main>
       </div>
 
-      {/* ── Bottom nav (mobile only) ──────────── */}
+      {/* ── Bottom nav (mobile only) — abas fixas + "Mais" ──────────── */}
       <nav className="app-bottom-nav">
-        {navItems.map(({ to, icon: Icon, label, exact }) => {
+        {primaryItems.map(({ to, icon: Icon, label, exact }) => {
           const active = isActive(to, exact)
           return (
             <NavLink
@@ -239,16 +255,53 @@ export default function AppLayout() {
             </NavLink>
           )
         })}
-        {isAdmin && (
-          <NavLink
-            to="/app/admin"
-            style={{ ...bn.item, ...(isActive('/app/admin') ? bn.itemActive : {}) }}
+        {maisItems.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setMaisAberto(v => !v)}
+            style={{ ...bn.item, ...bn.maisBtn, ...(maisAtivo || maisAberto ? bn.itemActive : {}) }}
+            aria-label="Mais opções"
+            aria-expanded={maisAberto}
           >
-            <Shield size={20} strokeWidth={isActive('/app/admin') ? 2.5 : 1.8} />
-            <span style={bn.label}>Admin</span>
-          </NavLink>
+            <Menu size={20} strokeWidth={maisAtivo || maisAberto ? 2.5 : 1.8} />
+            <span style={bn.label}>Mais</span>
+          </button>
         )}
       </nav>
+
+      {/* ── Painel "Mais" (mobile only) ──────────── */}
+      {maisAberto && (
+        <div className="mais-sheet-overlay" onClick={() => setMaisAberto(false)}>
+          <div className="mais-sheet" onClick={e => e.stopPropagation()}>
+            <div style={ms.handle} />
+            <div style={ms.header}>
+              <span style={ms.title}>Mais opções</span>
+              <button type="button" onClick={() => setMaisAberto(false)} style={ms.closeBtn} aria-label="Fechar">
+                <X size={20} />
+              </button>
+            </div>
+            <div style={ms.grid}>
+              {maisItems.map(({ to, icon: Icon, label, exact }) => {
+                const active = isActive(to, exact)
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    style={{ ...ms.gridItem, ...(active ? ms.gridItemActive : {}) }}
+                  >
+                    <Icon size={22} strokeWidth={active ? 2.4 : 1.8} />
+                    <span style={ms.gridLabel}>{label}</span>
+                  </NavLink>
+                )
+              })}
+            </div>
+            <button onClick={handleSair} style={ms.sairBtn}>
+              <LogOut size={18} strokeWidth={2} />
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -312,4 +365,18 @@ const bn = {
   item: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, color: 'var(--text3)', borderTop: '2px solid transparent', transition: 'all 0.15s', textDecoration: 'none' },
   itemActive: { color: 'var(--pink)', borderTopColor: 'var(--pink)', background: 'rgba(139,38,85,0.04)' },
   label: { fontSize: 10, fontWeight: 600 },
+  maisBtn: { background: 'transparent', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: 0 },
+}
+
+/* "Mais" sheet styles (mobile) */
+const ms = {
+  handle: { width: 38, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 12px' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  title: { fontSize: 15, fontWeight: 700, color: 'var(--text)' },
+  closeBtn: { background: 'var(--surface2, rgba(0,0,0,0.04))', border: 'none', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2, var(--text3))', cursor: 'pointer' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 },
+  gridItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '16px 6px', borderRadius: 14, background: 'var(--surface2, rgba(0,0,0,0.03))', color: 'var(--text2, var(--text))', textDecoration: 'none', textAlign: 'center', border: '1px solid var(--border)' },
+  gridItemActive: { background: 'var(--pink)', color: '#FFFFFF', borderColor: 'var(--pink)', boxShadow: '0 4px 14px rgba(139,38,85,0.35)' },
+  gridLabel: { fontSize: 11.5, fontWeight: 600, lineHeight: 1.2 },
+  sairBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 12, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.18)', color: '#DC2626', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' },
 }

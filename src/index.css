@@ -121,6 +121,31 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 -2px 12px rgba(24,7,18,0.06);
 }
 
+/* ── "Mais" sheet (mobile bottom nav overflow) ── */
+.mais-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 7, 18, 0.45);
+  z-index: 110;
+  display: flex;
+  align-items: flex-end;
+  animation: np-fade-in 0.18s ease;
+}
+
+.mais-sheet {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 18px calc(var(--nav-height) + 18px);
+  box-shadow: 0 -8px 30px rgba(24, 7, 18, 0.18);
+  animation: mais-sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mais-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
 /* ── FAB button ──────────────────────────── */
 
 .fab-btn {
@@ -206,6 +231,7 @@ input:focus, select:focus, textarea:focus {
   }
 
   .app-bottom-nav { display: none; }
+  .mais-sheet-overlay { display: none; }
 
   .fab-btn {
     bottom: 32px !important;
