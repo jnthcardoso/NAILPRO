@@ -395,6 +395,7 @@ export default function Landing() {
                 {l.label}
               </button>
             ))}
+            <Link to="/indicacao" style={{ ...s.footerNavLink, textDecoration: 'none' }}>🎁 Indique e ganhe</Link>
           </div>
 
           {/* Col 3 — Contato */}

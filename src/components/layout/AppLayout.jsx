@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin } from '../../contexts/AssinaturaContext'
@@ -17,6 +17,7 @@ const navItemsCompleto = [
   { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/app/metas', icon: Target, label: 'Metas' },
   { to: '/app/avisos', icon: Bell, label: 'Avisos' },
+  { to: '/indicacao', icon: Gift, label: 'Indique e ganhe' },
 ]
 
 // Profissional: só a própria agenda + o próprio financeiro
@@ -24,6 +25,7 @@ const navItemsProfissional = [
   { to: '/app', icon: Home, label: 'Início', exact: true },
   { to: '/app/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/indicacao', icon: Gift, label: 'Indique e ganhe' },
 ]
 
 
