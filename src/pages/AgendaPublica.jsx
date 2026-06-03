@@ -286,10 +286,10 @@ export default function AgendaPublica() {
             </div>
           )}
 
-          <div style={ext.footer}>
+          <a href="https://lumengestaoempresarial.com.br/?ref=agenda" target="_blank" rel="noreferrer" style={{ ...ext.footer, textDecoration: 'none', cursor: 'pointer' }}>
             <LumenLogo size={14} variant="reverso" />
-            <span style={ext.footerText}>powered by lumen</span>
-          </div>
+            <span style={ext.footerText}>powered by lumen · crie sua agenda grátis</span>
+          </a>
         </div>
       </div>
     )
@@ -570,7 +570,9 @@ export default function AgendaPublica() {
       </div>
 
       <div style={s.footer}>
-        Powered by <strong>lumen</strong> 💅
+        <a href="https://lumengestaoempresarial.com.br/?ref=agenda" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Powered by <strong>lumen</strong> 💅 · crie sua agenda grátis
+        </a>
       </div>
     </div>
   )
