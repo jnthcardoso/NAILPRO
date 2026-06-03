@@ -13,7 +13,7 @@ export default function Privacidade() {
         <div style={s.header}>
           <div style={s.icon}><Lock size={26} color="white" /></div>
           <h1 style={s.titulo}>Política de Privacidade</h1>
-          <p style={s.versao}>Atualizado em 3 de Junho de 2026 · Em conformidade com a LGPD (Lei 13.709/18)</p>
+          <p style={s.versao}>Atualizado em 4 de Junho de 2026 · Em conformidade com a LGPD (Lei 13.709/18)</p>
         </div>
 
         <div style={s.conteudo}>
@@ -28,7 +28,7 @@ export default function Privacidade() {
             <li><strong>Cadastro:</strong> nome, e-mail, senha (criptografada);</li>
             <li><strong>Perfil:</strong> nome do salão, WhatsApp, foto de perfil (opcional);</li>
             <li><strong>Uso:</strong> data/hora de login, ações realizadas no app;</li>
-            <li><strong>Pagamento:</strong> a Lumen <strong>não armazena os dados do seu cartão</strong>. As cobranças (cartão de crédito ou PIX) são processadas por gateway de pagamento (Mercado Pago), que trata esses dados com segurança.</li>
+            <li><strong>Pagamento:</strong> a Lumen <strong>não armazena os dados do seu cartão</strong>. As cobranças no cartão de crédito são processadas por gateway de pagamento (Asaas), que trata esses dados com segurança.</li>
           </ul>
 
           <h3 style={s.h3}>2.2. Sobre suas clientes (cadastradas por você)</h3>
@@ -53,7 +53,7 @@ export default function Privacidade() {
           <ul style={s.lista}>
             <li><strong>Supabase</strong> (infraestrutura de banco de dados e autenticação) — opera em conformidade com GDPR/LGPD;</li>
             <li><strong>Vercel</strong> (hospedagem do app);</li>
-            <li><strong>Mercado Pago</strong> (processamento de pagamentos com cartão e PIX);</li>
+            <li><strong>Asaas</strong> (processamento de pagamentos no cartão de crédito);</li>
             <li><strong>Google Calendar</strong> e <strong>WhatsApp</strong> — apenas se você ativar as integrações.</li>
             <li><strong>Autoridades</strong>, quando legalmente exigido (ordem judicial).</li>
           </ul>

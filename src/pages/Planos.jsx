@@ -126,10 +126,10 @@ export default function Planos() {
           </button>
         </div>
         {ciclo === 'anual' && (
-          <div style={s.anualNota}>📅 Fidelidade de 12 meses · multa de 50% em caso de cancelamento antecipado</div>
+          <div style={s.anualNota}>📅 Pago 1× no cartão · renova automaticamente a cada ano · cancele quando quiser</div>
         )}
         {ciclo === 'mensal' && (
-          <div style={s.mensalNota}>📆 Sem fidelidade · cancele quando quiser</div>
+          <div style={s.mensalNota}>📆 Cobrança mensal · cancele quando quiser</div>
         )}
       </div>
 
@@ -138,32 +138,21 @@ export default function Planos() {
         <div style={s.contratoCard}>
           <div style={s.contratoHeader}>
             <FileText size={16} color="var(--pink)" />
-            <span style={s.contratoTitulo}>Seu contrato — {planoAtual?.nome}</span>
+            <span style={s.contratoTitulo}>Sua assinatura — {planoAtual?.nome}</span>
           </div>
-          <div style={s.contratoGrid}>
+          <div style={{ ...s.contratoGrid, gridTemplateColumns: 'repeat(2, 1fr)' }}>
             <div>
               <div style={s.contratoLabel}>Início</div>
               <div style={s.contratoValor}>{fmtData(contrato.inicio)}</div>
             </div>
             <div>
-              <div style={s.contratoLabel}>Fim da fidelidade</div>
+              <div style={s.contratoLabel}>Próxima renovação</div>
               <div style={s.contratoValor}>{fmtData(contrato.fim)}</div>
             </div>
-            <div>
-              <div style={s.contratoLabel}>Tempo restante</div>
-              <div style={s.contratoValor}>{contrato.mesesRestantes} {contrato.mesesRestantes === 1 ? 'mês' : 'meses'}</div>
-            </div>
           </div>
-          {contrato.dentroFidelidade ? (
-            <div style={s.contratoMulta}>
-              ⚠️ Cancelamento antes de {fmtData(contrato.fim)} tem multa de <strong>50% do valor restante</strong> —
-              hoje, aproximadamente <strong>R$ {formatPreco(contrato.multaCentavos)}</strong>.
-            </div>
-          ) : (
-            <div style={{ ...s.contratoMulta, background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC' }}>
-              ✓ Fidelidade cumprida — você pode cancelar sem multa.
-            </div>
-          )}
+          <div style={{ ...s.contratoMulta, background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC' }}>
+            ✓ Cancele quando quiser, sem multa. Você fica com acesso até {fmtData(contrato.fim)} e não é cobrada de novo.
+          </div>
         </div>
       )}
 
@@ -249,15 +238,15 @@ export default function Planos() {
         <h3 style={s.faqTitle}>Dúvidas frequentes</h3>
         <FaqItem
           q="Como funciona o pagamento?"
-          a="Ao clicar em 'Assinar com cartão', você é redirecionada para o checkout seguro do Mercado Pago. Insira os dados do cartão de crédito e o plano é ativado automaticamente. A cobrança é mensal e recorrente — sem precisar fazer nada todo mês."
+          a="Ao clicar em 'Assinar com cartão', você é redirecionada para o checkout seguro do Asaas. Informe seus dados e o cartão, e o plano é ativado automaticamente. No mensal, a cobrança se repete todo mês; no anual, é cobrada uma vez por ano (e renova sozinha no ano seguinte)."
         />
         <FaqItem
           q="Qual a diferença entre mensal e anual?"
-          a={`No plano anual você economiza ~${economiaSolo}% e trava o preço por 12 meses — mas há fidelidade com multa de 50% em cancelamento antecipado. O mensal é mais caro, porém sem compromisso: cancela quando quiser.`}
+          a={`No anual você economiza ~${economiaSolo}% e paga o ano de uma vez (1× no cartão). No mensal, paga mês a mês (um pouco mais caro). Nos dois, você cancela quando quiser — sem multa.`}
         />
         <FaqItem
-          q="Tem fidelidade no plano anual?"
-          a="Sim. Os planos anuais têm fidelidade de 12 meses. Em caso de cancelamento antes do fim do contrato, há multa de 50% sobre o valor restante."
+          q="Tem fidelidade ou multa?"
+          a="Não. Você cancela quando quiser, sem multa. No anual, como já pagou o ano, você continua com acesso até o fim do período e simplesmente não é cobrada de novo. E tem garantia de 7 dias: cancelou em até 7 dias da compra, devolvemos 100%."
         />
         <FaqItem
           q="Meus dados ficam guardados se eu cancelar?"
@@ -308,7 +297,7 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loa
         {ciclo === 'anual' ? (
           <>
             <div style={s.precoNota}>R$ {formatPreco(plano.precoAnual)} cobrados anualmente</div>
-            <div style={s.fidelidadeTag}>📅 Fidelidade 12 meses · economize {economiaPorc}%</div>
+            <div style={s.fidelidadeTag}>📅 1× ao ano · economize {economiaPorc}%</div>
           </>
         ) : (
           <>

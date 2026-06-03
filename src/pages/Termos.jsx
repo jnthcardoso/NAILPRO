@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileText } from 'lucide-react'
 
-export const TERMOS_VERSAO = '1.1.0'
-export const TERMOS_DATA = '3 de Junho de 2026'
+export const TERMOS_VERSAO = '1.2.0'
+export const TERMOS_DATA = '4 de Junho de 2026'
 
 export default function Termos() {
   const navigate = useNavigate()
@@ -39,18 +39,18 @@ export default function Termos() {
           <ul style={s.lista}>
             <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito, sem necessidade de cartão de crédito.</li>
             <li>Após o período de teste, é necessário assinar um plano pago para manter o acesso completo.</li>
-            <li>Cada plano pode ser contratado em dois ciclos: <strong>mensal</strong> (sem fidelidade, cancele quando quiser) ou <strong>anual</strong> (com valor reduzido e fidelidade de 12 meses).</li>
+            <li>Cada plano pode ser contratado em dois ciclos: <strong>mensal</strong> (cobrado todo mês) ou <strong>anual</strong> (cobrado <strong>uma única vez no cartão na contratação</strong>, por um valor reduzido, com renovação automática a cada 12 meses).</li>
             <li>O plano <strong>Solo</strong> inclui 1 login. O plano <strong>Pro</strong> inclui 1 login com todas as funcionalidades avançadas. O plano <strong>Salão</strong> inclui os logins de dona e recepcionista, com possibilidade de adicionar profissionais por valor mensal por usuário, conforme a <a href="/planos" style={s.link}>página de planos</a>.</li>
-            <li>Os pagamentos são processados de forma segura por gateway de pagamento (Mercado Pago), com cartão de crédito ou PIX. A Lumen não armazena os dados do seu cartão.</li>
+            <li>Os pagamentos são processados de forma segura por gateway de pagamento (Asaas), no cartão de crédito. A Lumen não armazena os dados do seu cartão.</li>
           </ul>
 
-          <h2 style={s.h2}>5. Fidelidade, Cancelamento e Reembolso</h2>
+          <h2 style={s.h2}>5. Cancelamento e Reembolso</h2>
           <ul style={s.lista}>
-            <li><strong>Garantia de 7 dias:</strong> você pode cancelar em até 7 (sete) dias após a primeira cobrança e receber reembolso integral, sem qualquer custo (direito de arrependimento, CDC Art. 49).</li>
-            <li>No plano <strong>mensal</strong>, você cancela a qualquer momento, sem multa — o acesso permanece até o fim do período já pago.</li>
-            <li>No plano <strong>anual</strong>, há fidelidade de 12 meses. O cancelamento após o período de garantia e antes do fim do contrato está sujeito a <strong>multa de 50% (cinquenta por cento) sobre o valor restante do contrato</strong>.</li>
-            <li>Você pode visualizar a data de término da fidelidade e a multa estimada a qualquer momento na página de planos.</li>
-            <li>Após o cancelamento, seus dados ficam guardados por 90 dias para eventual reativação.</li>
+            <li><strong>Sem fidelidade e sem multa.</strong> Você pode cancelar a assinatura a qualquer momento.</li>
+            <li><strong>Garantia de 7 dias:</strong> se cancelar em até 7 (sete) dias após a contratação, devolvemos 100% do valor pago, sem qualquer custo (direito de arrependimento, CDC Art. 49).</li>
+            <li>No plano <strong>mensal</strong>: ao cancelar, o acesso permanece até o fim do mês já pago e não há novas cobranças.</li>
+            <li>No plano <strong>anual</strong>: como o período de 12 meses já foi pago na contratação, ao cancelar (após os 7 dias de garantia) o acesso permanece até o fim desse período já pago, <strong>sem reembolso proporcional</strong>, e a assinatura simplesmente não é renovada.</li>
+            <li>Após o término da assinatura, seus dados ficam guardados por 90 dias para eventual reativação.</li>
           </ul>
 
           <h2 style={s.h2}>6. Uso Permitido</h2>
