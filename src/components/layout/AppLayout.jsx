@@ -335,7 +335,10 @@ const sb = {
   navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
   navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 38, 85, 0.4)' },
   sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
-  toggleFloatBtn: { width: 30, height: 30, borderRadius: 9, background: 'var(--pink)', border: '2px solid var(--bg, #FBF6F8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', boxShadow: '0 3px 12px rgba(139, 38, 85, 0.45)', outline: 'none', padding: 0 },
+  // Sem `display` aqui de propósito: quem controla é o CSS (.sidebar-toggle-float),
+  // que esconde no celular (display:none) e mostra no desktop (display:flex).
+  // Se puser display:flex inline, ele vence o CSS e o botão vaza pro celular.
+  toggleFloatBtn: { width: 30, height: 30, borderRadius: 9, background: 'var(--pink)', border: '2px solid var(--bg, #FBF6F8)', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', boxShadow: '0 3px 12px rgba(139, 38, 85, 0.45)', outline: 'none', padding: 0 },
 }
 
 /* Mobile header styles */
