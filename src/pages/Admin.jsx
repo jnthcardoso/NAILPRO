@@ -1,10 +1,26 @@
 import { useEffect, useState, useRef } from 'react'
-import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift } from 'lucide-react'
+import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { format, differenceInDays } from 'date-fns'
+import { format, differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CardSkeleton } from '../components/common/Skeleton'
+import Modal from '../components/common/Modal'
 import { useToast } from '../contexts/ToastContext'
+
+// Tempo relativo amigável: "há 2 dias", "há 5 minutos", "nunca".
+function quando(ts) {
+  if (!ts) return null
+  try { return formatDistanceToNow(new Date(ts), { addSuffix: true, locale: ptBR }) } catch { return null }
+}
+
+// Ícone por tipo de evento no feed de atividade.
+const ATIV_ICON = {
+  agendamento: Calendar,
+  pagamento: DollarSign,
+  cliente: Users,
+  despesa: Receipt,
+  meta: Target,
+}
 
 const STATUS_LABELS = {
   trialing: { label: 'Teste', color: '#1E40AF', bg: '#DBEAFE' },
@@ -37,6 +53,10 @@ export default function Admin() {
   const [notaEditando, setNotaEditando] = useState(null) // user_id sendo editado
   const [notaTexto, setNotaTexto] = useState('')
   const notaInputRef = useRef(null)
+  // Feed de atividade (modal)
+  const [atividadeUser, setAtividadeUser] = useState(null) // usuário sendo visualizado
+  const [atividade, setAtividade] = useState([])
+  const [loadingAtividade, setLoadingAtividade] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -133,6 +153,17 @@ export default function Admin() {
     load()
   }
 
+  async function verAtividade(u) {
+    setAtividadeUser(u)
+    setAtividade([])
+    setLoadingAtividade(true)
+    setAcaoUserId(null)
+    const { data, error } = await supabase.rpc('admin_atividade_usuario', { p_user_id: u.user_id, p_limit: 30 })
+    setLoadingAtividade(false)
+    if (error) { toastErro('Erro ao carregar atividade: ' + error.message); setAtividadeUser(null); return }
+    setAtividade(data || [])
+  }
+
   function abrirNota(userId) {
     setNotaEditando(userId)
     setNotaTexto(notas[userId] || '')
@@ -169,8 +200,10 @@ export default function Admin() {
 
   const stats = {
     total: usuarios.length,
-    ativas: usuarios.filter(u => u.assinatura_status === 'active').length,
-    trial: usuarios.filter(u => u.assinatura_status === 'trialing').length,
+    // Ativas = clientes pagantes reais (exclui cortesia: dev + demonstração)
+    ativas: usuarios.filter(u => u.assinatura_status === 'active' && !u.cortesia).length,
+    trial: usuarios.filter(u => u.assinatura_status === 'trialing' && !u.cortesia).length,
+    cortesia: usuarios.filter(u => u.cortesia).length,
     inativos: inativos.length,
     mrrCentavos: usuarios
       .filter(u => u.assinatura_status === 'active' && !u.cortesia)
@@ -224,6 +257,11 @@ export default function Admin() {
               {' · '}⏱ {diasCadastro}d desde cadastro
               {u.whatsapp && <> · 📱 {u.whatsapp}</>}
               {' · '}👥 {u.total_clientes} clientes
+            </div>
+            <div style={s.userAcesso}>
+              <span title="Último login na plataforma"><LogIn size={10} style={{ verticalAlign: -1 }} /> {quando(u.ultimo_acesso) || 'nunca acessou'}</span>
+              {' · '}
+              <span title="Última ação nos dados (agendamento, pagamento, cliente...)"><Activity size={10} style={{ verticalAlign: -1 }} /> ativo {quando(u.ultima_atividade) || '—'}</span>
             </div>
           </div>
 
@@ -302,6 +340,12 @@ export default function Admin() {
                 + 30 dias de trial
               </button>
               <button
+                style={{ ...s.acaoBtn, background: '#F0F9FF', color: '#0369A1', border: '1px solid #7DD3FC' }}
+                onClick={() => verAtividade(u)} disabled={acaoLoading}
+              >
+                <Activity size={12} style={{ verticalAlign: -2 }} /> Ver atividade
+              </button>
+              <button
                 style={{ ...s.acaoBtn, background: '#FEF9C3', color: '#92400E', border: '1px solid #FDE68A' }}
                 onClick={() => { abrirNota(u.user_id) }} disabled={acaoLoading}
               >
@@ -358,6 +402,7 @@ export default function Admin() {
         <div style={{ ...s.statCard, borderTop: '3px solid #15803D' }}>
           <div style={{ ...s.statValor, color: '#15803D' }}>{stats.ativas}</div>
           <div style={s.statLabel}>Ativas</div>
+          {stats.cortesia > 0 && <div style={s.statSub}>+{stats.cortesia} cortesia</div>}
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid #1E40AF' }}>
           <div style={{ ...s.statValor, color: '#1E40AF' }}>{stats.trial}</div>
@@ -453,6 +498,42 @@ export default function Admin() {
         </>
       )}
 
+      {/* ── Modal: feed de atividade ── */}
+      {atividadeUser && (
+        <Modal onClose={() => setAtividadeUser(null)} boxStyle={s.ativModal}>
+          <div style={s.ativHeader}>
+            <Activity size={18} color="#0369A1" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={s.ativTitulo}>{atividadeUser.nome || atividadeUser.email?.split('@')[0]}</div>
+              <div style={s.ativSub}>Últimas alterações</div>
+            </div>
+          </div>
+
+          {loadingAtividade ? (
+            <div style={s.ativVazio}>Carregando…</div>
+          ) : atividade.length === 0 ? (
+            <div style={s.ativVazio}>Nenhuma atividade registrada ainda.</div>
+          ) : (
+            <div style={s.ativLista}>
+              {atividade.map((ev, i) => {
+                const Ico = ATIV_ICON[ev.tipo] || Activity
+                return (
+                  <div key={i} style={s.ativItem}>
+                    <div style={s.ativIcone}><Ico size={14} color="var(--text2)" /></div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.ativDesc}>{ev.descricao}</div>
+                      <div style={s.ativQuando}>
+                        {format(new Date(ev.quando), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} · {quando(ev.quando)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Modal>
+      )}
+
     </div>
   )
 }
@@ -469,6 +550,7 @@ const s = {
   statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' },
   statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
   statLabel: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
+  statSub: { fontSize: 9, color: '#6D28D9', marginTop: 2, fontWeight: 700 },
   /* Abas */
   abas: { display: 'flex', gap: 6, marginBottom: 14 },
   aba: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 16px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', position: 'relative' },
@@ -491,6 +573,18 @@ const s = {
   cortesiaTag: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, color: '#6D28D9', background: '#F5F3FF', border: '1px solid #C4B5FD', borderRadius: 'var(--radius-pill)', padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.3px' },
   userSalao: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
   userMeta: { fontSize: 10, color: 'var(--text3)', marginTop: 4, lineHeight: 1.6 },
+  userAcesso: { fontSize: 10, color: 'var(--text2)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', fontWeight: 600 },
+  /* Feed de atividade */
+  ativModal: { background: 'var(--surface)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 460, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' },
+  ativHeader: { display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 12, borderBottom: '1px solid var(--border)', marginBottom: 4 },
+  ativTitulo: { fontSize: 15, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  ativSub: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
+  ativLista: { overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 },
+  ativItem: { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 4px', borderBottom: '1px solid var(--border)' },
+  ativIcone: { width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  ativDesc: { fontSize: 13, color: 'var(--text)', fontWeight: 500, lineHeight: 1.35 },
+  ativQuando: { fontSize: 10.5, color: 'var(--text3)', marginTop: 2 },
+  ativVazio: { textAlign: 'center', padding: '32px 0', color: 'var(--text3)', fontSize: 13 },
   userRight: { textAlign: 'right', flexShrink: 0 },
   statusBadge: { fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },
   planoTexto: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, marginTop: 4, color: 'var(--text2)' },
