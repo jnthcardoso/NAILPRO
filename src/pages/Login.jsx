@@ -66,13 +66,24 @@ export default function Login() {
       const { error } = await signIn(form.email, form.password)
       if (error) setError('E-mail ou senha incorretos.')
     } else {
-      const { error } = await signUp(form.email, form.password, form.name, form.indicadoPor)
+      const { data, error } = await signUp(form.email, form.password, form.name, form.indicadoPor)
       if (error) {
         // Traduz a causa mais comum; evita expor a mensagem técnica em inglês.
         setError(/already registered|already exists|user already/i.test(error.message)
           ? 'Este e-mail já tem conta. Tente entrar.'
+          : /rate limit|too many|after \d+ seconds/i.test(error.message)
+          ? 'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.'
           : 'Não foi possível criar a conta. Tente novamente.')
-      } else trackCadastro()
+      } else {
+        trackCadastro()
+        // Com confirmação de e-mail ligada, o Supabase não devolve sessão:
+        // a pessoa precisa clicar no link enviado por e-mail antes de entrar.
+        // Sem sessão e sem aviso, ela ficaria travada nesta tela.
+        if (!data?.session) {
+          setMode('login')
+          setMsg('Conta criada! Enviamos um link de confirmação para o seu e-mail. Confira sua caixa de entrada (e o spam) e clique no link para ativar a conta e entrar.')
+        }
+      }
     }
     setLoading(false)
   }
@@ -213,6 +224,7 @@ export default function Login() {
               </label>
             )}
             {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+            {msg && <div style={s.success}>{msg}</div>}
             <button
               style={s.btn}
               type="submit"
