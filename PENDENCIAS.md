@@ -21,5 +21,14 @@ que as cumpra automaticamente.
 - **A decidir:** confirmar o plano do Supabase e, se necessário, ajustar o texto ou
   fazer upgrade do plano.
 
+## 3. Automatizar o programa de indicação
+- **Situação atual:** programa **manual** — o cadastro captura "quem indicou" (campo
+  `indicado_por`) e o Admin exibe, mas o dono paga a comissão (50% da mensalidade via
+  PIX) e aplica o desconto (50% na 1ª mensalidade) na mão.
+- **A evoluir no futuro:** gerar link único de indicação por cliente, calcular a
+  comissão automaticamente quando a indicada vira pagante, aplicar o desconto na
+  cobrança automaticamente, e controlar pago/pendente. A base (campo de indicação)
+  já está pronta para isso.
+
 ---
 _Registrado em 03/06/2026. Atualizar/remover itens conforme forem resolvidos._
