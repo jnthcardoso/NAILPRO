@@ -178,17 +178,18 @@ export default function AppLayout() {
           </button>
         </div>
 
-        {/* Botão de Alternância (Toggle) */}
-        <div style={{ ...sb.toggleArea, ...(isSidebarCollapsed ? { justifyContent: 'center' } : {}) }}>
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            style={sb.toggleBtn}
-            title={isSidebarCollapsed ? "Expandir Menu" : "Recolher Menu"}
-          >
-            {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-        </div>
       </aside>
+
+      {/* Botão de recolher/expandir — flutua na borda externa do sidebar (desktop) */}
+      <button
+        className="sidebar-toggle-float"
+        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        style={sb.toggleFloatBtn}
+        title={isSidebarCollapsed ? "Expandir Menu" : "Recolher Menu"}
+        aria-label={isSidebarCollapsed ? "Expandir Menu" : "Recolher Menu"}
+      >
+        {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+      </button>
 
       {/* ── Content wrapper ───────────────────── */}
       <div className="app-content-wrapper">
@@ -281,8 +282,7 @@ const sb = {
   navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
   navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 38, 85, 0.4)' },
   sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
-  toggleArea: { padding: '10px 14px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', transition: 'all 0.28s' },
-  toggleBtn: { background: 'rgba(255, 255, 255, 0.06)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.7)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' },
+  toggleFloatBtn: { width: 28, height: 28, borderRadius: '50%', background: '#2A0F22', border: '1px solid rgba(255, 255, 255, 0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.85)', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.35)', outline: 'none', padding: 0 },
 }
 
 /* Mobile header styles */

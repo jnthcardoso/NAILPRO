@@ -83,6 +83,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .app-sidebar { display: none; }
+.sidebar-toggle-float { display: none; }
 
 .app-mobile-header {
   background: var(--pink);
@@ -178,6 +179,16 @@ input:focus, select:focus, textarea:focus {
   }
 
   .app-mobile-header { display: none; }
+
+  /* Botão de recolher/expandir o menu — flutua na borda direita do sidebar */
+  .sidebar-toggle-float {
+    display: flex;
+    position: fixed;
+    top: 88px;
+    left: calc(var(--sidebar-width) - 14px);
+    z-index: 60;
+    transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 
   .app-content-wrapper {
     flex: 1;
