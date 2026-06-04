@@ -226,6 +226,10 @@ export default function Financeiro() {
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
+  // Confirmar um pagamento pendente como pago, escolhendo a forma.
+  const [confirmarPag, setConfirmarPag] = useState(null)
+  const [formaConfirm, setFormaConfirm] = useState('pix')
+  const [savingConfirm, setSavingConfirm] = useState(false)
   const [filtro, setFiltro] = useState('todos')
   const [periodoSel, setPeriodoSel] = useState(new Date())
   const [rangeMode, setRangeMode] = useState('mes') // 'mes' | 'custom'
@@ -387,6 +391,25 @@ export default function Financeiro() {
   async function togglePago(pag) {
     const { error } = await supabase.from('pagamentos').update({ status: pag.status === 'pago' ? 'pendente' : 'pago' }).eq('id', pag.id).eq('salao_id', salaoId)
     if (error) { toastErro('Erro ao atualizar pagamento: ' + error.message); return }
+    loadPagamentos()
+  }
+
+  // Abre a confirmação para marcar um pendente como pago (com escolha da forma).
+  function abrirConfirmarPago(pag) {
+    setFormaConfirm(pag.forma || 'pix')
+    setConfirmarPag(pag)
+  }
+
+  async function confirmarPagamento() {
+    if (!confirmarPag) return
+    setSavingConfirm(true)
+    const { error } = await supabase.from('pagamentos')
+      .update({ status: 'pago', forma: formaConfirm })
+      .eq('id', confirmarPag.id).eq('salao_id', salaoId)
+    setSavingConfirm(false)
+    if (error) { toastErro('Erro ao registrar pagamento: ' + error.message); return }
+    setConfirmarPag(null)
+    sucesso('Pagamento registrado')
     loadPagamentos()
   }
 
@@ -654,7 +677,7 @@ export default function Financeiro() {
                     <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
                       {formatBRL(p.valor ?? 0)}
                     </div>
-                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => togglePago(p)}>
+                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? togglePago(p) : abrirConfirmarPago(p)}>
                       {pago ? '✓ Pago' : '⏳ Pendente'}
                     </button>
                   </div>
@@ -805,6 +828,45 @@ export default function Financeiro() {
             </div>
             <button style={s.btnPrimary} onClick={salvarDespesa} disabled={savingDespesa}>{savingDespesa ? 'Salvando...' : editandoDespesa ? 'Salvar alterações' : 'Registrar despesa'}</button>
             <button style={s.btnSecondary} onClick={fecharDespesaModal}>Cancelar</button>
+        </Modal>
+      )}
+
+      {/* Modal: confirmar pagamento pendente como pago (escolhendo a forma) */}
+      {confirmarPag && (
+        <Modal onClose={() => setConfirmarPag(null)} variant="sheet" boxStyle={s.modal}>
+          <div style={s.modalTitle}>💳 Registrar pagamento</div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+              {confirmarPag.agendamentos?.clientes?.nome || '—'}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text3)', marginTop: 2 }}>
+              {confirmarPag.agendamentos?.servico || '—'} · <strong style={{ color: 'var(--text2)' }}>{formatBRL(confirmarPag.valor ?? 0)}</strong>
+            </div>
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>Como foi pago?</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {FORMAS_PAGAMENTO.map(f => (
+                <button
+                  key={f.value}
+                  onClick={() => setFormaConfirm(f.value)}
+                  style={{
+                    flex: '1 1 calc(50% - 4px)', padding: '11px', borderRadius: 'var(--radius-sm)',
+                    border: formaConfirm === f.value ? '1.5px solid var(--pink)' : '1px solid var(--border2)',
+                    background: formaConfirm === f.value ? 'var(--pink-light)' : 'var(--surface)',
+                    color: formaConfirm === f.value ? 'var(--pink)' : 'var(--text2)',
+                    fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button style={s.btnPrimary} onClick={confirmarPagamento} disabled={savingConfirm}>
+            {savingConfirm ? 'Salvando...' : '✓ Marcar como pago'}
+          </button>
+          <button style={s.btnSecondary} onClick={() => setConfirmarPag(null)}>Cancelar</button>
         </Modal>
       )}
     </div>
