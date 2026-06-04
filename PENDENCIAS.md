@@ -31,16 +31,19 @@ que as cumpra automaticamente.
   já está pronta para isso.
 
 ## 4. Refatoração profunda das telas grandes (split em componentes)
-- **Situação atual:** os estilos de Agenda e Configurações já foram separados em
-  arquivos próprios (`*.styles.js`), enxugando os arquivos. A lógica/JSX ainda é
-  grande (Agenda ~1.170 linhas; Configurações ~940).
-- **A evoluir no futuro:** quebrar essas telas em componentes menores (ex.: cada
-  modal da Agenda e cada aba das Configurações em seu próprio arquivo), para
-  acelerar a manutenção.
+- **Agenda — ✅ RESOLVIDO (04/06/2026):** quebrada em 3 passos incrementais
+  (`1168 → 630 linhas`, −46%). Constantes (`Agenda.constants.js`), modais
+  (`Novo/Editar/Pagamento` em `components/agenda/`), cards (`cards.jsx`), views
+  Dia/Semana/Mês/Busca (`views.jsx`) e o drawer de detalhe
+  (`DetalheAgendamentoDrawer.jsx`). O `Agenda.jsx` ficou só com estado + lógica.
+  Validado de ponta a ponta numa conta real (todas as views, cards, drawer e os
+  3 modais), sem regressões. Build OK nos 3 passos.
+- **Falta ainda — Configurações (~940 linhas):** mesma ideia (cada aba em seu
+  próprio arquivo). Mesmo cuidado: incremental e validado, fica atrás de login.
 - **Cuidado importante:** essas telas ficam atrás de login e mudam comportamento
-  real (a Agenda é a tela mais usada). O split deve ser feito **incrementalmente
-  e com validação** (testar cada passo numa conta real), não "no escuro". É
-  melhoria interna de manutenção — não bloqueia nada nem afeta a usuária.
+  real. O split deve ser feito **incrementalmente e com validação** (testar cada
+  passo numa conta real), não "no escuro". É melhoria interna de manutenção —
+  não bloqueia nada nem afeta a usuária.
 
 ---
 _Registrado em 03/06/2026. Atualizar/remover itens conforme forem resolvidos._
