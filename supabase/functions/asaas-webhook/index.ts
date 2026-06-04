@@ -47,7 +47,22 @@ Deno.serve(async (req: Request) => {
     const inadimplente = event === 'PAYMENT_OVERDUE'
     const cancelado = ['PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED', 'PAYMENT_DELETED'].includes(event)
 
+    // Numero da parcela no parcelamento (1..12). So vem em cobranca parcelada (anual).
+    const installmentNumber = Number(payment?.installmentNumber) || null
+
     if (pagamentoOk) {
+      // Anual e parcelado: o Asaas dispara um evento de pagamento POR PARCELA
+      // (uma vez por mes). Se recalculassemos a validade a cada parcela, o acesso
+      // iria sendo "empurrado" e a cliente teria ~24 meses em vez de 12.
+      // Por isso, nas parcelas 2..12 so confirmamos que segue ativa, sem mexer na data.
+      if (ciclo === 'anual' && installmentNumber && installmentNumber > 1) {
+        const { error } = await supabase.from('assinaturas')
+          .update({ status: 'active', updated_at: now.toISOString() })
+          .eq('user_id', userId)
+        if (error) console.error('Erro update (parcela seguinte):', error.message)
+        else console.log('Parcela', installmentNumber, 'recebida (sem estender periodo):', userId)
+        return new Response('OK', { status: 200 })
+      }
       const upd: Record<string, unknown> = {
         status: 'active', periodo_inicia_em: now.toISOString(), periodo_termina_em: setPeriodo(),
         mp_subscription_id: subId || null, updated_at: now.toISOString(),

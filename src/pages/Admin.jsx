@@ -30,6 +30,19 @@ const STATUS_LABELS = {
   expired: { label: 'Expirada', color: '#7F1D1D', bg: '#FECACA' },
 }
 
+// Janela (em dias) para avisar que um plano anual está perto de vencer.
+// O anual é parcelado (não renova sozinho), então a renovação é manual.
+const RENOVAR_DIAS = 30
+
+// True se o usuário tem plano ANUAL ativo vencendo em até RENOVAR_DIAS (ou já vencido).
+// Mensal renova sozinho no cartão, então nunca entra aqui.
+function precisaRenovarManual(u) {
+  if (u.assinatura_status !== 'active') return false
+  if (u.assinatura_ciclo !== 'anual') return false
+  if (!u.periodo_termina_em) return false
+  return differenceInDays(new Date(u.periodo_termina_em), new Date()) <= RENOVAR_DIAS
+}
+
 // Chave para notas internas salvas no localStorage (sem backend)
 const NOTAS_KEY = 'admin_notas_internas'
 
@@ -187,7 +200,10 @@ export default function Admin() {
 
   const filtrados = filtro === 'todos'
     ? filtradosBusca
-    : filtradosBusca.filter(u => u.assinatura_status === filtro)
+    : filtro === 'renovar'
+      ? filtradosBusca.filter(precisaRenovarManual)
+        .sort((a, b) => new Date(a.periodo_termina_em) - new Date(b.periodo_termina_em))
+      : filtradosBusca.filter(u => u.assinatura_status === filtro)
 
   // Inativos: cadastrados há mais de 3 dias e com 0 clientes (nunca usaram de verdade)
   // OU cancelados/expirados há mais de 7 dias
@@ -205,6 +221,7 @@ export default function Admin() {
     trial: usuarios.filter(u => u.assinatura_status === 'trialing' && !u.cortesia).length,
     cortesia: usuarios.filter(u => u.cortesia).length,
     inativos: inativos.length,
+    aRenovar: usuarios.filter(precisaRenovarManual).length,
     mrrCentavos: usuarios
       .filter(u => u.assinatura_status === 'active' && !u.cortesia)
       .reduce((s, u) => {
@@ -282,9 +299,15 @@ export default function Admin() {
               </div>
             )}
             {u.assinatura_status === 'active' && diasPeriodo !== null && (
-              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
-                Renova em {diasPeriodo}d
-              </div>
+              u.assinatura_ciclo === 'anual' ? (
+                <div style={{ fontSize: 10, fontWeight: 700, marginTop: 2, color: diasPeriodo <= 0 ? '#B91C1C' : diasPeriodo <= RENOVAR_DIAS ? '#C2410C' : 'var(--text3)' }}>
+                  🔔 {diasPeriodo <= 0 ? 'Renovação manual vencida' : `Renovação manual em ${diasPeriodo}d`}
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
+                  Renova em {diasPeriodo}d (auto)
+                </div>
+              )
             )}
           </div>
 
@@ -419,6 +442,14 @@ export default function Admin() {
           </div>
           <div style={s.statLabel}>MRR</div>
         </div>
+        <div
+          style={{ ...s.statCard, borderTop: '3px solid #C2410C', cursor: stats.aRenovar > 0 ? 'pointer' : 'default' }}
+          onClick={() => { if (stats.aRenovar > 0) { setAba('assinaturas'); setFiltro('renovar') } }}
+          title="Planos anuais (parcelados) que vencem em até 30 dias — precisam de renovação manual"
+        >
+          <div style={{ ...s.statValor, color: stats.aRenovar > 0 ? '#C2410C' : 'var(--text3)' }}>{stats.aRenovar}</div>
+          <div style={s.statLabel}>A renovar</div>
+        </div>
       </div>
 
       {/* Abas */}
@@ -458,6 +489,7 @@ export default function Admin() {
             {[
               { id: 'todos', label: 'Todos' },
               { id: 'active', label: 'Ativas' },
+              { id: 'renovar', label: `🔔 A renovar${stats.aRenovar > 0 ? ` (${stats.aRenovar})` : ''}` },
               { id: 'trialing', label: 'Trial' },
               { id: 'canceled', label: 'Canceladas' },
               { id: 'expired', label: 'Expiradas' },

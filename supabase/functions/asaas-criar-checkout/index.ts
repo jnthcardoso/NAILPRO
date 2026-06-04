@@ -39,16 +39,15 @@ Deno.serve(async (req: Request) => {
     const valor = PRECOS[`${plano}_${ciclo}`]
     if (!valor) return json({ error: 'Plano invalido' }, 400)
 
-    const cycle = ciclo === 'anual' ? 'YEARLY' : 'MONTHLY'
+    const isAnual = ciclo === 'anual'
     const nomePlano = NOMES[plano] ?? 'Pro'
-    const cicloNome = ciclo === 'anual' ? 'Anual' : 'Mensal'
+    const cicloNome = isAnual ? 'Anual' : 'Mensal'
     // Data de vencimento = hoje (fuso de Brasilia) -> cobra na contratacao
     const hoje = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
     const nextDueDate = hoje.toISOString().slice(0, 10)
 
-    const body = {
+    const body: Record<string, unknown> = {
       billingTypes: ['CREDIT_CARD'],
-      chargeTypes: ['RECURRENT'],
       minutesToExpire: 60,
       callback: {
         successUrl: `${APP_URL}/app?pagamento=sucesso`,
@@ -59,10 +58,22 @@ Deno.serve(async (req: Request) => {
         name: `Lumen ${nomePlano} (${cicloNome.toLowerCase()})`,
         description: `Assinatura Lumen ${nomePlano} - cobranca ${cicloNome.toLowerCase()}`,
         quantity: 1,
-        value: valor,
+        value: valor, // anual = valor do ANO (parcelavel); mensal = valor do mes
       }],
-      subscription: { cycle, nextDueDate },
       externalReference: `${user.id}|${plano}|${ciclo}`,
+    }
+
+    if (isAnual) {
+      // Anual = compra unica do ano, parcelavel em ate 12x no cartao.
+      // OBS: parcelamento (INSTALLMENT) e assinatura recorrente (RECURRENT) sao
+      // mutuamente exclusivos no Asaas. Por isso o anual NAO renova sozinho:
+      // ao fim dos 12 meses, a renovacao e feita manualmente (acompanhada no Admin).
+      body.chargeTypes = ['INSTALLMENT']
+      body.installment = { maxInstallmentCount: 12 }
+    } else {
+      // Mensal = assinatura recorrente que renova sozinha todo mes.
+      body.chargeTypes = ['RECURRENT']
+      body.subscription = { cycle: 'MONTHLY', nextDueDate }
     }
 
     const res = await fetch(`${base}/checkouts`, {

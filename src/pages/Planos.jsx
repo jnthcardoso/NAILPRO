@@ -126,7 +126,7 @@ export default function Planos() {
           </button>
         </div>
         {ciclo === 'anual' && (
-          <div style={s.anualNota}>📅 Pago 1× no cartão · renova automaticamente a cada ano · cancele quando quiser</div>
+          <div style={s.anualNota}>💳 Parcele em até 12× no cartão · acesso garantido por 12 meses · cancele quando quiser</div>
         )}
         {ciclo === 'mensal' && (
           <div style={s.mensalNota}>📆 Cobrança mensal · cancele quando quiser</div>
@@ -202,7 +202,7 @@ export default function Planos() {
       <div style={s.segurancaRow}>
         <span>🔒 Pagamento seguro via</span>
         <strong>Asaas</strong>
-        <span>· Cartão de crédito com renovação automática</span>
+        <span>· Cartão de crédito · anual em até 12× · mensal com renovação automática</span>
       </div>
 
       {/* Salão — equipe */}
@@ -238,11 +238,11 @@ export default function Planos() {
         <h3 style={s.faqTitle}>Dúvidas frequentes</h3>
         <FaqItem
           q="Como funciona o pagamento?"
-          a="Ao clicar em 'Assinar com cartão', você é redirecionada para o checkout seguro do Asaas. Informe seus dados e o cartão, e o plano é ativado automaticamente. No mensal, a cobrança se repete todo mês; no anual, é cobrada uma vez por ano (e renova sozinha no ano seguinte)."
+          a="Ao clicar em 'Assinar com cartão', você é redirecionada para o checkout seguro do Asaas. Informe seus dados e o cartão, e o plano é ativado automaticamente. No mensal, a cobrança se repete todo mês automaticamente. No anual, você pode parcelar o valor do ano em até 12× no cartão e fica com acesso garantido por 12 meses; ao fim do período, a gente te avisa pra renovar."
         />
         <FaqItem
           q="Qual a diferença entre mensal e anual?"
-          a={`No anual você economiza ~${economiaSolo}% e paga o ano de uma vez (1× no cartão). No mensal, paga mês a mês (um pouco mais caro). Nos dois, você cancela quando quiser — sem multa.`}
+          a={`No anual você economiza ~${economiaSolo}% e pode parcelar o valor do ano em até 12× no cartão — fica com acesso garantido por 12 meses. No mensal, a cobrança é automática mês a mês (um pouco mais cara). Nos dois, você cancela quando quiser — sem multa.`}
         />
         <FaqItem
           q="Tem fidelidade ou multa?"
@@ -297,7 +297,7 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loa
         {ciclo === 'anual' ? (
           <>
             <div style={s.precoNota}>R$ {formatPreco(plano.precoAnual)} cobrados anualmente</div>
-            <div style={s.fidelidadeTag}>📅 1× ao ano · economize {economiaPorc}%</div>
+            <div style={s.fidelidadeTag}>💳 até 12× no cartão · economize {economiaPorc}%</div>
           </>
         ) : (
           <>
