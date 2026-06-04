@@ -12,11 +12,11 @@ import { STATUS, FORMAS, VIEWS } from './Agenda.constants'
 import NovoAgendamentoModal from '../components/agenda/NovoAgendamentoModal'
 import EditarAgendamentoModal from '../components/agenda/EditarAgendamentoModal'
 import PagamentoModal from '../components/agenda/PagamentoModal'
+import { ViewDia, ViewSemana, ViewMes, ViewBusca } from '../components/agenda/views'
 import { formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
-  startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
-  isSameMonth, isToday
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -472,245 +472,6 @@ export default function Agenda() {
     ? agendamentos
     : agendamentos.filter(a => pagState(a) === filtroPag)
 
-  // Card compacto para view Semana
-  function CardCompacto({ ag }) {
-    const st = STATUS[ag.status] || STATUS.pendente
-    return (
-      <div style={{ ...s.cardCompacto, borderLeftColor: st.border }} onClick={() => setAgDetalhe(ag)}>
-        <div style={s.cardCompactoHora}>{ag.horario?.slice(0, 5)}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={s.cardCompactoNome}>{ag.clientes?.nome?.split(' ')[0]}</div>
-          <div style={s.cardCompactoServ}>{ag.servico}</div>
-        </div>
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: st.border, flexShrink: 0 }} />
-      </div>
-    )
-  }
-
-  // Card completo para view Dia
-  function CardDia({ ag }) {
-    const st = STATUS[ag.status] || STATUS.pendente
-    const pag = ag.pagamentos?.[0]
-    return (
-      <div style={{ ...s.card, borderLeftColor: st.border, cursor: 'pointer' }} onClick={() => setAgDetalhe(ag)}>
-        <div style={s.cardHeader}>
-          <div style={s.cardTime}>{ag.horario?.slice(0, 5)}</div>
-          <div style={{ flex: 1 }}>
-            <div style={s.cardName}>{ag.clientes?.nome}</div>
-            <div style={s.cardService}>{ag.servico}</div>
-          </div>
-          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
-        </div>
-        {ag.valor > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={s.cardValor}>{formatBRL(ag.valor)}</div>
-            {pag && (
-              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
-                {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  function ViewDia() {
-    const dia = agendamentosBase.filter(a => a.data === format(dataSel, 'yyyy-MM-dd'))
-    if (dia.length === 0) return (
-      <div style={s.empty}>
-        <Calendar size={34} color="var(--text3)" style={{ marginBottom: 10 }} />
-        <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento neste dia</p>
-        <button style={s.emptyBtn} onClick={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }}>
-          + Adicionar agendamento
-        </button>
-      </div>
-    )
-    return dia.map(ag => <CardDia key={ag.id} ag={ag} />)
-  }
-
-  function ViewSemana() {
-    const dias = eachDayOfInterval({ start: startOfWeek(dataSel, { locale: ptBR }), end: endOfWeek(dataSel, { locale: ptBR }) })
-    return (
-      <div style={s.weekColunas}>
-        {dias.map(dia => {
-          const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
-          const hoje = isToday(dia)
-          return (
-            <div key={dia.toISOString()} style={s.weekColuna}>
-              <div style={{ ...s.weekColunaHeader, ...(hoje ? s.weekColunaHeaderHoje : {}) }}>
-                <span style={{ ...s.weekColunaDia, ...(hoje ? { color: 'var(--pink)' } : {}) }}>
-                  {format(dia, 'EEE', { locale: ptBR })}
-                </span>
-                <span style={{ ...s.weekColunaNum, ...(hoje ? { color: 'var(--pink)', fontWeight: 700 } : {}) }}>
-                  {format(dia, 'd')}
-                </span>
-                {agsDia.length > 0 && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: hoje ? 'var(--pink)' : 'var(--text3)' }}>
-                    {agsDia.length}
-                  </span>
-                )}
-              </div>
-              {agsDia.length === 0
-                ? <div style={s.weekColunaSemAg}>—</div>
-                : agsDia.map(ag => <CardCompacto key={ag.id} ag={ag} />)
-              }
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  function ViewMes() {
-    const isMobile = window.innerWidth < 769
-    const inicio = startOfMonth(dataSel)
-    const fim = endOfMonth(dataSel)
-    const dias = eachDayOfInterval({ start: startOfWeek(inicio, { locale: ptBR }), end: endOfWeek(fim, { locale: ptBR }) })
-    const semanas = []
-    for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7))
-    const agsDiaSel = diaSelecionadoMes ? agendamentosBase.filter(a => a.data === diaSelecionadoMes) : []
-
-    // Mobile: initial de cada dia da semana; Desktop: nome curto
-    const headerDias = isMobile
-      ? ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-      : ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-
-    return (
-      <div>
-        <div style={{ ...s.calHeader, gap: isMobile ? 0 : undefined }}>
-          {headerDias.map((d, i) => (
-            <div key={i} style={{ ...s.calHeaderCell, fontSize: isMobile ? 11 : 10 }}>{d}</div>
-          ))}
-        </div>
-        {semanas.map((semana, si) => (
-          <div key={si} style={{ ...s.calRow, gap: isMobile ? 1 : 1 }}>
-            {semana.map(dia => {
-              const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
-              const hoje = isToday(dia)
-              const doMes = isSameMonth(dia, dataSel)
-              const datStr = format(dia, 'yyyy-MM-dd')
-              const selecionado = diaSelecionadoMes === datStr
-              return (
-                <div
-                  key={dia.toISOString()}
-                  style={{
-                    ...s.calCell,
-                    ...(!doMes ? s.calCellOut : {}),
-                    ...(hoje ? s.calCellHoje : {}),
-                    ...(selecionado ? s.calCellSel : {}),
-                    ...(isMobile ? { minHeight: 52, padding: '4px 3px' } : {}),
-                  }}
-                  onClick={() => setDiaSelecionadoMes(selecionado ? null : datStr)}
-                >
-                  {/* Número do dia */}
-                  {isMobile ? (
-                    <div style={{
-                      width: 22, height: 22, borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: hoje ? 700 : 400,
-                      background: hoje ? 'var(--pink)' : selecionado ? 'var(--pink-light)' : 'transparent',
-                      color: hoje ? '#fff' : selecionado ? 'var(--pink)' : doMes ? 'var(--text)' : 'var(--text3)',
-                      margin: '0 auto 3px',
-                    }}>
-                      {format(dia, 'd')}
-                    </div>
-                  ) : (
-                    <div style={{ ...s.calNum, ...(hoje ? s.calNumHoje : {}) }}>{format(dia, 'd')}</div>
-                  )}
-
-                  {/* Mobile: dots coloridos por status */}
-                  {isMobile ? (
-                    agsDia.length > 0 && (
-                      <div style={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        {agsDia.slice(0, 3).map((ag, i) => {
-                          const st = STATUS[ag.status] || STATUS.pendente
-                          return <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: st.border, display: 'block', flexShrink: 0 }} />
-                        })}
-                        {agsDia.length > 3 && (
-                          <span style={{ fontSize: 8, color: 'var(--text3)', fontWeight: 700, lineHeight: '6px' }}>+{agsDia.length - 3}</span>
-                        )}
-                      </div>
-                    )
-                  ) : (
-                    /* Desktop: text cards */
-                    <>
-                      {agsDia.slice(0, 2).map((ag, i) => {
-                        const st = STATUS[ag.status] || STATUS.pendente
-                        return <div key={i} style={{ ...s.calEvent, background: st.bg, color: st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>
-                      })}
-                      {agsDia.length > 2 && <div style={s.calMore}>+{agsDia.length - 2}</div>}
-                    </>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ))}
-
-        {diaSelecionadoMes && (
-          <div style={{ marginTop: 16 }}>
-            <div style={s.sectionTitle}>
-              {format(new Date(diaSelecionadoMes + 'T12:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })}
-              {isToday(new Date(diaSelecionadoMes + 'T12:00')) && <span style={s.hojeChip}>hoje</span>}
-            </div>
-            {agsDiaSel.length === 0
-              ? <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento</p></div>
-              : agsDiaSel.map(ag => <CardDia key={ag.id} ag={ag} />)
-            }
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  function CardBusca({ ag }) {
-    const st = STATUS[ag.status] || STATUS.pendente
-    const pag = ag.pagamentos?.[0]
-    const [y, m, d] = ag.data.split('-')
-    return (
-      <div style={{ ...s.card, borderLeftColor: st.border, cursor: 'pointer' }} onClick={() => setAgDetalhe(ag)}>
-        <div style={s.cardHeader}>
-          <div style={s.cardDataBusca}>
-            <span style={s.cardDataBuscaDia}>{d}/{m}</span>
-            <span style={s.cardDataBuscaHora}>{ag.horario?.slice(0, 5)}</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={s.cardName}>{ag.clientes?.nome}</div>
-            <div style={s.cardService}>{ag.servico}</div>
-          </div>
-          <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
-        </div>
-        {ag.valor > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={s.cardValor}>{formatBRL(ag.valor)}</div>
-            {pag && (
-              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
-                {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  function ViewBusca() {
-    if (buscando) return <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Buscando...</p></div>
-    if (resultados.length === 0) return (
-      <div style={s.empty}>
-        <Search size={34} color="var(--text3)" style={{ marginBottom: 10 }} />
-        <p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhum agendamento encontrado para "{busca.trim()}"</p>
-      </div>
-    )
-    return (
-      <div>
-        <div style={s.buscaResumo}>{resultados.length} resultado{resultados.length > 1 ? 's' : ''} (todas as datas)</div>
-        {resultados.map(ag => <CardBusca key={ag.id} ag={ag} />)}
-      </div>
-    )
-  }
-
   return (
     <div style={s.page}>
       <div style={s.viewTabs}>
@@ -765,11 +526,30 @@ export default function Agenda() {
         </div>
       )}
 
-      {loadingAgenda && !buscaAtiva ? <CardSkeleton count={4} /> : buscaAtiva ? <ViewBusca /> : (
+      {loadingAgenda && !buscaAtiva ? <CardSkeleton count={4} /> : buscaAtiva ? (
+        <ViewBusca buscando={buscando} resultados={resultados} busca={busca} onSelect={setAgDetalhe} />
+      ) : (
         <>
-          {view === 'Dia' && <ViewDia />}
-          {view === 'Semana' && <ViewSemana />}
-          {view === 'Mês' && <ViewMes />}
+          {view === 'Dia' && (
+            <ViewDia
+              agendamentosBase={agendamentosBase}
+              dataSel={dataSel}
+              onSelect={setAgDetalhe}
+              onAddDia={() => { setForm(f => ({ ...f, data: format(dataSel, 'yyyy-MM-dd') })); setShowModal(true) }}
+            />
+          )}
+          {view === 'Semana' && (
+            <ViewSemana agendamentosBase={agendamentosBase} dataSel={dataSel} onSelect={setAgDetalhe} />
+          )}
+          {view === 'Mês' && (
+            <ViewMes
+              agendamentosBase={agendamentosBase}
+              dataSel={dataSel}
+              diaSelecionadoMes={diaSelecionadoMes}
+              setDiaSelecionadoMes={setDiaSelecionadoMes}
+              onSelect={setAgDetalhe}
+            />
+          )}
         </>
       )}
 
