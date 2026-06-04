@@ -9,6 +9,7 @@ import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
+import EmptyState from '../components/common/EmptyState'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate } from '../lib/formatters'
 import { differenceInDays, format } from 'date-fns'
@@ -267,7 +268,15 @@ export default function Clientes() {
       })}
 
       {filtradas.length === 0 && (
-        <div style={s.empty}><p style={{ color: 'var(--text3)', fontSize: 14 }}>Nenhuma cliente encontrada</p></div>
+        busca
+          ? <EmptyState titulo={`Nenhuma cliente encontrada para "${busca}"`} sub="Tente outro nome ou WhatsApp." />
+          : <EmptyState
+              icon={<Plus size={26} />}
+              titulo="Você ainda não tem clientes"
+              sub="Cadastre a primeira para começar a agendar e registrar atendimentos."
+              cta="Cadastrar primeira cliente"
+              onCta={abrirModalNova}
+            />
       )}
       </>}
 
