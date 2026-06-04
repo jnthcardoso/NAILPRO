@@ -7,19 +7,38 @@ import { useToast } from '../../contexts/ToastContext'
 import { linkWhatsApp, formatBRL } from '../../lib/formatters'
 import { DIAS_RETORNO_PADRAO } from '../../lib/constants'
 import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, aplicarVariaveis } from '../../lib/mensagens'
-import { format, addDays, differenceInDays } from 'date-fns'
+import { format, addDays, differenceInDays, getDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 // "Oportunidades da semana" — ponte entre a Fase 1 (gestão) e a Fase 2 (negócio).
-// Mostra insights ACIONÁVEIS a partir dos dados que o salão já tem: número + ação + R$.
+// Insights ACIONÁVEIS a partir dos dados que o salão já tem: número + ação + R$.
 // Só leitura; não cria nada no banco.
 const primeiroNome = (nome) => (nome || '').split(' ')[0]
 
+// Memória local de quem já foi contatada, pra não repetir o mesmo aviso todo dia
+// (evita também mandar a mesma mensagem duas vezes pra mesma cliente).
+const CONTATADOS_KEY = 'oportunidades_contatadas'
+const JANELA_ANIV = 8    // dias que esconde a aniversariante após contatar
+const JANELA_SUMIDA = 14 // dias que esconde a sumida após contatar
+function getContatados() {
+  try { return JSON.parse(localStorage.getItem(CONTATADOS_KEY) || '{}') } catch { return {} }
+}
+function marcarContatada(tipo, clienteId) {
+  const m = getContatados()
+  m[`${tipo}_${clienteId}`] = new Date().toISOString()
+  try { localStorage.setItem(CONTATADOS_KEY, JSON.stringify(m)) } catch { /* ignora */ }
+}
+function foiContatada(tipo, clienteId, dias) {
+  const ts = getContatados()[`${tipo}_${clienteId}`]
+  return ts ? differenceInDays(new Date(), new Date(ts)) < dias : false
+}
+
 export default function OportunidadesSemana() {
   const { salaoId, isProfissional } = useSalao()
-  const { sucesso } = useToast()
+  const { sucesso, erro } = useToast()
   const navigate = useNavigate()
   const [dados, setDados] = useState(null)
+  const [, setRefresh] = useState(0) // força re-render ao marcar uma cliente como contatada
 
   useEffect(() => {
     // A profissional não enxerga dados do salão inteiro.
@@ -40,10 +59,11 @@ export default function OportunidadesSemana() {
         supabase.from('agendamentos')
           .select('data').eq('salao_id', salaoId).gte('data', hojeStr).lte('data', fim7Str).neq('status', 'cancelado'),
         supabase.from('configuracoes')
-          .select('slug, agenda_publica_ativa, nome_salao, msg_aniversario, msg_retorno')
+          .select('slug, agenda_publica_ativa, nome_salao, dias_semana, msg_aniversario, msg_retorno')
           .eq('salao_id', salaoId).maybeSingle(),
       ])
 
+      // Só clientes acionáveis (com telefone) — alinha a contagem com a ação possível.
       const ativas = (clientes || []).filter(c => !c.arquivada && c.telefone)
 
       // Ticket médio (últimos 90 dias) — base para estimar potencial em R$
@@ -65,10 +85,11 @@ export default function OportunidadesSemana() {
         differenceInDays(hoje, new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? DIAS_RETORNO_PADRAO)
       )
 
-      // 3) Dias com a agenda vazia nos próximos 7 dias
+      // 3) Dias com a agenda vazia — SÓ nos dias em que o salão trabalha (dias_semana)
+      const diasTrabalho = config?.dias_semana?.length ? config.dias_semana : [1, 2, 3, 4, 5]
       const ocupados = new Set((ags || []).map(a => a.data))
       const diasLivres = [...Array(7)].map((_, i) => addDays(hoje, i))
-        .filter(d => !ocupados.has(format(d, 'yyyy-MM-dd')))
+        .filter(d => diasTrabalho.includes(getDay(d)) && !ocupados.has(format(d, 'yyyy-MM-dd')))
 
       if (ativo) {
         setDados({
@@ -86,19 +107,26 @@ export default function OportunidadesSemana() {
   }, [salaoId, isProfissional])
 
   if (!dados) return null
-  const { ticket, slug, agendaPublicaAtiva, nomeSalao, tplAniversario, tplRetorno, aniversariantes, sumidas, diasLivres } = dados
+  const { ticket, slug, agendaPublicaAtiva, nomeSalao, tplAniversario, tplRetorno } = dados
+
+  // Esconde quem já foi contatada recentemente (memória local) — não repete o aviso.
+  const aniversariantes = dados.aniversariantes.filter(c => !foiContatada('aniv', c.id, JANELA_ANIV))
+  const sumidas = dados.sumidas.filter(c => !foiContatada('retorno', c.id, JANELA_SUMIDA))
+  const diasLivres = dados.diasLivres
+
   const temAlgo = aniversariantes.length || sumidas.length || diasLivres.length
   if (!temAlgo) return null
 
   const linkPublico = `${window.location.origin}/agendar/${slug}`
   const copiarLink = () => {
-    if (!slug) { navigate('/app/configuracoes'); return }
+    // Sem slug OU agenda desativada -> leva para ativar (não copia link que não abre).
+    if (!slug || !agendaPublicaAtiva) { navigate('/app/configuracoes'); return }
     navigator.clipboard?.writeText(linkPublico)
       .then(() => sucesso('Link de agendamento copiado'))
-      .catch(() => {})
+      .catch(() => erro('Não consegui copiar. Copie pela tela de Configurações.'))
   }
 
-  // Usa o template editável da dona (ou o padrão), trocando as variáveis pelos dados da cliente.
+  const contatar = (tipo, id) => { marcarContatada(tipo, id); setRefresh(x => x + 1) }
   const msgAniversario = (nome) => aplicarVariaveis(tplAniversario, { nome, salao: nomeSalao })
   const msgRetorno = (nome) => aplicarVariaveis(tplRetorno, { nome, salao: nomeSalao })
 
@@ -116,8 +144,8 @@ export default function OportunidadesSemana() {
             icon={<Cake size={16} />} cor="#86198F" bg="#FAE8FF"
             titulo={`${aniversariantes.length} aniversário${aniversariantes.length > 1 ? 's' : ''} chegando`}
             sub="Mande um carinho e traga ela pra agendar — aumenta o retorno e o ticket."
-            clientes={aniversariantes}
-            montarMsg={msgAniversario}
+            clientes={aniversariantes} montarMsg={msgAniversario}
+            onContatar={(id) => contatar('aniv', id)}
           />
         )}
 
@@ -127,10 +155,10 @@ export default function OportunidadesSemana() {
             icon={<UserX size={16} />} cor="#B91C1C" bg="#FEE2E2"
             titulo={`${sumidas.length} cliente${sumidas.length > 1 ? 's' : ''} pra trazer de volta`}
             sub={ticket > 0
-              ? `Já passaram do retorno. Recuperar todas vale ~${formatBRL(sumidas.length * ticket)}.`
+              ? `Já passaram do retorno. Potencial de ~${formatBRL(sumidas.length * ticket)} se voltarem.`
               : 'Já passaram do tempo de retorno. Chame antes que esfriem.'}
-            clientes={sumidas}
-            montarMsg={msgRetorno}
+            clientes={sumidas} montarMsg={msgRetorno}
+            onContatar={(id) => contatar('retorno', id)}
           />
         )}
 
@@ -160,7 +188,8 @@ export default function OportunidadesSemana() {
 }
 
 // Card com lista de clientes acionáveis (botão de WhatsApp pré-preenchido por pessoa).
-function Card({ icon, cor, bg, titulo, sub, clientes, montarMsg }) {
+// Ao clicar, marca a cliente como contatada para não repetir o aviso.
+function Card({ icon, cor, bg, titulo, sub, clientes, montarMsg, onContatar }) {
   return (
     <div style={s.card}>
       <div style={s.cardHead}>
@@ -170,7 +199,13 @@ function Card({ icon, cor, bg, titulo, sub, clientes, montarMsg }) {
       <div style={s.cardSub}>{sub}</div>
       <div style={s.pessoas}>
         {clientes.slice(0, 3).map(c => (
-          <a key={c.id} style={s.pessoa} href={linkWhatsApp(c.telefone, montarMsg(c.nome))} target="_blank" rel="noreferrer">
+          <a
+            key={c.id} style={s.pessoa}
+            href={linkWhatsApp(c.telefone, montarMsg(c.nome))}
+            target="_blank" rel="noreferrer"
+            onClick={() => onContatar(c.id)}
+            aria-label={`Enviar WhatsApp para ${primeiroNome(c.nome)}`}
+          >
             <span style={s.pessoaNome}>{primeiroNome(c.nome)}</span>
             <span style={s.pessoaWa}><MessageCircle size={12} /> WhatsApp</span>
           </a>

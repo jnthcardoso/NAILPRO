@@ -580,6 +580,7 @@ export default function Configuracoes() {
           Variáveis disponíveis:{' '}
           <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
           <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
+          {' '}· Deixe o campo em branco para usar o texto padrão.
         </div>
       </div>
 

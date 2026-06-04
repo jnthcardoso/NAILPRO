@@ -90,8 +90,9 @@ export default function Notificacoes({ variant = 'header', collapsed = false }) 
     // A profissional não enxerga dados do salão inteiro.
     if (!isProfissional) {
       const { data: cls } = await supabase.from('clientes')
-        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada, dias_retorno').eq('salao_id', salaoId)
-      const ativas = (cls || []).filter(c => !c.arquivada)
+        .select('id, nome, telefone, ultimo_atendimento, data_nascimento, arquivada, dias_retorno').eq('salao_id', salaoId)
+      // Só clientes com telefone — alinha com os cards de Oportunidades (que dependem do WhatsApp).
+      const ativas = (cls || []).filter(c => !c.arquivada && c.telefone)
       const sumidas = ativas.filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? diasAlerta))
       if (sumidas.length) {
         lista.push({
