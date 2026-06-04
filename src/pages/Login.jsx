@@ -230,7 +230,7 @@ export default function Login() {
               type="submit"
               disabled={loading}
             >
-              {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
+              {loading ? (mode === 'login' ? 'Entrando...' : 'Criando conta...') : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
             </button>
           </form>
         )}

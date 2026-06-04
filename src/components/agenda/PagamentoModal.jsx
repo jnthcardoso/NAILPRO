@@ -105,7 +105,7 @@ export default function PagamentoModal({
       </div>
 
       <button style={s.btnPrimary} onClick={onSalvar} disabled={savingPag}>
-        {savingPag ? 'Salvando...' : 'Confirmar pagamento'}
+        {savingPag ? 'Salvando...' : 'Registrar pagamento'}
       </button>
       <button style={s.btnSecondary} onClick={onFechar}>
         {pagModalObrigatorio ? 'Registrar depois' : 'Fechar'}

@@ -31,7 +31,7 @@ export default function NovoAgendamentoModal({
           <input style={s.input} placeholder="Nome *" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} />
           <input style={{ ...s.input, marginTop: 8 }} placeholder="(51) 99999-9999" value={formatTelefone(formCliente.telefone)} onChange={e => setFormCliente({ ...formCliente, telefone: unformatTelefone(e.target.value) })} inputMode="numeric" />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button style={{ ...s.btnPrimary, flex: 1, padding: '9px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? '...' : 'Salvar'}</button>
+            <button style={{ ...s.btnPrimary, flex: 1, padding: '9px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? 'Salvando...' : 'Salvar'}</button>
             <button style={{ ...s.btnSecondary, flex: 1, padding: '9px' }} onClick={() => setShowNovaCliente(false)}>Cancelar</button>
           </div>
         </div>

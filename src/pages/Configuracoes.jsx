@@ -168,7 +168,7 @@ export default function Configuracoes() {
       toastErro('Erro ao salvar: ' + configError.message)
       return
     }
-    sucesso('Configurações salvas ✓')
+    sucesso('Configurações salvas')
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }

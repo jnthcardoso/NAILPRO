@@ -93,7 +93,7 @@ export default function Equipe() {
 
     if (error) { erro('Não foi possível adicionar: ' + error.message); return }
 
-    sucesso('Membro adicionado!')
+    sucesso('Membro adicionado')
     // Guarda dados para o card de convite
     setMembroConvite({ nome, email, papel: form.papel, whatsapp })
     setForm({ nome: '', email: '', papel: 'profissional', whatsapp: '' })
@@ -106,7 +106,7 @@ export default function Equipe() {
     const { error } = await supabase.from('salao_membros')
       .update({ papel: novoPapel }).eq('id', membro.id)
     if (error) { erro('Erro ao alterar função: ' + error.message); return }
-    sucesso('Função atualizada.')
+    sucesso('Função atualizada')
     load()
   }
 
@@ -115,7 +115,7 @@ export default function Equipe() {
     const { error } = await supabase.from('salao_membros')
       .update({ ativo: !membro.ativo }).eq('id', membro.id)
     if (error) { erro('Erro: ' + error.message); return }
-    sucesso(membro.ativo ? 'Acesso suspenso.' : 'Acesso reativado.')
+    sucesso(membro.ativo ? 'Acesso suspenso' : 'Acesso reativado')
     load()
   }
 
@@ -130,7 +130,7 @@ export default function Equipe() {
     if (!ok) return
     const { error } = await supabase.from('salao_membros').delete().eq('id', membro.id)
     if (error) { erro('Erro ao remover: ' + error.message); return }
-    sucesso('Membro removido.')
+    sucesso('Membro removido')
     // Limpa convite se era desse membro
     if (membroConvite?.email === membro.email) setMembroConvite(null)
     load()

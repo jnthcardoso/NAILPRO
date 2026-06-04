@@ -267,7 +267,7 @@ export default function ClienteDetalhe() {
           disabled={arquivando}
         >
           {cliente.arquivada ? <RotateCcw size={15} /> : <Archive size={15} />}
-          {arquivando ? '...' : cliente.arquivada ? 'Reativar cliente' : 'Arquivar cliente'}
+          {arquivando ? 'Salvando...' : cliente.arquivada ? 'Reativar cliente' : 'Arquivar cliente'}
         </button>
       </div>
 

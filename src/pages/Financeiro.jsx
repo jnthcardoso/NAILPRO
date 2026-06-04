@@ -294,7 +294,7 @@ export default function Financeiro() {
     setShowModal(false)
     setForm({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
     loadPagamentos()
-    sucesso('Pagamento registrado ✓')
+    sucesso('Pagamento registrado')
   }
 
   async function salvarDespesa() {

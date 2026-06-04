@@ -151,7 +151,7 @@ export default function Admin() {
     const { error } = await supabase.rpc('admin_excluir_usuario', { p_user_id: userId })
     setAcaoLoading(false)
     if (error) { toastErro('Erro: ' + error.message); return }
-    sucesso('Conta excluída ✓')
+    sucesso('Conta excluída')
     setAcaoUserId(null)
     load()
   }
@@ -189,7 +189,7 @@ export default function Admin() {
     setNotas(novasNotas)
     salvarNotas(novasNotas)
     setNotaEditando(null)
-    sucesso('Nota salva ✓')
+    sucesso('Nota salva')
   }
 
   // ── Dados derivados ───────────────────────────────────────
