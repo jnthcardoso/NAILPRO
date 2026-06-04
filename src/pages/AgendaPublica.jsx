@@ -63,7 +63,7 @@ export default function AgendaPublica() {
     // Apenas colunas públicas - não expor meta_mensal, configs internas etc
     const { data, error } = await supabase
       .from('configuracoes')
-      .select('user_id, slug, nome_salao, whatsapp, servicos_padrao, horario_inicio, horario_fim, duracao_atendimento, dias_semana, agenda_externa_url, agenda_publica_ativa')
+      .select('slug, nome_salao, whatsapp, servicos_padrao, horario_inicio, horario_fim, duracao_atendimento, dias_semana, agenda_externa_url, agenda_publica_ativa')
       .eq('slug', slug)
       .eq('agenda_publica_ativa', true)
       .maybeSingle()
