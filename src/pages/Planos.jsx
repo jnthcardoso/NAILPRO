@@ -49,7 +49,8 @@ export default function Planos() {
     setAssinarErro('')
     setAssinarLoading(planoId)
     // Dispara evento de inicio de checkout
-    const precos = { solo_mensal: 127, solo_anual: 97, pro_mensal: 229, pro_anual: 179, salao_mensal: 249, salao_anual: 199 }
+    // Valor do checkout para analytics: mensal = preço do mês; anual = total do ano (cobrança real).
+    const precos = { solo_mensal: 127, solo_anual: 1164, pro_mensal: 229, pro_anual: 2148, salao_mensal: 249, salao_anual: 2388 }
     trackInicioAssinatura(planoId, ciclo, precos[`${planoId}_${ciclo}`] ?? 0)
     try {
       const { data, error } = await supabase.functions.invoke('asaas-criar-checkout', {

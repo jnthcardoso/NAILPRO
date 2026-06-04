@@ -211,23 +211,13 @@ export function AssinaturaProvider({ children }) {
   const precisaUpgrade = trialAcabou || isExpired
   const podeUsuariosAdicionais = plano?.limites?.usuariosAdicionais === true
 
+  // Modelo atual: sem fidelidade/multa (anual parcelado, mensal recorrente).
+  // Só expomos início e fim do período pago — quem consome usa apenas esses dois.
   let contrato = null
   if (isActive && assinatura?.periodo_termina_em) {
-    const fim = new Date(assinatura.periodo_termina_em)
-    const hoje = new Date()
-    const diasRestantes = Math.max(0, differenceInDays(fim, hoje))
-    const mesesRestantes = Math.min(12, Math.max(0, Math.ceil(diasRestantes / 30)))
-    const mensalidadeCentavos = (plano.precoMensalAnual || Math.round(plano.precoAnual / 12)) + (assinatura.licencas_adicionais || 0) * PRECO_USUARIO_ADICIONAL
-    const multaCentavos = Math.round(0.5 * mensalidadeCentavos * mesesRestantes)
     contrato = {
       inicio: assinatura.periodo_inicia_em,
       fim: assinatura.periodo_termina_em,
-      diasRestantes,
-      mesesRestantes,
-      fidelidadeMeses: 12,
-      mensalidadeCentavos,
-      multaCentavos,
-      dentroFidelidade: mesesRestantes > 0,
     }
   }
 
@@ -288,7 +278,7 @@ export function whatsappAssinarLink({ nomeUsuario, emailUsuario, planoId, usuari
     ? `\n👥 Manicures adicionais: ${qtdUsuarios} × R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)} = R$ ${formatPreco(usuariosMes)}/mês`
     : ''
 
-  const descricaoCiclo = isAnual ? 'Anual — fidelidade 12 meses' : 'Mensal — sem fidelidade'
+  const descricaoCiclo = isAnual ? 'Anual — até 12× sem juros, sem fidelidade' : 'Mensal — sem fidelidade'
   const valorCobrado = isAnual
     ? `R$ ${formatPreco(totalMes)}/mês (R$ ${formatPreco(totalAno)}/ano)`
     : `R$ ${formatPreco(totalMes)}/mês (sem fidelidade)`
