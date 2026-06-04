@@ -82,6 +82,9 @@ export default function Clientes() {
     const { error } = await supabase.from('clientes').insert({
       ...form,
       telefone: unformatTelefone(form.telefone),
+      // Campos opcionais vazios devem ir como null (data vazia quebra o tipo 'date').
+      data_nascimento: form.data_nascimento || null,
+      email: form.email || null,
       dias_retorno: diasRetorno,
       user_id: user.id,
       salao_id: salaoId,
