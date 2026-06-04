@@ -17,6 +17,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 import TrialBanner from '../components/common/TrialBanner'
 import Skeleton from '../components/common/Skeleton'
+import OportunidadesSemana from '../components/common/OportunidadesSemana'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
 import { trackPagamentoConfirmado } from '../lib/analytics'
@@ -362,6 +363,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Oportunidades da semana — insights de negócio acionáveis (ponte p/ Fase 2) */}
+      {!loading && <OportunidadesSemana />}
 
       {/* ════ GRID 2 COLUNAS (desktop) ════ */}
       {!loading && (

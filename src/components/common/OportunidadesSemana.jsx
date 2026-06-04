@@ -1,0 +1,197 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Sparkles, Cake, UserX, CalendarClock, MessageCircle, Link2, ChevronRight } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
+import { useSalao } from '../../contexts/SalaoContext'
+import { useToast } from '../../contexts/ToastContext'
+import { linkWhatsApp, formatBRL } from '../../lib/formatters'
+import { DIAS_RETORNO_PADRAO } from '../../lib/constants'
+import { format, addDays, differenceInDays } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+
+// "Oportunidades da semana" — ponte entre a Fase 1 (gestão) e a Fase 2 (negócio).
+// Mostra insights ACIONÁVEIS a partir dos dados que o salão já tem: número + ação + R$.
+// Só leitura; não cria nada no banco.
+const primeiroNome = (nome) => (nome || '').split(' ')[0]
+
+export default function OportunidadesSemana() {
+  const { salaoId, isProfissional } = useSalao()
+  const { sucesso } = useToast()
+  const navigate = useNavigate()
+  const [dados, setDados] = useState(null)
+
+  useEffect(() => {
+    // A profissional não enxerga dados do salão inteiro.
+    if (!salaoId || isProfissional) return
+    let ativo = true
+    ;(async () => {
+      const hoje = new Date()
+      const hojeStr = format(hoje, 'yyyy-MM-dd')
+      const fim7Str = format(addDays(hoje, 6), 'yyyy-MM-dd')
+      const inicio90 = format(addDays(hoje, -90), 'yyyy-MM-dd')
+
+      const [{ data: clientes }, { data: pagos }, { data: ags }, { data: config }] = await Promise.all([
+        supabase.from('clientes')
+          .select('id, nome, telefone, ultimo_atendimento, data_nascimento, dias_retorno, arquivada')
+          .eq('salao_id', salaoId),
+        supabase.from('pagamentos')
+          .select('valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90),
+        supabase.from('agendamentos')
+          .select('data').eq('salao_id', salaoId).gte('data', hojeStr).lte('data', fim7Str).neq('status', 'cancelado'),
+        supabase.from('configuracoes')
+          .select('slug, agenda_publica_ativa').eq('salao_id', salaoId).maybeSingle(),
+      ])
+
+      const ativas = (clientes || []).filter(c => !c.arquivada && c.telefone)
+
+      // Ticket médio (últimos 90 dias) — base para estimar potencial em R$
+      const pg = (pagos || []).map(p => p.valor || 0).filter(v => v > 0)
+      const ticket = pg.length ? pg.reduce((a, b) => a + b, 0) / pg.length : 0
+
+      // 1) Aniversariantes nos próximos 7 dias
+      const aniversariantes = ativas.filter(c => {
+        if (!c.data_nascimento) return false
+        const n = new Date(c.data_nascimento + 'T12:00:00')
+        const prox = new Date(hoje.getFullYear(), n.getMonth(), n.getDate())
+        const d = differenceInDays(prox, hoje)
+        return d >= 0 && d <= 7
+      })
+
+      // 2) Clientes que passaram do tempo de retorno (sumindo)
+      const sumidas = ativas.filter(c =>
+        c.ultimo_atendimento &&
+        differenceInDays(hoje, new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? DIAS_RETORNO_PADRAO)
+      )
+
+      // 3) Dias com a agenda vazia nos próximos 7 dias
+      const ocupados = new Set((ags || []).map(a => a.data))
+      const diasLivres = [...Array(7)].map((_, i) => addDays(hoje, i))
+        .filter(d => !ocupados.has(format(d, 'yyyy-MM-dd')))
+
+      if (ativo) {
+        setDados({
+          ticket,
+          slug: config?.slug || '',
+          agendaPublicaAtiva: !!config?.agenda_publica_ativa,
+          aniversariantes, sumidas, diasLivres,
+        })
+      }
+    })()
+    return () => { ativo = false }
+  }, [salaoId, isProfissional])
+
+  if (!dados) return null
+  const { ticket, slug, agendaPublicaAtiva, aniversariantes, sumidas, diasLivres } = dados
+  const temAlgo = aniversariantes.length || sumidas.length || diasLivres.length
+  if (!temAlgo) return null
+
+  const linkPublico = `${window.location.origin}/agendar/${slug}`
+  const copiarLink = () => {
+    if (!slug) { navigate('/app/configuracoes'); return }
+    navigator.clipboard?.writeText(linkPublico)
+      .then(() => sucesso('Link de agendamento copiado'))
+      .catch(() => {})
+  }
+
+  const msgAniversario = (nome) =>
+    `Oi ${primeiroNome(nome)}! 🎉 Passei aqui pra te desejar um feliz aniversário! Preparei um agrado especial pra você comemorar com as unhas lindas. Bora marcar? 💅`
+  const msgRetorno = (nome) =>
+    `Oi ${primeiroNome(nome)}! 💅 Senti sua falta por aqui! Que tal agendar um horário pra deixar suas unhas em dia? Tenho novidades pra te mostrar 😊`
+
+  return (
+    <div style={s.wrap}>
+      <div style={s.header}>
+        <Sparkles size={16} color="var(--pink)" />
+        <span style={s.title}>Oportunidades da semana</span>
+      </div>
+
+      <div style={s.grid}>
+        {/* 1) Aniversariantes */}
+        {aniversariantes.length > 0 && (
+          <Card
+            icon={<Cake size={16} />} cor="#86198F" bg="#FAE8FF"
+            titulo={`${aniversariantes.length} aniversário${aniversariantes.length > 1 ? 's' : ''} chegando`}
+            sub="Mande um carinho e traga ela pra agendar — aumenta o retorno e o ticket."
+            clientes={aniversariantes}
+            montarMsg={msgAniversario}
+          />
+        )}
+
+        {/* 2) Clientes sumindo */}
+        {sumidas.length > 0 && (
+          <Card
+            icon={<UserX size={16} />} cor="#B91C1C" bg="#FEE2E2"
+            titulo={`${sumidas.length} cliente${sumidas.length > 1 ? 's' : ''} pra trazer de volta`}
+            sub={ticket > 0
+              ? `Já passaram do retorno. Recuperar todas vale ~${formatBRL(sumidas.length * ticket)}.`
+              : 'Já passaram do tempo de retorno. Chame antes que esfriem.'}
+            clientes={sumidas}
+            montarMsg={msgRetorno}
+          />
+        )}
+
+        {/* 3) Agenda livre */}
+        {diasLivres.length > 0 && (
+          <div style={s.card}>
+            <div style={s.cardHead}>
+              <div style={{ ...s.cardIcon, background: '#DBEAFE', color: '#1E40AF' }}><CalendarClock size={16} /></div>
+              <div style={s.cardTit}>{diasLivres.length} dia{diasLivres.length > 1 ? 's' : ''} com a agenda livre</div>
+            </div>
+            <div style={s.cardSub}>
+              {diasLivres.slice(0, 4).map(d => format(d, 'EEE dd/MM', { locale: ptBR })).join(' · ')}
+              {diasLivres.length > 4 ? '…' : ''}
+            </div>
+            <div style={s.cardSub2}>Divulgue seu link de agendamento pra encher esses horários.</div>
+            <button style={s.acaoBtn} onClick={copiarLink}>
+              {agendaPublicaAtiva && slug
+                ? <><Link2 size={13} /> Copiar link de agendamento</>
+                : <><ChevronRight size={13} /> Ativar agenda online</>}
+            </button>
+          </div>
+        )}
+      </div>
+      {/* Fase 2 (Negócio): aqui entra futuramente a linha "a Lumen faz isso por você". */}
+    </div>
+  )
+}
+
+// Card com lista de clientes acionáveis (botão de WhatsApp pré-preenchido por pessoa).
+function Card({ icon, cor, bg, titulo, sub, clientes, montarMsg }) {
+  return (
+    <div style={s.card}>
+      <div style={s.cardHead}>
+        <div style={{ ...s.cardIcon, background: bg, color: cor }}>{icon}</div>
+        <div style={s.cardTit}>{titulo}</div>
+      </div>
+      <div style={s.cardSub}>{sub}</div>
+      <div style={s.pessoas}>
+        {clientes.slice(0, 3).map(c => (
+          <a key={c.id} style={s.pessoa} href={linkWhatsApp(c.telefone, montarMsg(c.nome))} target="_blank" rel="noreferrer">
+            <span style={s.pessoaNome}>{primeiroNome(c.nome)}</span>
+            <span style={s.pessoaWa}><MessageCircle size={12} /> WhatsApp</span>
+          </a>
+        ))}
+        {clientes.length > 3 && <div style={s.maisPessoas}>+{clientes.length - 3}</div>}
+      </div>
+    </div>
+  )
+}
+
+const s = {
+  wrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px', marginBottom: 18, boxShadow: 'var(--shadow-sm)' },
+  header: { display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 },
+  title: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 15, fontWeight: 800, color: 'var(--text)' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 },
+  card: { display: 'flex', flexDirection: 'column', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px' },
+  cardHead: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 },
+  cardIcon: { width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  cardTit: { fontSize: 13.5, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 },
+  cardSub: { fontSize: 12, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 10 },
+  cardSub2: { fontSize: 12, color: 'var(--text3)', lineHeight: 1.5, marginBottom: 12 },
+  pessoas: { display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 'auto' },
+  pessoa: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 10px', textDecoration: 'none', fontFamily: 'inherit' },
+  pessoaNome: { fontSize: 12, fontWeight: 700, color: 'var(--text)' },
+  pessoaWa: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#15803D' },
+  maisPessoas: { display: 'inline-flex', alignItems: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text3)', padding: '5px 8px' },
+  acaoBtn: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 'auto', background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+}
