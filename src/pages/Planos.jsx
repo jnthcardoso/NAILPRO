@@ -55,13 +55,21 @@ export default function Planos() {
       const { data, error } = await supabase.functions.invoke('asaas-criar-checkout', {
         body: { plano: planoId, ciclo },
       })
-      if (error) throw error
+      if (error) {
+        // A função retorna o motivo real do Asaas no corpo (campo "error"); extrai pra mostrar.
+        let detalhe = ''
+        try { const corpo = await error.context?.json(); detalhe = corpo?.error || '' } catch { /* ignora */ }
+        throw new Error(detalhe || error.message || '')
+      }
       if (!data?.url) throw new Error('URL de pagamento não recebida')
       // Redireciona para o checkout do Asaas
       window.location.href = data.url
     } catch (err) {
       console.error('Erro ao criar assinatura:', err)
-      setAssinarErro('Erro ao abrir o checkout. Tente novamente ou fale pelo WhatsApp.')
+      const motivo = (err?.message || '').trim()
+      setAssinarErro(motivo
+        ? `Erro ao abrir o checkout: ${motivo}`
+        : 'Erro ao abrir o checkout. Tente novamente ou fale pelo WhatsApp.')
       setAssinarLoading(null)
     }
   }
