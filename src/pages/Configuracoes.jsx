@@ -6,6 +6,7 @@ import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } fr
 import { formatTelefone, unformatTelefone } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
+import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO } from '../lib/mensagens'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -62,6 +63,8 @@ export default function Configuracoes() {
     google_conectado: false,
     lembretes_ativos: true,
     mensagem_lembrete: 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
+    msg_aniversario: MSG_ANIVERSARIO_PADRAO,
+    msg_retorno: MSG_RETORNO_PADRAO,
     agenda_externa_url: '',
   })
   const [novoServico, setNovoServico] = useState('')
@@ -97,6 +100,8 @@ export default function Configuracoes() {
         google_conectado: data.google_conectado || false,
         lembretes_ativos: data.lembretes_ativos !== false,
         mensagem_lembrete: data.mensagem_lembrete || 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
+        msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
+        msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
         agenda_externa_url: data.agenda_externa_url || '',
       })
     }
@@ -541,6 +546,41 @@ export default function Configuracoes() {
             </div>
           </>
         )}
+      </div>
+
+      {/* ── Mensagens das Oportunidades ─────── */}
+      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
+        <div style={s.sectionTitle}>mensagens das oportunidades</div>
+        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
+          Textos usados nos cards de <strong>Oportunidades da semana</strong> (no início). As variáveis são
+          trocadas pelos dados reais da cliente quando você clica para enviar.
+        </div>
+
+        <div style={s.field}>
+          <label style={s.label}>🎂 Mensagem de aniversário</label>
+          <textarea
+            style={{ ...s.input, minHeight: 88, resize: 'vertical', fontFamily: 'inherit' }}
+            value={form.msg_aniversario}
+            onChange={e => setForm({ ...form, msg_aniversario: e.target.value })}
+            placeholder={MSG_ANIVERSARIO_PADRAO}
+          />
+        </div>
+
+        <div style={s.field}>
+          <label style={s.label}>👋 Mensagem de retorno (cliente sumindo)</label>
+          <textarea
+            style={{ ...s.input, minHeight: 88, resize: 'vertical', fontFamily: 'inherit' }}
+            value={form.msg_retorno}
+            onChange={e => setForm({ ...form, msg_retorno: e.target.value })}
+            placeholder={MSG_RETORNO_PADRAO}
+          />
+        </div>
+
+        <div style={s.hint}>
+          Variáveis disponíveis:{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
+        </div>
       </div>
 
       {/* ── Agenda Online ───────────────────── */}

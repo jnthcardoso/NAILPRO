@@ -6,6 +6,7 @@ import { useSalao } from '../../contexts/SalaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { linkWhatsApp, formatBRL } from '../../lib/formatters'
 import { DIAS_RETORNO_PADRAO } from '../../lib/constants'
+import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, aplicarVariaveis } from '../../lib/mensagens'
 import { format, addDays, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -39,7 +40,8 @@ export default function OportunidadesSemana() {
         supabase.from('agendamentos')
           .select('data').eq('salao_id', salaoId).gte('data', hojeStr).lte('data', fim7Str).neq('status', 'cancelado'),
         supabase.from('configuracoes')
-          .select('slug, agenda_publica_ativa').eq('salao_id', salaoId).maybeSingle(),
+          .select('slug, agenda_publica_ativa, nome_salao, msg_aniversario, msg_retorno')
+          .eq('salao_id', salaoId).maybeSingle(),
       ])
 
       const ativas = (clientes || []).filter(c => !c.arquivada && c.telefone)
@@ -73,6 +75,9 @@ export default function OportunidadesSemana() {
           ticket,
           slug: config?.slug || '',
           agendaPublicaAtiva: !!config?.agenda_publica_ativa,
+          nomeSalao: config?.nome_salao || '',
+          tplAniversario: config?.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
+          tplRetorno: config?.msg_retorno || MSG_RETORNO_PADRAO,
           aniversariantes, sumidas, diasLivres,
         })
       }
@@ -81,7 +86,7 @@ export default function OportunidadesSemana() {
   }, [salaoId, isProfissional])
 
   if (!dados) return null
-  const { ticket, slug, agendaPublicaAtiva, aniversariantes, sumidas, diasLivres } = dados
+  const { ticket, slug, agendaPublicaAtiva, nomeSalao, tplAniversario, tplRetorno, aniversariantes, sumidas, diasLivres } = dados
   const temAlgo = aniversariantes.length || sumidas.length || diasLivres.length
   if (!temAlgo) return null
 
@@ -93,10 +98,9 @@ export default function OportunidadesSemana() {
       .catch(() => {})
   }
 
-  const msgAniversario = (nome) =>
-    `Oi ${primeiroNome(nome)}! 🎉 Passei aqui pra te desejar um feliz aniversário! Preparei um agrado especial pra você comemorar com as unhas lindas. Bora marcar? 💅`
-  const msgRetorno = (nome) =>
-    `Oi ${primeiroNome(nome)}! 💅 Senti sua falta por aqui! Que tal agendar um horário pra deixar suas unhas em dia? Tenho novidades pra te mostrar 😊`
+  // Usa o template editável da dona (ou o padrão), trocando as variáveis pelos dados da cliente.
+  const msgAniversario = (nome) => aplicarVariaveis(tplAniversario, { nome, salao: nomeSalao })
+  const msgRetorno = (nome) => aplicarVariaveis(tplRetorno, { nome, salao: nomeSalao })
 
   return (
     <div style={s.wrap}>
