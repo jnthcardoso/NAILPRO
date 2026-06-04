@@ -10,8 +10,9 @@ export const MSG_RETORNO_PADRAO =
 
 // Troca as variáveis do template pelos dados reais da cliente/salão.
 export function aplicarVariaveis(template, { nome = '', salao = '' } = {}) {
+  // Aceita {salão}/{salao} (com ou sem til).
   return (template || '')
-    .replace(/\{nome\}/gi, (nome || '').split(' ')[0])
     .replace(/\{nome_completo\}/gi, nome || '')
-    .replace(/\{salao\}/gi, salao || '')
+    .replace(/\{nome\}/gi, (nome || '').split(' ')[0])
+    .replace(/\{sal[aã]o\}/gi, salao || '')
 }

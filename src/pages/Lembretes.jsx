@@ -69,13 +69,14 @@ export default function Lembretes() {
     const horario = ag.horario?.slice(0, 5)
     const template = config.mensagem_lembrete || 'Oi {nome}! Lembrete: amanhã ({data}) às {horario} - {servico}. Confirma?'
 
+    // Aceita as variáveis com ou sem acento ({horário}/{horario}, {salão}/{salao}, {serviço}/{servico}).
     return template
-      .replace(/\{nome\}/g, nome.split(' ')[0])
-      .replace(/\{nome_completo\}/g, nome)
-      .replace(/\{data\}/g, dataFmt)
-      .replace(/\{horario\}/g, horario)
-      .replace(/\{servico\}/g, ag.servico || '')
-      .replace(/\{salao\}/g, config.nome_salao || '')
+      .replace(/\{nome_completo\}/gi, nome)
+      .replace(/\{nome\}/gi, nome.split(' ')[0])
+      .replace(/\{data\}/gi, dataFmt)
+      .replace(/\{hor[aá]rio\}/gi, horario)
+      .replace(/\{servi[cç]o\}/gi, ag.servico || '')
+      .replace(/\{sal[aã]o\}/gi, config.nome_salao || '')
   }
 
   function buildLink(ag) {
