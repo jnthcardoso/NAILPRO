@@ -529,7 +529,7 @@ export default function Home() {
         </div>
 
         {/* A receber */}
-        <div style={s.kpi} onClick={() => navigate('/app/financeiro')}>
+        <div style={s.kpi} onClick={() => navigate('/app/financeiro?ver=pendentes')}>
           <div style={s.kpiHeader}>
             <div style={{ ...s.kpiIcon, background: stats.aReceber > 0 ? '#FEF3C7' : 'var(--surface2)', color: stats.aReceber > 0 ? '#92400E' : 'var(--text3)' }}>
               <Clock size={16} />

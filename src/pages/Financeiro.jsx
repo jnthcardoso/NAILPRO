@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
   TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
@@ -233,6 +234,15 @@ export default function Financeiro() {
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
+  const [searchParams] = useSearchParams()
+
+  // Atalho vindo da Home: ?ver=pendentes abre direto Receitas filtrado em pendentes.
+  useEffect(() => {
+    if (searchParams.get('ver') === 'pendentes') {
+      setTab('receitas')
+      setFiltro('pendente')
+    }
+  }, [searchParams])
 
   // Intervalo efetivo (mês selecionado ou período personalizado)
   function getRange() {
@@ -528,7 +538,11 @@ export default function Financeiro() {
               <div style={{ ...s.cardValue, color: '#B91C1C' }}>R$ {totalDespesas.toFixed(0)}</div>
               <div style={s.cardSub}>{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
             </div>
-            <div style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}` }}>
+            <div
+              style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}`, cursor: 'pointer' }}
+              onClick={() => { setTab('receitas'); setFiltro('pendente') }}
+              title="Ver receitas pendentes"
+            >
               <div style={s.cardLabel}>⏰ A receber</div>
               <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }}>R$ {pendente.toFixed(0)}</div>
               <div style={s.cardSub}>{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
