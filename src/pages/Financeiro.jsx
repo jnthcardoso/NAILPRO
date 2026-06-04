@@ -13,6 +13,7 @@ import { formatBRL } from '../lib/formatters'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
+import PagamentoModal from '../components/agenda/PagamentoModal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -226,10 +227,10 @@ export default function Financeiro() {
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
-  // Confirmar um pagamento pendente como pago, escolhendo a forma.
-  const [confirmarPag, setConfirmarPag] = useState(null)
-  const [formaConfirm, setFormaConfirm] = useState('pix')
-  const [savingConfirm, setSavingConfirm] = useState(false)
+  // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
+  const [pagSelecionado, setPagSelecionado] = useState(null)
+  const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+  const [savingPag, setSavingPag] = useState(false)
   const [filtro, setFiltro] = useState('todos')
   const [periodoSel, setPeriodoSel] = useState(new Date())
   const [rangeMode, setRangeMode] = useState('mes') // 'mes' | 'custom'
@@ -394,22 +395,37 @@ export default function Financeiro() {
     loadPagamentos()
   }
 
-  // Abre a confirmação para marcar um pendente como pago (com escolha da forma).
+  // Abre o modal (igual ao da agenda) para confirmar um pendente como pago.
   function abrirConfirmarPago(pag) {
-    setFormaConfirm(pag.forma || 'pix')
-    setConfirmarPag(pag)
+    setFormPag({ forma: pag.forma || 'pix', status: 'pago', valor: String(pag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+    setPagSelecionado(pag)
   }
 
-  async function confirmarPagamento() {
-    if (!confirmarPag) return
-    setSavingConfirm(true)
+  async function salvarPagamentoConfirmado() {
+    if (!pagSelecionado) return
+    const v1 = parseFloat(formPag.valor) || 0
+    const v2 = formPag.modo === 'duplo' ? (parseFloat(formPag.valor2) || 0) : 0
+    if (v1 <= 0) { toastErro('Informe o valor do pagamento.'); return }
+    if (formPag.modo === 'duplo' && v2 <= 0) { toastErro('Informe o valor da 2ª forma de pagamento.'); return }
+    setSavingPag(true)
+    // 1ª forma: atualiza o pagamento que já existia (mantém o vínculo com o agendamento)
     const { error } = await supabase.from('pagamentos')
-      .update({ status: 'pago', forma: formaConfirm })
-      .eq('id', confirmarPag.id).eq('salao_id', salaoId)
-    setSavingConfirm(false)
-    if (error) { toastErro('Erro ao registrar pagamento: ' + error.message); return }
-    setConfirmarPag(null)
-    sucesso('Pagamento registrado')
+      .update({ status: formPag.status, forma: formPag.forma, valor: v1 })
+      .eq('id', pagSelecionado.id).eq('salao_id', salaoId)
+    let erro2 = null
+    // 2ª forma (modo duplo): cria um segundo lançamento para o mesmo agendamento
+    if (!error && formPag.modo === 'duplo') {
+      const r = await supabase.from('pagamentos').insert({
+        user_id: pagSelecionado.user_id || user.id, salao_id: salaoId,
+        agendamento_id: pagSelecionado.agendamento_id || null, data: pagSelecionado.data,
+        status: formPag.status, valor: v2, forma: formPag.forma2,
+      })
+      erro2 = r.error
+    }
+    setSavingPag(false)
+    if (error || erro2) { toastErro('Erro ao registrar pagamento: ' + (error || erro2).message); return }
+    setPagSelecionado(null)
+    sucesso(formPag.modo === 'duplo' ? 'Pagamento em 2 formas registrado' : 'Pagamento registrado')
     loadPagamentos()
   }
 
@@ -831,43 +847,22 @@ export default function Financeiro() {
         </Modal>
       )}
 
-      {/* Modal: confirmar pagamento pendente como pago (escolhendo a forma) */}
-      {confirmarPag && (
-        <Modal onClose={() => setConfirmarPag(null)} variant="sheet" boxStyle={s.modal}>
-          <div style={s.modalTitle}>💳 Registrar pagamento</div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-              {confirmarPag.agendamentos?.clientes?.nome || '—'}
-            </div>
-            <div style={{ fontSize: 12.5, color: 'var(--text3)', marginTop: 2 }}>
-              {confirmarPag.agendamentos?.servico || '—'} · <strong style={{ color: 'var(--text2)' }}>{formatBRL(confirmarPag.valor ?? 0)}</strong>
-            </div>
-          </div>
-          <div style={s.field}>
-            <label style={s.label}>Como foi pago?</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {FORMAS_PAGAMENTO.map(f => (
-                <button
-                  key={f.value}
-                  onClick={() => setFormaConfirm(f.value)}
-                  style={{
-                    flex: '1 1 calc(50% - 4px)', padding: '11px', borderRadius: 'var(--radius-sm)',
-                    border: formaConfirm === f.value ? '1.5px solid var(--pink)' : '1px solid var(--border2)',
-                    background: formaConfirm === f.value ? 'var(--pink-light)' : 'var(--surface)',
-                    color: formaConfirm === f.value ? 'var(--pink)' : 'var(--text2)',
-                    fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button style={s.btnPrimary} onClick={confirmarPagamento} disabled={savingConfirm}>
-            {savingConfirm ? 'Salvando...' : '✓ Marcar como pago'}
-          </button>
-          <button style={s.btnSecondary} onClick={() => setConfirmarPag(null)}>Cancelar</button>
-        </Modal>
+      {/* Modal: confirmar pagamento pendente como pago — mesmo modal da agenda (1 ou 2 formas) */}
+      {pagSelecionado && (
+        <PagamentoModal
+          agSelecionado={{
+            id: pagSelecionado.agendamento_id,
+            clientes: pagSelecionado.agendamentos?.clientes,
+            servico: pagSelecionado.agendamentos?.servico,
+            data: pagSelecionado.data,
+          }}
+          formPag={formPag}
+          setFormPag={setFormPag}
+          savingPag={savingPag}
+          pagModalObrigatorio={false}
+          onSalvar={salvarPagamentoConfirmado}
+          onFechar={() => setPagSelecionado(null)}
+        />
       )}
     </div>
   )
