@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, UserPlus, Calendar, CreditCard, MessageCircle, Pencil, Search, X } from 'lucide-react'
+import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, Calendar, CreditCard, MessageCircle, Pencil, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -8,29 +8,17 @@ import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
 import { s } from './Agenda.styles'
-import { formatTelefone, unformatTelefone, formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
+import { STATUS, FORMAS, VIEWS } from './Agenda.constants'
+import NovoAgendamentoModal from '../components/agenda/NovoAgendamentoModal'
+import EditarAgendamentoModal from '../components/agenda/EditarAgendamentoModal'
+import PagamentoModal from '../components/agenda/PagamentoModal'
+import { formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
   isSameMonth, isToday
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-
-const STATUS = {
-  confirmado: { label: 'Confirmada', bg: '#DCFCE7', color: '#15803D', border: '#4ADE80' },
-  pendente:   { label: 'Aguardando', bg: '#FEF3C7', color: '#92400E', border: '#FCD34D' },
-  realizado:  { label: 'Realizado',  bg: '#EDE9FE', color: '#5B21B6', border: '#A78BFA' },
-  cancelado:  { label: 'Cancelado',  bg: '#FEE2E2', color: '#B91C1C', border: '#FCA5A5' },
-}
-
-const FORMAS = [
-  { value: 'pix',            label: '💠 Pix' },
-  { value: 'dinheiro',       label: '💵 Dinheiro' },
-  { value: 'cartao_debito',  label: '💳 Débito' },
-  { value: 'cartao_credito', label: '💳 Crédito' },
-]
-
-const VIEWS = ['Dia', 'Semana', 'Mês']
 
 export default function Agenda() {
   const { user } = useAuth()
@@ -904,264 +892,51 @@ export default function Agenda() {
 
       {/* ── Modal de edição ────────────────────── */}
       {editando && (
-        <Modal onClose={() => setEditando(null)} boxStyle={s.modal}>
-            <div style={s.modalTitle}>✏️ Editar agendamento</div>
-
-            <div style={s.field}>
-              <label style={s.label}>Cliente</label>
-              <select style={s.input} value={formEdit.cliente_id} onChange={e => setFormEdit({ ...formEdit, cliente_id: e.target.value })}>
-                <option value="">Selecionar cliente</option>
-                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
-            </div>
-
-            <div style={s.field}>
-              <label style={s.label}>Serviço</label>
-              <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={formEdit.servico} onChange={e => setFormEdit({ ...formEdit, servico: e.target.value })} />
-              {servicosPadrao.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
-                  {servicosPadrao.map(sv => (
-                    <button key={sv} style={{ ...s.actionBtn, flexShrink: 0, background: formEdit.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: formEdit.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (formEdit.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setFormEdit({ ...formEdit, servico: sv })}>
-                      {sv}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Data</label>
-                <input style={s.input} type="date" value={formEdit.data} onChange={e => setFormEdit({ ...formEdit, data: e.target.value })} />
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Horário</label>
-                <input style={s.input} type="time" value={formEdit.horario} onChange={e => setFormEdit({ ...formEdit, horario: e.target.value })} />
-              </div>
-            </div>
-
-            <div style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Valor (R$)</label>
-                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={formEdit.valor} onChange={e => setFormEdit({ ...formEdit, valor: e.target.value })} />
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Status</label>
-                <select style={s.input} value={formEdit.status} onChange={e => setFormEdit({ ...formEdit, status: e.target.value })}>
-                  <option value="pendente">Aguardando</option>
-                  <option value="confirmado">Confirmada</option>
-                  <option value="realizado">Realizado</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
-              </div>
-            </div>
-
-            {gerenciaTudo && profissionais.length > 1 && (
-              <div style={s.field}>
-                <label style={s.label}>Profissional</label>
-                <select style={s.input} value={formEdit.profissional_id} onChange={e => setFormEdit({ ...formEdit, profissional_id: e.target.value })}>
-                  <option value="">Selecionar profissional</option>
-                  {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}{p.papel === 'dona' ? ' (dona)' : p.papel === 'recepcionista' ? ' (recepção)' : ''}</option>)}
-                </select>
-              </div>
-            )}
-
-            <div style={s.field}>
-              <label style={s.label}>Observações</label>
-              <input style={s.input} placeholder="Opcional..." value={formEdit.observacoes} onChange={e => setFormEdit({ ...formEdit, observacoes: e.target.value })} />
-            </div>
-
-            <button style={s.btnPrimary} onClick={atualizarAgendamento} disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
-            <button style={s.btnSecondary} onClick={() => setEditando(null)}>Cancelar</button>
-        </Modal>
+        <EditarAgendamentoModal
+          formEdit={formEdit}
+          setFormEdit={setFormEdit}
+          clientes={clientes}
+          servicosPadrao={servicosPadrao}
+          profissionais={profissionais}
+          gerenciaTudo={gerenciaTudo}
+          savingEdit={savingEdit}
+          onSalvar={atualizarAgendamento}
+          onCancelar={() => setEditando(null)}
+        />
       )}
 
       {/* ── Modal de pagamento ──────────────── */}
       {showPagModal && agSelecionado && (
-        <Modal onClose={fecharPagModal} boxStyle={s.modal}>
-            <div style={s.modalTitle}>💳 Registrar pagamento</div>
-
-            <div style={s.pagInfo}>
-              <div style={s.pagCliente}>{agSelecionado.clientes?.nome}</div>
-              <div style={s.pagServico}>{agSelecionado.servico} · {agSelecionado.data}</div>
-            </div>
-
-            {/* Toggle: 1 forma ou 2 formas */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <button
-                style={{ ...s.statusBtn2, flex: 1, ...(formPag.modo === 'simples' ? s.statusPagoActive : {}) }}
-                onClick={() => setFormPag({ ...formPag, modo: 'simples', valor2: '' })}
-              >
-                1 forma
-              </button>
-              <button
-                style={{ ...s.statusBtn2, flex: 1, ...(formPag.modo === 'duplo' ? { background: '#EDE9FE', color: '#5B21B6', border: '1.5px solid #A78BFA' } : {}) }}
-                onClick={() => {
-                  const totalAtual = parseFloat(formPag.valor) || 0
-                  const metade = totalAtual > 0 ? (totalAtual / 2).toFixed(2) : ''
-                  setFormPag({ ...formPag, modo: 'duplo', valor: metade, valor2: metade })
-                }}
-              >
-                2 formas
-              </button>
-            </div>
-
-            {/* Forma 1 */}
-            <div style={s.field}>
-              <label style={s.label}>{formPag.modo === 'duplo' ? '1ª forma — Valor (R$)' : 'Valor (R$)'}</label>
-              <input
-                style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
-                type="number" placeholder="0,00"
-                value={formPag.valor}
-                onChange={e => setFormPag({ ...formPag, valor: e.target.value })}
-              />
-            </div>
-            <div style={s.field}>
-              <label style={s.label}>{formPag.modo === 'duplo' ? '1ª forma de pagamento' : 'Forma de pagamento'}</label>
-              <div style={s.formasGrid}>
-                {FORMAS.map(f => (
-                  <button key={f.value}
-                    style={{ ...s.formaBtn, ...(formPag.forma === f.value ? s.formaBtnActive : {}) }}
-                    onClick={() => setFormPag({ ...formPag, forma: f.value })}
-                  >{f.label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Forma 2 (só no modo duplo) */}
-            {formPag.modo === 'duplo' && (
-              <>
-                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 12px' }} />
-                <div style={s.field}>
-                  <label style={s.label}>2ª forma — Valor (R$)</label>
-                  <input
-                    style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
-                    type="number" placeholder="0,00"
-                    value={formPag.valor2}
-                    onChange={e => setFormPag({ ...formPag, valor2: e.target.value })}
-                  />
-                </div>
-                <div style={s.field}>
-                  <label style={s.label}>2ª forma de pagamento</label>
-                  <div style={s.formasGrid}>
-                    {FORMAS.map(f => (
-                      <button key={f.value}
-                        style={{ ...s.formaBtn, ...(formPag.forma2 === f.value ? s.formaBtnActive : {}) }}
-                        onClick={() => setFormPag({ ...formPag, forma2: f.value })}
-                      >{f.label}</button>
-                    ))}
-                  </div>
-                </div>
-                {/* Total */}
-                {(parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0) > 0 && (
-                  <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
-                    Total: <strong style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      R$ {((parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0)).toFixed(2)}
-                    </strong>
-                  </div>
-                )}
-              </>
-            )}
-
-            <div style={s.field}>
-              <label style={s.label}>Status</label>
-              <div style={s.statusGrid}>
-                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }}
-                  onClick={() => setFormPag({ ...formPag, status: 'pago' })}>✓ Pago</button>
-                <button style={{ ...s.statusBtn2, ...(formPag.status === 'pendente' ? s.statusPendenteActive : {}) }}
-                  onClick={() => setFormPag({ ...formPag, status: 'pendente' })}>⏳ Pendente</button>
-              </div>
-            </div>
-
-            <button style={s.btnPrimary} onClick={salvarPagamento} disabled={savingPag}>
-              {savingPag ? 'Salvando...' : 'Confirmar pagamento'}
-            </button>
-            <button style={s.btnSecondary} onClick={fecharPagModal}>
-              {pagModalObrigatorio ? 'Registrar depois' : 'Fechar'}
-            </button>
-        </Modal>
+        <PagamentoModal
+          agSelecionado={agSelecionado}
+          formPag={formPag}
+          setFormPag={setFormPag}
+          savingPag={savingPag}
+          pagModalObrigatorio={pagModalObrigatorio}
+          onSalvar={salvarPagamento}
+          onFechar={fecharPagModal}
+        />
       )}
 
       {/* ── Modal novo agendamento ──────────── */}
       {showModal && (
-        <Modal onClose={() => setShowModal(false)} boxStyle={s.modal}>
-            <div style={s.modalTitle}>Novo agendamento</div>
-
-            <div style={s.field}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <label style={s.label}>Cliente</label>
-                <button style={s.linkBtn} onClick={() => setShowNovaCliente(true)}><UserPlus size={13} /> Nova cliente</button>
-              </div>
-              <select style={s.input} value={form.cliente_id} onChange={e => setForm({ ...form, cliente_id: e.target.value })}>
-                <option value="">Selecionar cliente</option>
-                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
-            </div>
-
-            {showNovaCliente && (
-              <div style={s.miniForm}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pink)', marginBottom: 8 }}>Nova cliente rápida</div>
-                <input style={s.input} placeholder="Nome *" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} />
-                <input style={{ ...s.input, marginTop: 8 }} placeholder="(51) 99999-9999" value={formatTelefone(formCliente.telefone)} onChange={e => setFormCliente({ ...formCliente, telefone: unformatTelefone(e.target.value) })} inputMode="numeric" />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button style={{ ...s.btnPrimary, flex: 1, padding: '9px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? '...' : 'Salvar'}</button>
-                  <button style={{ ...s.btnSecondary, flex: 1, padding: '9px' }} onClick={() => setShowNovaCliente(false)}>Cancelar</button>
-                </div>
-              </div>
-            )}
-
-            <div style={s.field}>
-              <label style={s.label}>Serviço</label>
-              <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
-              {servicosPadrao.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
-                  {servicosPadrao.map(sv => (
-                    <button key={sv} style={{ ...s.actionBtn, flexShrink: 0, background: form.servico === sv ? 'var(--pink-light)' : 'var(--surface2)', color: form.servico === sv ? 'var(--pink)' : 'var(--text2)', border: '1px solid ' + (form.servico === sv ? 'var(--pink-mid)' : 'var(--border2)') }} onClick={() => setForm({ ...form, servico: sv })}>
-                      {sv}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Data</label>
-                <input style={s.input} type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} />
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Horário</label>
-                <input style={s.input} type="time" value={form.horario} onChange={e => setForm({ ...form, horario: e.target.value })} />
-              </div>
-            </div>
-            <div style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Valor (R$)</label>
-                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Status</label>
-                <select style={s.input} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                  <option value="pendente">Aguardando</option>
-                  <option value="confirmado">Confirmada</option>
-                </select>
-              </div>
-            </div>
-            {gerenciaTudo && profissionais.length > 1 && (
-              <div style={s.field}>
-                <label style={s.label}>Profissional</label>
-                <select style={s.input} value={form.profissional_id} onChange={e => setForm({ ...form, profissional_id: e.target.value })}>
-                  <option value="">Selecionar profissional</option>
-                  {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}{p.papel === 'dona' ? ' (dona)' : p.papel === 'recepcionista' ? ' (recepção)' : ''}</option>)}
-                </select>
-              </div>
-            )}
-            <div style={s.field}>
-              <label style={s.label}>Observações</label>
-              <input style={s.input} placeholder="Opcional..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
-            </div>
-            <button style={s.btnPrimary} onClick={salvarAgendamento} disabled={saving}>{saving ? 'Salvando...' : 'Salvar agendamento'}</button>
-            <button style={s.btnSecondary} onClick={() => setShowModal(false)}>Cancelar</button>
-        </Modal>
+        <NovoAgendamentoModal
+          form={form}
+          setForm={setForm}
+          clientes={clientes}
+          servicosPadrao={servicosPadrao}
+          profissionais={profissionais}
+          gerenciaTudo={gerenciaTudo}
+          showNovaCliente={showNovaCliente}
+          setShowNovaCliente={setShowNovaCliente}
+          formCliente={formCliente}
+          setFormCliente={setFormCliente}
+          savingCliente={savingCliente}
+          salvarNovaCliente={salvarNovaCliente}
+          saving={saving}
+          onSalvar={salvarAgendamento}
+          onCancelar={() => setShowModal(false)}
+        />
       )}
     </div>
   )
