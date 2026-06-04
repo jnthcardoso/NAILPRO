@@ -1,19 +1,18 @@
 import { useEffect, useState, useRef } from 'react'
-import { Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight, Calendar, CreditCard, MessageCircle, Pencil, Search, X } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
-import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
 import { s } from './Agenda.styles'
-import { STATUS, FORMAS, VIEWS } from './Agenda.constants'
+import { VIEWS } from './Agenda.constants'
 import NovoAgendamentoModal from '../components/agenda/NovoAgendamentoModal'
 import EditarAgendamentoModal from '../components/agenda/EditarAgendamentoModal'
 import PagamentoModal from '../components/agenda/PagamentoModal'
 import { ViewDia, ViewSemana, ViewMes, ViewBusca } from '../components/agenda/views'
-import { formatBRL, linkWhatsApp, dataBR } from '../lib/formatters'
+import DetalheAgendamentoDrawer from '../components/agenda/DetalheAgendamentoDrawer'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth
@@ -447,17 +446,6 @@ export default function Agenda() {
     return format(dataSel, "MMMM 'de' yyyy", { locale: ptBR })
   }
 
-  function buildWhatsAppConfirm(ag) {
-    const nome = ag.clientes?.nome || ''
-    const telefone = (ag.clientes?.telefone || '').replace(/\D/g, '')
-    if (!telefone) return null
-    const [y, m, d] = ag.data.split('-')
-    const dataFmt = `${d}/${m}`
-    const horario = ag.horario?.slice(0, 5)
-    const msg = `Olá ${nome}! Confirmando seu horário para ${dataFmt} às ${horario} - ${ag.servico}. Pode confirmar presença? 💅`
-    return linkWhatsApp(telefone, msg)
-  }
-
   // Estado de pagamento de um agendamento (para o filtro)
   function pagState(a) {
     const p = a.pagamentos?.[0]
@@ -554,104 +542,23 @@ export default function Agenda() {
       )}
 
       {/* ── Drawer de detalhe do agendamento ── */}
-      {agDetalhe && (() => {
-        const ag = agDetalhe
-        const st = STATUS[ag.status] || STATUS.pendente
-        const pag = ag.pagamentos?.[0]
-        const waConfirm = buildWhatsAppConfirm(ag)
-        const tel = (ag.clientes?.telefone || '').replace(/\D/g, '')
-        const waDirectUrl = tel ? linkWhatsApp(tel) : null
-        const dataFmt = dataBR(ag.data)
-        return (
-          <Modal onClose={() => setAgDetalhe(null)} boxStyle={s.modal}>
-              {/* Header do drawer */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>{ag.clientes?.nome}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 2 }}>{ag.servico}</div>
-                </div>
-                <span style={{ ...s.badge, background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>{st.label}</span>
-              </div>
-
-              {/* Infos */}
-              <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-                  <Calendar size={14} color="var(--text3)" />
-                  <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{dataFmt} · {ag.horario?.slice(0, 5)}</span>
-                </div>
-                {ag.valor > 0 && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-                    <CreditCard size={14} color="var(--text3)" />
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: 'var(--pink)' }}>
-                      {formatBRL(ag.valor)}
-                    </span>
-                    {pag && (
-                      <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
-                        {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {ag.observacoes && (
-                  <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>{ag.observacoes}</div>
-                )}
-              </div>
-
-              {/* Ações de status */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {ag.status === 'pendente' && (
-                  <button style={{ ...s.btnPrimary, background: '#15803D', boxShadow: 'none' }} onClick={() => { atualizarStatus(ag, 'confirmado'); setAgDetalhe(null) }}>
-                    <CheckCircle size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />Confirmar agendamento
-                  </button>
-                )}
-                {ag.status !== 'realizado' && ag.status !== 'cancelado' && (
-                  <button style={{ ...s.btnPrimary, background: '#5B21B6', boxShadow: 'none' }} onClick={() => { atualizarStatus(ag, 'realizado'); setAgDetalhe(null) }}>
-                    <CheckCircle size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />Marcar como realizado
-                  </button>
-                )}
-              </div>
-
-              {/* Ações secundárias */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: '1 1 auto' }}
-                  onClick={() => { setAgDetalhe(null); setAgSelecionado(ag); setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || ag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' }); setShowPagModal(true) }}>
-                  <CreditCard size={13} />{pag ? 'Editar pagamento' : 'Registrar pagamento'}
-                </button>
-                <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: '1 1 auto' }}
-                  onClick={() => { setAgDetalhe(null); abrirEdicao(ag) }}>
-                  <Pencil size={13} />Editar
-                </button>
-              </div>
-
-              {/* WhatsApp */}
-              {(waConfirm || waDirectUrl) && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {waConfirm && (
-                    <a href={waConfirm} target="_blank" rel="noopener noreferrer"
-                      style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D', border: '1px solid #4ADE80', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
-                      <MessageCircle size={13} />Confirmar via WA
-                    </a>
-                  )}
-                  {waDirectUrl && (
-                    <a href={waDirectUrl} target="_blank" rel="noopener noreferrer"
-                      style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
-                      <MessageCircle size={13} />Abrir WA
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {/* Cancelar agendamento */}
-              {ag.status !== 'cancelado' && (
-                <button style={{ ...s.btnSecondary, color: '#B91C1C', borderColor: '#FCA5A5' }}
-                  onClick={() => { setAgDetalhe(null); atualizarStatus(ag, 'cancelado') }}>
-                  <XCircle size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />Cancelar agendamento
-                </button>
-              )}
-              <button style={s.btnSecondary} onClick={() => setAgDetalhe(null)}>Fechar</button>
-          </Modal>
-        )
-      })()}
+      {agDetalhe && (
+        <DetalheAgendamentoDrawer
+          ag={agDetalhe}
+          onClose={() => setAgDetalhe(null)}
+          onConfirmar={() => { atualizarStatus(agDetalhe, 'confirmado'); setAgDetalhe(null) }}
+          onRealizar={() => { atualizarStatus(agDetalhe, 'realizado'); setAgDetalhe(null) }}
+          onCancelar={() => { setAgDetalhe(null); atualizarStatus(agDetalhe, 'cancelado') }}
+          onEditar={() => { setAgDetalhe(null); abrirEdicao(agDetalhe) }}
+          onRegistrarPagamento={() => {
+            const pag = agDetalhe.pagamentos?.[0]
+            setAgDetalhe(null)
+            setAgSelecionado(agDetalhe)
+            setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || agDetalhe.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+            setShowPagModal(true)
+          }}
+        />
+      )}
 
       {googleMsg && (
         <div style={{
