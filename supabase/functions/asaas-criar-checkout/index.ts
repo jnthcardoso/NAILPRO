@@ -64,11 +64,12 @@ Deno.serve(async (req: Request) => {
     }
 
     if (isAnual) {
-      // Anual = compra unica do ano, parcelavel em ate 12x no cartao.
-      // OBS: parcelamento (INSTALLMENT) e assinatura recorrente (RECURRENT) sao
-      // mutuamente exclusivos no Asaas. Por isso o anual NAO renova sozinho:
-      // ao fim dos 12 meses, a renovacao e feita manualmente (acompanhada no Admin).
-      body.chargeTypes = ['INSTALLMENT']
+      // Anual = compra unica do ano: a cliente escolhe pagar a vista (DETACHED)
+      // ou parcelar em ate 12x (INSTALLMENT). O Asaas EXIGE DETACHED junto de INSTALLMENT.
+      // OBS: parcelamento e assinatura recorrente (RECURRENT) sao mutuamente exclusivos
+      // no Asaas. Por isso o anual NAO renova sozinho: ao fim dos 12 meses, a renovacao
+      // e feita manualmente (acompanhada no Admin).
+      body.chargeTypes = ['DETACHED', 'INSTALLMENT']
       body.installment = { maxInstallmentCount: 12 }
     } else {
       // Mensal = assinatura recorrente que renova sozinha todo mes.
