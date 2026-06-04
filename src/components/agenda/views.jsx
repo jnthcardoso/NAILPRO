@@ -5,7 +5,7 @@ import {
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { s } from '../../pages/Agenda.styles'
-import { STATUS } from '../../pages/Agenda.constants'
+import { STATUS, temPagamentoPendente, PAG_PENDENTE_COR, PAG_PENDENTE_BG } from '../../pages/Agenda.constants'
 import { CardCompacto, CardDia, CardBusca } from './cards'
 
 // Views de calendário da Agenda. Apresentacionais: recebem a lista ja filtrada
@@ -121,7 +121,8 @@ export function ViewMes({ agendamentosBase, dataSel, diaSelecionadoMes, setDiaSe
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
                       {agsDia.slice(0, 3).map((ag, i) => {
                         const st = STATUS[ag.status] || STATUS.pendente
-                        return <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: st.border, display: 'block', flexShrink: 0 }} />
+                        const cor = temPagamentoPendente(ag) ? PAG_PENDENTE_COR : st.border
+                        return <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: cor, display: 'block', flexShrink: 0 }} />
                       })}
                       {agsDia.length > 3 && (
                         <span style={{ fontSize: 8, color: 'var(--text3)', fontWeight: 700, lineHeight: '6px' }}>+{agsDia.length - 3}</span>
@@ -133,7 +134,8 @@ export function ViewMes({ agendamentosBase, dataSel, diaSelecionadoMes, setDiaSe
                   <>
                     {agsDia.slice(0, 2).map((ag, i) => {
                       const st = STATUS[ag.status] || STATUS.pendente
-                      return <div key={i} style={{ ...s.calEvent, background: st.bg, color: st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>
+                      const pend = temPagamentoPendente(ag)
+                      return <div key={i} style={{ ...s.calEvent, background: pend ? PAG_PENDENTE_BG : st.bg, color: pend ? PAG_PENDENTE_COR : st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>
                     })}
                     {agsDia.length > 2 && <div style={s.calMore}>+{agsDia.length - 2}</div>}
                   </>

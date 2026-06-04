@@ -16,3 +16,13 @@ export const FORMAS = [
 ]
 
 export const VIEWS = ['Dia', 'Semana', 'Mês']
+
+// Alerta visual: atendimento REALIZADO com pagamento a receber (pendente ou sem
+// pagamento registrado). Usado pra pintar o card de vermelho na agenda.
+export const PAG_PENDENTE_COR = '#DC2626'
+export const PAG_PENDENTE_BG = '#FEF2F2'
+export function temPagamentoPendente(ag) {
+  if (ag?.status !== 'realizado') return false
+  const pags = ag.pagamentos || []
+  return pags.length === 0 || pags.some(p => p.status === 'pendente')
+}

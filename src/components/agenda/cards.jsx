@@ -1,5 +1,5 @@
 import { s } from '../../pages/Agenda.styles'
-import { STATUS, FORMAS } from '../../pages/Agenda.constants'
+import { STATUS, FORMAS, temPagamentoPendente, PAG_PENDENTE_COR, PAG_PENDENTE_BG } from '../../pages/Agenda.constants'
 import { formatBRL } from '../../lib/formatters'
 
 // Cards de agendamento usados nas views da Agenda. Apresentacionais:
@@ -8,14 +8,16 @@ import { formatBRL } from '../../lib/formatters'
 // Card compacto para view Semana
 export function CardCompacto({ ag, onSelect }) {
   const st = STATUS[ag.status] || STATUS.pendente
+  const pend = temPagamentoPendente(ag)
+  const cor = pend ? PAG_PENDENTE_COR : st.border
   return (
-    <div style={{ ...s.cardCompacto, borderLeftColor: st.border }} onClick={() => onSelect(ag)}>
+    <div style={{ ...s.cardCompacto, borderLeftColor: cor, ...(pend ? { background: PAG_PENDENTE_BG } : {}) }} onClick={() => onSelect(ag)}>
       <div style={s.cardCompactoHora}>{ag.horario?.slice(0, 5)}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={s.cardCompactoNome}>{ag.clientes?.nome?.split(' ')[0]}</div>
         <div style={s.cardCompactoServ}>{ag.servico}</div>
       </div>
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: st.border, flexShrink: 0 }} />
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: cor, flexShrink: 0 }} />
     </div>
   )
 }
@@ -24,8 +26,9 @@ export function CardCompacto({ ag, onSelect }) {
 export function CardDia({ ag, onSelect }) {
   const st = STATUS[ag.status] || STATUS.pendente
   const pag = ag.pagamentos?.[0]
+  const pend = temPagamentoPendente(ag)
   return (
-    <div style={{ ...s.card, borderLeftColor: st.border, cursor: 'pointer' }} onClick={() => onSelect(ag)}>
+    <div style={{ ...s.card, borderLeftColor: pend ? PAG_PENDENTE_COR : st.border, cursor: 'pointer', ...(pend ? { background: PAG_PENDENTE_BG } : {}) }} onClick={() => onSelect(ag)}>
       <div style={s.cardHeader}>
         <div style={s.cardTime}>{ag.horario?.slice(0, 5)}</div>
         <div style={{ flex: 1 }}>
@@ -52,9 +55,10 @@ export function CardDia({ ag, onSelect }) {
 export function CardBusca({ ag, onSelect }) {
   const st = STATUS[ag.status] || STATUS.pendente
   const pag = ag.pagamentos?.[0]
+  const pend = temPagamentoPendente(ag)
   const [y, m, d] = ag.data.split('-')
   return (
-    <div style={{ ...s.card, borderLeftColor: st.border, cursor: 'pointer' }} onClick={() => onSelect(ag)}>
+    <div style={{ ...s.card, borderLeftColor: pend ? PAG_PENDENTE_COR : st.border, cursor: 'pointer', ...(pend ? { background: PAG_PENDENTE_BG } : {}) }} onClick={() => onSelect(ag)}>
       <div style={s.cardHeader}>
         <div style={s.cardDataBusca}>
           <span style={s.cardDataBuscaDia}>{d}/{m}</span>
