@@ -16,7 +16,7 @@ const BENEFICIOS = [
 const FAQ_ITEMS = [
   { p: 'Preciso instalar alguma coisa?', r: 'Não. A Lumen funciona direto no navegador e no celular — sem download, sem instalação. É só entrar e usar.' },
   { p: 'Preciso de cartão de crédito para testar?', r: 'Não. Os 14 dias de teste são 100% grátis e sem necessidade de cartão. Você só paga se quiser continuar.' },
-  { p: 'Posso cancelar quando quiser?', r: 'Sim. No plano mensal, você cancela a qualquer momento sem multa. No plano anual, há fidelidade de 12 meses.' },
+  { p: 'Posso cancelar quando quiser?', r: 'Sim, sem multa nos dois planos. No mensal, a cobrança para na hora e o acesso vai até o fim do mês já pago. No anual, você parcela o valor do ano em até 12× sem juros, fica com acesso garantido por 12 meses e ao fim do período simplesmente não é renovada (sem fidelidade).' },
   { p: 'Funciona bem no celular?', r: 'Perfeitamente. A Lumen foi feita pensando em quem trabalha com as mãos e usa o celular para tudo — é rápida e fácil de usar na tela pequena.' },
   { p: 'O que acontece quando os 14 dias acabam?', r: 'Você escolhe um plano e continua de onde parou. Se preferir não seguir, seus dados ficam guardados com segurança caso você queira voltar depois.' },
   { p: 'Como funciona o suporte?', r: 'Atendimento direto pelo WhatsApp, de segunda a sábado. Sem robô, sem espera interminável — você fala com a equipe da Lumen.' },
@@ -294,7 +294,7 @@ export default function Landing() {
             </button>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-            {ciclo === 'anual' ? '📅 Fidelidade de 12 meses' : '📆 Sem fidelidade · cancele quando quiser'}
+            {ciclo === 'anual' ? '💳 Até 12× sem juros · sem fidelidade' : '📆 Sem fidelidade · cancele quando quiser'}
           </div>
         </div>
 
