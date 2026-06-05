@@ -588,20 +588,17 @@ export default function Configuracoes() {
       <div style={{ ...s.section, display: tab === 'agenda' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>agenda online para clientes</div>
 
-        {/* Card: Usar link externo (Google Calendar, Calendly, etc) */}
-        <div style={{ background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', border: '1px solid #93C5FD', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1E40AF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ExternalLink size={16} color="white" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1E3A8A' }}>
-                Usar Google Calendar / Calendly (recomendado) ⭐
-              </div>
-              <div style={{ fontSize: 11, color: '#1E40AF', marginTop: 2 }}>
-                Cole a URL do seu agendamento externo. Seus clientes verão uma página linda com botão de agendar.
-              </div>
-            </div>
+        {/* Card: Usar link externo (Google Calendar, Calendly, etc) — opção secundária, recolhida */}
+        <details style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ExternalLink size={15} />
+            Já usa Google Calendar ou Calendly? (opcional)
+          </summary>
+          <div style={{ fontSize: 12, color: 'var(--text3)', margin: '10px 0' }}>
+            Se preferir, cole a URL do seu agendamento externo e seus clientes verão uma página com botão de agendar.
+            <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)' }}>
+              ⚠ Atenção: nesse modo os agendamentos ficam no Google/Calendly e <strong>não entram no Lumen</strong> (agenda, financeiro e histórico). Deixe em branco para usar o agendamento nativo abaixo.
+            </span>
           </div>
           <input
             style={{ ...s.input, fontSize: 13 }}
@@ -610,7 +607,7 @@ export default function Configuracoes() {
             value={form.agenda_externa_url}
             onChange={e => setForm({ ...form, agenda_externa_url: e.target.value })}
           />
-          <details style={{ marginTop: 10, fontSize: 11, color: '#1E40AF' }}>
+          <details style={{ marginTop: 10, fontSize: 11, color: 'var(--text3)' }}>
             <summary style={{ cursor: 'pointer', fontWeight: 700 }}>📘 Como criar no Google Calendar (1 minuto)</summary>
             <ol style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.7 }}>
               <li>Abra <a href="https://calendar.google.com" target="_blank" rel="noreferrer" style={{ color: '#1E40AF', fontWeight: 600 }}>calendar.google.com</a></li>
@@ -624,7 +621,7 @@ export default function Configuracoes() {
               💡 <strong>Vantagens:</strong> Confirmação e lembretes automáticos por email do Google, sync direto com seu calendário, sem custo extra.
             </div>
           </details>
-        </div>
+        </details>
 
         {/* Toggle ativar */}
         <div
@@ -640,9 +637,10 @@ export default function Configuracoes() {
           <div>
             <div style={s.toggleLabel}>
               Ativar agendamento público
+              <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--green)', background: 'var(--green-bg)', padding: '2px 7px', borderRadius: 100, verticalAlign: 'middle' }}>⭐ recomendado</span>
               {!temAcesso('agendaPublica') && <span style={{ marginLeft: 6 }}><ProBadge /></span>}
             </div>
-            <div style={s.hint}>Clientes agendam pelo link, sem precisar te chamar</div>
+            <div style={s.hint}>Clientes agendam pelo link e já cai direto na sua agenda, financeiro e histórico</div>
           </div>
           <div style={{ ...s.toggle, ...(form.agenda_publica_ativa && temAcesso('agendaPublica') ? s.toggleOn : {}) }}>
             <div style={{ ...s.toggleThumb, ...(form.agenda_publica_ativa && temAcesso('agendaPublica') ? s.toggleThumbOn : {}) }} />
