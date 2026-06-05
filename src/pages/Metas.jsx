@@ -65,11 +65,14 @@ export default function Metas() {
     const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
     const fimAno = format(endOfYear(new Date()), 'yyyy-MM-dd')
 
+    // Previsão = receita que AINDA vai entrar → só pendente + confirmado.
+    // Os "realizados" já aconteceram (entram no Financeiro como receita), não em
+    // previsão. Assim os cards por período batem com o pipeline por status.
     const { data: ags } = await supabase
       .from('agendamentos').select('data, valor, status')
       .eq('salao_id', salaoId)
       .gte('data', hoje)
-      .neq('status', 'cancelado')
+      .in('status', ['pendente', 'confirmado'])
 
     if (!ags) return
     const soma = (arr) => arr.reduce((s, a) => s + (a.valor || 0), 0)
