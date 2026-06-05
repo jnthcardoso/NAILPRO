@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle, UserX, Cake, ChevronRight, Plus, UserPlus, Calendar, Sparkles, Bell,
+  AlertTriangle, ChevronRight, Plus, UserPlus, Calendar, Sparkles, Bell,
   TrendingUp, TrendingDown, DollarSign, Target, Clock, Award, Users, MessageCircle, ArrowUpRight
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -21,7 +21,6 @@ import OportunidadesSemana from '../components/common/OportunidadesSemana'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
 import { trackPagamentoConfirmado } from '../lib/analytics'
-import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 
 const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -50,8 +49,6 @@ export default function Home() {
     metaMes: 4000, receitaMes: 0,
     receitaOntem: 0, atendimentosOntem: 0,
   })
-  const [clientesSumidas, setClientesSumidas] = useState([])
-  const [aniversarios, setAniversarios] = useState([])
   const [agendamentosData, setAgendamentosData] = useState([])
   const [dataFiltro, setDataFiltro] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [nomeSalao, setNomeSalao] = useState('')
@@ -101,7 +98,6 @@ export default function Home() {
       { count: countClientes },
       { count: countAgendamentos },
       { data: ags },
-      { data: clientes },
     ] = await Promise.all([
       supabase.from('configuracoes')
         .select('meta_mensal, nome_salao').eq('salao_id', salaoId).single(),
@@ -134,13 +130,10 @@ export default function Home() {
         .select('lembrete_enviado_em, clientes(telefone)')
         .eq('salao_id', salaoId).eq('data', amanha)
         .in('status', ['pendente', 'confirmado']),
-      supabase.from('clientes')
-        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada, dias_retorno').eq('salao_id', salaoId),
     ])
 
     // Config
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
-    const limiteAlerta = DIAS_RETORNO_PADRAO
 
     // Meta do mês: prioriza tabela metas, fallback pra config.meta_mensal
     const valorMeta = metaAtual?.valor_meta || config?.meta_mensal || 4000
@@ -224,21 +217,6 @@ export default function Home() {
       }
     }
 
-    // Clientes sumidas + aniversários
-    if (clientes) {
-      const ativas = clientes.filter(c => !c.arquivada)
-      setClientesSumidas(ativas
-        .filter(c => c.ultimo_atendimento && differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? limiteAlerta))
-        .slice(0, 3))
-      const hj = new Date()
-      setAniversarios(ativas.filter(c => {
-        if (!c.data_nascimento) return false
-        const nasc = new Date(c.data_nascimento + 'T12:00:00')
-        const aniv = new Date(hj.getFullYear(), nasc.getMonth(), nasc.getDate())
-        const diff = differenceInDays(aniv, hj)
-        return diff >= 0 && diff <= 7
-      }).slice(0, 3))
-    }
   }
 
   async function loadAgendamentosData() {
@@ -364,9 +342,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Oportunidades da semana — insights de negócio acionáveis (ponte p/ Fase 2) */}
-      {!loading && <OportunidadesSemana />}
-
       {/* ════ GRID 2 COLUNAS (desktop) ════ */}
       {!loading && (
       <div className="home-grid">
@@ -419,62 +394,29 @@ export default function Home() {
           </div>
 
           {/* ─── INSIGHTS ─── */}
-          {!contaNova && (diaTop || aniversarios.length > 0 || clientesSumidas.length > 0) && (
+          {/* Com "dia mais lucrativo": a Home renderiza o cabeçalho + esse card + as oportunidades.
+              Sem ele: o próprio componente cuida do cabeçalho e se esconde se não houver nada. */}
+          {!contaNova && diaTop && (
             <div style={s.insights}>
               <div style={s.sectionTitle}>💡 insights pra você</div>
 
-              {diaTop && (
-                <div style={{ ...s.insight, background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderColor: '#93C5FD' }}>
-                  <Award size={18} color="#1E40AF" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
-                      Seu dia mais lucrativo é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
-                    </div>
-                    <div style={{ ...s.insightSub, color: '#1E40AF' }}>
-                      R$ {diaTop.valor.toFixed(0)} acumulado nos últimos 90 dias
-                    </div>
+              <div style={{ ...s.insight, background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderColor: '#93C5FD' }}>
+                <Award size={18} color="#1E40AF" />
+                <div style={{ flex: 1 }}>
+                  <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
+                    Seu dia mais lucrativo é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
+                  </div>
+                  <div style={{ ...s.insightSub, color: '#1E40AF' }}>
+                    R$ {diaTop.valor.toFixed(0)} acumulado nos últimos 90 dias
                   </div>
                 </div>
-              )}
+              </div>
 
-              {aniversarios.map(c => {
-                const nasc = new Date(c.data_nascimento + 'T12:00:00')
-                const aniv = new Date(new Date().getFullYear(), nasc.getMonth(), nasc.getDate())
-                const diff = differenceInDays(aniv, new Date())
-                return (
-                  <div key={c.id} style={{ ...s.insight, background: 'linear-gradient(135deg, #FDF4FF, #FAE8FF)', borderColor: '#E9D5FF' }}>
-                    <Cake size={18} color="#86198F" />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ ...s.insightTitle, color: '#701A75' }}>
-                        {c.nome} faz aniversário {diff === 0 ? 'hoje 🎂' : diff === 1 ? 'amanhã 🎂' : `em ${diff} dias`}
-                      </div>
-                      <div style={{ ...s.insightSub, color: '#86198F' }}>
-                        Que tal mandar uma mensagem carinhosa?
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {clientesSumidas.length > 0 && (
-                <div
-                  style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5', cursor: 'pointer' }}
-                  onClick={() => navigate('/app/clientes')}
-                >
-                  <UserX size={18} color="#B91C1C" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ ...s.insightTitle, color: '#7F1D1D' }}>
-                      {clientesSumidas.length} {clientesSumidas.length === 1 ? 'cliente passou' : 'clientes passaram'} do retorno
-                    </div>
-                    <div style={{ ...s.insightSub, color: '#991B1B' }}>
-                      {clientesSumidas.map(c => c.nome.split(' ')[0]).join(' · ')}
-                    </div>
-                  </div>
-                  <ChevronRight size={16} color="#7F1D1D" />
-                </div>
-              )}
+              {/* Aniversários, clientes sumindo e dias livres — acionáveis (WhatsApp / copiar link) */}
+              <OportunidadesSemana variant="insights" />
             </div>
           )}
+          {!contaNova && !diaTop && <OportunidadesSemana variant="insights" withHeader />}
         </div>
 
         {/* ═══════ COLUNA DIREITA (KPIs + chart + ações) ═══════ */}

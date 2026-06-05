@@ -33,7 +33,7 @@ function foiContatada(tipo, clienteId, dias) {
   return ts ? differenceInDays(new Date(), new Date(ts)) < dias : false
 }
 
-export default function OportunidadesSemana() {
+export default function OportunidadesSemana({ variant = 'banner', withHeader = false }) {
   const { salaoId, isProfissional } = useSalao()
   const { sucesso, erro } = useToast()
   const navigate = useNavigate()
@@ -129,6 +129,88 @@ export default function OportunidadesSemana() {
   const contatar = (tipo, id) => { marcarContatada(tipo, id); setRefresh(x => x + 1) }
   const msgAniversario = (nome) => aplicarVariaveis(tplAniversario, { nome, salao: nomeSalao })
   const msgRetorno = (nome) => aplicarVariaveis(tplRetorno, { nome, salao: nomeSalao })
+
+  // Pílulas de WhatsApp (uma por cliente) reaproveitadas pelos dois modos.
+  const Pessoas = ({ clientes, montarMsg, tipo }) => (
+    <div style={s.pessoas}>
+      {clientes.slice(0, 3).map(c => (
+        <a
+          key={c.id} style={s.pessoa}
+          href={linkWhatsApp(c.telefone, montarMsg(c.nome))}
+          target="_blank" rel="noreferrer"
+          onClick={() => contatar(tipo, c.id)}
+          aria-label={`Enviar WhatsApp para ${primeiroNome(c.nome)}`}
+        >
+          <span style={s.pessoaNome}>{primeiroNome(c.nome)}</span>
+          <span style={s.pessoaWa}><MessageCircle size={12} /> WhatsApp</span>
+        </a>
+      ))}
+      {clientes.length > 3 && <div style={s.maisPessoas}>+{clientes.length - 3}</div>}
+    </div>
+  )
+
+  // ── Modo "insights": cards compactos que entram na lista de Insights da Home ──
+  // (já retornou null acima quando não há nada — nunca sobra cabeçalho órfão)
+  if (variant === 'insights') {
+    const rows = (
+      <>
+        {aniversariantes.length > 0 && (
+          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #FDF4FF, #FAE8FF)', borderColor: '#E9D5FF' }}>
+            <Cake size={18} color="#86198F" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...s.insightTitle, color: '#701A75' }}>
+                {aniversariantes.length} aniversário{aniversariantes.length > 1 ? 's' : ''} chegando
+              </div>
+              <div style={{ ...s.insightSub, color: '#86198F' }}>Toque no nome pra mandar um carinho no WhatsApp</div>
+              <Pessoas clientes={aniversariantes} montarMsg={msgAniversario} tipo="aniv" />
+            </div>
+          </div>
+        )}
+
+        {sumidas.length > 0 && (
+          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5' }}>
+            <UserX size={18} color="#B91C1C" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...s.insightTitle, color: '#7F1D1D' }}>
+                {sumidas.length} cliente{sumidas.length > 1 ? 's' : ''} pra trazer de volta
+              </div>
+              <div style={{ ...s.insightSub, color: '#991B1B' }}>
+                {ticket > 0 ? `Potencial de ~${formatBRL(sumidas.length * ticket)} se voltarem` : 'Já passaram do tempo de retorno'}
+              </div>
+              <Pessoas clientes={sumidas} montarMsg={msgRetorno} tipo="retorno" />
+            </div>
+          </div>
+        )}
+
+        {diasLivres.length > 0 && (
+          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderColor: '#93C5FD' }}>
+            <CalendarClock size={18} color="#1E40AF" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
+                {diasLivres.length} dia{diasLivres.length > 1 ? 's' : ''} com a agenda livre
+              </div>
+              <div style={{ ...s.insightSub, color: '#1E40AF' }}>
+                {diasLivres.slice(0, 4).map(d => format(d, 'EEE dd/MM', { locale: ptBR })).join(' · ')}
+                {diasLivres.length > 4 ? '…' : ''}
+              </div>
+              <button style={s.acaoBtnSm} onClick={copiarLink}>
+                {agendaPublicaAtiva && slug
+                  ? <><Link2 size={13} /> Copiar link de agendamento</>
+                  : <><ChevronRight size={13} /> Ativar agenda online</>}
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    )
+    if (!withHeader) return rows
+    return (
+      <div style={s.insightsCol}>
+        <div style={s.insightsTitle}>💡 insights pra você</div>
+        {rows}
+      </div>
+    )
+  }
 
   return (
     <div style={s.wrap}>
@@ -233,4 +315,12 @@ const s = {
   pessoaWa: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#15803D' },
   maisPessoas: { display: 'inline-flex', alignItems: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text3)', padding: '5px 8px' },
   acaoBtn: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 'auto', background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+
+  /* ── Modo "insights" (cards compactos na Home) ── */
+  insight: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid', boxShadow: 'var(--shadow-xs)' },
+  insightTitle: { fontSize: 13, fontWeight: 700 },
+  insightSub: { fontSize: 11, marginTop: 2, marginBottom: 8, opacity: 0.9 },
+  acaoBtnSm: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '7px 11px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  insightsCol: { display: 'flex', flexDirection: 'column', gap: 8 },
+  insightsTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' },
 }
