@@ -251,13 +251,15 @@ export default function Agenda() {
       }
       if (ag && googleConectado) {
         try {
-          // Ação explícita da dona: pode mostrar a tela do Google se precisar de token.
-          const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend, true)
+          // Renovação silenciosa (sem popup): já está conectado nas Integrações.
+          const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
           await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
           showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
         } catch (e) {
+          // Não conseguiu renovar em silêncio (sessão Google expirou). Não incomoda
+          // com popup; o agendamento foi salvo e sincroniza ao reconectar.
           console.error('Google Agenda sync erro:', e)
-          showGoogleMsg(`Google Agenda: ${e.message}`, 'error')
+          showGoogleMsg('Salvo! Reconecte o Google em Configurações › Integrações pra sincronizar.', 'info')
         }
       }
       setShowModal(false)
