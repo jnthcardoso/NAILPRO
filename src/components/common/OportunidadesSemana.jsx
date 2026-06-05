@@ -152,6 +152,7 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   // ── Modo "insights": cards compactos que entram na lista de Insights da Home ──
   // (já retornou null acima quando não há nada — nunca sobra cabeçalho órfão)
   if (variant === 'insights') {
+    if (!aniversariantes.length && !sumidas.length) return null
     const rows = (
       <>
         {aniversariantes.length > 0 && (
@@ -182,25 +183,6 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
           </div>
         )}
 
-        {diasLivres.length > 0 && (
-          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderColor: '#93C5FD' }}>
-            <CalendarClock size={18} color="#1E40AF" style={{ flexShrink: 0, marginTop: 1 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
-                {diasLivres.length} dia{diasLivres.length > 1 ? 's' : ''} com a agenda livre
-              </div>
-              <div style={{ ...s.insightSub, color: '#1E40AF' }}>
-                {diasLivres.slice(0, 4).map(d => format(d, 'EEE dd/MM', { locale: ptBR })).join(' · ')}
-                {diasLivres.length > 4 ? '…' : ''}
-              </div>
-              <button style={s.acaoBtnSm} onClick={copiarLink}>
-                {agendaPublicaAtiva && slug
-                  ? <><Link2 size={13} /> Copiar link de agendamento</>
-                  : <><ChevronRight size={13} /> Ativar agenda online</>}
-              </button>
-            </div>
-          </div>
-        )}
       </>
     )
     if (!withHeader) return rows
