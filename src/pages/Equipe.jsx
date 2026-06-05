@@ -171,6 +171,24 @@ export default function Equipe() {
     )
   }
 
+  // 🔒 Gerenciar equipe é exclusivo do plano Salão (Solo/Pro caem aqui mesmo via URL direta)
+  if (!planoPermiteUsuarios) {
+    return (
+      <div style={s.page}>
+        <div style={s.bloqueio}>
+          <Crown size={40} color="#D4AF37" style={{ marginBottom: 12 }} />
+          <div style={s.bloqueioTitulo}>Disponível no plano Salão</div>
+          <div style={s.bloqueioSub}>
+            Logins para a equipe (recepcionista e profissionais) fazem parte do plano Salão.
+          </div>
+          <button style={{ ...s.licencaBtn, marginTop: 16 }} onClick={abrirWhatsappLicencas}>
+            Fazer upgrade para o Salão
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={s.page}>
       {/* Header */}
