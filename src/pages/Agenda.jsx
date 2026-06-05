@@ -173,6 +173,9 @@ export default function Agenda() {
       tentadosGoogleRef.current.add(ag.id)
       try {
         const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
+        // Sem token em memória (sessão nova) → para sem abrir popup; sincroniza
+        // quando a dona reconectar o Google nas Integrações.
+        if (!evento) { pendentes.slice(i).forEach(x => tentadosGoogleRef.current.add(x.id)); break }
         await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
         setAgendamentos(prev => prev.map(x => x.id === ag.id ? { ...x, google_event_id: evento.id } : x))
         ok++
@@ -251,15 +254,14 @@ export default function Agenda() {
       }
       if (ag && googleConectado) {
         try {
-          // Renovação silenciosa (sem popup): já está conectado nas Integrações.
+          // Sem popup: só sincroniza se já houver token em memória (evento != null).
           const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
-          await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
-          showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
+          if (evento) {
+            await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
+            showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
+          }
         } catch (e) {
-          // Não conseguiu renovar em silêncio (sessão Google expirou). Não incomoda
-          // com popup; o agendamento foi salvo e sincroniza ao reconectar.
           console.error('Google Agenda sync erro:', e)
-          showGoogleMsg('Salvo! Reconecte o Google em Configurações › Integrações pra sincronizar.', 'info')
         }
       }
       setShowModal(false)
