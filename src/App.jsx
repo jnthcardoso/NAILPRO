@@ -29,6 +29,7 @@ import { AssinaturaProvider, useAssinatura } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { PageSkeleton } from './components/common/Skeleton'
+import ErrorBoundary from './components/common/ErrorBoundary'
 import { supabase } from './lib/supabase'
 import './index.css'
 
@@ -118,6 +119,7 @@ export default function App() {
       <AssinaturaProvider>
         <ToastProvider>
         <BrowserRouter>
+          <ErrorBoundary>
           <Suspense fallback={<PageSkeleton />}>
           <Routes>
             {/* Rotas públicas */}
@@ -147,6 +149,7 @@ export default function App() {
             </Route>
           </Routes>
           </Suspense>
+          </ErrorBoundary>
         </BrowserRouter>
         </ToastProvider>
       </AssinaturaProvider>

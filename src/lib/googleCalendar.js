@@ -43,7 +43,10 @@ export function desconectarGoogle() {
   _expiry = 0
 }
 
-async function getToken() {
+// interactive=false → refresh silencioso (prompt 'none'): NÃO abre o seletor de
+// conta do Google. Usado no auto-sync, pra não incomodar ao abrir a Agenda.
+// interactive=true → pode mostrar a tela do Google (só em ação explícita da dona).
+async function getToken(interactive = false) {
   if (_token && Date.now() < _expiry) return _token
   return new Promise((resolve, reject) => {
     if (!_client) { reject(new Error('Google não conectado')); return }
@@ -53,12 +56,12 @@ async function getToken() {
       _expiry = Date.now() + (resp.expires_in - 60) * 1000
       resolve(_token)
     }
-    _client.requestAccessToken({ prompt: '' })
+    _client.requestAccessToken({ prompt: interactive ? '' : 'none' })
   })
 }
 
-export async function criarEvento(ag, clienteNome, duracao = 60) {
-  const token = await getToken()
+export async function criarEvento(ag, clienteNome, duracao = 60, interactive = false) {
+  const token = await getToken(interactive)
   const res = await fetch(BASE, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -68,8 +71,8 @@ export async function criarEvento(ag, clienteNome, duracao = 60) {
   return res.json()
 }
 
-export async function excluirEvento(eventId) {
-  const token = await getToken()
+export async function excluirEvento(eventId, interactive = false) {
+  const token = await getToken(interactive)
   const res = await fetch(`${BASE}/${eventId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },

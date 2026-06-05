@@ -251,7 +251,8 @@ export default function Agenda() {
       }
       if (ag && googleConectado) {
         try {
-          const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend)
+          // Ação explícita da dona: pode mostrar a tela do Google se precisar de token.
+          const evento = await criarEvento(ag, ag.clientes?.nome || '', duracaoAtend, true)
           await supabase.from('agendamentos').update({ google_event_id: evento.id }).eq('id', ag.id)
           showGoogleMsg('Evento criado no Google Agenda ✓', 'success')
         } catch (e) {
