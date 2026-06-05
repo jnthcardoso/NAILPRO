@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useIsAdmin } from '../../contexts/AssinaturaContext'
+import { useIsAdmin, useAssinatura } from '../../contexts/AssinaturaContext'
 import { useSalao } from '../../contexts/SalaoContext'
 import { LumenLogo, LumenFlameIcon } from '../common/Brand'
 import Notificacoes from '../common/Notificacoes'
@@ -36,6 +36,9 @@ export default function AppLayout() {
   const navigate = useNavigate()
   const { isAdmin } = useIsAdmin()
   const { gerenciaTudo, isProfissional, podeGerenciarEquipe } = useSalao()
+  const { podeUsuariosAdicionais } = useAssinatura()
+  // "Equipe" só faz sentido no plano Salão (logins de equipe). Solo/Pro não veem.
+  const mostraEquipe = podeGerenciarEquipe && podeUsuariosAdicionais
   const navItems = isProfissional ? navItemsProfissional : navItemsCompleto
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
@@ -66,7 +69,7 @@ export default function AppLayout() {
   const maisItems = [
     ...navItems.filter(i => !i.primary),
     ...(isAdmin ? [{ to: '/app/admin', icon: Shield, label: 'Admin' }] : []),
-    ...(podeGerenciarEquipe ? [{ to: '/app/equipe', icon: UsersRound, label: 'Equipe' }] : []),
+    ...(mostraEquipe ? [{ to: '/app/equipe', icon: UsersRound, label: 'Equipe' }] : []),
     ...(gerenciaTudo ? [{ to: '/app/configuracoes', icon: Settings, label: 'Configurações' }] : []),
   ]
   const maisAtivo = maisItems.some(i => isActive(i.to, i.exact))
@@ -151,7 +154,7 @@ export default function AppLayout() {
               {!isSidebarCollapsed && <span>Admin</span>}
             </NavLink>
           )}
-          {podeGerenciarEquipe && (
+          {mostraEquipe && (
             <NavLink
               to="/app/equipe"
               style={{
