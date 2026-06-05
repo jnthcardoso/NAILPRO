@@ -53,10 +53,20 @@
 html, body, #root {
   height: 100%;
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;        /* trava qualquer "vazamento" horizontal no mobile */
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* iOS/Safari dá zoom automático ao tocar em campo com fonte < 16px e
+   guarda esse zoom por site. Forçar 16px no mobile elimina o zoom travado. */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 button { font-family: var(--font); cursor: pointer; border: none; }
