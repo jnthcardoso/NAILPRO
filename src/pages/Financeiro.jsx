@@ -566,30 +566,31 @@ export default function Financeiro() {
       {!loading && tab === 'resumo' && (
         <div style={s.tabContent}>
           {/* KPIs */}
-          <div style={s.grid4}>
-            <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
-              <div style={s.cardLabel}><DollarSign size={11} /> Recebido</div>
-              <div style={{ ...s.cardValue, color: 'var(--green)' }}>R$ {recebido.toFixed(0)}</div>
-              <div style={s.cardSub}>{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
+          <div style={s.grid4} className="fin-resumo-grid">
+            <div style={{ ...s.card, borderTop: '3px solid var(--green)' }} className="fin-resumo-card">
+              <div style={s.cardLabel} className="fin-card-label"><DollarSign size={11} /> Recebido</div>
+              <div style={{ ...s.cardValue, color: 'var(--green)' }} className="fin-card-value">R$ {recebido.toFixed(0)}</div>
+              <div style={s.cardSub} className="fin-card-sub">{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
             </div>
-            <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
-              <div style={s.cardLabel}><Receipt size={11} /> Despesas</div>
-              <div style={{ ...s.cardValue, color: '#B91C1C' }}>R$ {totalDespesas.toFixed(0)}</div>
-              <div style={s.cardSub}>{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
+            <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }} className="fin-resumo-card">
+              <div style={s.cardLabel} className="fin-card-label"><Receipt size={11} /> Despesas</div>
+              <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">R$ {totalDespesas.toFixed(0)}</div>
+              <div style={s.cardSub} className="fin-card-sub">{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
             </div>
             <div
               style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}`, cursor: 'pointer' }}
+              className="fin-resumo-card"
               onClick={() => { setTab('receitas'); setFiltro('pendente') }}
               title="Ver receitas pendentes"
             >
-              <div style={s.cardLabel}>⏰ A receber</div>
-              <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }}>R$ {pendente.toFixed(0)}</div>
-              <div style={s.cardSub}>{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
+              <div style={s.cardLabel} className="fin-card-label">⏰ A receber</div>
+              <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }} className="fin-card-value">R$ {pendente.toFixed(0)}</div>
+              <div style={s.cardSub} className="fin-card-sub">{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
             </div>
-            <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }}>
-              <div style={s.cardLabel}>{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
-              <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }}>R$ {lucro.toFixed(0)}</div>
-              <div style={s.cardSub}>{margemLucro.toFixed(0)}% de margem</div>
+            <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }} className="fin-resumo-card">
+              <div style={s.cardLabel} className="fin-card-label">{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
+              <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }} className="fin-card-value">R$ {lucro.toFixed(0)}</div>
+              <div style={s.cardSub} className="fin-card-sub">{margemLucro.toFixed(0)}% de margem</div>
             </div>
           </div>
 

@@ -67,6 +67,24 @@ html, body, #root {
   input, select, textarea {
     font-size: 16px !important;
   }
+
+  /* Resumo financeiro no celular: cards viram barras horizontais empilhadas
+     (label+sub à esquerda, valor à direita). Desktop fica inalterado. */
+  .fin-resumo-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .fin-resumo-card {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas: "label value" "sub value" !important;
+    align-items: center !important;
+    column-gap: 14px !important;
+    padding: 14px 16px !important;
+  }
+  .fin-card-label { grid-area: label; margin-bottom: 0 !important; }
+  .fin-card-sub   { grid-area: sub; margin-top: 2px !important; }
+  .fin-card-value { grid-area: value; text-align: right; font-size: 23px !important; }
 }
 
 button { font-family: var(--font); cursor: pointer; border: none; }
