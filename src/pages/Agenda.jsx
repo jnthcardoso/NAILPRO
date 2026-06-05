@@ -114,8 +114,9 @@ export default function Agenda() {
     let inicio, fim
     if (view === 'Dia') { inicio = fim = format(dataSel, 'yyyy-MM-dd') }
     else if (view === 'Semana') {
-      inicio = format(startOfWeek(dataSel, { weekStartsOn: 1 }), 'yyyy-MM-dd')
-      fim = format(endOfWeek(dataSel, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+      // Domingo–sábado (locale ptBR) — igual às colunas exibidas na view de semana.
+      inicio = format(startOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd')
+      fim = format(endOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd')
     } else {
       inicio = format(startOfMonth(dataSel), 'yyyy-MM-dd')
       fim = format(endOfMonth(dataSel), 'yyyy-MM-dd')
