@@ -20,7 +20,6 @@ import Skeleton from '../components/common/Skeleton'
 import OportunidadesSemana from '../components/common/OportunidadesSemana'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
-import { trackPagamentoConfirmado } from '../lib/analytics'
 
 const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -35,8 +34,10 @@ export default function Home() {
     const p = new URLSearchParams(window.location.search).get('pagamento')
     if (p === 'sucesso') {
       window.history.replaceState({}, '', window.location.pathname)
-      // Dispara evento de purchase no GA4 + Meta Pixel
-      trackPagamentoConfirmado('lumen', 'assinatura', 0) // valores reais vêm do webhook
+      // A conversao de compra (Purchase) NAO e disparada aqui: ela vai pelo
+      // servidor (Conversions API, no webhook do Asaas) com o valor real e de
+      // forma confiavel — mesmo que a cliente feche a aba sem voltar pro app.
+      // Disparar tambem aqui contaria a venda 2x. Aqui so mostramos o banner.
       return true
     }
     return false

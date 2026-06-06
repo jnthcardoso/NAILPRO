@@ -1,10 +1,78 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Valor cobrado (em reais) por plano+ciclo — espelha asaas-criar-checkout.
+// Mensal = valor do mes; Anual = valor do ANO (cobranca unica parcelavel).
+// Usado como "value" da conversao enviada ao Meta/GA (receita real -> otimizacao por ROAS).
+const PRECOS: Record<string, number> = {
+  solo_mensal:  127.00,
+  solo_anual:  1164.00,
+  pro_mensal:   229.00,
+  pro_anual:   2148.00,
+  salao_mensal: 249.00,
+  salao_anual: 2388.00,
+}
+
+// SHA-256 em hex (exigido pelo Meta para dados de contato como e-mail).
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Envia a compra ao Meta pela Conversions API (server-side). Roda mesmo que a
+// cliente feche a aba apos pagar; manda o valor real para o Meta otimizar.
+async function enviarCompraMeta(opts: {
+  pixelId: string; token: string; appUrl: string;
+  eventId: string; emailHash: string | null; userIdHash: string;
+  valor: number; plano: string; ciclo: string;
+}): Promise<void> {
+  const userData: Record<string, unknown> = { external_id: [opts.userIdHash] }
+  if (opts.emailHash) userData.em = [opts.emailHash]
+
+  const payload = {
+    data: [{
+      event_name: 'Purchase',
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'website',
+      event_id: opts.eventId, // dedup: se o Asaas reenviar o webhook, nao conta 2x
+      event_source_url: `${opts.appUrl}/app`,
+      user_data: userData,
+      custom_data: { currency: 'BRL', value: opts.valor, content_name: `Lumen ${opts.plano} ${opts.ciclo}` },
+    }],
+  }
+  const url = `https://graph.facebook.com/v21.0/${opts.pixelId}/events?access_token=${opts.token}`
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+  if (!r.ok) console.error('Meta CAPI erro:', r.status, await r.text())
+  else console.log('Meta CAPI Purchase enviada:', opts.valor, opts.plano, opts.ciclo)
+}
+
+// Envia a compra ao GA4 pelo Measurement Protocol (opcional — so dispara se os
+// dois segredos estiverem configurados). Mantem o GA4 com receita real tambem.
+async function enviarCompraGa4(opts: {
+  measurementId: string; apiSecret: string;
+  clientId: string; eventId: string; valor: number; plano: string; ciclo: string;
+}): Promise<void> {
+  const url = `https://www.google-analytics.com/mp/collect?measurement_id=${opts.measurementId}&api_secret=${opts.apiSecret}`
+  const payload = {
+    client_id: opts.clientId,
+    events: [{
+      name: 'purchase',
+      params: {
+        currency: 'BRL', value: opts.valor, transaction_id: opts.eventId,
+        items: [{ item_name: `Lumen ${opts.plano} ${opts.ciclo}`, price: opts.valor, quantity: 1 }],
+      },
+    }],
+  }
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+  if (!r.ok) console.error('GA4 MP erro:', r.status, await r.text())
+  else console.log('GA4 purchase enviada:', opts.valor, opts.plano, opts.ciclo)
+}
+
 // Eventos de cobranca do Asaas (nao ha webhook de assinatura — so de cobranca).
 Deno.serve(async (req: Request) => {
   const key = Deno.env.get('ASAAS_API_KEY') ?? ''
   const base = key.includes('_hmlg_') ? 'https://api-sandbox.asaas.com/v3' : 'https://api.asaas.com/v3'
   const tokenEsperado = Deno.env.get('ASAAS_WEBHOOK_TOKEN') ?? ''
+  const APP_URL = Deno.env.get('APP_URL') ?? 'https://lumengestaoempresarial.com.br'
 
   // Seguranca: se um token foi configurado, exige que bata com o header do Asaas.
   const tokenRecebido = req.headers.get('asaas-access-token') ?? ''
@@ -72,6 +140,37 @@ Deno.serve(async (req: Request) => {
       const { error } = await supabase.from('assinaturas').update(upd).eq('user_id', userId)
       if (error) console.error('Erro update (ok):', error.message)
       else console.log('Assinatura ATIVADA/renovada:', userId, plano, ciclo)
+
+      // ── Conversao server-side (compra) — Meta + GA4 ──────────────────
+      // So na 1a cobranca confirmada (acima ja barramos parcelas 2..12).
+      // E robusto: qualquer erro aqui nao pode derrubar o webhook.
+      try {
+        const valor = PRECOS[`${plano}_${ciclo}`] ?? 0
+        const eventId = String(payment?.id || `${userId}_${plano}_${ciclo}`)
+        if (valor > 0) {
+          const pixelId = Deno.env.get('META_PIXEL_ID') ?? ''
+          const metaToken = Deno.env.get('META_CAPI_TOKEN') ?? ''
+          if (pixelId && metaToken) {
+            // E-mail da cliente (para casamento de evento) — hash SHA-256.
+            let emailHash: string | null = null
+            const { data: u } = await supabase.auth.admin.getUserById(userId)
+            const email = u?.user?.email
+            if (email) emailHash = await sha256Hex(email.trim().toLowerCase())
+            const userIdHash = await sha256Hex(userId)
+            await enviarCompraMeta({ pixelId, token: metaToken, appUrl: APP_URL, eventId, emailHash, userIdHash, valor, plano, ciclo })
+          } else {
+            console.warn('CAPI nao configurada (faltam META_PIXEL_ID / META_CAPI_TOKEN)')
+          }
+
+          const ga4Id = Deno.env.get('GA4_MEASUREMENT_ID') ?? ''
+          const ga4Secret = Deno.env.get('GA4_API_SECRET') ?? ''
+          if (ga4Id && ga4Secret) {
+            await enviarCompraGa4({ measurementId: ga4Id, apiSecret: ga4Secret, clientId: userId, eventId, valor, plano, ciclo })
+          }
+        }
+      } catch (convErr) {
+        console.error('Erro ao enviar conversao (ignorado):', convErr)
+      }
     } else if (inadimplente) {
       // Tolerancia: marca past_due (NAO bloqueia o acesso de imediato) ate o Asaas re-tentar.
       const { error } = await supabase.from('assinaturas').update({ status: 'past_due', updated_at: now.toISOString() }).eq('user_id', userId)
