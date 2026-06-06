@@ -35,7 +35,13 @@ export function trackInicioAssinatura(plano, ciclo, valorReais) {
   pixel('InitiateCheckout', { value: valorReais, currency: 'BRL', content_name: `Lumen ${plano} ${ciclo}` })
 }
 
-/** Pagamento confirmado (dispara na Home após retorno do MP com ?pagamento=sucesso) */
+/**
+ * ⚠️ NÃO USAR no cliente. A conversão de compra (Purchase) é enviada pelo
+ * SERVIDOR — Meta Conversions API no webhook do Asaas
+ * (supabase/functions/asaas-webhook/index.ts) — com o valor real e de forma
+ * confiável. Religar este disparo no navegador contaria a venda DUAS VEZES.
+ * Mantido apenas como referência.
+ */
 export function trackPagamentoConfirmado(plano, ciclo, valorReais) {
   ga('purchase', {
     currency: 'BRL',
