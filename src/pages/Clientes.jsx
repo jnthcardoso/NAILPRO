@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown } from 'lucide-react'
+import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown, Upload, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -34,6 +35,12 @@ export default function Clientes() {
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
+  // Importação de clientes (planilha)
+  const [showImport, setShowImport] = useState(false)
+  const [importLinhas, setImportLinhas] = useState([])
+  const [importResumo, setImportResumo] = useState(null)
+  const [importNomeArquivo, setImportNomeArquivo] = useState('')
+  const [importando, setImportando] = useState(false)
 
   const ITENS_POR_PAGINA = 20
 
@@ -109,6 +116,107 @@ export default function Clientes() {
   // ── UTC-safe date parse ──
   const parseUADate = (d) => d ? dataParaDate(d) : null
 
+  // ── Importação de clientes (planilha .xlsx/.csv) ──────────────────────
+  const normalizar = (txt) => String(txt).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  // Pega o valor da 1ª coluna cujo cabeçalho contém um dos candidatos (já normalizados)
+  function valorColuna(row, candidatos) {
+    const keys = Object.keys(row)
+    for (const cand of candidatos) {
+      const k = keys.find(key => normalizar(key).includes(cand))
+      if (k != null && row[k] != null && String(row[k]).trim() !== '') return row[k]
+    }
+    return ''
+  }
+  // Aceita Date (Excel), dd/mm/aaaa e aaaa-mm-dd → 'aaaa-mm-dd'; senão null
+  function parseDataImport(v) {
+    if (!v) return null
+    if (v instanceof Date && !isNaN(v)) {
+      return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`
+    }
+    const str = String(v).trim()
+    let m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/)
+    if (m) { let [, d, mo, y] = m; if (y.length === 2) y = (Number(y) > 30 ? '19' : '20') + y; return `${y.padStart(4, '0')}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}` }
+    m = str.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/)
+    if (m) { const [, y, mo, d] = m; return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}` }
+    return null
+  }
+
+  function baixarModeloClientes() {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Nome', 'WhatsApp', 'Nascimento', 'E-mail', 'Observações', 'Retorno (dias)'],
+      ['Maria Silva', '54999990000', '15/03/1990', '', 'Alergia a acetona', '30'],
+      ['Ana Souza', '51988887777', '22/11/1985', 'ana@email.com', 'Prefere gel', ''],
+    ])
+    ws['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 22 }, { wch: 26 }, { wch: 14 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Clientes')
+    XLSX.writeFile(wb, 'modelo-clientes-lumen.xlsx')
+  }
+
+  async function processarArquivoImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportNomeArquivo(file.name)
+    try {
+      const buf = await file.arrayBuffer()
+      const wb = XLSX.read(buf, { type: 'array', cellDates: true })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' })
+      const existentesTel = new Set((clientes || []).map(c => (c.telefone || '').replace(/\D/g, '')).filter(Boolean))
+      const vistosTel = new Set()
+      const validas = []
+      let semNome = 0, duplicadas = 0
+      for (const row of rows) {
+        const nome = String(valorColuna(row, ['nome', 'cliente'])).trim()
+        if (!nome) { semNome++; continue }
+        const tel = unformatTelefone(String(valorColuna(row, ['whatsapp', 'telefone', 'celular', 'fone', 'contato'])))
+        if (tel && (existentesTel.has(tel) || vistosTel.has(tel))) { duplicadas++; continue }
+        if (tel) vistosTel.add(tel)
+        const ret = parseInt(valorColuna(row, ['retorno']), 10)
+        validas.push({
+          nome: nome.slice(0, 120),
+          telefone: tel || null,
+          email: String(valorColuna(row, ['mail'])).trim() || null,
+          data_nascimento: parseDataImport(valorColuna(row, ['nascimento', 'aniversario', 'nasc'])),
+          observacoes: String(valorColuna(row, ['observ', 'obs'])).trim() || null,
+          dias_retorno: ret > 0 ? ret : null,
+        })
+      }
+      setImportLinhas(validas)
+      setImportResumo({ total: rows.length, validas: validas.length, semNome, duplicadas })
+    } catch (err) {
+      erro('Não consegui ler o arquivo. Use o modelo (.xlsx) ou um .csv simples.')
+    }
+    e.target.value = ''
+  }
+
+  function fecharImport() {
+    setShowImport(false); setImportLinhas([]); setImportResumo(null); setImportNomeArquivo('')
+  }
+
+  async function confirmarImportacao() {
+    if (!importLinhas.length) return
+    setImportando(true)
+    let aInserir = importLinhas, cortadas = 0
+    const limite = plano?.limites?.clientes ?? Infinity
+    if (limite !== Infinity) {
+      const espaco = Math.max(0, limite - ativas.length)
+      if (importLinhas.length > espaco) { aInserir = importLinhas.slice(0, espaco); cortadas = importLinhas.length - espaco }
+    }
+    if (!aInserir.length) {
+      setImportando(false)
+      erro(`Seu plano (${plano?.nome}) já está no limite de ${limite} clientes. Faça upgrade pra importar mais.`)
+      return
+    }
+    const payload = aInserir.map(c => ({ ...c, salao_id: salaoId, user_id: user.id }))
+    const { error } = await supabase.from('clientes').insert(payload)
+    setImportando(false)
+    if (error) { erro('Erro ao importar: ' + error.message); return }
+    await loadClientes()
+    fecharImport()
+    sucesso(`${aInserir.length} cliente(s) importada(s)!${cortadas ? ` (${cortadas} não couberam no limite do plano)` : ''}`)
+  }
+
   // Cliente "sumida": passou do ciclo de retorno individual (dias_retorno)
   // ou, na ausência dele, do padrão do salão (diasAlerta).
   const estaSumida = (c) => {
@@ -159,6 +267,12 @@ export default function Clientes() {
       <div style={s.searchBar}>
         <Search size={16} color="var(--text3)" />
         <input style={s.searchInput} placeholder="Buscar cliente..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <button style={s.btnImportar} onClick={() => setShowImport(true)}>
+          <Upload size={14} /> Importar clientes
+        </button>
       </div>
 
       {/* Aviso de limite (Starter) */}
@@ -357,6 +471,39 @@ export default function Clientes() {
             <button style={s.btnSecondary} onClick={() => { setShowModal(false); setErros({}) }}>Cancelar</button>
         </Modal>
       )}
+
+      {showImport && (
+        <Modal onClose={fecharImport} variant="sheet" boxStyle={s.modal}>
+          <div style={s.modalTitle}>Importar clientes</div>
+          <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, margin: '0 0 14px' }}>
+            Tem uma lista de clientes (caderno, planilha do celular)? Baixe o modelo, preencha e suba aqui — todas de uma vez.
+          </p>
+
+          <button style={{ ...s.btnSecondary, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={baixarModeloClientes}>
+            <Download size={15} /> Baixar planilha modelo (.xlsx)
+          </button>
+
+          <label style={s.uploadBox}>
+            <input type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={processarArquivoImport} />
+            <Upload size={20} color="var(--pink)" />
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{importNomeArquivo || 'Escolher arquivo (.xlsx ou .csv)'}</span>
+            <span style={{ fontSize: 11, color: 'var(--text3)' }}>Colunas: Nome, WhatsApp, Nascimento, E-mail, Observações, Retorno</span>
+          </label>
+
+          {importResumo && (
+            <div style={s.importResumo}>
+              <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 14 }}>✅ {importResumo.validas} cliente(s) prontas pra importar</div>
+              {importResumo.duplicadas > 0 && <div style={{ marginTop: 3 }}>• {importResumo.duplicadas} já cadastradas (puladas pelo telefone)</div>}
+              {importResumo.semNome > 0 && <div style={{ marginTop: 3 }}>• {importResumo.semNome} linha(s) sem nome (ignoradas)</div>}
+            </div>
+          )}
+
+          <button style={s.btnPrimary} onClick={confirmarImportacao} disabled={importando || !importLinhas.length}>
+            {importando ? 'Importando...' : importLinhas.length ? `Importar ${importLinhas.length} cliente(s)` : 'Selecione um arquivo'}
+          </button>
+          <button style={s.btnSecondary} onClick={fecharImport}>Cancelar</button>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -391,6 +538,9 @@ const s = {
   empty: { padding: '40px 0', textAlign: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
+  btnImportar: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '8px 14px', fontSize: 12.5, fontWeight: 700, color: 'var(--pink)', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-xs)' },
+  uploadBox: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, textAlign: 'center', border: '2px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '20px 14px', cursor: 'pointer', background: 'var(--surface2)', marginBottom: 12 },
+  importResumo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', fontSize: 12.5, color: 'var(--text2)', marginBottom: 12 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: labelBase,
   input: { ...inputBase, outline: 'none', transition: 'border 0.15s' },
