@@ -10,6 +10,7 @@ on:
   push:                    # roda quando ESTE arquivo muda (forma de testar sem o botão)
     paths:
       - '.github/workflows/backup-diario.yml'
+    # re-teste 2
 
 jobs:
   backup:
