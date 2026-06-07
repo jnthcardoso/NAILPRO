@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift, UsersRound, Link2 } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift, UsersRound, Link2, Target, Plug, ClipboardList } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
@@ -8,11 +8,14 @@ import { linkWhatsAppCompleto } from '../lib/formatters'
 
 const BENEFICIOS = [
   { id: 'agenda', icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Todos os atendimentos por dia, semana ou mês. Chega de caderninho e horário esquecido.' },
-  { id: 'financeiro', icon: DollarSign, titulo: 'Financeiro que você entende', texto: 'Quanto entrou, quanto saiu e quanto sobrou — com metas e projeção de receita.' },
+  { id: 'financeiro', icon: DollarSign, titulo: 'Financeiro que você entende', texto: 'Quanto entrou, quanto saiu e quanto sobrou — com DRE e despesas por categoria.' },
   { id: 'clientes', icon: Users, titulo: 'Nunca perca uma cliente', texto: 'Histórico, preferências, aniversários e alerta de clientes que sumiram.' },
   { id: 'lembretes', icon: Bell, titulo: 'Lembretes no WhatsApp', texto: 'Reduza faltas com lembrete automático. A cliente confirma com um clique.' },
   { id: 'online', icon: Sparkles, titulo: 'Agenda online própria', texto: 'Seu link pra divulgar: a cliente marca sozinha e cai direto na sua agenda.' },
   { id: 'equipe', icon: UsersRound, titulo: 'Equipe organizada', texto: 'Cada profissional com login próprio, vendo só a própria agenda e financeiro.' },
+  { id: 'metas', icon: Target, titulo: 'Metas que te movem', texto: 'Defina a meta do mês e acompanhe o progresso com projeção inteligente de receita.' },
+  { id: 'integracoes', icon: Plug, titulo: 'Integrações e praticidade', texto: 'Google Agenda, relatórios em PDF e acesso no celular e no PC — sem instalar nada.' },
+  { id: 'anamnese', icon: ClipboardList, titulo: 'Ficha de anamnese', texto: 'Ficha digital da cliente: alergias, saúde das unhas e histórico, tudo guardado.', emBreve: true },
 ]
 
 const FAQ_ITEMS = [
@@ -231,12 +234,13 @@ export default function Landing() {
           {BENEFICIOS.map(b => {
             const Ico = b.icon
             return (
-              <div key={b.id} style={s.featCard}>
+              <div key={b.id} style={{ ...s.featCard, ...(b.emBreve ? s.featCardSoon : {}) }}>
                 <div style={s.featVisual}><FeatureVisual id={b.id} /></div>
                 <div style={s.featBody}>
                   <div style={s.featHead}>
                     <span style={s.featIcon}><Ico size={15} color="var(--pink)" /></span>
                     <span style={s.featTitulo}>{b.titulo}</span>
+                    {b.emBreve && <span style={s.emBreve}>Em breve</span>}
                   </div>
                   <div style={s.benTexto}>{b.texto}</div>
                 </div>
@@ -564,6 +568,23 @@ const fv = {
   equipe: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
   avatarSm: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #fff', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   equipeTxt: { fontSize: 10.5, fontWeight: 600, color: '#6b5560', textAlign: 'center' },
+
+  metas: { width: '100%', maxWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 },
+  metaTop: { display: 'flex', justifyContent: 'space-between', fontSize: 10.5, fontWeight: 700, color: '#6b5560' },
+  metaPct: { color: '#8B2655' },
+  metaTrack: { height: 10, borderRadius: 'var(--radius-pill)', background: '#EAD5E2', overflow: 'hidden' },
+  metaFill: { width: '72%', height: '100%', borderRadius: 'var(--radius-pill)', background: 'linear-gradient(90deg, #C73B6F, #8B2655)' },
+  metaVal: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5, fontWeight: 700, color: '#180712' },
+  metaProj: { fontFamily: 'inherit', fontSize: 10.5, fontWeight: 600, color: '#9b8690' },
+
+  integ: { display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' },
+  integPill: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff', border: '1px solid #EAD5E2', borderRadius: 'var(--radius-pill)', fontSize: 10.5, fontWeight: 600, color: '#180712', padding: '5px 12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+
+  anam: { width: '100%', maxWidth: 200, background: '#fff', border: '1px solid #EAD5E2', borderRadius: 12, padding: '10px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  anamTitle: { fontSize: 10.5, fontWeight: 800, color: '#8B2655', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.4px' },
+  anamRow: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: '#180712', padding: '2px 0' },
+  anamCheck: { width: 15, height: 15, borderRadius: 4, background: '#DCFCE7', color: '#15803D', fontSize: 10, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  anamCheckOff: { width: 15, height: 15, borderRadius: 4, border: '1.5px solid #EAD5E2', color: '#bbabb3', fontSize: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 }
 
 const dep = {
@@ -625,6 +646,34 @@ function FeatureVisual({ id }) {
       <div style={fv.online}>
         <div style={fv.linkPill}><Link2 size={12} /> lumen.app/agendar/voce</div>
         <div style={fv.reserva}><Check size={12} color="#15803D" /> Nova reserva: Carla · 16:00</div>
+      </div>
+    )
+  }
+  if (id === 'metas') {
+    return (
+      <div style={fv.metas}>
+        <div style={fv.metaTop}><span>Meta do mês</span><span style={fv.metaPct}>72%</span></div>
+        <div style={fv.metaTrack}><div style={fv.metaFill} /></div>
+        <div style={fv.metaVal}>R$ 4.320 <span style={fv.metaProj}>de R$ 6.000</span></div>
+      </div>
+    )
+  }
+  if (id === 'integracoes') {
+    return (
+      <div style={fv.integ}>
+        <span style={fv.integPill}>📅 Google Agenda</span>
+        <span style={fv.integPill}>📄 Relatório PDF</span>
+        <span style={fv.integPill}>📱 Celular & PC</span>
+      </div>
+    )
+  }
+  if (id === 'anamnese') {
+    return (
+      <div style={fv.anam}>
+        <div style={fv.anamTitle}>Ficha da cliente</div>
+        <div style={fv.anamRow}><span style={fv.anamCheck}>✓</span> Alergias</div>
+        <div style={fv.anamRow}><span style={fv.anamCheck}>✓</span> Saúde das unhas</div>
+        <div style={fv.anamRow}><span style={fv.anamCheckOff}>○</span> Observações</div>
       </div>
     )
   }
@@ -746,6 +795,8 @@ const s = {
   featHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 },
   featIcon: { width: 28, height: 28, borderRadius: 8, background: 'var(--pink-light, #FAF0F4)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   featTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 16, fontWeight: 700, color: 'var(--text)' },
+  featCardSoon: { borderStyle: 'dashed', borderColor: '#E6C260', background: 'linear-gradient(180deg, #FFFDF6 0%, #fff 60%)' },
+  emBreve: { fontSize: 9.5, fontWeight: 800, color: '#8A6D1B', background: 'linear-gradient(135deg, #F5E2A0, #E6C260)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' },
 
   secaoEquipe: { background: NOIR, color: '#fff' },
   equipeInner: { maxWidth: 760, margin: '0 auto', padding: '56px 20px', textAlign: 'center' },
