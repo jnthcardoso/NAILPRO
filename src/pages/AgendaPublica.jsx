@@ -60,17 +60,28 @@ export default function AgendaPublica() {
 
   async function loadConfig() {
     setErroRede(false)
-    // Apenas colunas públicas - não expor meta_mensal, configs internas etc
+    // 1) Agenda do salão (dona). Apenas colunas públicas - não expor configs internas.
     const { data, error } = await supabase
       .from('configuracoes')
       .select('slug, nome_salao, whatsapp, servicos_padrao, horario_inicio, horario_fim, duracao_atendimento, dias_semana, agenda_externa_url, agenda_publica_ativa')
       .eq('slug', slug)
       .eq('agenda_publica_ativa', true)
       .maybeSingle()
+    if (error) { setLoading(false); setErroRede(true); return }
+    if (data) { setLoading(false); setConfig(data); return }
+
+    // 2) Não achou no salão → tenta o link PRÓPRIO de uma manicure (agenda_profissional).
+    const { data: prof, error: erroProf } = await supabase
+      .from('agenda_profissional')
+      .select('slug, nome_exibicao, whatsapp, servicos_padrao, horario_inicio, horario_fim, duracao_atendimento, dias_semana, agenda_publica_ativa')
+      .eq('slug', slug)
+      .eq('agenda_publica_ativa', true)
+      .maybeSingle()
     setLoading(false)
-    // Erro de rede ≠ agenda inexistente — não mostrar "não encontrada" indevidamente
-    if (error) { setErroRede(true); return }
-    if (!data) { setNotFound(true) } else { setConfig(data) }
+    if (erroProf) { setErroRede(true); return }
+    if (!prof) { setNotFound(true); return }
+    // Mapeia para o mesmo formato da agenda do salão (nome_exibicao → nome_salao).
+    setConfig({ ...prof, nome_salao: prof.nome_exibicao || 'Agenda', agenda_externa_url: null })
   }
 
   async function carregarSlotsOcupados() {

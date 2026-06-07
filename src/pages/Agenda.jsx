@@ -192,7 +192,10 @@ export default function Agenda() {
   }
 
   async function loadGoogleConfig() {
-    const { data } = await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('salao_id', salaoId).maybeSingle()
+    // Manicure usa o Google Agenda DELA (agenda_profissional); dona/recepção, o do salão.
+    const { data } = isProfissional && membroId
+      ? await supabase.from('agenda_profissional').select('google_conectado, duracao_atendimento').eq('membro_id', membroId).maybeSingle()
+      : await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('salao_id', salaoId).maybeSingle()
     if (data?.duracao_atendimento) setDuracaoAtend(data.duracao_atendimento)
     if (data?.google_conectado) {
       setGoogleConectado(true)

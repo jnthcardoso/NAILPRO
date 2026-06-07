@@ -21,11 +21,12 @@ const navItemsCompleto = [
   { to: '/indicacao', icon: Gift, label: 'Indique e ganhe' },
 ]
 
-// Profissional: só a própria agenda + o próprio financeiro
+// Profissional: só a própria agenda + o próprio financeiro + suas configurações
 const navItemsProfissional = [
   { to: '/app', icon: Home, label: 'Início', exact: true, primary: true },
   { to: '/app/agenda', icon: Calendar, label: 'Agenda', primary: true },
   { to: '/app/financeiro', icon: DollarSign, label: 'Financeiro', primary: true },
+  { to: '/app/minhas-configuracoes', icon: Settings, label: 'Configurações' },
   { to: '/indicacao', icon: Gift, label: 'Indique e ganhe', primary: true },
 ]
 

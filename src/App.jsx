@@ -17,6 +17,7 @@ const Metas = lazy(() => import('./pages/Metas'))
 const BemVindo = lazy(() => import('./pages/BemVindo'))
 const Lembretes = lazy(() => import('./pages/Lembretes'))
 const Planos = lazy(() => import('./pages/Planos'))
+const MinhasConfiguracoes = lazy(() => import('./pages/MinhasConfiguracoes'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Equipe = lazy(() => import('./pages/Equipe'))
 const Avisos = lazy(() => import('./pages/Avisos'))
@@ -143,6 +144,7 @@ export default function App() {
               <Route path="clientes/:id" element={<RequireGerencia><ClienteDetalhe /></RequireGerencia>} />
               <Route path="financeiro" element={<Financeiro />} />
               <Route path="configuracoes" element={<RequireGerencia><Configuracoes /></RequireGerencia>} />
+              <Route path="minhas-configuracoes" element={<MinhasConfiguracoes />} />
               <Route path="equipe" element={<Equipe />} />
               <Route path="admin" element={<Admin />} />
               <Route path="avisos" element={<Avisos />} />
