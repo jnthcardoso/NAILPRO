@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown, Upload, Download } from 'lucide-react'
-import * as XLSX from 'xlsx'
+// xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -141,7 +141,8 @@ export default function Clientes() {
     return null
   }
 
-  function baixarModeloClientes() {
+  async function baixarModeloClientes() {
+    const XLSX = await import('xlsx')
     const ws = XLSX.utils.aoa_to_sheet([
       ['Nome', 'WhatsApp', 'Nascimento', 'E-mail', 'Observações', 'Retorno (dias)'],
       ['Maria Silva', '54999990000', '15/03/1990', '', 'Alergia a acetona', '30'],
@@ -158,6 +159,7 @@ export default function Clientes() {
     if (!file) return
     setImportNomeArquivo(file.name)
     try {
+      const XLSX = await import('xlsx')
       const buf = await file.arrayBuffer()
       const wb = XLSX.read(buf, { type: 'array', cellDates: true })
       const ws = wb.Sheets[wb.SheetNames[0]]
