@@ -78,6 +78,39 @@ export default function Configuracoes() {
   const [senhaSaving, setSenhaSaving] = useState(false)
   const [senhaMsg, setSenhaMsg] = useState(null)
 
+  // ── Confirmação de e-mail (opcional — só um lembrete, não trava nada) ──
+  const [emailConfirmado, setEmailConfirmado] = useState(!!user?.user_metadata?.email_confirmado)
+  const [confirmStep, setConfirmStep] = useState('idle') // 'idle' | 'codigo'
+  const [codigoEmail, setCodigoEmail] = useState('')
+  const [confirmLoading, setConfirmLoading] = useState(false)
+  const [confirmMsg, setConfirmMsg] = useState(null)
+  const [cooldownEmail, setCooldownEmail] = useState(0)
+
+  useEffect(() => { setEmailConfirmado(!!user?.user_metadata?.email_confirmado) }, [user])
+  useEffect(() => {
+    if (cooldownEmail <= 0) return
+    const t = setTimeout(() => setCooldownEmail(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldownEmail])
+
+  async function enviarCodigoEmail() {
+    if (!user?.email) return
+    setConfirmLoading(true); setConfirmMsg(null)
+    const { error } = await supabase.auth.signInWithOtp({ email: user.email, options: { shouldCreateUser: false } })
+    setConfirmLoading(false)
+    if (error) { setConfirmMsg({ tipo: 'erro', texto: 'Não foi possível enviar agora. Tente em alguns minutos.' }); return }
+    setConfirmStep('codigo'); setCooldownEmail(60)
+  }
+
+  async function confirmarCodigoEmail() {
+    setConfirmLoading(true); setConfirmMsg(null)
+    const { error } = await supabase.auth.verifyOtp({ email: user.email, token: codigoEmail, type: 'email' })
+    if (error) { setConfirmLoading(false); setConfirmMsg({ tipo: 'erro', texto: 'Código inválido ou expirado. Confira ou reenvie.' }); return }
+    await supabase.auth.updateUser({ data: { email_confirmado: true } })
+    setConfirmLoading(false); setEmailConfirmado(true); setConfirmStep('idle'); setCodigoEmail('')
+    sucesso('E-mail confirmado! ✅')
+  }
+
   useEffect(() => {
     if (user) setAvatarUrl(user.user_metadata?.avatar_url || '')
   }, [user])
@@ -813,6 +846,55 @@ export default function Configuracoes() {
         <div style={s.infoRow}>
           <span style={s.infoLabel}>E-mail</span>
           <span style={s.infoValue}>{user?.email}</span>
+        </div>
+
+        {/* Confirmação de e-mail (opcional) */}
+        <div style={{ marginTop: 8 }}>
+          {emailConfirmado ? (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: 'var(--green)' }}>
+              <Check size={15} /> E-mail confirmado
+            </div>
+          ) : confirmStep === 'codigo' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)' }}>Enviamos um código de 6 dígitos para <strong>{user?.email}</strong>. Confira sua caixa de entrada (e o spam) e digite abaixo:</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  style={{ ...s.input, letterSpacing: 4, textAlign: 'center', fontWeight: 700 }}
+                  inputMode="numeric"
+                  placeholder="000000"
+                  value={codigoEmail}
+                  onChange={e => setCodigoEmail(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+                <button
+                  style={{ ...s.btnPrimary, marginTop: 0, padding: '10px 16px', whiteSpace: 'nowrap' }}
+                  onClick={confirmarCodigoEmail}
+                  disabled={confirmLoading || codigoEmail.length < 6}
+                >
+                  {confirmLoading ? '...' : 'Confirmar'}
+                </button>
+              </div>
+              <button
+                style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', fontFamily: 'inherit', fontSize: 11.5, fontWeight: 600, color: cooldownEmail > 0 ? 'var(--text3)' : 'var(--pink)', cursor: cooldownEmail > 0 ? 'default' : 'pointer' }}
+                onClick={enviarCodigoEmail}
+                disabled={cooldownEmail > 0 || confirmLoading}
+              >
+                {cooldownEmail > 0 ? `Reenviar código em ${cooldownEmail}s` : 'Reenviar código'}
+              </button>
+              {confirmMsg && <div style={{ fontSize: 11.5, fontWeight: 600, color: confirmMsg.tipo === 'erro' ? 'var(--red)' : 'var(--green)' }}>{confirmMsg.texto}</div>}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '10px 12px' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#78350F' }}>⚠️ E-mail ainda não confirmado</span>
+              <button
+                style={{ background: '#D97706', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                onClick={enviarCodigoEmail}
+                disabled={confirmLoading}
+              >
+                {confirmLoading ? 'Enviando...' : 'Confirmar e-mail'}
+              </button>
+            </div>
+          )}
+          {confirmStep !== 'codigo' && confirmMsg && <div style={{ fontSize: 11.5, fontWeight: 600, color: '#B91C1C', marginTop: 6 }}>{confirmMsg.texto}</div>}
         </div>
 
         {/* Alterar senha */}
