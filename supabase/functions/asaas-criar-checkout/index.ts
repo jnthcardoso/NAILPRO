@@ -70,7 +70,9 @@ Deno.serve(async (req: Request) => {
         expiredUrl: `${APP_URL}/planos`,
       },
       items: [{
-        name: `Lumen ${nomePlano} (${cicloNome.toLowerCase()})${descManicures}`,
+        // ATENCAO: o Asaas limita "name" a 30 caracteres. O detalhe das manicures
+        // vai so na "description" (texto longo) para nao estourar o limite.
+        name: `Lumen ${nomePlano} (${cicloNome.toLowerCase()})`,
         description: `Assinatura Lumen ${nomePlano} - cobranca ${cicloNome.toLowerCase()}${descManicures}`,
         quantity: 1,
         value: valor, // anual = valor do ANO (parcelavel); mensal = valor do mes — ja inclui manicures
@@ -80,12 +82,14 @@ Deno.serve(async (req: Request) => {
     }
 
     if (isAnual) {
-      // Anual = compra unica do ano: a cliente escolhe pagar a vista (DETACHED)
-      // ou parcelar em ate 12x (INSTALLMENT). O Asaas EXIGE DETACHED junto de INSTALLMENT.
+      // Anual = valor do ANO. Usando SO 'INSTALLMENT', o checkout do Asaas abre ja
+      // no seletor de parcelas (ate 12x) — o parcelamento fica em destaque, e quem
+      // quiser pagar a vista escolhe "1x". (Antes era ['DETACHED','INSTALLMENT'], que
+      // abria priorizando a vista e escondia o 12x no final.)
       // OBS: parcelamento e assinatura recorrente (RECURRENT) sao mutuamente exclusivos
       // no Asaas. Por isso o anual NAO renova sozinho: ao fim dos 12 meses, a renovacao
       // e feita manualmente (acompanhada no Admin).
-      body.chargeTypes = ['DETACHED', 'INSTALLMENT']
+      body.chargeTypes = ['INSTALLMENT']
       body.installment = { maxInstallmentCount: 12 }
     } else {
       // Mensal = assinatura recorrente que renova sozinha todo mes.
