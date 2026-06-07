@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: '0 1 * * *'   # 01:00 UTC = 22:00 no horário de Brasília
   workflow_dispatch: {}    # permite rodar manualmente (1º backup / teste)
+  push:                    # roda quando ESTE arquivo muda (forma de testar sem o botão)
+    paths:
+      - '.github/workflows/backup-diario.yml'
 
 jobs:
   backup:
