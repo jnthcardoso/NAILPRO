@@ -16,6 +16,10 @@ const PRECOS: Record<string, number> = {
 }
 const NOMES: Record<string, string> = { solo: 'Solo', pro: 'Pro', salao: 'Salao' }
 
+// Manicure adicional (login proprio alem de dona/recepcionista) — so no plano Salao.
+const PRECO_MANICURE = 44.90      // por mes
+const MAX_MANICURES = 15
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   const json = (o: unknown, status = 200) =>
@@ -35,17 +39,28 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) return json({ error: 'Nao autorizado' }, 401)
 
-    const { plano, ciclo } = await req.json()
-    const valor = PRECOS[`${plano}_${ciclo}`]
-    if (!valor) return json({ error: 'Plano invalido' }, 400)
+    const { plano, ciclo, manicures } = await req.json()
+    const valorBase = PRECOS[`${plano}_${ciclo}`]
+    if (!valorBase) return json({ error: 'Plano invalido' }, 400)
 
     const isAnual = ciclo === 'anual'
+    // Manicures adicionais so valem para o Salao; clampa em 0..MAX para nao confiar no cliente.
+    const qtdManicures = plano === 'salao'
+      ? Math.max(0, Math.min(MAX_MANICURES, Math.floor(Number(manicures) || 0)))
+      : 0
+    // Extra cobrado: mensal soma 1x/mes; anual soma 12x (cobranca do ano).
+    const extraManicures = qtdManicures * PRECO_MANICURE * (isAnual ? 12 : 1)
+    const valor = valorBase + extraManicures
+
     const nomePlano = NOMES[plano] ?? 'Pro'
     const cicloNome = isAnual ? 'Anual' : 'Mensal'
     // Data de vencimento = hoje (fuso de Brasilia) -> cobra na contratacao
     const hoje = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
     const nextDueDate = hoje.toISOString().slice(0, 10)
 
+    const descManicures = qtdManicures > 0
+      ? ` + ${qtdManicures} manicure(s) adicional(is)`
+      : ''
     const body: Record<string, unknown> = {
       billingTypes: ['CREDIT_CARD'],
       minutesToExpire: 60,
@@ -55,12 +70,13 @@ Deno.serve(async (req: Request) => {
         expiredUrl: `${APP_URL}/planos`,
       },
       items: [{
-        name: `Lumen ${nomePlano} (${cicloNome.toLowerCase()})`,
-        description: `Assinatura Lumen ${nomePlano} - cobranca ${cicloNome.toLowerCase()}`,
+        name: `Lumen ${nomePlano} (${cicloNome.toLowerCase()})${descManicures}`,
+        description: `Assinatura Lumen ${nomePlano} - cobranca ${cicloNome.toLowerCase()}${descManicures}`,
         quantity: 1,
-        value: valor, // anual = valor do ANO (parcelavel); mensal = valor do mes
+        value: valor, // anual = valor do ANO (parcelavel); mensal = valor do mes — ja inclui manicures
       }],
-      externalReference: `${user.id}|${plano}|${ciclo}`,
+      // Ref carrega a qtd de manicures pagas para o webhook liberar os assentos.
+      externalReference: `${user.id}|${plano}|${ciclo}|${qtdManicures}`,
     }
 
     if (isAnual) {

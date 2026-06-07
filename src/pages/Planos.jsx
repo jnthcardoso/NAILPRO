@@ -15,6 +15,8 @@ export default function Planos() {
   const [planoDestaque, setPlanoDestaque] = useState(null) // plano pré-selecionado da landing
   const [assinarLoading, setAssinarLoading] = useState(null)
   const [assinarErro, setAssinarErro] = useState('')
+  const [manicures, setManicures] = useState(0) // manicures adicionais escolhidas no plano Salão (0..15)
+  const MAX_MANICURES = 15
 
   // Dispara evento de analytics ao entrar na página de planos
   useEffect(() => { trackVerPlanos() }, [])
@@ -48,13 +50,20 @@ export default function Planos() {
   async function handleAssinar(planoId) {
     setAssinarErro('')
     setAssinarLoading(planoId)
+    // Manicures adicionais só valem para o plano Salão (login próprio além de dona/recepcionista).
+    const qtdManicures = planoId === 'salao' ? Math.max(0, Math.min(MAX_MANICURES, manicures)) : 0
     // Dispara evento de inicio de checkout
     // Valor do checkout para analytics: mensal = preço do mês; anual = total do ano (cobrança real).
     const precos = { solo_mensal: 127, solo_anual: 1164, pro_mensal: 229, pro_anual: 2148, salao_mensal: 249, salao_anual: 2388 }
-    trackInicioAssinatura(planoId, ciclo, precos[`${planoId}_${ciclo}`] ?? 0)
+    let valorAnalytics = precos[`${planoId}_${ciclo}`] ?? 0
+    if (qtdManicures > 0) {
+      // extra por manicure (reais): mensal soma 1×/mês; anual soma 12× (cobrança do ano)
+      valorAnalytics += qtdManicures * (PRECO_USUARIO_ADICIONAL / 100) * (ciclo === 'anual' ? 12 : 1)
+    }
+    trackInicioAssinatura(planoId, ciclo, valorAnalytics)
     try {
       const { data, error } = await supabase.functions.invoke('asaas-criar-checkout', {
-        body: { plano: planoId, ciclo },
+        body: { plano: planoId, ciclo, manicures: qtdManicures },
       })
       if (error) {
         // A função retorna o motivo real do Asaas no corpo (campo "error"); extrai pra mostrar.
@@ -206,6 +215,9 @@ export default function Planos() {
           isDestaque={planoDestaque === 'salao'}
           loading={assinarLoading === 'salao'}
           onAssinar={() => handleAssinar('salao')}
+          manicures={manicures}
+          onManicures={(n) => setManicures(Math.max(0, Math.min(MAX_MANICURES, n)))}
+          maxManicures={MAX_MANICURES}
         />
       </div>
 
@@ -287,8 +299,14 @@ export default function Planos() {
   )
 }
 
-function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loading, onAssinar }) {
-  const precoMes = ciclo === 'anual' ? plano.precoMensalAnual : plano.precoMensalMensal
+function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loading, onAssinar, manicures = 0, onManicures, maxManicures = 15 }) {
+  const temExtras = plano.limites?.usuariosAdicionais === true
+  const qtd = temExtras ? Math.max(0, Math.min(maxManicures, manicures)) : 0
+  const extrasMes = qtd * PRECO_USUARIO_ADICIONAL // centavos/mês
+
+  const precoMesBase = ciclo === 'anual' ? plano.precoMensalAnual : plano.precoMensalMensal
+  const precoMes = precoMesBase + extrasMes
+  const precoAnualTotal = plano.precoAnual + extrasMes * 12 // manicure soma 12× no total do ano
   const economiaPorc = Math.round(((plano.precoMensalMensal - plano.precoMensalAnual) / plano.precoMensalMensal) * 100)
 
   return (
@@ -305,9 +323,14 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loa
       </div>
 
       <div style={{ marginBottom: 14 }}>
+        {temExtras && qtd > 0 && (
+          <div style={s.breakdown}>
+            Base R$ {formatPreco(precoMesBase)} + {qtd} {qtd === 1 ? 'manicure' : 'manicures'} (R$ {formatPreco(extrasMes)})
+          </div>
+        )}
         {ciclo === 'anual' ? (
           <>
-            <div style={s.precoNota}>R$ {formatPreco(plano.precoAnual)} cobrados anualmente</div>
+            <div style={s.precoNota}>R$ {formatPreco(precoAnualTotal)} cobrados anualmente</div>
             <div style={s.fidelidadeTag}>💳 até 12× sem juros · economize {economiaPorc}%</div>
           </>
         ) : (
@@ -316,10 +339,37 @@ function PlanoCard({ plano, ciclo = 'anual', isAtual, isPopular, isDestaque, loa
             <div style={s.mensalTag}>📆 Cobrança mensal</div>
           </>
         )}
-        {plano.limites?.usuariosAdicionais
+        {temExtras
           ? <div style={s.usuarioNota}>Dona + recepcionista inclusas · manicure +R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</div>
           : <div style={s.usuarioNota}>Inclui 1 login</div>}
       </div>
+
+      {/* Seletor de manicures adicionais (só no Salão) */}
+      {temExtras && (
+        <div style={s.stepperWrap}>
+          <div style={s.stepperInfo}>
+            <span style={s.stepperLabel}>Manicures adicionais</span>
+            <span style={s.stepperSub}>+R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês cada</span>
+          </div>
+          <div style={s.stepperControls}>
+            <button
+              type="button"
+              style={{ ...s.stepperBtn, ...(qtd <= 0 ? s.stepperBtnOff : {}) }}
+              onClick={() => onManicures?.(qtd - 1)}
+              disabled={qtd <= 0}
+              aria-label="Remover manicure"
+            >−</button>
+            <span style={s.stepperVal}>{qtd}</span>
+            <button
+              type="button"
+              style={{ ...s.stepperBtn, ...(qtd >= maxManicures ? s.stepperBtnOff : {}) }}
+              onClick={() => onManicures?.(qtd + 1)}
+              disabled={qtd >= maxManicures}
+              aria-label="Adicionar manicure"
+            >+</button>
+          </div>
+        </div>
+      )}
 
       <button
         style={{
@@ -404,6 +454,16 @@ const s = {
   fidelidadeTag: { fontSize: 11, fontWeight: 600, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 6, padding: '3px 8px', display: 'inline-block', marginBottom: 6 },
   mensalTag: { fontSize: 11, fontWeight: 600, color: '#15803D', background: '#DCFCE7', border: '1px solid #4ADE80', borderRadius: 6, padding: '3px 8px', display: 'inline-block', marginBottom: 6 },
   usuarioNota: { fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginTop: 2 },
+  breakdown: { fontSize: 11, fontWeight: 600, color: 'var(--pink)', marginBottom: 4 },
+
+  stepperWrap: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px', marginBottom: 16 },
+  stepperInfo: { display: 'flex', flexDirection: 'column', gap: 2 },
+  stepperLabel: { fontSize: 12.5, fontWeight: 700, color: 'var(--text)' },
+  stepperSub: { fontSize: 10.5, fontWeight: 600, color: 'var(--text3)' },
+  stepperControls: { display: 'flex', alignItems: 'center', gap: 10 },
+  stepperBtn: { width: 30, height: 30, borderRadius: '50%', border: '1.5px solid var(--pink)', background: 'var(--surface)', color: 'var(--pink)', fontSize: 18, fontWeight: 700, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', flexShrink: 0 },
+  stepperBtnOff: { borderColor: 'var(--border2)', color: 'var(--text3)', cursor: 'not-allowed', opacity: 0.6 },
+  stepperVal: { fontFamily: "'JetBrains Mono', monospace", fontSize: 17, fontWeight: 700, color: 'var(--text)', minWidth: 22, textAlign: 'center' },
 
   btnAssinar: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--surface2)', color: 'var(--text)', border: '1.5px solid var(--border2)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 18, fontFamily: 'inherit', transition: 'all 0.15s' },
   btnAssinarPro: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', border: 'none', boxShadow: '0 6px 16px rgba(139,38,85,0.3)' },

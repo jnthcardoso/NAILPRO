@@ -101,8 +101,11 @@ Deno.serve(async (req: Request) => {
       const r = await fetch(`${base}/subscriptions/${subId}`, { headers: { access_token: key } })
       if (r.ok) { const sub = await r.json(); ref = sub?.externalReference || '' }
     }
-    const [userId, plano, ciclo] = (ref || '').split('|')
+    const [userId, plano, ciclo, manicuresRaw] = (ref || '').split('|')
     if (!userId) { console.warn('Webhook sem externalReference utilizavel'); return new Response('OK') }
+    // Manicures pagas (assentos de profissional). So existe em externalReference novo do Salao.
+    const manicuresPagas = plano === 'salao' ? Math.max(0, Math.floor(Number(manicuresRaw) || 0)) : 0
+    const PRECO_MANICURE = 44.90 // por mes — espelha asaas-criar-checkout
 
     const now = new Date()
     const setPeriodo = () => {
@@ -137,6 +140,9 @@ Deno.serve(async (req: Request) => {
       }
       if (plano) upd.plano = plano
       if (ciclo) upd.ciclo = ciclo
+      // Libera os assentos de manicure pagos no checkout (Salao). A enforcement no banco
+      // bloqueia adicionar mais profissionais do que o pago.
+      if (plano === 'salao') upd.licencas_pagas = manicuresPagas
       const { error } = await supabase.from('assinaturas').update(upd).eq('user_id', userId)
       if (error) console.error('Erro update (ok):', error.message)
       else console.log('Assinatura ATIVADA/renovada:', userId, plano, ciclo)
@@ -145,7 +151,9 @@ Deno.serve(async (req: Request) => {
       // So na 1a cobranca confirmada (acima ja barramos parcelas 2..12).
       // E robusto: qualquer erro aqui nao pode derrubar o webhook.
       try {
-        const valor = PRECOS[`${plano}_${ciclo}`] ?? 0
+        // Valor real pago = base + manicures (mensal 1x/mes; anual 12x no ano).
+        const extraManicures = manicuresPagas * PRECO_MANICURE * (ciclo === 'anual' ? 12 : 1)
+        const valor = (PRECOS[`${plano}_${ciclo}`] ?? 0) + extraManicures
         const eventId = String(payment?.id || `${userId}_${plano}_${ciclo}`)
         if (valor > 0) {
           const pixelId = Deno.env.get('META_PIXEL_ID') ?? ''
