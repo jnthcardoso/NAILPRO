@@ -138,15 +138,12 @@ export default function Planos() {
         </p>
       </div>
 
-      {/* Quer ver antes de contratar? Saída para demonstração/teste no WhatsApp */}
+      {/* Quer ver antes de contratar? Saída compacta para demonstração/teste no WhatsApp */}
       {!isActive && (
-        <div style={s.demoCta}>
-          <div style={s.demoCtaText}>
-            <strong style={{ color: 'var(--text)', fontSize: 14 }}>Quer ver funcionando antes de contratar?</strong>
-            <span style={{ color: 'var(--text3)' }}>Agende uma demonstração ou faça um teste — eu te mostro tudo no WhatsApp.</span>
-          </div>
-          <button style={s.demoCtaBtn} onClick={abrirDemoWhatsapp}>
-            <MessageCircle size={15} /> Agendar demonstração
+        <div style={s.demoCtaWrap}>
+          <button style={s.demoCtaPill} onClick={abrirDemoWhatsapp}>
+            <MessageCircle size={14} color="#25D366" />
+            <span>Quer ver antes? <strong style={{ color: 'var(--pink)' }}>Agende uma demonstração</strong></span>
           </button>
         </div>
       )}
@@ -449,9 +446,8 @@ const s = {
   heroTitle: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 32, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.15 },
   heroSub: { fontSize: 14, color: 'var(--text2)', margin: '10px 0 0', lineHeight: 1.5 },
 
-  demoCta: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 18px', marginBottom: 18, boxShadow: 'var(--shadow-xs)', maxWidth: 620, marginLeft: 'auto', marginRight: 'auto' },
-  demoCtaText: { display: 'flex', flexDirection: 'column', gap: 2, fontSize: 12.5, lineHeight: 1.4 },
-  demoCtaBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '10px 18px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 },
+  demoCtaWrap: { display: 'flex', justifyContent: 'center', marginBottom: 16 },
+  demoCtaPill: { display: 'inline-flex', alignItems: 'center', gap: 7, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', fontSize: 12.5, fontWeight: 500, color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-xs)', whiteSpace: 'nowrap' },
 
   toggleWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 },
   toggleCard: { display: 'inline-flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: 4, boxShadow: 'var(--shadow-xs)', gap: 4 },
