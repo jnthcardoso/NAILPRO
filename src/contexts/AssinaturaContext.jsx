@@ -183,6 +183,9 @@ export function AssinaturaProvider({ children }) {
   const isTrialing = status === 'trialing'
   const isActive = status === 'active'
   const isExpired = status === 'expired' || status === 'canceled'
+  // 'pending' = conta criada mas ainda não contratada (modelo "pagar primeiro").
+  // Sem teste grátis: precisa assinar para acessar o app.
+  const isPending = status === 'pending'
 
   let diasRestantesTrial = null
   let trialAcabou = false
@@ -208,7 +211,7 @@ export function AssinaturaProvider({ children }) {
     return false
   }
 
-  const precisaUpgrade = trialAcabou || isExpired
+  const precisaUpgrade = trialAcabou || isExpired || isPending
   const podeUsuariosAdicionais = plano?.limites?.usuariosAdicionais === true
 
   // Modelo atual: sem fidelidade/multa (anual parcelado, mensal recorrente).
@@ -224,7 +227,7 @@ export function AssinaturaProvider({ children }) {
   return (
     <AssinaturaContext.Provider value={{
       assinatura, plano, status, loading,
-      isTrialing, isActive, isExpired, trialAcabou,
+      isTrialing, isActive, isExpired, isPending, trialAcabou,
       diasRestantesTrial, precisaUpgrade,
       podeUsuariosAdicionais, contrato,
       temAcesso, dentroDoLimite, recarregar: carregar,

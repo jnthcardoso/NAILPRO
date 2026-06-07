@@ -40,7 +40,7 @@ export default function Planos() {
 
   const {
     assinatura, plano: planoAtual, isTrialing, diasRestantesTrial,
-    trialAcabou, isActive, contrato,
+    trialAcabou, isActive, isPending, contrato,
   } = useAssinatura()
 
   const fmtData = (d) => d ? format(new Date(d), "dd 'de' MMM 'de' yyyy", { locale: ptBR }) : '—'
@@ -113,16 +113,20 @@ export default function Planos() {
           <Sparkles size={14} /> Escolha seu plano
         </div>
         <h1 style={s.heroTitle}>
-          {isTrialing && !trialAcabou && diasRestantesTrial > 0
-            ? `Você tem ${diasRestantesTrial} ${diasRestantesTrial === 1 ? 'dia' : 'dias'} de teste grátis`
-            : trialAcabou
-              ? 'Seu período de teste acabou'
-              : 'Continue crescendo com a Lumen'}
+          {isPending
+            ? 'Escolha seu plano para começar'
+            : isTrialing && !trialAcabou && diasRestantesTrial > 0
+              ? `Você tem ${diasRestantesTrial} ${diasRestantesTrial === 1 ? 'dia' : 'dias'} de teste grátis`
+              : trialAcabou
+                ? 'Seu período de teste acabou'
+                : 'Continue crescendo com a Lumen'}
         </h1>
         <p style={s.heroSub}>
-          {trialAcabou
-            ? 'Assine pra continuar usando todas as funcionalidades.'
-            : 'Planos para autônomas e salões. Sem taxa de setup, sem surpresas.'}
+          {isPending
+            ? 'Contrate para liberar o acesso à Lumen. Garantia de 7 dias — não curtiu, devolvemos 100%.'
+            : trialAcabou
+              ? 'Assine pra continuar usando todas as funcionalidades.'
+              : 'Planos para autônomas e salões. Sem taxa de setup, sem surpresas.'}
         </p>
       </div>
 

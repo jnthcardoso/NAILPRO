@@ -23,6 +23,7 @@ const ATIV_ICON = {
 }
 
 const STATUS_LABELS = {
+  pending: { label: 'Aguardando contratação', color: '#6B7280', bg: '#F3F4F6' },
   trialing: { label: 'Teste', color: '#1E40AF', bg: '#DBEAFE' },
   active: { label: 'Ativa', color: '#15803D', bg: '#DCFCE7' },
   past_due: { label: 'Atrasada', color: '#92400E', bg: '#FEF3C7' },
@@ -490,6 +491,7 @@ export default function Admin() {
               { id: 'todos', label: 'Todos' },
               { id: 'active', label: 'Ativas' },
               { id: 'renovar', label: `🔔 A renovar${stats.aRenovar > 0 ? ` (${stats.aRenovar})` : ''}` },
+              { id: 'pending', label: 'Aguardando' },
               { id: 'trialing', label: 'Trial' },
               { id: 'canceled', label: 'Canceladas' },
               { id: 'expired', label: 'Expiradas' },

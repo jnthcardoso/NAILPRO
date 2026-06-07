@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ArrowRight, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
@@ -15,10 +15,10 @@ const BENEFICIOS = [
 
 const FAQ_ITEMS = [
   { p: 'Preciso instalar alguma coisa?', r: 'Não. A Lumen funciona direto no navegador e no celular — sem download, sem instalação. É só entrar e usar.' },
-  { p: 'Preciso de cartão de crédito para testar?', r: 'Não. Os 14 dias de teste são 100% grátis e sem necessidade de cartão. Você só paga se quiser continuar.' },
+  { p: 'Posso ver o sistema antes de contratar?', r: 'Sim! Agende uma demonstração gratuita pelo WhatsApp: a gente te mostra a Lumen funcionando, com dados reais, e tira todas as suas dúvidas antes de você decidir.' },
   { p: 'Posso cancelar quando quiser?', r: 'Sim, sem multa nos dois planos. No mensal, a cobrança para na hora e o acesso vai até o fim do mês já pago. No anual, você parcela o valor do ano em até 12× sem juros, fica com acesso garantido por 12 meses e ao fim do período simplesmente não é renovada (sem fidelidade).' },
   { p: 'Funciona bem no celular?', r: 'Perfeitamente. A Lumen foi feita pensando em quem trabalha com as mãos e usa o celular para tudo — é rápida e fácil de usar na tela pequena.' },
-  { p: 'O que acontece quando os 14 dias acabam?', r: 'Você escolhe um plano e continua de onde parou. Se preferir não seguir, seus dados ficam guardados com segurança caso você queira voltar depois.' },
+  { p: 'E se eu contratar e não gostar?', r: 'Você tem garantia de 7 dias: se não curtir, devolvemos 100% do valor, sem burocracia. Seus dados ficam guardados com segurança caso queira voltar depois.' },
   { p: 'Como funciona o suporte?', r: 'Atendimento direto pelo WhatsApp, de segunda a sábado. Sem robô, sem espera interminável — você fala com a equipe da Lumen.' },
   { p: 'Meus dados ficam seguros?', r: 'Sim. Seus dados ficam salvos na nuvem com backup automático e criptografia. Você nunca perde nada — mesmo que troque de celular.' },
 ]
@@ -64,13 +64,11 @@ export default function Landing() {
   // Navega para login salvando a intenção de plano no sessionStorage
   // Login simples (botão "Login" da navbar)
   const ir = () => navigate('/login')
-  // Cadastro com plano pré-selecionado (botões "Começar grátis" dos cards)
+  // Cadastro com plano pré-selecionado (botões "Assinar agora" dos cards)
   const irComPlano = (planoId) => {
     sessionStorage.setItem('lumen_plano_intencao', JSON.stringify({ plano: planoId, ciclo }))
     navigate('/login?modo=cadastro')
   }
-  // Cadastro sem plano (CTAs genéricos da landing)
-  const irCadastro = () => navigate('/login?modo=cadastro')
   const [menuAberto, setMenuAberto] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -106,8 +104,11 @@ export default function Landing() {
   }, [])
 
   const whatsappContato = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Quero saber mais sobre a Lumen 💅')
+  // Lead do anúncio: pede demonstração/apresentação (você recebe e marca a call).
+  const whatsappDemo = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Vim pelo site da Lumen e quero agendar uma demonstração 💅')
 
   const abrirWhatsapp = (e) => { trackFaleConosco(); window.open(whatsappContato, '_blank') }
+  const agendarDemo = () => { trackFaleConosco(); window.open(whatsappDemo, '_blank') }
   const irPlanos = () => { trackVerPlanos(); scrollTo('planos') }
 
   return (
@@ -193,7 +194,7 @@ export default function Landing() {
         <div className="hero-inner">
           {/* Texto */}
           <div className="hero-text">
-            <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> 14 dias grátis · sem cartão pra testar</div>
+            <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> Demonstração gratuita · garantia de 7 dias</div>
             <h1 style={{ ...s.heroTitle, textAlign: 'left', maxWidth: 520 }}>
               você não é só manicure.<br /><em style={s.heroEm}>é dona.</em>
             </h1>
@@ -202,7 +203,7 @@ export default function Landing() {
               A Lumen cuida da gestão enquanto você cuida das unhas.
             </p>
             <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
-              <button style={s.ctaPrimary} onClick={irCadastro}>Começar grátis <ArrowRight size={16} /></button>
+              <button style={s.ctaPrimary} onClick={agendarDemo}><MessageCircle size={16} /> Agendar demonstração</button>
               <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
@@ -275,7 +276,7 @@ export default function Landing() {
       <section id="planos" style={s.secao}>
         <div style={s.secaoLabel}>planos</div>
         <h2 style={s.planosTitulo}>Simples, justo e sem surpresa</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, marginBottom: 28, marginTop: -12 }}>Para autônomas e salões com equipe. Comece grátis, cancele quando quiser.</p>
+        <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, marginBottom: 28, marginTop: -12 }}>Para autônomas e salões com equipe. Cancele quando quiser · garantia de 7 dias.</p>
 
         {/* Toggle mensal/anual */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 }}>
@@ -308,7 +309,7 @@ export default function Landing() {
               <span style={s.ciclo}>/mês</span>
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.solo.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
-            <button style={s.planoBtn} onClick={() => irComPlano('solo')}>Começar grátis</button>
+            <button style={s.planoBtn} onClick={() => irComPlano('solo')}>Assinar agora</button>
             <PlanoFeats plano={PLANOS.solo} />
           </div>
 
@@ -322,7 +323,7 @@ export default function Landing() {
               <span style={s.ciclo}>/mês</span>
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
-            <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={() => irComPlano('pro')}>Começar grátis</button>
+            <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={() => irComPlano('pro')}>Assinar agora</button>
             <PlanoFeats plano={PLANOS.pro} />
           </div>
 
@@ -335,7 +336,7 @@ export default function Landing() {
               <span style={s.ciclo}>/mês</span>
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.salao.precoAnual)}/ano · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
-            <button style={s.planoBtn} onClick={() => irComPlano('salao')}>Começar grátis</button>
+            <button style={s.planoBtn} onClick={() => irComPlano('salao')}>Assinar agora</button>
             <PlanoFeats plano={PLANOS.salao} />
           </div>
         </div>
@@ -354,9 +355,12 @@ export default function Landing() {
 
       {/* CTA final */}
       <section style={s.ctaFinal}>
-        <h2 style={s.ctaFinalTitulo}>comece hoje. veja a diferença em 14 dias.</h2>
-        <p style={s.ctaFinalSub}>Sem cartão pra testar. Sem instalação. Cancele quando quiser.</p>
-        <button style={s.ctaPrimary} onClick={ir}>Criar minha conta grátis <ArrowRight size={16} /></button>
+        <h2 style={s.ctaFinalTitulo}>pronta pra organizar seu salão?</h2>
+        <p style={s.ctaFinalSub}>Agende uma demonstração gratuita ou contrate agora — com garantia de 7 dias.</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button style={s.ctaPrimary} onClick={agendarDemo}><MessageCircle size={16} /> Agendar demonstração</button>
+          <button style={{ ...s.ctaGhost, color: BERRY, borderColor: BERRY, background: 'transparent' }} onClick={() => scrollTo('planos')}>Ver planos</button>
+        </div>
       </section>
 
       {/* Footer / Contato */}
