@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift, UsersRound, Link2 } from 'lucide-react'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
 import { linkWhatsAppCompleto } from '../lib/formatters'
 
 const BENEFICIOS = [
-  { icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Veja todos os atendimentos por dia, semana ou mês. Chega de caderninho, borracha e horário esquecido.' },
-  { icon: DollarSign, titulo: 'Financeiro que você entende', texto: 'Saiba exatamente quanto entrou, quanto saiu e quanto sobrou. Com metas e projeção de receita futura.' },
-  { icon: Users, titulo: 'Nunca perca uma cliente', texto: 'Histórico completo, preferências, aniversários e alerta automático de clientes que sumiram há tempo.' },
-  { icon: Bell, titulo: 'Lembretes no WhatsApp', texto: 'Reduza faltas com lembretes automáticos no WhatsApp. A cliente confirma com um clique — sem trabalho extra.' },
+  { id: 'agenda', icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Todos os atendimentos por dia, semana ou mês. Chega de caderninho e horário esquecido.' },
+  { id: 'financeiro', icon: DollarSign, titulo: 'Financeiro que você entende', texto: 'Quanto entrou, quanto saiu e quanto sobrou — com metas e projeção de receita.' },
+  { id: 'clientes', icon: Users, titulo: 'Nunca perca uma cliente', texto: 'Histórico, preferências, aniversários e alerta de clientes que sumiram.' },
+  { id: 'lembretes', icon: Bell, titulo: 'Lembretes no WhatsApp', texto: 'Reduza faltas com lembrete automático. A cliente confirma com um clique.' },
+  { id: 'online', icon: Sparkles, titulo: 'Agenda online própria', texto: 'Seu link pra divulgar: a cliente marca sozinha e cai direto na sua agenda.' },
+  { id: 'equipe', icon: UsersRound, titulo: 'Equipe organizada', texto: 'Cada profissional com login próprio, vendo só a própria agenda e financeiro.' },
 ]
 
 const FAQ_ITEMS = [
@@ -33,10 +35,10 @@ const NAV_LINKS = [
 
 const DEPOIMENTOS = [
   {
-    nome: 'Queléen Bauer',
-    cargo: 'Nail designer autônoma · Caxias do Sul',
+    nome: 'Letícia Prado',
+    cargo: 'Nail designer autônoma · Porto Alegre',
     texto: 'Antes eu não sabia nem quanto ganhava no mês. Hoje vejo tudo no celular em segundos. A Lumen mudou como eu me vejo como profissional.',
-    iniciais: 'QB',
+    iniciais: 'LP',
   },
   {
     nome: 'Camila Rossato',
@@ -196,7 +198,7 @@ export default function Landing() {
           <div className="hero-text">
             <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> Demonstração gratuita · garantia de 7 dias</div>
             <h1 style={{ ...s.heroTitle, textAlign: 'left', maxWidth: 520 }}>
-              você não é só manicure.<br /><em style={s.heroEm}>é dona.</em>
+              Você não é só manicure.<br /><em style={s.heroEm}>É dona.</em>
             </h1>
             <p style={{ ...s.heroSub, textAlign: 'left', margin: '0 0 28px' }}>
               Chega de caderninho, esquecimento e dinheiro sem controle.
@@ -207,7 +209,7 @@ export default function Landing() {
               <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
-              "Finalmente sei quanto ganho de verdade." — Queléen, nail designer
+              "Finalmente sei quanto ganho de verdade." — Letícia, nail designer
             </div>
           </div>
 
@@ -222,14 +224,22 @@ export default function Landing() {
       <section id="funcionalidades" style={s.secao}>
         <div style={s.secaoLabel}>funcionalidades</div>
         <h2 style={s.secaoTitulo}>Tudo que você precisa, num só app</h2>
-        <div style={s.benGrid}>
+        <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, margin: '-20px auto 32px', maxWidth: 560 }}>
+          Da agenda ao financeiro, do lembrete no WhatsApp ao link de agendamento — tudo num lugar só, feito pra nail designer.
+        </p>
+        <div style={s.featGrid}>
           {BENEFICIOS.map(b => {
             const Ico = b.icon
             return (
-              <div key={b.titulo} style={s.benCard}>
-                <div style={s.benIcon}><Ico size={20} color="var(--pink)" /></div>
-                <div style={s.benTitulo}>{b.titulo}</div>
-                <div style={s.benTexto}>{b.texto}</div>
+              <div key={b.id} style={s.featCard}>
+                <div style={s.featVisual}><FeatureVisual id={b.id} /></div>
+                <div style={s.featBody}>
+                  <div style={s.featHead}>
+                    <span style={s.featIcon}><Ico size={15} color="var(--pink)" /></span>
+                    <span style={s.featTitulo}>{b.titulo}</span>
+                  </div>
+                  <div style={s.benTexto}>{b.texto}</div>
+                </div>
               </div>
             )
           })}
@@ -468,7 +478,7 @@ function AppMockup() {
       <div style={mock.body}>
         <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Sábado, 31 de Maio</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#180712', marginBottom: 12 }}>
-          <em style={{ fontFamily: 'serif', fontStyle: 'italic' }}>oi Queléen,</em>
+          <em style={{ fontFamily: 'serif', fontStyle: 'italic' }}>oi Letícia,</em>
         </div>
 
         {/* Cards de resumo */}
@@ -524,6 +534,38 @@ const mock = {
   navItem: { flex: 1, textAlign: 'center', fontSize: 16, color: '#ccc' },
 }
 
+// Estilos das mini-prévias visuais das funcionalidades
+const fv = {
+  agenda: { display: 'flex', gap: 6, width: '100%', height: '100%', alignItems: 'flex-start' },
+  col: { flex: 1, display: 'flex', flexDirection: 'column', gap: 4 },
+  colDia: { fontSize: 9, fontWeight: 800, color: '#9b8690', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 },
+  chip: { background: '#fff', border: '1px solid #EAD5E2', borderLeft: '3px solid #8B2655', borderRadius: 6, fontSize: 9, fontWeight: 700, color: '#180712', padding: '4px 5px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  chipAlt: { borderLeftColor: '#E6C260' },
+
+  fin: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 },
+  bars: { display: 'flex', alignItems: 'flex-end', gap: 7, height: 60 },
+  bar: { width: 16, borderRadius: '4px 4px 0 0', background: 'linear-gradient(180deg, #C73B6F, #8B2655)' },
+  finVal: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700, color: '#180712' },
+  finUp: { fontSize: 10, fontWeight: 700, color: '#15803D', marginLeft: 4 },
+
+  cli: { display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #EAD5E2', borderRadius: 12, padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  avatar: { width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  cliNome: { fontSize: 13, fontWeight: 700, color: '#180712' },
+  cliBadge: { fontSize: 10.5, color: '#92400E', background: '#FEF3C7', borderRadius: 'var(--radius-pill)', padding: '2px 8px', fontWeight: 600, marginTop: 3, display: 'inline-block' },
+
+  wpp: { width: '100%', display: 'flex', flexDirection: 'column', gap: 6 },
+  bubble: { alignSelf: 'flex-start', maxWidth: '85%', background: '#fff', border: '1px solid #E3EDE6', borderRadius: '12px 12px 12px 3px', fontSize: 10.5, color: '#180712', padding: '7px 10px', lineHeight: 1.35, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  bubbleR: { alignSelf: 'flex-end', background: '#DCF8C6', borderRadius: '12px 12px 3px 12px', fontSize: 10.5, fontWeight: 700, color: '#15803D', padding: '6px 12px' },
+
+  online: { width: '100%', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' },
+  linkPill: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff', border: '1px solid #EAD5E2', borderRadius: 'var(--radius-pill)', fontSize: 10.5, fontWeight: 600, color: '#8B2655', padding: '6px 12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  reserva: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 600, color: '#180712', background: '#fff', border: '1px solid #E3EDE6', borderRadius: 8, padding: '6px 10px' },
+
+  equipe: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
+  avatarSm: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #fff', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+  equipeTxt: { fontSize: 10.5, fontWeight: 600, color: '#6b5560', textAlign: 'center' },
+}
+
 const dep = {
   card: { background: 'white', border: '1px solid var(--border)', borderRadius: 18, padding: '24px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)', display: 'flex', flexDirection: 'column', gap: 14 },
   aspas: { fontSize: 48, lineHeight: 1, color: 'var(--pink)', fontFamily: 'Georgia, serif', marginTop: -10 },
@@ -532,6 +574,71 @@ const dep = {
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: 'white', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   nome: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
   cargo: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
+}
+
+// Mini-prévia visual de cada funcionalidade (renderizada em CSS, sem imagem).
+function FeatureVisual({ id }) {
+  if (id === 'agenda') {
+    return (
+      <div style={fv.agenda}>
+        {['Seg', 'Ter', 'Qua'].map((d, i) => (
+          <div key={d} style={fv.col}>
+            <div style={fv.colDia}>{d}</div>
+            {i === 1 && <><div style={fv.chip}>09:00</div><div style={{ ...fv.chip, ...fv.chipAlt }}>11:00</div></>}
+            {i === 0 && <div style={fv.chip}>14:00</div>}
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (id === 'financeiro') {
+    return (
+      <div style={fv.fin}>
+        <div style={fv.bars}>
+          {[40, 64, 52, 80].map((h, i) => <div key={i} style={{ ...fv.bar, height: h }} />)}
+        </div>
+        <div style={fv.finVal}>R$ 3.810 <span style={fv.finUp}>▲ este mês</span></div>
+      </div>
+    )
+  }
+  if (id === 'clientes') {
+    return (
+      <div style={fv.cli}>
+        <div style={fv.avatar}>AP</div>
+        <div>
+          <div style={fv.cliNome}>Ana Paula</div>
+          <div style={fv.cliBadge}>🎂 aniversário hoje</div>
+        </div>
+      </div>
+    )
+  }
+  if (id === 'lembretes') {
+    return (
+      <div style={fv.wpp}>
+        <div style={fv.bubble}>Oi Ana! 💅 Confirma seu horário amanhã às 14h?</div>
+        <div style={fv.bubbleR}>Confirmado ✓</div>
+      </div>
+    )
+  }
+  if (id === 'online') {
+    return (
+      <div style={fv.online}>
+        <div style={fv.linkPill}><Link2 size={12} /> lumen.app/agendar/voce</div>
+        <div style={fv.reserva}><Check size={12} color="#15803D" /> Nova reserva: Carla · 16:00</div>
+      </div>
+    )
+  }
+  // equipe
+  return (
+    <div style={fv.equipe}>
+      <div style={{ display: 'flex' }}>
+        {['B', 'D', 'C'].map((l, i) => (
+          <div key={l} style={{ ...fv.avatarSm, marginLeft: i ? -10 : 0, zIndex: 3 - i }}>{l}</div>
+        ))}
+      </div>
+      <span style={fv.equipeTxt}>3 profissionais · cada uma com seu login</span>
+    </div>
+  )
 }
 
 function FaqList() {
@@ -630,7 +737,15 @@ const s = {
   benCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 16, padding: '22px 20px', boxShadow: '0 2px 10px rgba(139,38,85,0.05)' },
   benIcon: { width: 44, height: 44, borderRadius: 12, background: 'var(--pink-light, #FAF0F4)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   benTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 17, fontWeight: 700, marginBottom: 6 },
-  benTexto: { fontSize: 14, color: 'var(--text2, #6b5560)', lineHeight: 1.55 },
+  benTexto: { fontSize: 13.5, color: 'var(--text2, #6b5560)', lineHeight: 1.55 },
+
+  featGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, maxWidth: 1080, margin: '0 auto' },
+  featCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 18px rgba(139,38,85,0.06)', display: 'flex', flexDirection: 'column' },
+  featVisual: { height: 124, background: 'linear-gradient(135deg, #FBF2F6 0%, #F5E7EF 100%)', borderBottom: '1px solid var(--border, #Eadfe4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14 },
+  featBody: { padding: '16px 18px 20px' },
+  featHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 },
+  featIcon: { width: 28, height: 28, borderRadius: 8, background: 'var(--pink-light, #FAF0F4)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  featTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 16, fontWeight: 700, color: 'var(--text)' },
 
   secaoEquipe: { background: NOIR, color: '#fff' },
   equipeInner: { maxWidth: 760, margin: '0 auto', padding: '56px 20px', textAlign: 'center' },
