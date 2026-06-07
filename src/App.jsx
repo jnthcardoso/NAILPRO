@@ -105,6 +105,13 @@ function RequireGerencia({ children }) {
   return gerenciaTudo ? children : <Navigate to="/app/agenda" replace />
 }
 
+// "Minhas configurações" é exclusiva da profissional (manicure). Dona/recepção vão pro app.
+function RequireProfissional({ children }) {
+  const { loading, isProfissional } = useSalao()
+  if (loading) return <PageSkeleton />
+  return isProfissional ? children : <Navigate to="/app" replace />
+}
+
 // Paywall: trial encerrado ou assinatura expirada → manda para /planos.
 function PlanoGuard({ children }) {
   const { loading, precisaUpgrade } = useAssinatura()
@@ -144,7 +151,7 @@ export default function App() {
               <Route path="clientes/:id" element={<RequireGerencia><ClienteDetalhe /></RequireGerencia>} />
               <Route path="financeiro" element={<Financeiro />} />
               <Route path="configuracoes" element={<RequireGerencia><Configuracoes /></RequireGerencia>} />
-              <Route path="minhas-configuracoes" element={<MinhasConfiguracoes />} />
+              <Route path="minhas-configuracoes" element={<RequireProfissional><MinhasConfiguracoes /></RequireProfissional>} />
               <Route path="equipe" element={<Equipe />} />
               <Route path="admin" element={<Admin />} />
               <Route path="avisos" element={<Avisos />} />

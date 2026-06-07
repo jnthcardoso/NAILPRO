@@ -96,15 +96,12 @@ export default function MinhasConfiguracoes() {
     window.open(linkWhatsAppCompleto('', msg), '_blank')
   }
 
-  // Verifica se o slug já está em uso (na agenda do salão ou de outra manicure).
+  // Checagem GLOBAL de disponibilidade do link (RPC SECURITY DEFINER — enxerga TODOS os
+  // salões e manicures, mesmo os que a RLS esconderia). Evita escolher um link já usado.
   async function slugDisponivel(slug) {
-    const [{ data: c }, { data: p }] = await Promise.all([
-      supabase.from('configuracoes').select('slug').eq('slug', slug).maybeSingle(),
-      supabase.from('agenda_profissional').select('membro_id').eq('slug', slug).maybeSingle(),
-    ])
-    if (c) return false
-    if (p && p.membro_id !== membroId) return false
-    return true
+    const { data, error } = await supabase.rpc('slug_disponivel', { p_slug: slug, p_membro_id: membroId })
+    if (error) return true // erro de rede não bloqueia o salvamento
+    return data === true
   }
 
   async function salvar() {
