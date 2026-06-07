@@ -859,11 +859,11 @@ export default function Configuracoes() {
               <div style={{ fontSize: 12.5, color: 'var(--text2)' }}>Enviamos um código de 6 dígitos para <strong>{user?.email}</strong>. Confira sua caixa de entrada (e o spam) e digite abaixo:</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
-                  style={{ ...s.input, letterSpacing: 4, textAlign: 'center', fontWeight: 700 }}
+                  style={{ ...s.input, letterSpacing: 3, textAlign: 'center', fontWeight: 700 }}
                   inputMode="numeric"
-                  placeholder="000000"
+                  placeholder="00000000"
                   value={codigoEmail}
-                  onChange={e => setCodigoEmail(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={e => setCodigoEmail(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 />
                 <button
                   style={{ ...s.btnPrimary, marginTop: 0, padding: '10px 16px', whiteSpace: 'nowrap' }}
