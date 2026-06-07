@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, X, Sparkles, ArrowLeft, CreditCard, Star, FileText, Zap, MessageCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { useAssinatura, PLANOS, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
+import { useAssinatura, PLANOS, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { supabase } from '../lib/supabase'
-import { trackInicioAssinatura, trackVerPlanos } from '../lib/analytics'
+import { linkWhatsAppCompleto } from '../lib/formatters'
+import { trackInicioAssinatura, trackVerPlanos, trackFaleConosco } from '../lib/analytics'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -89,6 +90,13 @@ export default function Planos() {
     window.open(link, '_blank')
   }
 
+  // Saída para quem ainda não quer contratar: agendar demonstração / teste no WhatsApp.
+  function abrirDemoWhatsapp() {
+    trackFaleConosco()
+    const msg = 'Olá! Antes de contratar a Lumen, eu gostaria de agendar uma demonstração do sistema (ou fazer um teste). Pode me ajudar? 💅'
+    window.open(linkWhatsAppCompleto(SUPORTE_WHATSAPP, msg), '_blank')
+  }
+
   const isSoloAtual  = isActive && (assinatura?.plano === 'solo' || assinatura?.plano === 'starter')
   const isProAtual   = isActive && assinatura?.plano === 'pro'
   const isSalaoAtual = isActive && assinatura?.plano === 'salao'
@@ -129,6 +137,19 @@ export default function Planos() {
               : 'Planos para autônomas e salões. Sem taxa de setup, sem surpresas.'}
         </p>
       </div>
+
+      {/* Quer ver antes de contratar? Saída para demonstração/teste no WhatsApp */}
+      {!isActive && (
+        <div style={s.demoCta}>
+          <div style={s.demoCtaText}>
+            <strong style={{ color: 'var(--text)', fontSize: 14 }}>Quer ver funcionando antes de contratar?</strong>
+            <span style={{ color: 'var(--text3)' }}>Agende uma demonstração ou faça um teste — eu te mostro tudo no WhatsApp.</span>
+          </div>
+          <button style={s.demoCtaBtn} onClick={abrirDemoWhatsapp}>
+            <MessageCircle size={15} /> Agendar demonstração
+          </button>
+        </div>
+      )}
 
       {/* Toggle mensal / anual */}
       <div style={s.toggleWrap}>
@@ -427,6 +448,10 @@ const s = {
   heroBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--pink-light)', color: 'var(--pink)', borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontSize: 11, fontWeight: 700, marginBottom: 14, letterSpacing: '0.3px' },
   heroTitle: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 32, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.15 },
   heroSub: { fontSize: 14, color: 'var(--text2)', margin: '10px 0 0', lineHeight: 1.5 },
+
+  demoCta: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 18px', marginBottom: 18, boxShadow: 'var(--shadow-xs)', maxWidth: 620, marginLeft: 'auto', marginRight: 'auto' },
+  demoCtaText: { display: 'flex', flexDirection: 'column', gap: 2, fontSize: 12.5, lineHeight: 1.4 },
+  demoCtaBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '10px 18px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 },
 
   toggleWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 },
   toggleCard: { display: 'inline-flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: 4, boxShadow: 'var(--shadow-xs)', gap: 4 },
