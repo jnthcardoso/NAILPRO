@@ -258,7 +258,9 @@ export default function AppLayout() {
             </NavLink>
           )
         })}
-        {maisItems.length > 0 && (
+        {/* "Mais" também precisa aparecer quando não há itens extras (ex.: profissional),
+            pois é por ele que se chega ao botão Sair no celular — senão a pessoa fica presa. */}
+        {(maisItems.length > 0 || isProfissional) && (
           <button
             type="button"
             onClick={() => setMaisAberto(v => !v)}
