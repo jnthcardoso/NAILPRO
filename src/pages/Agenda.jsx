@@ -65,12 +65,18 @@ export default function Agenda() {
   useEffect(() => { if (salaoId) loadAgendamentos() }, [salaoId, dataSel, view, filtroProf])
 
   // Auto-sync: empurra para o Google Agenda os agendamentos ainda sem evento
-  // (inclui os vindos da agenda pública). Só a dona sincroniza — a integração
-  // é single-account, então evitamos duplicar em contas diferentes.
+  // (inclui os vindos da agenda pública). Cada pessoa sincroniza só os atendimentos
+  // DELA, no Google DELA: a profissional os que são dela (profissional_id), e a dona
+  // os dela + os do salão sem profissional definido (link público do salão). Assim
+  // evitamos jogar o atendimento da manicure no Google errado.
   useEffect(() => {
-    if (isDona && googleConectado && agendamentos.length) sincronizarGoogle(agendamentos)
+    if (!googleConectado || !agendamentos.length) return
+    const meus = agendamentos.filter(a =>
+      a.profissional_id === membroId || (isDona && a.profissional_id == null)
+    )
+    if (meus.length) sincronizarGoogle(meus)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agendamentos, googleConectado, isDona, googlePronto])
+  }, [agendamentos, googleConectado, isDona, membroId, googlePronto])
 
   // ── Busca por cliente/serviço (todas as datas) ──
   useEffect(() => {
