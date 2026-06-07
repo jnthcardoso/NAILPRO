@@ -790,7 +790,7 @@ const s = {
 
   featGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, maxWidth: 1080, margin: '0 auto' },
   featCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 18px rgba(139,38,85,0.06)', display: 'flex', flexDirection: 'column' },
-  featVisual: { height: 124, background: 'linear-gradient(135deg, #FBF2F6 0%, #F5E7EF 100%)', borderBottom: '1px solid var(--border, #Eadfe4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14 },
+  featVisual: { height: 124, background: 'linear-gradient(135deg, #EECCDC 0%, #DDB1C9 100%)', borderBottom: '1px solid #D9A9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14 },
   featBody: { padding: '16px 18px 20px' },
   featHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 },
   featIcon: { width: 28, height: 28, borderRadius: 8, background: 'var(--pink-light, #FAF0F4)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
