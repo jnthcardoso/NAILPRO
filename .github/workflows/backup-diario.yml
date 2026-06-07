@@ -1,0 +1,44 @@
+name: Backup diário do banco (paliativo)
+
+# Roda na NUVEM (não depende do PC ligado). Faz um dump do banco, comprime,
+# CRIPTOGRAFA com AES-256 e guarda como artefato do GitHub (retém 30 dias).
+# Paliativo até migrar para o Supabase Pro (que tem backup nativo).
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 01:00 UTC = 22:00 no horário de Brasília
+  workflow_dispatch: {}    # permite rodar manualmente (1º backup / teste)
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar pg_dump 17 (mesma versão do servidor)
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Gerar backup criptografado
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          STAMP=$(TZ=America/Sao_Paulo date +%Y-%m-%d_%H%M)
+          OUT="lumen-backup-$STAMP.sql.gz.gpg"
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges \
+            | gzip -9 \
+            | gpg --batch --yes --symmetric --cipher-algo AES256 \
+                  --passphrase "$BACKUP_PASSPHRASE" -o "$OUT"
+          SIZE=$(stat -c%s "$OUT")
+          echo "Backup gerado: $OUT ($SIZE bytes)"
+          # sanidade: aborta se o arquivo veio vazio/muito pequeno
+          if [ "$SIZE" -lt 1024 ]; then echo "::error::Backup muito pequeno — falhou"; exit 1; fi
+
+      - name: Guardar artefato (retém 30 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumen-backup-${{ github.run_id }}
+          path: lumen-backup-*.sql.gz.gpg
+          retention-days: 30
