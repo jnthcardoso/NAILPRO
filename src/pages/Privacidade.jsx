@@ -58,6 +58,10 @@ export default function Privacidade() {
             <li><strong>Autoridades</strong>, quando legalmente exigido (ordem judicial).</li>
           </ul>
 
+          <h3 style={s.h3}>4.1. Integração com o Google (Uso Limitado)</h3>
+          <p>Se você conectar o <strong>Google Agenda</strong>, a Lumen solicita acesso apenas ao escopo <code>calendar.events</code>, usado <strong>exclusivamente</strong> para criar, atualizar e excluir no seu Google Agenda os eventos correspondentes aos agendamentos que você registra no app.</p>
+          <p style={s.aviso}><strong>Uso Limitado (Limited Use):</strong> o uso e a transferência, pela Lumen, de informações recebidas das APIs do Google obedecem à <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" style={s.link}>Política de Dados do Usuário dos Serviços de API do Google</a>, incluindo os requisitos de <strong>Uso Limitado</strong>. A Lumen <strong>não</strong> usa esses dados para publicidade, <strong>não</strong> os vende e <strong>não</strong> os compartilha com terceiros — exceto para fornecer ou melhorar a funcionalidade visível a você, cumprir a lei, ou mediante seu consentimento. Você pode revogar o acesso a qualquer momento em Configurações › Integrações, ou na sua <a href="https://myaccount.google.com/permissions" target="_blank" rel="noreferrer" style={s.link}>conta Google</a>.</p>
+
           <h2 style={s.h2}>5. Cookies e tecnologias similares</h2>
           <p>Usamos cookies essenciais para manter sua sessão logada. Não utilizamos cookies de rastreamento de terceiros para publicidade.</p>
 
