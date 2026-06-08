@@ -7,7 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
-import { formatBRL } from '../lib/formatters'
+import { formatBRL, validarTelefone } from '../lib/formatters'
 import {
   format, addDays, subDays, differenceInDays, startOfDay, endOfDay,
   startOfMonth, endOfMonth, subMonths, subWeeks, eachDayOfInterval, getDay,
@@ -101,7 +101,7 @@ export default function Home() {
       { data: ags },
     ] = await Promise.all([
       supabase.from('configuracoes')
-        .select('meta_mensal, nome_salao').eq('salao_id', salaoId).single(),
+        .select('meta_mensal, nome_salao, lembretes_ativos').eq('salao_id', salaoId).single(),
       supabase.from('metas')
         .select('valor_meta')
         .eq('salao_id', salaoId).eq('tipo', 'mes').eq('periodo', periodoAtual)
@@ -206,9 +206,9 @@ export default function Home() {
     setTotalClientes(countClientes ?? 0)
     setTotalAgendamentos(countAgendamentos ?? 0)
 
-    // Lembretes pendentes amanhã
-    if (ags) {
-      const pend = ags.filter(a => !a.lembrete_enviado_em && a.clientes?.telefone).length
+    // Lembretes pendentes amanhã (só se a usuária deixou os lembretes ativos)
+    if (ags && config?.lembretes_ativos !== false) {
+      const pend = ags.filter(a => !a.lembrete_enviado_em && validarTelefone(a.clientes?.telefone)).length
       setLembretesPendentes(pend)
       if (pend > 0) {
         notificarUmaVezPorDia('lembretes-pendentes', `${pend} ${pend === 1 ? 'lembrete' : 'lembretes'} pra enviar`, {

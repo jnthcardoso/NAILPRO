@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
 import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
-import { formatTelefone, unformatTelefone } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO } from '../lib/mensagens'
@@ -63,7 +63,7 @@ export default function Configuracoes() {
     dias_semana: [1, 2, 3, 4, 5],
     google_conectado: false,
     lembretes_ativos: true,
-    mensagem_lembrete: 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
+    mensagem_lembrete: MSG_LEMBRETE_PADRAO,
     msg_aniversario: MSG_ANIVERSARIO_PADRAO,
     msg_retorno: MSG_RETORNO_PADRAO,
     agenda_externa_url: '',
@@ -134,7 +134,7 @@ export default function Configuracoes() {
         dias_semana: data.dias_semana || [1, 2, 3, 4, 5],
         google_conectado: data.google_conectado || false,
         lembretes_ativos: data.lembretes_ativos !== false,
-        mensagem_lembrete: data.mensagem_lembrete || 'Oi {nome}! 💅 Passando pra lembrar do seu horário amanhã ({data}) às {horario} - {servico}. Posso confirmar?',
+        mensagem_lembrete: data.mensagem_lembrete || MSG_LEMBRETE_PADRAO,
         msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
         msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
         agenda_externa_url: data.agenda_externa_url || '',
@@ -560,14 +560,17 @@ export default function Configuracoes() {
                 style={{ ...s.input, minHeight: 90, resize: 'vertical', fontFamily: 'inherit' }}
                 value={form.mensagem_lembrete}
                 onChange={e => setForm({ ...form, mensagem_lembrete: e.target.value })}
-                placeholder="Oi {nome}! Lembrete: amanhã às {horario} - {servico}. Confirma?"
+                placeholder="Oi {nome}! Lembrete: seu horário {quando} às {horario} - {servico}. Confirma?"
               />
               <div style={s.hint}>
                 Use variáveis: <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
+                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome_completo}'}</code>{' '}
+                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{quando}'}</code>{' '}
                 <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{data}'}</code>{' '}
                 <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{horario}'}</code>{' '}
                 <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
                 <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
+                <div style={{ marginTop: 4 }}><strong>{'{quando}'}</strong> vira "hoje", "amanhã" ou "na terça-feira (10/06)" conforme a data — assim a mensagem nunca diz "amanhã" quando não é.</div>
               </div>
             </div>
 

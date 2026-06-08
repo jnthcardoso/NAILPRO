@@ -7,9 +7,9 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { UpgradeBlock } from '../components/common/UpgradeBlock'
-import { format, addDays, startOfDay } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { linkWhatsApp, dataParaDate } from '../lib/formatters'
+import { linkWhatsApp, dataParaDate, validarTelefone, quandoRelativo, MSG_LEMBRETE_PADRAO } from '../lib/formatters'
 
 const TABS = [
   { id: 'amanha', label: 'Amanhã', dias: 1 },
@@ -27,9 +27,19 @@ export default function Lembretes() {
   const [config, setConfig] = useState({ mensagem_lembrete: '', nome_salao: '', lembretes_ativos: true })
   const [agendamentos, setAgendamentos] = useState([])
   const [semTelefone, setSemTelefone] = useState([])
-  const [enviandoTodos, setEnviandoTodos] = useState(false)
+  // Cards que abriram o WhatsApp e aguardam a usuária confirmar "Já enviei"
+  // (só aí marcamos como enviado — fechar a aba sem mandar NÃO conta como enviado).
+  const [aguardando, setAguardando] = useState(() => new Set())
+  // Modo "enviar todos" em sequência (um por vez, sem ser bloqueado pelo navegador).
+  const [seq, setSeq] = useState(null)
 
-  useEffect(() => { if (salaoId) load() }, [salaoId, tab])
+  useEffect(() => {
+    if (!salaoId) return
+    // Trocar de aba zera o estado de "aguardando confirmação" e a sequência.
+    setAguardando(new Set())
+    setSeq(null)
+    load()
+  }, [salaoId, tab])
 
   async function load() {
     const { data: cfg } = await supabase.from('configuracoes')
@@ -57,9 +67,17 @@ export default function Lembretes() {
       .order('data').order('horario')
 
     if (error) { erro('Erro ao carregar lembretes: ' + error.message); return }
-    const lista = data || []
-    setAgendamentos(lista.filter(a => a.clientes?.telefone))
-    setSemTelefone(lista.filter(a => !a.clientes?.telefone))
+    let lista = data || []
+
+    // Aba "Hoje": não faz sentido lembrar de horário que já passou.
+    if (t.id === 'hoje') {
+      const agora = format(new Date(), 'HH:mm')
+      lista = lista.filter(a => (a.horario?.slice(0, 5) || '99:99') >= agora)
+    }
+
+    // Telefone precisa ser válido (10 ou 11 dígitos) pra gerar um link de WhatsApp que funciona.
+    setAgendamentos(lista.filter(a => validarTelefone(a.clientes?.telefone)))
+    setSemTelefone(lista.filter(a => !validarTelefone(a.clientes?.telefone)))
   }
 
   function montarMensagem(ag) {
@@ -67,12 +85,14 @@ export default function Lembretes() {
     const [y, m, d] = ag.data.split('-')
     const dataFmt = `${d}/${m}`
     const horario = ag.horario?.slice(0, 5)
-    const template = config.mensagem_lembrete || 'Oi {nome}! Lembrete: amanhã ({data}) às {horario} - {servico}. Confirma?'
+    const template = config.mensagem_lembrete || MSG_LEMBRETE_PADRAO
 
     // Aceita as variáveis com ou sem acento ({horário}/{horario}, {salão}/{salao}, {serviço}/{servico}).
+    // {quando} = "hoje" / "amanhã" / "na terça-feira (10/06)" conforme a data do agendamento.
     return template
       .replace(/\{nome_completo\}/gi, nome)
       .replace(/\{nome\}/gi, nome.split(' ')[0])
+      .replace(/\{quando\}/gi, quandoRelativo(ag.data))
       .replace(/\{data\}/gi, dataFmt)
       .replace(/\{hor[aá]rio\}/gi, horario)
       .replace(/\{servi[cç]o\}/gi, ag.servico || '')
@@ -94,24 +114,53 @@ export default function Lembretes() {
     load()
   }
 
-  async function enviarUm(ag) {
+  // Abre o WhatsApp e coloca o card em "aguardando confirmação".
+  // Só marcamos como enviado quando a usuária confirmar que mandou de verdade.
+  function enviarUm(ag) {
     window.open(buildLink(ag), '_blank')
+    setAguardando(prev => new Set(prev).add(ag.id))
+  }
+
+  async function confirmarEnvio(ag) {
+    setAguardando(prev => { const n = new Set(prev); n.delete(ag.id); return n })
     await marcarEnviado(q => q.eq('id', ag.id))
   }
 
-  async function enviarTodos() {
-    setEnviandoTodos(true)
-    for (let i = 0; i < pendentes.length; i++) {
-      window.open(buildLink(pendentes[i]), '_blank')
-      await new Promise(r => setTimeout(r, 600))
-    }
-    await marcarEnviado(q => q.in('id', pendentes.map(a => a.id)))
-    setEnviandoTodos(false)
+  function cancelarEnvio(ag) {
+    setAguardando(prev => { const n = new Set(prev); n.delete(ag.id); return n })
   }
 
-  async function reenviarUm(ag) {
+  // "Enviar todos" em sequência: um por vez. A próxima aba abre dentro do clique
+  // (antes de qualquer await), então o navegador NÃO bloqueia como pop-up.
+  function iniciarSequencia() {
+    if (pendentes.length === 0) return
+    const items = [...pendentes]
+    window.open(buildLink(items[0]), '_blank')
+    setSeq({ items, pos: 0 })
+  }
+
+  function abrirProximaOuFinalizar(pos) {
+    const prox = pos + 1
+    if (prox >= seq.items.length) { setSeq(null); return false }
+    window.open(buildLink(seq.items[prox]), '_blank')
+    setSeq(s => ({ ...s, pos: prox }))
+    return true
+  }
+
+  async function seqConfirmar() {
+    const atual = seq.items[seq.pos]
+    abrirProximaOuFinalizar(seq.pos)           // abre a próxima primeiro (mantém o "clique")
+    await marcarEnviado(q => q.eq('id', atual.id))
+  }
+
+  function seqPular() {
+    abrirProximaOuFinalizar(seq.pos)
+  }
+
+  function reenviarUm(ag) {
+    if (!window.confirm(`Reenviar lembrete para ${ag.clientes?.nome}?`)) return
     window.open(buildLink(ag), '_blank')
-    await marcarEnviado(q => q.eq('id', ag.id))
+    marcarEnviado(q => q.eq('id', ag.id))      // atualiza o "enviado às"
   }
 
   const pendentes = agendamentos.filter(a => !a.lembrete_enviado_em)
@@ -195,10 +244,10 @@ export default function Lembretes() {
               <span style={{ ...s.dot, background: '#D97706' }} />
               Pendentes ({pendentes.length})
             </div>
-            {pendentes.length > 1 && (
-              <button style={s.btnEnviarTodos} onClick={enviarTodos} disabled={enviandoTodos}>
+            {pendentes.length > 1 && !seq && (
+              <button style={s.btnEnviarTodos} onClick={iniciarSequencia}>
                 <MessageCircle size={14} />
-                {enviandoTodos ? 'Enviando...' : 'Enviar todos'}
+                Enviar todos
               </button>
             )}
           </div>
@@ -213,11 +262,40 @@ export default function Lembretes() {
                 <div style={s.itemNome}>{ag.clientes?.nome}</div>
                 <div style={s.itemServ}>{ag.servico}</div>
               </div>
-              <button style={s.btnEnviar} onClick={() => enviarUm(ag)}>
-                <Send size={13} /> Enviar
-              </button>
+              {aguardando.has(ag.id) ? (
+                <div style={s.confirmWrap}>
+                  <button style={s.btnConfirmei} onClick={() => confirmarEnvio(ag)}>
+                    <Check size={13} /> Já enviei
+                  </button>
+                  <button style={s.btnNaoEnviei} onClick={() => cancelarEnvio(ag)}>
+                    Não enviei
+                  </button>
+                </div>
+              ) : (
+                <button style={s.btnEnviar} onClick={() => enviarUm(ag)}>
+                  <Send size={13} /> Enviar
+                </button>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Barra da sequência "Enviar todos" — um por vez */}
+      {seq && (
+        <div style={s.seqBar}>
+          <div style={s.seqInfo}>
+            <div style={s.seqProg}>{seq.pos + 1} de {seq.items.length}</div>
+            <div style={s.seqNome}>{seq.items[seq.pos]?.clientes?.nome}</div>
+            <div style={s.seqHint}>Abriu o WhatsApp. Confirme depois de enviar a mensagem.</div>
+          </div>
+          <div style={s.seqBtns}>
+            <button style={s.btnConfirmei} onClick={seqConfirmar}>
+              <Check size={13} /> Enviei{seq.pos + 1 < seq.items.length ? ' · próximo' : ''}
+            </button>
+            <button style={s.btnNaoEnviei} onClick={seqPular}>Pular</button>
+            <button style={s.btnNaoEnviei} onClick={() => setSeq(null)}>Parar</button>
+          </div>
         </div>
       )}
 
@@ -260,11 +338,11 @@ export default function Lembretes() {
           <div style={s.sectionHeader}>
             <div style={s.sectionTitle}>
               <Phone size={14} color="#B91C1C" />
-              Sem telefone cadastrado ({semTelefone.length})
+              Sem WhatsApp válido ({semTelefone.length})
             </div>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>
-            Cadastre o WhatsApp dessas clientes pra poder enviar lembretes:
+            Cadastre um WhatsApp válido (com DDD) dessas clientes pra poder enviar lembretes:
           </div>
           {semTelefone.map(ag => (
             <div key={ag.id} style={{ ...s.item, background: '#FFFBEB' }}>
@@ -342,6 +420,15 @@ const s = {
   itemServ: { fontSize: 11, color: 'var(--text3)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   itemEnviadoEm: { fontSize: 10, color: 'var(--green)', marginTop: 3, fontWeight: 500 },
   btnEnviar: { display: 'flex', alignItems: 'center', gap: 4, background: '#25D366', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
+  confirmWrap: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, alignItems: 'stretch' },
+  btnConfirmei: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'var(--green)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
+  btnNaoEnviei: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
+  seqBar: { position: 'sticky', bottom: 12, display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--surface)', border: '2px solid #25D366', borderRadius: 'var(--radius-sm)', padding: 14, marginBottom: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 5 },
+  seqInfo: {},
+  seqProg: { fontSize: 10, fontWeight: 700, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.6px' },
+  seqNome: { fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 2 },
+  seqHint: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
+  seqBtns: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
   btnReenviar: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
   btnEditar: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '50px 20px', textAlign: 'center' },

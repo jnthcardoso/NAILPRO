@@ -65,6 +65,28 @@ export function dataBR(str) {
   return `${d}/${m}/${y}`
 }
 
+// ─── Lembretes ───
+// Mensagem padrão dos lembretes (usada no banco, na tela de Config e na página de Lembretes).
+// Usa {quando} em vez de "amanhã" fixo, pra funcionar nas abas Hoje / Amanhã / Próximos 7 dias.
+export const MSG_LEMBRETE_PADRAO =
+  'Oi {nome}! 💅 Passando pra lembrar do seu horário {quando} às {horario} - {servico}. Posso confirmar?'
+
+// Texto relativo da data do agendamento: 'hoje', 'amanhã' ou 'na terça-feira (10/06)'.
+// Assim o mesmo template serve pra qualquer aba sem dizer "amanhã" quando não é.
+export function quandoRelativo(dataStr) {
+  const alvo = dataParaDate(dataStr)
+  if (!alvo) return ''
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  const diff = Math.round((alvo - hoje) / 86400000)
+  if (diff === 0) return 'hoje'
+  if (diff === 1) return 'amanhã'
+  const dias = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
+  const [, m, d] = (dataStr || '').split('-')
+  const prep = (alvo.getDay() === 0 || alvo.getDay() === 6) ? 'no' : 'na'
+  return `${prep} ${dias[alvo.getDay()]} (${d}/${m})`
+}
+
 // ─── Validadores ───
 export function validarEmail(email) {
   // RFC-compatible: local@domain.tld — rejeita espaços, exige TLD de 2+ letras
