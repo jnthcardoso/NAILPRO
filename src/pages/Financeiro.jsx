@@ -141,7 +141,7 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
   doc.save(`lumen-financeiro-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
 }
 
-async function exportarPDFAnual(salaoId, ano) {
+async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
   const { default: jsPDF } = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
 
@@ -149,12 +149,18 @@ async function exportarPDFAnual(salaoId, ano) {
   const inicio = `${ano}-01-01`
   const fim = `${ano}-12-31`
 
+  // Despesas: dona/recepção por salão; profissional por user_id (despesas dela
+  // são privadas, gravadas com salao_id NULL). Mesma lógica do loadDespesas —
+  // sem isso, o anual da manicure mostraria despesas = 0 (lucro inflado).
+  let despQ = supabase.from('despesas').select('*').gte('data', inicio).lte('data', fim)
+  despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', userId)
+
   const [{ data: pags }, { data: desps }] = await Promise.all([
     supabase.from('pagamentos')
       .select('data, valor, status, forma, agendamentos(servico, clientes(nome))')
       .eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio).lte('data', fim),
-    supabase.from('despesas').select('*').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim),
+    despQ,
   ])
 
   const doc = new jsPDF()
@@ -450,7 +456,7 @@ export default function Financeiro() {
   async function handleExportarAnual() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportandoAnual(true)
-    try { await exportarPDFAnual(salaoId, refDate.getFullYear()) }
+    try { await exportarPDFAnual(salaoId, refDate.getFullYear(), { gerenciaTudo, userId: user.id }) }
     catch (e) { toastErro('Erro ao gerar PDF anual') }
     setExportandoAnual(false)
   }

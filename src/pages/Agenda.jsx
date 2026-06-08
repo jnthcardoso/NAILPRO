@@ -401,25 +401,19 @@ export default function Agenda() {
 
     setSavingPag(true)
     try {
-      // Remove pagamentos anteriores desse agendamento antes de inserir novos
-      const idsExistentes = (agSelecionado.pagamentos || []).map(p => p.id)
-      if (idsExistentes.length > 0) {
-        await supabase.from('pagamentos').delete().in('id', idsExistentes)
-      }
+      // Apaga os pagamentos antigos e insere os novos numa ÚNICA transação (RPC).
+      // Evita perda silenciosa caso o insert falhasse depois do delete.
+      const itens = formPag.modo === 'duplo'
+        ? [{ valor: v1, forma: formPag.forma }, { valor: v2, forma: formPag.forma2 }]
+        : [{ valor: v1, forma: formPag.forma }]
 
-      // Monta os registros a inserir
-      const base = { user_id: user.id, salao_id: salaoId, agendamento_id: agSelecionado.id, data: agSelecionado.data, status: formPag.status }
-
-      if (formPag.modo === 'duplo') {
-        const { error } = await supabase.from('pagamentos').insert([
-          { ...base, valor: v1, forma: formPag.forma },
-          { ...base, valor: v2, forma: formPag.forma2 },
-        ])
-        if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
-      } else {
-        const { error } = await supabase.from('pagamentos').insert({ ...base, valor: v1, forma: formPag.forma })
-        if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
-      }
+      const { error } = await supabase.rpc('salvar_pagamento_agendamento', {
+        p_agendamento_id: agSelecionado.id,
+        p_data: agSelecionado.data,
+        p_status: formPag.status,
+        p_pagamentos: itens,
+      })
+      if (error) { erro('Erro ao registrar pagamento. Tente novamente.'); return }
 
       if (formPag.status === 'pendente') {
         aviso('⏳ Pagamento pendente registrado — aparece em "A receber" no financeiro')
