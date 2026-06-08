@@ -132,8 +132,6 @@ export default function App() {
           <Routes>
             {/* Rotas públicas */}
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
-            {/* Landings por segmento — mesmo sistema, "sotaque" diferente (ver src/lib/segmentos.js) */}
-            <Route path="/barbearia" element={<PublicRoute><Landing segmento="barbearia" /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />

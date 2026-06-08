@@ -52,18 +52,14 @@ export function trackPagamentoConfirmado(plano, ciclo, valorReais) {
   pixel('Purchase', { value: valorReais, currency: 'BRL', content_name: `Lumen ${plano} ${ciclo}` })
 }
 
-/**
- * Usuário visitou a seção de planos (interesse demonstrado).
- * `segmento` (ex.: 'manicure', 'barbearia') identifica de qual landing veio,
- * pra medir conversão por campanha/segmento no GA e na Meta.
- */
-export function trackVerPlanos(segmento) {
-  ga('view_item_list', { item_list_name: 'Planos Lumen', ...(segmento ? { segmento } : {}) })
-  pixel('ViewContent', { content_name: 'Planos', content_type: 'product', ...(segmento ? { content_category: segmento } : {}) })
+/** Usuário visitou a seção de planos (interesse demonstrado) */
+export function trackVerPlanos() {
+  ga('view_item_list', { item_list_name: 'Planos Lumen' })
+  pixel('ViewContent', { content_name: 'Planos', content_type: 'product' })
 }
 
-/** Lead: usuário clicou em "Fale conosco" no WhatsApp. `segmento` = landing de origem. */
-export function trackFaleConosco(segmento) {
-  ga('generate_lead', segmento ? { segmento } : {})
-  pixel('Lead', segmento ? { content_category: segmento } : {})
+/** Lead: usuário clicou em "Fale conosco" no WhatsApp */
+export function trackFaleConosco() {
+  ga('generate_lead')
+  pixel('Lead')
 }

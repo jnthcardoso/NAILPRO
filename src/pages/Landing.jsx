@@ -5,7 +5,6 @@ import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
 import { linkWhatsAppCompleto } from '../lib/formatters'
-import { getSegmento } from '../lib/segmentos'
 
 const BENEFICIOS = [
   { id: 'agenda', icon: Calendar, titulo: 'Agenda sem confusão', texto: 'Todos os atendimentos por dia, semana ou mês. Chega de caderninho e horário esquecido.' },
@@ -37,27 +36,35 @@ const NAV_LINKS = [
   { label: 'Contato', id: 'contato' },
 ]
 
+const DEPOIMENTOS = [
+  {
+    nome: 'Letícia Prado',
+    cargo: 'Nail designer autônoma · Porto Alegre',
+    texto: 'Antes eu não sabia nem quanto ganhava no mês. Hoje vejo tudo no celular em segundos. A Lumen mudou como eu me vejo como profissional.',
+    iniciais: 'LP',
+  },
+  {
+    nome: 'Camila Rossato',
+    cargo: 'Proprietária · Studio CR Nails',
+    texto: 'Minha equipe tem login próprio e cada uma vê só a própria agenda. Acabou a confusão e a falta de profissionalismo. Vale cada centavo.',
+    iniciais: 'CR',
+  },
+  {
+    nome: 'Fernanda Oliveira',
+    cargo: 'Nail designer · São Paulo',
+    texto: 'Tentei planilha, tentei caderninho, tentei outros apps. A Lumen é a única que foi feita de verdade pra quem faz unhas. Simples e completa.',
+    iniciais: 'FO',
+  },
+]
+
 function scrollTo(id) {
   const el = document.getElementById(id)
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-export default function Landing({ segmento = 'manicure' }) {
+export default function Landing() {
   const navigate = useNavigate()
   const [ciclo, setCiclo] = useState('anual')
-  // Ficha do segmento (manicure por padrão). Define todos os textos com "sotaque".
-  const seg = getSegmento(segmento)
-  // Texto da anamnese muda por segmento; o resto dos benefícios é compartilhado.
-  const beneficios = BENEFICIOS.map(b =>
-    b.id === 'anamnese' ? { ...b, texto: seg.beneficioAnamneseTexto } : b
-  )
-
-  // Ajusta o título da aba ao segmento (também usado como page_title no GA).
-  useEffect(() => {
-    const anterior = document.title
-    document.title = seg.titulo
-    return () => { document.title = anterior }
-  }, [seg.titulo])
 
   // Navega para login salvando a intenção de plano no sessionStorage
   // Login simples (botão "Login" da navbar)
@@ -101,14 +108,13 @@ export default function Landing({ segmento = 'manicure' }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const whatsappContato = linkWhatsAppCompleto(SUPORTE_WHATSAPP, seg.whatsappContatoMsg)
+  const whatsappContato = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Quero saber mais sobre a Lumen 💅')
   // Lead do anúncio: pede demonstração/apresentação (você recebe e marca a call).
-  // A mensagem do demo identifica de qual página (segmento) veio o lead.
-  const whatsappDemo = linkWhatsAppCompleto(SUPORTE_WHATSAPP, seg.whatsappDemoMsg)
+  const whatsappDemo = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Vim pelo site da Lumen e quero agendar uma demonstração 💅')
 
-  const abrirWhatsapp = (e) => { trackFaleConosco(seg.categoria); window.open(whatsappContato, '_blank') }
-  const agendarDemo = () => { trackFaleConosco(seg.categoria); window.open(whatsappDemo, '_blank') }
-  const irPlanos = () => { trackVerPlanos(seg.categoria); scrollTo('planos') }
+  const abrirWhatsapp = (e) => { trackFaleConosco(); window.open(whatsappContato, '_blank') }
+  const agendarDemo = () => { trackFaleConosco(); window.open(whatsappDemo, '_blank') }
+  const irPlanos = () => { trackVerPlanos(); scrollTo('planos') }
 
   return (
     <div style={s.page}>
@@ -195,23 +201,24 @@ export default function Landing({ segmento = 'manicure' }) {
           <div className="hero-text">
             <div style={{ ...s.heroBadge, display: 'inline-flex' }}><Sparkles size={13} /> Demonstração gratuita · garantia de 7 dias</div>
             <h1 style={{ ...s.heroTitle, textAlign: 'left', maxWidth: 520 }}>
-              {seg.heroLinha1}<br /><em style={s.heroEm}>{seg.heroEnfase}</em>
+              Você não é só manicure.<br /><em style={s.heroEm}>É dona.</em>
             </h1>
             <p style={{ ...s.heroSub, textAlign: 'left', margin: '0 0 28px' }}>
-              {seg.heroSub}
+              Chega de caderninho, esquecimento e dinheiro sem controle.
+              A Lumen cuida da gestão enquanto você cuida das unhas.
             </p>
             <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
               <button style={s.ctaPrimary} onClick={agendarDemo}><MessageCircle size={16} /> Agendar demonstração</button>
               <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
-              {seg.heroNota}
+              "Finalmente sei quanto ganho de verdade." — Letícia, nail designer
             </div>
           </div>
 
           {/* Mockup do app */}
           <div className="hero-mock">
-            <AppMockup nome={seg.mockNome} servicos={seg.mockServicos} />
+            <AppMockup />
           </div>
         </div>
       </section>
@@ -221,14 +228,14 @@ export default function Landing({ segmento = 'manicure' }) {
         <div style={s.secaoLabel}>funcionalidades</div>
         <h2 style={s.secaoTitulo}>Tudo que você precisa, num só app</h2>
         <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, margin: '-20px auto 32px', maxWidth: 560 }}>
-          {seg.funcionalidadesSub}
+          Da agenda ao financeiro, do lembrete no WhatsApp ao link de agendamento — tudo num lugar só, feito pra nail designer.
         </p>
         <div style={s.featGrid}>
-          {beneficios.map(b => {
+          {BENEFICIOS.map(b => {
             const Ico = b.icon
             return (
               <div key={b.id} style={{ ...s.featCard, ...(b.emBreve ? s.featCardSoon : {}) }}>
-                <div style={s.featVisual}><FeatureVisual id={b.id} seg={seg} /></div>
+                <div style={s.featVisual}><FeatureVisual id={b.id} /></div>
                 <div style={s.featBody}>
                   <div style={s.featHead}>
                     <span style={s.featIcon}><Ico size={15} color="var(--pink)" /></span>
@@ -247,9 +254,9 @@ export default function Landing({ segmento = 'manicure' }) {
       <section id="depoimentos" style={{ background: 'var(--cream, #FBF6F8)', padding: '56px 20px' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={s.secaoLabel}>quem já usa a lumen</div>
-          <h2 style={s.secaoTitulo}>{seg.depoimentosTitulo}</h2>
+          <h2 style={s.secaoTitulo}>Nail designers reais. Resultados reais.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-            {seg.depoimentos.map((d, i) => (
+            {DEPOIMENTOS.map((d, i) => (
               <div key={i} style={dep.card}>
                 <div style={dep.aspas}>"</div>
                 <p style={dep.texto}>{d.texto}</p>
@@ -269,12 +276,12 @@ export default function Landing({ segmento = 'manicure' }) {
       {/* Equipe */}
       <section style={s.secaoEquipe}>
         <div style={s.equipeInner}>
-          <div style={s.secaoLabelLight}>{seg.equipeLabel}</div>
+          <div style={s.secaoLabelLight}>para salões com equipe</div>
           <h2 style={s.equipeTitulo}>Sua equipe organizada, sem bagunça.</h2>
           <p style={s.equipeTexto}>
             No plano Salão, cada profissional tem o próprio acesso — vê só a própria agenda e o próprio financeiro.
-            Sua recepcionista gerencia tudo. {seg.equipeControle}
-            {' '}{seg.equipeInclusos}; cada <strong>{seg.profissional} a mais por R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</strong>.
+            Sua recepcionista gerencia tudo. Você controla todo o salão.
+            Dona e recepcionista inclusas; cada <strong>manicure a mais por R$ {formatPreco(PRECO_USUARIO_ADICIONAL)}/mês</strong>.
           </p>
         </div>
       </section>
@@ -283,7 +290,7 @@ export default function Landing({ segmento = 'manicure' }) {
       <section id="planos" style={s.secao}>
         <div style={s.secaoLabel}>planos</div>
         <h2 style={s.planosTitulo}>Simples, justo e sem surpresa</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, marginBottom: 28, marginTop: -12 }}>{seg.planosSub}</p>
+        <p style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 15, marginBottom: 28, marginTop: -12 }}>Para autônomas e salões com equipe. Cancele quando quiser · garantia de 7 dias.</p>
 
         {/* Toggle mensal/anual */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 }}>
@@ -317,7 +324,7 @@ export default function Landing({ segmento = 'manicure' }) {
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.solo.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
             <button style={s.planoBtn} onClick={() => irComPlano('solo')}>Assinar agora</button>
-            <PlanoFeats plano={PLANOS.solo} seg={seg} />
+            <PlanoFeats plano={PLANOS.solo} />
           </div>
 
           {/* Pro */}
@@ -331,7 +338,7 @@ export default function Landing({ segmento = 'manicure' }) {
             </div>
             <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.pro.precoAnual)}/ano · 1 login` : 'sem fidelidade · 1 login'}</div>
             <button style={{ ...s.planoBtn, ...s.planoBtnPro }} onClick={() => irComPlano('pro')}>Assinar agora</button>
-            <PlanoFeats plano={PLANOS.pro} seg={seg} />
+            <PlanoFeats plano={PLANOS.pro} />
           </div>
 
           {/* Salão */}
@@ -342,9 +349,9 @@ export default function Landing({ segmento = 'manicure' }) {
               <span style={s.valor}>{precoMes(PLANOS.salao)}</span>
               <span style={s.ciclo}>/mês</span>
             </div>
-            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.salao.precoAnual)}/ano · + ${seg.profissional} R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + ${seg.profissional} R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
+            <div style={s.planoNota}>{ciclo === 'anual' ? `R$ ${formatPreco(PLANOS.salao.precoAnual)}/ano · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}` : `sem fidelidade · + manicure R$ ${formatPreco(PRECO_USUARIO_ADICIONAL)}`}</div>
             <button style={s.planoBtn} onClick={() => irComPlano('salao')}>Assinar agora</button>
-            <PlanoFeats plano={PLANOS.salao} seg={seg} />
+            <PlanoFeats plano={PLANOS.salao} />
           </div>
         </div>
         <div style={s.garantia}>
@@ -362,7 +369,7 @@ export default function Landing({ segmento = 'manicure' }) {
 
       {/* CTA final */}
       <section style={s.ctaFinal}>
-        <h2 style={s.ctaFinalTitulo}>{seg.ctaFinalTitulo}</h2>
+        <h2 style={s.ctaFinalTitulo}>pronta pra organizar seu salão?</h2>
         <p style={s.ctaFinalSub}>Agende uma demonstração gratuita ou contrate agora — com garantia de 7 dias.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button style={s.ctaPrimary} onClick={agendarDemo}><MessageCircle size={16} /> Agendar demonstração</button>
@@ -378,7 +385,7 @@ export default function Landing({ segmento = 'manicure' }) {
           <div style={s.footerCol}>
             <LumenLogo size={20} variant="reverso" style={{ marginBottom: 12 }} />
             <p style={s.footerDesc}>
-              {seg.footerDesc}
+              O app de gestão feito para nail designers — agenda, financeiro e clientes num só lugar.
             </p>
             <div style={s.footerRedes}>
               <a
@@ -460,12 +467,8 @@ export default function Landing({ segmento = 'manicure' }) {
   )
 }
 
-// Mockup visual do app no hero. Nome e serviços mudam conforme o segmento.
-function AppMockup({ nome = 'Letícia', servicos = [
-  { hora: '09:00', nome: 'Ana Paula', servico: 'Gel francês' },
-  { hora: '11:00', nome: 'Mariana', servico: 'Alongamento gel' },
-  { hora: '14:00', nome: 'Carla', servico: 'Manutenção' },
-] }) {
+// Mockup visual do app no hero
+function AppMockup() {
   return (
     <div style={mock.phone}>
       {/* Header do app */}
@@ -479,7 +482,7 @@ function AppMockup({ nome = 'Letícia', servicos = [
       <div style={mock.body}>
         <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Sábado, 31 de Maio</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#180712', marginBottom: 12 }}>
-          <em style={{ fontFamily: 'serif', fontStyle: 'italic' }}>oi {nome},</em>
+          <em style={{ fontFamily: 'serif', fontStyle: 'italic' }}>oi Letícia,</em>
         </div>
 
         {/* Cards de resumo */}
@@ -496,7 +499,11 @@ function AppMockup({ nome = 'Letícia', servicos = [
 
         {/* Próximos atendimentos */}
         <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hoje</div>
-        {servicos.map((ag, i) => (
+        {[
+          { hora: '09:00', nome: 'Ana Paula', servico: 'Gel francês' },
+          { hora: '11:00', nome: 'Mariana', servico: 'Alongamento gel' },
+          { hora: '14:00', nome: 'Carla', servico: 'Manutenção' },
+        ].map((ag, i) => (
           <div key={i} style={mock.ag}>
             <div style={mock.agHora}>{ag.hora}</div>
             <div style={mock.agBar} />
@@ -591,7 +598,7 @@ const dep = {
 }
 
 // Mini-prévia visual de cada funcionalidade (renderizada em CSS, sem imagem).
-function FeatureVisual({ id, seg }) {
+function FeatureVisual({ id }) {
   if (id === 'agenda') {
     return (
       <div style={fv.agenda}>
@@ -629,7 +636,7 @@ function FeatureVisual({ id, seg }) {
   if (id === 'lembretes') {
     return (
       <div style={fv.wpp}>
-        <div style={fv.bubble}>{seg?.visualLembrete ?? 'Oi Ana! 💅 Confirma seu horário amanhã às 14h?'}</div>
+        <div style={fv.bubble}>Oi Ana! 💅 Confirma seu horário amanhã às 14h?</div>
         <div style={fv.bubbleR}>Confirmado ✓</div>
       </div>
     )
@@ -665,7 +672,7 @@ function FeatureVisual({ id, seg }) {
       <div style={fv.anam}>
         <div style={fv.anamTitle}>Ficha da cliente</div>
         <div style={fv.anamRow}><span style={fv.anamCheck}>✓</span> Alergias</div>
-        <div style={fv.anamRow}><span style={fv.anamCheck}>✓</span> {seg?.visualAnamRow ?? 'Saúde das unhas'}</div>
+        <div style={fv.anamRow}><span style={fv.anamCheck}>✓</span> Saúde das unhas</div>
         <div style={fv.anamRow}><span style={fv.anamCheckOff}>○</span> Observações</div>
       </div>
     )
@@ -723,11 +730,7 @@ function Feat({ f }) {
 // Lista de planos focada nos DIFERENCIAIS: cada plano superior mostra
 // "Tudo do <anterior>, e mais:" e só o que ele adiciona — em vez de repetir
 // as mesmas features básicas nos três cards.
-function PlanoFeats({ plano, seg }) {
-  // Na vitrine, "Manicures adicionais" vira o profissional do segmento (ex.: "Barbeiros").
-  // O dado global dos planos (checkout) não é alterado — só o texto exibido aqui.
-  const plural = seg?.profissionalPlural
-  const ajusta = (f) => (plural && plural !== 'Manicures' ? f.replace(/Manicures/g, plural) : f)
+function PlanoFeats({ plano }) {
   return (
     <>
       {plano.subtitulo && <div style={s.planoSubtitulo}>{plano.subtitulo}</div>}
@@ -735,7 +738,7 @@ function PlanoFeats({ plano, seg }) {
         <div style={s.heranca}>✨ Tudo do <strong>{plano.heranca}</strong>, e mais:</div>
       )}
       <div style={s.feats}>
-        {(plano.diferenciais || []).map((f, i) => <Feat key={i} f={`✓ ${ajusta(f)}`} />)}
+        {(plano.diferenciais || []).map((f, i) => <Feat key={i} f={`✓ ${f}`} />)}
       </div>
     </>
   )
