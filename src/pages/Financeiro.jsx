@@ -210,7 +210,7 @@ async function exportarPDFAnual(salaoId, ano) {
 
 export default function Financeiro() {
   const { user } = useAuth()
-  const { salaoId } = useSalao()
+  const { salaoId, gerenciaTudo } = useSalao()
   const { temAcesso } = useAssinatura()
   const { erro: toastErro, sucesso, confirmar } = useToast()
   const [showUpgrade, setShowUpgrade] = useState(false)
@@ -288,9 +288,13 @@ export default function Financeiro() {
 
   async function loadDespesas() {
     const { inicio, fim } = getRange()
-    const { data, error } = await supabase.from('despesas')
-      .select('*').eq('salao_id', salaoId)
+    // Dona/recepção veem as despesas do salão; a profissional vê só as DELA
+    // (privadas, gravadas com salao_id NULL e identificadas pelo user_id).
+    let q = supabase.from('despesas')
+      .select('*')
       .gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    q = gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id)
+    const { data, error } = await q
     if (error) { toastErro('Erro ao carregar despesas: ' + error.message); return }
     setDespesas(data || [])
   }
@@ -320,7 +324,8 @@ export default function Financeiro() {
     setSavingDespesa(true)
     const dados = {
       user_id: user.id,
-      salao_id: salaoId,
+      // Profissional: despesa privada (sem vínculo ao salão, fora do DRE da dona).
+      salao_id: gerenciaTudo ? salaoId : null,
       descricao: formDespesa.descricao,
       categoria: formDespesa.categoria,
       valor: parseFloat(formDespesa.valor),
@@ -329,9 +334,13 @@ export default function Financeiro() {
       recorrente: formDespesa.recorrente,
       observacoes: formDespesa.observacoes || null,
     }
+    // Escopo da edição igual ao da leitura: dona por salão, profissional por user_id.
+    const base = supabase.from('despesas')
     const resp = editandoDespesa
-      ? await supabase.from('despesas').update(dados).eq('id', editandoDespesa.id).eq('salao_id', salaoId)
-      : await supabase.from('despesas').insert(dados)
+      ? await (gerenciaTudo
+          ? base.update(dados).eq('id', editandoDespesa.id).eq('salao_id', salaoId)
+          : base.update(dados).eq('id', editandoDespesa.id).eq('user_id', user.id))
+      : await base.insert(dados)
     setSavingDespesa(false)
     if (resp.error) {
       toastErro('Erro: ' + resp.error.message)
@@ -376,7 +385,8 @@ export default function Financeiro() {
       tipo: 'perigo',
     })
     if (!ok) return
-    const { error } = await supabase.from('despesas').delete().eq('id', despesa.id).eq('salao_id', salaoId)
+    const delQ = supabase.from('despesas').delete().eq('id', despesa.id)
+    const { error } = await (gerenciaTudo ? delQ.eq('salao_id', salaoId) : delQ.eq('user_id', user.id))
     if (error) { toastErro('Erro ao excluir despesa: ' + error.message); return }
     sucesso('Despesa excluída', {
       acaoLabel: 'Desfazer',
