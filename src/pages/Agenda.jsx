@@ -64,6 +64,17 @@ export default function Agenda() {
 
   useEffect(() => { if (salaoId) loadAgendamentos() }, [salaoId, dataSel, view, filtroProf])
 
+  // Recarrega ao voltar o foco para a aba/janela (consistência entre sessões).
+  useEffect(() => {
+    function aoFocar() { if (document.visibilityState === 'visible' && salaoId) loadAgendamentos() }
+    window.addEventListener('focus', aoFocar)
+    document.addEventListener('visibilitychange', aoFocar)
+    return () => {
+      window.removeEventListener('focus', aoFocar)
+      document.removeEventListener('visibilitychange', aoFocar)
+    }
+  }, [salaoId, dataSel, view, filtroProf])
+
   // Auto-sync: empurra para o Google Agenda os agendamentos ainda sem evento
   // (inclui os vindos da agenda pública). Cada pessoa sincroniza só os atendimentos
   // DELA, no Google DELA: a profissional os que são dela (profissional_id), e a dona

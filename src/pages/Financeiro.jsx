@@ -223,7 +223,6 @@ export default function Financeiro() {
   const [pagamentos, setPagamentos] = useState([])
   const [despesas, setDespesas] = useState([])
   const [pagamentos6m, setPagamentos6m] = useState([])
-  const [agendamentosMes, setAgendamentosMes] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showDespesaModal, setShowDespesaModal] = useState(false)
   const [editandoDespesa, setEditandoDespesa] = useState(null)
@@ -273,6 +272,22 @@ export default function Financeiro() {
     Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas()]).finally(() => setLoading(false))
   }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
+  // Recarrega ao voltar o foco para a aba/janela: mantém os números frescos
+  // quando dona e profissional mexem ao mesmo tempo em sessões diferentes.
+  useEffect(() => {
+    function aoFocar() {
+      if (document.visibilityState === 'visible' && salaoId) {
+        loadPagamentos(); loadDespesas()
+      }
+    }
+    window.addEventListener('focus', aoFocar)
+    document.addEventListener('visibilitychange', aoFocar)
+    return () => {
+      window.removeEventListener('focus', aoFocar)
+      document.removeEventListener('visibilitychange', aoFocar)
+    }
+  }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
+
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
     const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
@@ -285,11 +300,6 @@ export default function Financeiro() {
       .select('data, valor, status').eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio6m).lte('data', fim6m)
     setPagamentos6m(data6m || [])
-
-    const { data: ags } = await supabase.from('agendamentos')
-      .select('servico, valor').eq('salao_id', salaoId)
-      .gte('data', inicio).lte('data', fim).neq('status', 'cancelado')
-    setAgendamentosMes(ags || [])
   }
 
   async function loadDespesas() {
@@ -483,12 +493,19 @@ export default function Financeiro() {
     return { label: format(mes, 'MMM', { locale: ptBR }), valor: total }
   })
 
+  // Quebra por serviço baseada no que foi RECEBIDO (pagamentos pagos), pra bater
+  // com a receita do período. Antes usava agendamentos.valor, que divergia.
   const servicosMap = {}
-  agendamentosMes.forEach(a => {
-    if (!a.servico) return
-    if (!servicosMap[a.servico]) servicosMap[a.servico] = { qtd: 0, valor: 0 }
-    servicosMap[a.servico].qtd += 1
-    servicosMap[a.servico].valor += a.valor || 0
+  const agsVistosPorServico = {}
+  pagamentos.filter(p => p.status === 'pago').forEach(p => {
+    const sv = p.agendamentos?.servico
+    if (!sv) return
+    if (!servicosMap[sv]) { servicosMap[sv] = { qtd: 0, valor: 0 }; agsVistosPorServico[sv] = new Set() }
+    servicosMap[sv].valor += p.valor || 0
+    // qtd = atendimentos distintos (pagamento de 2 formas não conta dobrado)
+    const aid = p.agendamento_id
+    if (!aid) { servicosMap[sv].qtd += 1 }
+    else if (!agsVistosPorServico[sv].has(aid)) { agsVistosPorServico[sv].add(aid); servicosMap[sv].qtd += 1 }
   })
   const topServicos = Object.entries(servicosMap)
     .map(([nome, v]) => ({ label: nome, valor: v.valor, qtd: v.qtd }))

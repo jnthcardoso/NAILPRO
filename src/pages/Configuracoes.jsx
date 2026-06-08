@@ -55,6 +55,7 @@ export default function Configuracoes() {
     whatsapp: '',
     servicos_padrao: [],
     agenda_publica_ativa: false,
+    agenda_publica_escolher_profissional: true,
     slug: '',
     horario_inicio: '09:00',
     horario_fim: '18:00',
@@ -125,6 +126,7 @@ export default function Configuracoes() {
         whatsapp: data.whatsapp || '',
         servicos_padrao: data.servicos_padrao || [],
         agenda_publica_ativa: data.agenda_publica_ativa || false,
+        agenda_publica_escolher_profissional: data.agenda_publica_escolher_profissional !== false,
         slug: data.slug || '',
         horario_inicio: data.horario_inicio?.slice(0, 5) || '09:00',
         horario_fim: data.horario_fim?.slice(0, 5) || '18:00',
@@ -679,6 +681,22 @@ export default function Configuracoes() {
             <div style={{ ...s.toggleThumb, ...(form.agenda_publica_ativa && temAcesso('agendaPublica') ? s.toggleThumbOn : {}) }} />
           </div>
         </div>
+
+        {/* Deixar a cliente escolher a profissional (salões com equipe) */}
+        {form.agenda_publica_ativa && temAcesso('agendaPublica') && (
+          <div
+            style={s.toggleRow}
+            onClick={() => setForm(f => ({ ...f, agenda_publica_escolher_profissional: !f.agenda_publica_escolher_profissional }))}
+          >
+            <div>
+              <div style={s.toggleLabel}>Cliente escolhe a profissional</div>
+              <div style={s.hint}>No link, a cliente escolhe com quem agendar e vê a agenda daquela profissional. Para salões com equipe — se desligado, a reserva entra para o salão e você atribui depois.</div>
+            </div>
+            <div style={{ ...s.toggle, ...(form.agenda_publica_escolher_profissional ? s.toggleOn : {}) }}>
+              <div style={{ ...s.toggleThumb, ...(form.agenda_publica_escolher_profissional ? s.toggleThumbOn : {}) }} />
+            </div>
+          </div>
+        )}
 
         {/* Link personalizado */}
         <div style={s.field}>

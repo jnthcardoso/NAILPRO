@@ -44,6 +44,8 @@ export default function AgendaPublica() {
   const [slotsOcupados, setSlotsOcupados] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', servico: '', observacoes: '' })
+  const [profissionais, setProfissionais] = useState([])
+  const [profSel, setProfSel] = useState('') // '' = sem preferência
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
   const [tentativas, setTentativas] = useState(0)
@@ -54,9 +56,11 @@ export default function AgendaPublica() {
   const [ocupadosCarregados, setOcupadosCarregados] = useState(false)
 
   useEffect(() => { loadConfig() }, [slug])
-  useEffect(() => { if (dataSel && config) carregarSlotsOcupados() }, [dataSel])
+  useEffect(() => { if (dataSel && config) carregarSlotsOcupados() }, [dataSel, profSel])
   // Ocupação do mês visível (para cinzar dias lotados no calendário)
-  useEffect(() => { if (config && !config.agenda_externa_url) carregarOcupadosMes() }, [mesAtual, config])
+  useEffect(() => { if (config && !config.agenda_externa_url) carregarOcupadosMes() }, [mesAtual, config, profSel])
+  // Troca de profissional: zera a data/horário escolhidos (a agenda é outra)
+  useEffect(() => { setDataSel(null); setHorarioSel(null) }, [profSel])
 
   async function loadConfig() {
     setErroRede(false)
@@ -68,7 +72,14 @@ export default function AgendaPublica() {
       .eq('agenda_publica_ativa', true)
       .maybeSingle()
     if (error) { setLoading(false); setErroRede(true); return }
-    if (data) { setLoading(false); setConfig(data); return }
+    if (data) {
+      setConfig(data)
+      // Link de salão: carrega as profissionais pro seletor (respeita o toggle do salão).
+      const { data: profs } = await supabase.rpc('agenda_publica_profissionais', { p_slug: slug })
+      setProfissionais(profs || [])
+      setLoading(false)
+      return
+    }
 
     // 2) Não achou no salão → tenta o link PRÓPRIO de uma manicure (agenda_profissional).
     const { data: prof, error: erroProf } = await supabase
@@ -90,6 +101,7 @@ export default function AgendaPublica() {
     const { data, error } = await supabase.rpc('agenda_publica_horarios_ocupados', {
       p_slug: slug,
       p_data: format(dataSel, 'yyyy-MM-dd'),
+      p_profissional_id: profSel || null,
     })
     setLoadingSlots(false)
     // Se falhar, avisa em vez de mostrar todos os horários como livres (evita
@@ -102,7 +114,7 @@ export default function AgendaPublica() {
     const inicio = format(startOfMonth(mesAtual), 'yyyy-MM-dd')
     const fim = format(endOfMonth(mesAtual), 'yyyy-MM-dd')
     const { data, error } = await supabase.rpc('agenda_publica_ocupados_periodo', {
-      p_slug: slug, p_inicio: inicio, p_fim: fim,
+      p_slug: slug, p_inicio: inicio, p_fim: fim, p_profissional_id: profSel || null,
     })
     // Não-crítico (só cinza dias lotados no calendário); não duplica o toast dos slots.
     if (error) { console.warn('AgendaPublica: falha ao carregar ocupação do mês —', error.message); return }
@@ -148,6 +160,7 @@ export default function AgendaPublica() {
       p_data: format(dataSel, 'yyyy-MM-dd'),
       p_horario: horarioSel + ':00',
       p_observacoes: form.observacoes || null,
+      p_profissional_id: profSel || null,
     })
     setSaving(false)
 
@@ -342,6 +355,20 @@ export default function AgendaPublica() {
         {/* ── STEP 1: Calendário ─────────────────── */}
         {step === 1 && (
           <div style={s.card}>
+            {profissionais.length >= 2 && (
+              <div style={s.field}>
+                <label style={s.label}>Profissional</label>
+                <select
+                  style={{ ...s.input, appearance: 'auto' }}
+                  value={profSel}
+                  onChange={e => setProfSel(e.target.value)}
+                >
+                  <option value="">Sem preferência</option>
+                  {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+              </div>
+            )}
+
             <div style={s.cardTitle}>Escolha uma data</div>
 
             <div style={s.calNav}>
@@ -561,6 +588,9 @@ export default function AgendaPublica() {
               <div style={s.summaryRow}><span>📅 Data</span><strong>{format(dataSel, 'dd/MM/yyyy')}</strong></div>
               <div style={s.summaryRow}><span>🕐 Horário</span><strong>{horarioSel}</strong></div>
               <div style={s.summaryRow}><span>💅 Serviço</span><strong>{form.servico}</strong></div>
+              {profSel && (
+                <div style={s.summaryRow}><span>👤 Profissional</span><strong>{profissionais.find(p => p.id === profSel)?.nome}</strong></div>
+              )}
             </div>
             <div style={s.footNote}>
               Seu horário ainda não está confirmado — a profissional vai confirmar pelo WhatsApp.
