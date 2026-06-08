@@ -1,12 +1,31 @@
 import { Component } from 'react'
 
 // Falha ao baixar um "pedaço" (chunk) de uma tela carregada sob demanda.
-// Acontece quando um deploy novo troca os nomes dos arquivos e a aba aberta
-// ainda aponta para os antigos (que já não existem no servidor).
-// Nesses casos, recarregar a página uma vez resolve.
+// Acontece quando um deploy novo troca os nomes dos arquivos e o app aberto
+// (ou o app instalado/PWA no celular) ainda aponta para os antigos, que já não
+// existem no servidor — e a Vercel devolve o index.html (HTML) no lugar do .js.
+// O regex cobre as variações de mensagem entre navegadores (inclui iPhone/Safari,
+// que diz "Load failed" / "Importing a module script failed" / "MIME type").
 function isChunkLoadError(error) {
   const msg = `${error?.name || ''} ${error?.message || ''}`
-  return /ChunkLoadError|Loading chunk|dynamically imported module|module script failed|Failed to fetch dynamically/i.test(msg)
+  return /ChunkLoadError|Loading chunk|dynamically imported module|module script|importing a module|valid JavaScript MIME|MIME type|Failed to fetch|Load failed/i.test(msg)
+}
+
+// Para o erro de "pedaço antigo": apaga os caches do PWA e desregistra o service
+// worker antes de recarregar, garantindo que o app busque os arquivos NOVOS do
+// servidor (um reload simples poderia servir o cache velho de novo).
+async function limparCacheERecarregar() {
+  try {
+    if ('caches' in window) {
+      const chaves = await caches.keys()
+      await Promise.all(chaves.map(k => caches.delete(k)))
+    }
+    if (navigator.serviceWorker) {
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map(r => r.unregister()))
+    }
+  } catch { /* segue para o reload de qualquer forma */ }
+  window.location.reload()
 }
 
 export default class ErrorBoundary extends Component {
@@ -26,7 +45,7 @@ export default class ErrorBoundary extends Component {
       const ultimo = Number(sessionStorage.getItem('chunk_reload_ts') || 0)
       if (agora - ultimo > 10000) {
         sessionStorage.setItem('chunk_reload_ts', String(agora))
-        window.location.reload()
+        limparCacheERecarregar()
       }
     }
   }
