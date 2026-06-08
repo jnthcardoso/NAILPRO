@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil } from 'lucide-react'
+import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User } from 'lucide-react'
 import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
 import { STATUS, FORMAS } from '../../pages/Agenda.constants'
@@ -42,9 +42,17 @@ export default function DetalheAgendamentoDrawer({
 
       {/* Infos */}
       <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-          <Calendar size={14} color="var(--text3)" />
-          <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{dataFmt} · {ag.horario?.slice(0, 5)}</span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, justifyContent: 'space-between' }}>
+          <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            <Calendar size={14} color="var(--text3)" />
+            <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{dataFmt} · {ag.horario?.slice(0, 5)}</span>
+          </span>
+          {/* Nome da profissional — facilita saber de quem é o atendimento sem filtrar */}
+          {ag.profissional?.nome && (
+            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--pink)', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>
+              <User size={12} />{ag.profissional.nome}
+            </span>
+          )}
         </div>
         {ag.valor > 0 && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
