@@ -158,13 +158,16 @@ input:focus, select:focus, textarea:focus {
   bottom: calc(var(--nav-height) + 12px + env(safe-area-inset-bottom, 0px));
   z-index: 120;
 }
-/* No desktop o menu inferior some — ancorar no canto inferior direito. */
+/* No desktop o menu inferior some — centralizar a barra sobre a area de
+   conteudo (a direita da sidebar, que pode recolher via --sidebar-width). */
 @media (min-width: 769px) {
   .seq-bar {
-    left: auto;
-    right: 24px;
+    left: calc(var(--sidebar-width) + (100vw - var(--sidebar-width)) / 2);
+    transform: translateX(-50%);
+    right: auto;
     bottom: 24px;
-    max-width: 420px;
+    width: min(560px, calc(100vw - var(--sidebar-width) - 64px));
+    transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
