@@ -283,7 +283,7 @@ export default function Lembretes() {
 
       {/* Barra da sequência "Enviar todos" — um por vez */}
       {seq && (
-        <div style={s.seqBar}>
+        <div className="seq-bar" style={s.seqBar}>
           <div style={s.seqInfo}>
             <div style={s.seqProg}>{seq.pos + 1} de {seq.items.length}</div>
             <div style={s.seqNome}>{seq.items[seq.pos]?.clientes?.nome}</div>
@@ -423,7 +423,8 @@ const s = {
   confirmWrap: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, alignItems: 'stretch' },
   btnConfirmei: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'var(--green)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
   btnNaoEnviei: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' },
-  seqBar: { position: 'sticky', bottom: 12, display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--surface)', border: '2px solid #25D366', borderRadius: 'var(--radius-sm)', padding: 14, marginBottom: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 5 },
+  // Posição (fixed acima do menu inferior) fica no .seq-bar do index.css.
+  seqBar: { display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--surface)', border: '2px solid #25D366', borderRadius: 'var(--radius-sm)', padding: 14, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' },
   seqInfo: {},
   seqProg: { fontSize: 10, fontWeight: 700, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.6px' },
   seqNome: { fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 2 },

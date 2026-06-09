@@ -149,6 +149,25 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 -2px 12px rgba(24,7,18,0.06);
 }
 
+/* ── Barra da sequência de lembretes ("Enviar todos", um por vez) ── */
+/* No celular fica fixa logo acima do menu inferior (que é fixed/z-100). */
+.seq-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--nav-height) + 12px + env(safe-area-inset-bottom, 0px));
+  z-index: 120;
+}
+/* No desktop o menu inferior some — ancorar no canto inferior direito. */
+@media (min-width: 769px) {
+  .seq-bar {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    max-width: 420px;
+  }
+}
+
 /* ── "Mais" sheet (mobile bottom nav overflow) ── */
 .mais-sheet-overlay {
   position: fixed;
