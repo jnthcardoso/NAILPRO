@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, Cake, UserX, Clock, CheckCircle, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSalao } from '../contexts/SalaoContext'
-import { differenceInDays, format, addDays } from 'date-fns'
+import { differenceInDays, differenceInCalendarDays, format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
-import { formatBRL } from '../lib/formatters'
+import { formatBRL, validarTelefone } from '../lib/formatters'
 
 export default function Avisos() {
   const { salaoId, isProfissional } = useSalao()
@@ -53,19 +53,27 @@ export default function Avisos() {
       })
     }
 
-    // Lembretes de amanhã
-    const { data: ags } = await supabase.from('agendamentos')
-      .select('lembrete_enviado_em, clientes(nome, telefone)')
-      .eq('salao_id', salaoId).eq('data', amanha).in('status', ['pendente', 'confirmado'])
-    const lembr = (ags || []).filter(a => !a.lembrete_enviado_em && a.clientes?.telefone)
-    if (lembr.length) {
-      lista.push({
-        id: 'lembr', icon: Bell, cor: '#15803D', bg: '#DCFCE7',
-        titulo: `${lembr.length} lembrete${lembr.length > 1 ? 's' : ''} para enviar amanhã`,
-        sub: 'Clientes com atendimento amanhã que ainda não receberam lembrete',
-        detalhe: lembr.slice(0, 4).map(a => a.clientes?.nome?.split(' ')[0]).join(', '),
-        to: '/app/lembretes',
-      })
+    // Lembretes de amanhã — só p/ quem gerencia (a página de Lembretes é bloqueada
+    // p/ a profissional) e se os lembretes estiverem ativos nas Configurações.
+    if (!isProfissional) {
+      const { data: cfg } = await supabase.from('configuracoes')
+        .select('lembretes_ativos').eq('salao_id', salaoId).maybeSingle()
+      if (cfg?.lembretes_ativos !== false) {
+        const { data: ags } = await supabase.from('agendamentos')
+          .select('lembrete_enviado_em, clientes(nome, telefone)')
+          .eq('salao_id', salaoId).eq('data', amanha).in('status', ['pendente', 'confirmado'])
+        // Mesmo critério da página de Lembretes: telefone precisa ser válido.
+        const lembr = (ags || []).filter(a => !a.lembrete_enviado_em && validarTelefone(a.clientes?.telefone))
+        if (lembr.length) {
+          lista.push({
+            id: 'lembr', icon: Bell, cor: '#15803D', bg: '#DCFCE7',
+            titulo: `${lembr.length} lembrete${lembr.length > 1 ? 's' : ''} para enviar amanhã`,
+            sub: 'Clientes com atendimento amanhã que ainda não receberam lembrete',
+            detalhe: lembr.slice(0, 4).map(a => a.clientes?.nome?.split(' ')[0]).join(', '),
+            to: '/app/lembretes',
+          })
+        }
+      }
     }
 
     if (!isProfissional) {
@@ -95,7 +103,7 @@ export default function Avisos() {
         if (!c.data_nascimento) return false
         const n = new Date(c.data_nascimento + 'T12:00:00')
         const a = new Date(new Date().getFullYear(), n.getMonth(), n.getDate())
-        const d = differenceInDays(a, new Date())
+        const d = differenceInCalendarDays(a, new Date())   // dias de calendário (ignora a hora)
         return d >= 0 && d <= 7
       })
       if (aniv.length) {
