@@ -21,7 +21,7 @@ export default function Lembretes() {
   const { user } = useAuth()
   const { salaoId } = useSalao()
   const navigate = useNavigate()
-  const { erro } = useToast()
+  const { erro, sucesso } = useToast()
   const { temAcesso, loading: loadingAssinatura } = useAssinatura()
   const [tab, setTab] = useState('amanha')
   const [config, setConfig] = useState({ mensagem_lembrete: '', nome_salao: '', lembretes_ativos: true })
@@ -130,31 +130,38 @@ export default function Lembretes() {
     setAguardando(prev => { const n = new Set(prev); n.delete(ag.id); return n })
   }
 
-  // "Enviar todos" em sequência: um por vez. A próxima aba abre dentro do clique
-  // (antes de qualquer await), então o navegador NÃO bloqueia como pop-up.
+  // "Enviar todos" em sequência, um por vez, em duas etapas por cliente:
+  //  1) 'preview' — mostra QUEM é a próxima antes de abrir nada;
+  //  2) 'confirm' — depois de abrir o WhatsApp, pergunta se enviou.
+  // O window.open acontece só no clique "Abrir WhatsApp" → nunca é bloqueado.
   function iniciarSequencia() {
     if (pendentes.length === 0) return
-    const items = [...pendentes]
-    window.open(buildLink(items[0]), '_blank')
-    setSeq({ items, pos: 0 })
+    setSeq({ items: [...pendentes], pos: 0, phase: 'preview' })
   }
 
-  function abrirProximaOuFinalizar(pos) {
-    const prox = pos + 1
-    if (prox >= seq.items.length) { setSeq(null); return false }
-    window.open(buildLink(seq.items[prox]), '_blank')
-    setSeq(s => ({ ...s, pos: prox }))
-    return true
+  function seqAbrir() {
+    window.open(buildLink(seq.items[seq.pos]), '_blank')
+    setSeq(s => ({ ...s, phase: 'confirm' }))
   }
 
-  async function seqConfirmar() {
+  // Vai pra próxima cliente (de volta ao 'preview') ou encerra a sequência.
+  function seqAvancar() {
+    setSeq(s => {
+      const prox = s.pos + 1
+      if (prox >= s.items.length) { sucesso('Sequência concluída! 🎉'); return null }
+      return { ...s, pos: prox, phase: 'preview' }
+    })
+  }
+
+  async function seqEnviei() {
     const atual = seq.items[seq.pos]
-    abrirProximaOuFinalizar(seq.pos)           // abre a próxima primeiro (mantém o "clique")
-    await marcarEnviado(q => q.eq('id', atual.id))
+    seqAvancar()
+    await marcarEnviado(q => q.eq('id', atual.id))   // marca enviado (sem window.open → sem bloqueio)
   }
 
+  // "Não enviei" / "Pular": mantém a cliente como PENDENTE e segue em frente.
   function seqPular() {
-    abrirProximaOuFinalizar(seq.pos)
+    seqAvancar()
   }
 
   function reenviarUm(ag) {
@@ -281,21 +288,43 @@ export default function Lembretes() {
         </div>
       )}
 
-      {/* Barra da sequência "Enviar todos" — um por vez */}
+      {/* Barra da sequência "Enviar todos" — uma cliente por vez, em 2 etapas */}
       {seq && (
         <div className="seq-bar" style={s.seqBar}>
-          <div style={s.seqInfo}>
-            <div style={s.seqProg}>{seq.pos + 1} de {seq.items.length}</div>
-            <div style={s.seqNome}>{seq.items[seq.pos]?.clientes?.nome}</div>
-            <div style={s.seqHint}>Abriu o WhatsApp. Confirme depois de enviar a mensagem.</div>
-          </div>
-          <div style={s.seqBtns}>
-            <button style={s.btnConfirmei} onClick={seqConfirmar}>
-              <Check size={13} /> Enviei{seq.pos + 1 < seq.items.length ? ' · próximo' : ''}
-            </button>
-            <button style={s.btnNaoEnviei} onClick={seqPular}>Pular</button>
-            <button style={s.btnNaoEnviei} onClick={() => setSeq(null)}>Parar</button>
-          </div>
+          {seq.phase === 'preview' ? (
+            <>
+              <div style={s.seqInfo}>
+                <div style={s.seqProg}>Próxima · {seq.pos + 1} de {seq.items.length}</div>
+                <div style={s.seqNome}>{seq.items[seq.pos]?.clientes?.nome}</div>
+                <div style={s.seqHint}>
+                  {format(dataParaDate(seq.items[seq.pos].data), 'EEE dd/MM', { locale: ptBR })} às {seq.items[seq.pos].horario?.slice(0, 5)}
+                  {seq.items[seq.pos].servico ? ` · ${seq.items[seq.pos].servico}` : ''}
+                </div>
+              </div>
+              <div style={s.seqBtns}>
+                <button style={s.btnConfirmei} onClick={seqAbrir}>
+                  <MessageCircle size={14} /> Abrir WhatsApp
+                </button>
+                <button style={s.btnNaoEnviei} onClick={seqPular}>Pular</button>
+                <button style={s.btnNaoEnviei} onClick={() => setSeq(null)}>Parar</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={s.seqInfo}>
+                <div style={s.seqProg}>Enviando · {seq.pos + 1} de {seq.items.length}</div>
+                <div style={s.seqNome}>{seq.items[seq.pos]?.clientes?.nome}</div>
+                <div style={s.seqHint}>Você enviou a mensagem no WhatsApp?</div>
+              </div>
+              <div style={s.seqBtns}>
+                <button style={s.btnConfirmei} onClick={seqEnviei}>
+                  <Check size={13} /> Enviei
+                </button>
+                <button style={s.btnNaoEnviei} onClick={seqPular}>Não enviei</button>
+                <button style={s.btnNaoEnviei} onClick={() => setSeq(null)}>Parar</button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
