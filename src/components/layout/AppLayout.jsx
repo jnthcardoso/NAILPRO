@@ -8,6 +8,11 @@ import { useSalao } from '../../contexts/SalaoContext'
 import { LumenLogo, LumenFlameIcon } from '../common/Brand'
 import { useAvisos } from '../../hooks/useAvisos'
 
+const AVISOS_VISTOS_KEY = 'avisos_vistos'
+function lerAvisosVistos() {
+  try { return JSON.parse(localStorage.getItem(AVISOS_VISTOS_KEY) || '[]') } catch { return [] }
+}
+
 // Itens completos (dona / recepcionista — gerenciam tudo)
 // `primary` = aparece fixo na barra inferior do celular; o resto vai pro menu "Mais".
 const navItemsCompleto = [
@@ -39,7 +44,11 @@ export default function AppLayout() {
   const { gerenciaTudo, isProfissional, podeGerenciarEquipe } = useSalao()
   const { podeUsuariosAdicionais } = useAssinatura()
   const { alertas } = useAvisos()
-  const numAvisos = alertas.length
+  // Contador do sino: só os avisos AINDA NÃO vistos. A "assinatura" inclui o
+  // título (que carrega o número), então se a quantidade muda volta a avisar.
+  const [avisosVistos, setAvisosVistos] = useState(lerAvisosVistos)
+  const assinaturaAviso = a => `${a.id}:${a.titulo}`
+  const naoVistos = alertas.filter(a => !avisosVistos.includes(assinaturaAviso(a))).length
   // "Equipe" só faz sentido no plano Salão (logins de equipe). Solo/Pro não veem.
   const mostraEquipe = podeGerenciarEquipe && podeUsuariosAdicionais
   const navItems = isProfissional ? navItemsProfissional : navItemsCompleto
@@ -63,6 +72,15 @@ export default function AppLayout() {
   const [maisAberto, setMaisAberto] = useState(false)
   // Fecha o painel sempre que a rota muda (ex: ao tocar num item dele)
   useEffect(() => { setMaisAberto(false) }, [location.pathname])
+
+  // Ao abrir a página de Avisos, marca os atuais como vistos → zera o contador.
+  useEffect(() => {
+    if (location.pathname === '/app/avisos' && alertas.length) {
+      const assinaturas = alertas.map(a => `${a.id}:${a.titulo}`)
+      localStorage.setItem(AVISOS_VISTOS_KEY, JSON.stringify(assinaturas))
+      setAvisosVistos(assinaturas)
+    }
+  }, [location.pathname, alertas])
 
   const isActive = (to, exact) =>
     exact ? location.pathname === to : location.pathname.startsWith(to)
@@ -136,8 +154,8 @@ export default function AppLayout() {
               >
                 <Icon size={19} strokeWidth={active ? 2.5 : 1.8} />
                 {!isSidebarCollapsed && <span>{label}</span>}
-                {to === '/app/avisos' && numAvisos > 0 && (
-                  <span style={isSidebarCollapsed ? sb.navBadgeCollapsed : sb.navBadge}>{numAvisos}</span>
+                {to === '/app/avisos' && naoVistos > 0 && (
+                  <span style={isSidebarCollapsed ? sb.navBadgeCollapsed : sb.navBadge}>{naoVistos}</span>
                 )}
               </NavLink>
             )
@@ -234,9 +252,9 @@ export default function AppLayout() {
             <div style={mh.date}>
               {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
             </div>
-            <NavLink to="/app/avisos" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', position: 'relative' }} aria-label={`Avisos${numAvisos ? ` (${numAvisos})` : ''}`}>
+            <NavLink to="/app/avisos" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', position: 'relative' }} aria-label={`Avisos${naoVistos ? ` (${naoVistos})` : ''}`}>
                 <Bell size={18} />
-                {numAvisos > 0 && <span style={mh.badge}>{numAvisos}</span>}
+                {naoVistos > 0 && <span style={mh.badge}>{naoVistos}</span>}
               </NavLink>
             {gerenciaTudo && (
               <NavLink to="/app/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
