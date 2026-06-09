@@ -13,8 +13,11 @@ import { CardSkeleton } from '../components/common/Skeleton'
 import EmptyState from '../components/common/EmptyState'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate } from '../lib/formatters'
+import { MSG_ANIVERSARIO_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
+
+const FILTROS_VALIDOS = ['todas', 'vip', 'sumidas', 'sem_visita', 'aniversariantes', 'arquivadas']
 
 export default function Clientes() {
   const { user } = useAuth()
@@ -29,7 +32,13 @@ export default function Clientes() {
   const [showModal, setShowModal] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const diasAlerta = DIAS_RETORNO_PADRAO
-  const [filtro, setFiltro] = useState('todas')
+  // Permite chegar já filtrada por link (ex.: aviso → /app/clientes?filtro=aniversariantes)
+  const [filtro, setFiltro] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get('filtro')
+    return FILTROS_VALIDOS.includes(p) ? p : 'todas'
+  })
+  // Mensagem de aniversário (editável em Configurações) p/ pré-preencher o WhatsApp
+  const [configMsg, setConfigMsg] = useState({ msg_aniversario: MSG_ANIVERSARIO_PADRAO, nome_salao: '' })
   const [ordenacao, setOrdenacao] = useState('nome')
   const [pagina, setPagina] = useState(1)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
@@ -50,7 +59,7 @@ export default function Clientes() {
   const noLimite = limiteClientes !== Infinity && ativas.length >= limiteClientes
   const perto = limiteClientes !== Infinity && ativas.length >= limiteClientes - 5 && !noLimite
 
-  useEffect(() => { if (salaoId) { loadClientes() } }, [salaoId])
+  useEffect(() => { if (salaoId) { loadClientes(); loadConfigMsg() } }, [salaoId])
 
   // Debounce na busca (300ms)
   useEffect(() => {
@@ -62,10 +71,16 @@ export default function Clientes() {
   useEffect(() => { setPagina(1) }, [filtro, ordenacao])
 
   async function loadClientes() {
-    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno').eq('salao_id', salaoId).order('nome')
+    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno, data_nascimento').eq('salao_id', salaoId).order('nome')
     setLoading(false)
     if (error) { erro('Erro ao carregar clientes: ' + error.message); return }
     setClientes(data || [])
+  }
+
+  async function loadConfigMsg() {
+    const { data } = await supabase.from('configuracoes')
+      .select('msg_aniversario, nome_salao').eq('salao_id', salaoId).maybeSingle()
+    if (data) setConfigMsg({ msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO, nome_salao: data.nome_salao || '' })
   }
 
   async function salvarCliente() {
@@ -227,9 +242,19 @@ export default function Clientes() {
     return differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= limite
   }
 
+  // ── Aniversariantes do mês ──
+  const mesAtual = new Date().getMonth()
+  const diaAniv = (c) => { const d = dataParaDate(c.data_nascimento); return d ? d.getDate() : 99 }
+  const ehAniversarianteMes = (c) => { const d = dataParaDate(c.data_nascimento); return !!d && d.getMonth() === mesAtual }
+  const aniversarioHoje = (c) => {
+    const d = dataParaDate(c.data_nascimento); const n = new Date()
+    return !!d && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
+  }
+
   const sumidas = ativas.filter(estaSumida)
   const vips = ativas.filter(c => c.total_visitas >= 10)
   const semVisita = ativas.filter(c => !c.ultimo_atendimento)
+  const aniversariantes = ativas.filter(ehAniversarianteMes)
 
   const filtradas = (filtro === 'arquivadas' ? arquivadas : ativas)
     .filter(c => {
@@ -237,9 +262,12 @@ export default function Clientes() {
       if (filtro === 'vip') return c.total_visitas >= 10
       if (filtro === 'sumidas') return estaSumida(c)
       if (filtro === 'sem_visita') return !c.ultimo_atendimento
+      if (filtro === 'aniversariantes') return ehAniversarianteMes(c)
       return true
     })
     .sort((a, b) => {
+      // Aniversariantes sempre em ordem de data (dia do mês), ignora o seletor.
+      if (filtro === 'aniversariantes') return diaAniv(a) - diaAniv(b)
       if (ordenacao === 'gasto') return (b.total_gasto || 0) - (a.total_gasto || 0)
       if (ordenacao === 'visitas') return (b.total_visitas || 0) - (a.total_visitas || 0)
       if (ordenacao === 'recente') {
@@ -262,6 +290,15 @@ export default function Clientes() {
     e.stopPropagation()
     const tel = (telefone || '').replace(/\D/g, '')
     if (tel) window.open(linkWhatsApp(tel), '_blank')
+  }
+
+  // WhatsApp já com a mensagem de aniversário pronta (usada na aba Aniversários)
+  function enviarParabens(e, c) {
+    e.stopPropagation()
+    const tel = (c.telefone || '').replace(/\D/g, '')
+    if (!tel) return
+    const msg = aplicarVariaveis(configMsg.msg_aniversario || MSG_ANIVERSARIO_PADRAO, { nome: c.nome, salao: configMsg.nome_salao })
+    window.open(linkWhatsApp(tel, msg), '_blank')
   }
 
   return (
@@ -327,6 +364,7 @@ export default function Clientes() {
             { id: 'vip', label: '✦ VIP' },
             { id: 'sumidas', label: '⏰ Retorno' },
             { id: 'sem_visita', label: '🆕 Novas' },
+            ...(aniversariantes.length ? [{ id: 'aniversariantes', label: `🎂 Aniversários (${aniversariantes.length})` }] : []),
             ...(arquivadas.length ? [{ id: 'arquivadas', label: `🗄 Arquivadas (${arquivadas.length})` }] : []),
           ].map(f => (
             <button
@@ -361,11 +399,14 @@ export default function Clientes() {
             <div style={{ flex: 1 }}>
               <div style={s.cardName}>
                 {c.nome}
+                {filtro === 'aniversariantes' && aniversarioHoje(c) && <span style={s.tagHoje}>🎂 hoje!</span>}
                 {sumida && <span style={s.tagSumida}>Sumida</span>}
                 {c.total_visitas >= 10 && <span style={s.tagVip}>✦ VIP</span>}
               </div>
               <div style={s.cardSub}>
-                {c.ultimo_atendimento ? `Última vez: ${format(parseUADate(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida'}
+                {filtro === 'aniversariantes'
+                  ? `🎂 Aniversário: ${format(dataParaDate(c.data_nascimento), 'dd/MM')}`
+                  : (c.ultimo_atendimento ? `Última vez: ${format(parseUADate(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida')}
               </div>
             </div>
             <div style={s.cardRight}>
@@ -375,8 +416,8 @@ export default function Clientes() {
             {c.telefone && (
               <button
                 style={s.waBtn}
-                onClick={e => handleWhatsApp(e, c.telefone)}
-                title="Abrir WhatsApp"
+                onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c.telefone)}
+                title={filtro === 'aniversariantes' ? 'Enviar parabéns no WhatsApp' : 'Abrir WhatsApp'}
               >
                 <MessageCircle size={15} />
               </button>
@@ -537,6 +578,7 @@ const s = {
   verMaisBtn: { width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
+  tagHoje: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: '#FAE8FF', color: '#86198F', fontWeight: 700 },
   empty: { padding: '40px 0', textAlign: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },

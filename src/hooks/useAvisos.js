@@ -96,7 +96,7 @@ export function useAvisos() {
           titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes passaram' : 'cliente passou'} do retorno`,
           sub: 'Clientes sem atendimento há muito tempo — que tal entrar em contato?',
           detalhe: sumidas.slice(0, 5).map(c => c.nome.split(' ')[0]).join(', '),
-          to: '/app/clientes',
+          to: '/app/clientes?filtro=sumidas',
           urgente: sumidas.length > 3,
         })
       }
@@ -114,7 +114,7 @@ export function useAvisos() {
           titulo: `${aniv.length} aniversariante${aniv.length > 1 ? 's' : ''} essa semana 🎂`,
           sub: 'Que tal enviar uma mensagem especial?',
           detalhe: aniv.map(c => c.nome.split(' ')[0]).join(', '),
-          to: '/app/clientes',
+          to: '/app/clientes?filtro=aniversariantes',
         })
       }
     }
