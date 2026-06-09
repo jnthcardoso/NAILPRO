@@ -415,8 +415,16 @@ export default function Financeiro() {
     loadDespesas()
   }
 
-  async function togglePago(pag) {
-    const { error } = await supabase.from('pagamentos').update({ status: pag.status === 'pago' ? 'pendente' : 'pago' }).eq('id', pag.id).eq('salao_id', salaoId)
+  // Reverter um pagamento de "pago" para "pendente" — pede confirmação (evita clique acidental).
+  async function reverterParaPendente(pag) {
+    const ok = await confirmar({
+      titulo: 'Marcar como pendente?',
+      mensagem: `${pag.agendamentos?.clientes?.nome || 'Este pagamento'} · ${formatBRL(pag.valor ?? 0)} (${FORMA_LABEL[pag.forma] || pag.forma}) deixará de ser um valor recebido.`,
+      confirmarLabel: 'Sim, marcar pendente',
+      tipo: 'perigo',
+    })
+    if (!ok) return
+    const { error } = await supabase.from('pagamentos').update({ status: 'pendente' }).eq('id', pag.id).eq('salao_id', salaoId)
     if (error) { toastErro('Erro ao atualizar pagamento: ' + error.message); return }
     loadPagamentos()
   }
@@ -727,7 +735,7 @@ export default function Financeiro() {
                     <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
                       {formatBRL(p.valor ?? 0)}
                     </div>
-                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? togglePago(p) : abrirConfirmarPago(p)}>
+                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? reverterParaPendente(p) : abrirConfirmarPago(p)}>
                       {pago ? '✓ Pago' : '⏳ Pendente'}
                     </button>
                   </div>
