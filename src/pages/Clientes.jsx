@@ -39,6 +39,8 @@ export default function Clientes() {
   })
   // Mensagem de aniversário (editável em Configurações) p/ pré-preencher o WhatsApp
   const [configMsg, setConfigMsg] = useState({ msg_aniversario: MSG_ANIVERSARIO_PADRAO, nome_salao: '' })
+  // Cards que abriram o WhatsApp e aguardam a confirmação "Já enviei" do parabéns
+  const [aguardandoParabens, setAguardandoParabens] = useState(() => new Set())
   const [ordenacao, setOrdenacao] = useState('nome')
   const [pagina, setPagina] = useState(1)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
@@ -71,7 +73,7 @@ export default function Clientes() {
   useEffect(() => { setPagina(1) }, [filtro, ordenacao])
 
   async function loadClientes() {
-    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno, data_nascimento').eq('salao_id', salaoId).order('nome')
+    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno, data_nascimento, parabens_enviado_em').eq('salao_id', salaoId).order('nome')
     setLoading(false)
     if (error) { erro('Erro ao carregar clientes: ' + error.message); return }
     setClientes(data || [])
@@ -250,6 +252,9 @@ export default function Clientes() {
     const d = dataParaDate(c.data_nascimento); const n = new Date()
     return !!d && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
   }
+  // "Parabéns já enviado" vale só pro ano corrente (volta a cobrar no próximo aniversário).
+  const parabensEnviadoEsteAno = (c) =>
+    !!c.parabens_enviado_em && new Date(c.parabens_enviado_em).getFullYear() === new Date().getFullYear()
 
   const sumidas = ativas.filter(estaSumida)
   const vips = ativas.filter(c => c.total_visitas >= 10)
@@ -292,13 +297,32 @@ export default function Clientes() {
     if (tel) window.open(linkWhatsApp(tel), '_blank')
   }
 
-  // WhatsApp já com a mensagem de aniversário pronta (usada na aba Aniversários)
+  // WhatsApp já com a mensagem de aniversário pronta (usada na aba Aniversários).
+  // Abre o WhatsApp e põe o card em "aguardando confirmação" — só registra como
+  // enviado quando a usuária confirmar (fechar a aba sem mandar não conta).
   function enviarParabens(e, c) {
     e.stopPropagation()
     const tel = (c.telefone || '').replace(/\D/g, '')
     if (!tel) return
     const msg = aplicarVariaveis(configMsg.msg_aniversario || MSG_ANIVERSARIO_PADRAO, { nome: c.nome, salao: configMsg.nome_salao })
     window.open(linkWhatsApp(tel, msg), '_blank')
+    setAguardandoParabens(prev => new Set(prev).add(c.id))
+  }
+
+  async function confirmarParabens(e, c) {
+    e.stopPropagation()
+    setAguardandoParabens(prev => { const n = new Set(prev); n.delete(c.id); return n })
+    const { error } = await supabase.from('clientes')
+      .update({ parabens_enviado_em: new Date().toISOString() })
+      .eq('id', c.id).eq('salao_id', salaoId)
+    if (error) { erro('Não consegui registrar: ' + error.message); return }
+    setClientes(prev => prev.map(x => x.id === c.id ? { ...x, parabens_enviado_em: new Date().toISOString() } : x))
+    sucesso('Parabéns registrado 🎂')
+  }
+
+  function cancelarParabens(e, c) {
+    e.stopPropagation()
+    setAguardandoParabens(prev => { const n = new Set(prev); n.delete(c.id); return n })
   }
 
   return (
@@ -400,6 +424,7 @@ export default function Clientes() {
               <div style={s.cardName}>
                 {c.nome}
                 {filtro === 'aniversariantes' && aniversarioHoje(c) && <span style={s.tagHoje}>🎂 hoje!</span>}
+                {filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) && !aguardandoParabens.has(c.id) && <span style={s.tagParabens}>✓ parabéns enviado</span>}
                 {sumida && <span style={s.tagSumida}>Sumida</span>}
                 {c.total_visitas >= 10 && <span style={s.tagVip}>✦ VIP</span>}
               </div>
@@ -414,13 +439,20 @@ export default function Clientes() {
               <div style={s.cardVisitas}>{c.total_visitas || 0} visitas</div>
             </div>
             {c.telefone && (
-              <button
-                style={s.waBtn}
-                onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c.telefone)}
-                title={filtro === 'aniversariantes' ? 'Enviar parabéns no WhatsApp' : 'Abrir WhatsApp'}
-              >
-                <MessageCircle size={15} />
-              </button>
+              filtro === 'aniversariantes' && aguardandoParabens.has(c.id) ? (
+                <div style={s.confirmWrap}>
+                  <button style={s.btnConfirmei} onClick={e => confirmarParabens(e, c)}>✓ Já enviei</button>
+                  <button style={s.btnNaoEnviei} onClick={e => cancelarParabens(e, c)}>Não enviei</button>
+                </div>
+              ) : (
+                <button
+                  style={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? s.waBtnEnviado : s.waBtn}
+                  onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c.telefone)}
+                  title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns no WhatsApp') : 'Abrir WhatsApp'}
+                >
+                  <MessageCircle size={15} />
+                </button>
+              )
             )}
             <ChevronRight size={16} color="var(--text3)" />
           </div>
@@ -575,6 +607,11 @@ const s = {
   cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)' },
   cardVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
   waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
+  waBtnEnviado: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', flexShrink: 0 },
+  confirmWrap: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 },
+  btnConfirmei: { background: 'var(--green, #15803D)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  btnNaoEnviei: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  tagParabens: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: '#DCFCE7', color: '#15803D', fontWeight: 700 },
   verMaisBtn: { width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
