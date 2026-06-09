@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw, Pencil } from 'lucide-react'
+import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw, Pencil, Mail } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -10,7 +10,7 @@ import { ptBR } from 'date-fns/locale'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, formatBRL, linkWhatsApp } from '../lib/formatters'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
-import { DIAS_RETORNO_PADRAO } from '../lib/constants'
+import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
 
 export default function ClienteDetalhe() {
   const { id } = useParams()
@@ -75,12 +75,13 @@ export default function ClienteDetalhe() {
   }
 
   async function loadHistorico() {
+    // Sem limite: o resumo (atendimentos/recebido/ticket) precisa do histórico
+    // completo da cliente pra bater com os totais do topo.
     const { data, error } = await supabase.from('agendamentos')
       .select('*, pagamentos(status, valor, forma)')
       .eq('cliente_id', id)
       .order('data', { ascending: false })
       .order('horario', { ascending: false })
-      .limit(50)
     if (error) { erro('Erro ao carregar histórico: ' + error.message); return }
     setHistorico(data || [])
   }
@@ -136,12 +137,17 @@ export default function ClienteDetalhe() {
         <div style={s.avatar}>{getInitials(cliente.nome)}</div>
         <div style={s.profileName}>{cliente.nome}</div>
         {/* VIP badge: Gold + Noir */}
-        {(cliente.total_visitas || 0) >= 10 && (
+        {(cliente.total_visitas || 0) >= VISITAS_VIP && (
           <span style={s.vipBadge}>✦ VIP</span>
         )}
         {cliente.telefone && (
           <a href={linkWhatsApp(cliente.telefone)} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
-            <Phone size={14} /> {cliente.telefone}
+            <Phone size={14} /> {formatTelefone(cliente.telefone)}
+          </a>
+        )}
+        {cliente.email && (
+          <a href={`mailto:${cliente.email}`} style={s.emailLink}>
+            <Mail size={13} /> {cliente.email}
           </a>
         )}
       </div>
@@ -154,7 +160,7 @@ export default function ClienteDetalhe() {
         </div>
         <div style={s.statCard}>
           <DollarSign size={18} color="var(--green)" />
-          <div style={s.statValue}>R$ {(cliente.total_gasto || 0).toFixed(0)}</div>
+          <div style={s.statValue}>{formatBRL(cliente.total_gasto || 0)}</div>
           <div style={s.statLabel}>total gasto</div>
         </div>
         <div style={s.statCard}>
@@ -196,11 +202,11 @@ export default function ClienteDetalhe() {
             <div style={s.resumoLabel}>atendimentos</div>
           </div>
           <div style={s.resumoCard}>
-            <div style={{ ...s.resumoValor, color: 'var(--green)' }}>R$ {totalRecebido.toFixed(0)}</div>
+            <div style={{ ...s.resumoValor, color: 'var(--green)' }}>{formatBRL(totalRecebido)}</div>
             <div style={s.resumoLabel}>recebido</div>
           </div>
           <div style={s.resumoCard}>
-            <div style={s.resumoValor}>R$ {ticketMedio.toFixed(0)}</div>
+            <div style={s.resumoValor}>{formatBRL(ticketMedio)}</div>
             <div style={s.resumoLabel}>ticket médio</div>
           </div>
         </div>
@@ -359,6 +365,7 @@ const s = {
   /* VIP badge: Gold + Noir */
   vipBadge: { fontSize: 12, padding: '3px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   wppBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC', borderRadius: 'var(--radius-pill)', padding: '7px 15px', fontSize: 13, fontWeight: 600 },
+  emailLink: { display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text3)', fontSize: 12.5, fontWeight: 500, textDecoration: 'none', marginTop: 2 },
   statsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 },
   statCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
   statValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 500, color: 'var(--text)' },

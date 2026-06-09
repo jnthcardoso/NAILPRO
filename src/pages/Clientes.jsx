@@ -12,10 +12,10 @@ import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
 import EmptyState from '../components/common/EmptyState'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
-import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate, formatBRL } from '../lib/formatters'
 import { MSG_ANIVERSARIO_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { differenceInDays, format } from 'date-fns'
-import { DIAS_RETORNO_PADRAO } from '../lib/constants'
+import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
 
 const FILTROS_VALIDOS = ['todas', 'vip', 'sumidas', 'sem_visita', 'aniversariantes', 'arquivadas']
 
@@ -95,6 +95,16 @@ export default function Clientes() {
       novosErros.dias_retorno = 'Informe entre 1 e 365 dias'
     }
     if (Object.keys(novosErros).length > 0) { setErros(novosErros); return }
+
+    // Evita duplicar cliente pelo mesmo WhatsApp (já existia no import; faltava aqui).
+    const telLimpo = unformatTelefone(form.telefone)
+    if (telLimpo) {
+      const jaExiste = clientes.find(c => unformatTelefone(c.telefone) === telLimpo)
+      if (jaExiste) {
+        setErros({ telefone: `Já existe uma cliente com esse WhatsApp: ${jaExiste.nome}` })
+        return
+      }
+    }
 
     // 🔒 Bloqueio de limite no Starter
     if (noLimite) {
@@ -257,14 +267,20 @@ export default function Clientes() {
     !!c.parabens_enviado_em && new Date(c.parabens_enviado_em).getFullYear() === new Date().getFullYear()
 
   const sumidas = ativas.filter(estaSumida)
-  const vips = ativas.filter(c => c.total_visitas >= 10)
+  const vips = ativas.filter(c => c.total_visitas >= VISITAS_VIP)
   const semVisita = ativas.filter(c => !c.ultimo_atendimento)
   const aniversariantes = ativas.filter(ehAniversarianteMes)
 
   const filtradas = (filtro === 'arquivadas' ? arquivadas : ativas)
     .filter(c => {
-      if (busca && !c.nome.toLowerCase().includes(busca.toLowerCase())) return false
-      if (filtro === 'vip') return c.total_visitas >= 10
+      if (busca) {
+        const bn = normalizar(busca)
+        const bd = busca.replace(/\D/g, '')
+        const achouNome = normalizar(c.nome).includes(bn)
+        const achouTel = bd && (c.telefone || '').replace(/\D/g, '').includes(bd)
+        if (!achouNome && !achouTel) return false
+      }
+      if (filtro === 'vip') return c.total_visitas >= VISITAS_VIP
       if (filtro === 'sumidas') return estaSumida(c)
       if (filtro === 'sem_visita') return !c.ultimo_atendimento
       if (filtro === 'aniversariantes') return ehAniversarianteMes(c)
@@ -426,7 +442,7 @@ export default function Clientes() {
                 {filtro === 'aniversariantes' && aniversarioHoje(c) && <span style={s.tagHoje}>🎂 hoje!</span>}
                 {filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) && !aguardandoParabens.has(c.id) && <span style={s.tagParabens}>✓ parabéns enviado</span>}
                 {sumida && <span style={s.tagSumida}>Sumida</span>}
-                {c.total_visitas >= 10 && <span style={s.tagVip}>✦ VIP</span>}
+                {c.total_visitas >= VISITAS_VIP && <span style={s.tagVip}>✦ VIP</span>}
               </div>
               <div style={s.cardSub}>
                 {filtro === 'aniversariantes'
@@ -435,7 +451,7 @@ export default function Clientes() {
               </div>
             </div>
             <div style={s.cardRight}>
-              <div style={s.cardValor}>R$ {(c.total_gasto || 0).toFixed(0)}</div>
+              <div style={s.cardValor}>{formatBRL(c.total_gasto || 0)}</div>
               <div style={s.cardVisitas}>{c.total_visitas || 0} visitas</div>
             </div>
             {c.telefone && (
