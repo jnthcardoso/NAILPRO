@@ -1,125 +1,10 @@
-import { useEffect, useState } from 'react'
+import { Bell, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Cake, UserX, Clock, CheckCircle, RefreshCw } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import { useSalao } from '../contexts/SalaoContext'
-import { differenceInDays, differenceInCalendarDays, format, addDays } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { DIAS_RETORNO_PADRAO } from '../lib/constants'
-import { formatBRL, validarTelefone } from '../lib/formatters'
+import { useAvisos } from '../hooks/useAvisos'
 
 export default function Avisos() {
-  const { salaoId, isProfissional } = useSalao()
   const navigate = useNavigate()
-  const [alertas, setAlertas] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => { if (salaoId) load() }, [salaoId])
-
-  async function load() {
-    setLoading(true)
-    const hoje = format(new Date(), 'yyyy-MM-dd')
-    const amanha = format(addDays(new Date(), 1), 'yyyy-MM-dd')
-    const lista = []
-    const diasAlerta = DIAS_RETORNO_PADRAO
-
-    // Pagamentos pendentes
-    const { data: pend } = await supabase.from('pagamentos')
-      .select('valor, agendamentos(clientes(nome), servico)')
-      .eq('salao_id', salaoId).eq('status', 'pendente')
-    if (pend?.length) {
-      const total = pend.reduce((s, p) => s + (p.valor || 0), 0)
-      lista.push({
-        id: 'pag', icon: Clock, cor: '#D97706', bg: '#FEF3C7',
-        titulo: `${pend.length} pagamento${pend.length > 1 ? 's' : ''} a receber`,
-        sub: `${formatBRL(total)} pendentes no financeiro`,
-        detalhe: pend.slice(0, 4).map(p => p.agendamentos?.clientes?.nome?.split(' ')[0]).filter(Boolean).join(', '),
-        to: '/app/financeiro',
-        urgente: true,
-      })
-    }
-
-    // Atendimentos hoje a confirmar
-    const { data: hojeAg } = await supabase.from('agendamentos')
-      .select('id, clientes(nome), servico, horario')
-      .eq('salao_id', salaoId).eq('data', hoje).eq('status', 'pendente')
-    if (hojeAg?.length) {
-      lista.push({
-        id: 'hoje', icon: CheckCircle, cor: '#1E40AF', bg: '#DBEAFE',
-        titulo: `${hojeAg.length} atendimento${hojeAg.length > 1 ? 's' : ''} aguardando confirmação hoje`,
-        sub: 'Clique para ver e confirmar na agenda',
-        detalhe: hojeAg.map(a => `${a.horario?.slice(0,5)} ${a.clientes?.nome?.split(' ')[0]}`).join(' · '),
-        to: '/app/agenda',
-      })
-    }
-
-    // Lembretes de amanhã — só p/ quem gerencia (a página de Lembretes é bloqueada
-    // p/ a profissional) e se os lembretes estiverem ativos nas Configurações.
-    if (!isProfissional) {
-      const { data: cfg } = await supabase.from('configuracoes')
-        .select('lembretes_ativos').eq('salao_id', salaoId).maybeSingle()
-      if (cfg?.lembretes_ativos !== false) {
-        const { data: ags } = await supabase.from('agendamentos')
-          .select('lembrete_enviado_em, clientes(nome, telefone)')
-          .eq('salao_id', salaoId).eq('data', amanha).in('status', ['pendente', 'confirmado'])
-        // Mesmo critério da página de Lembretes: telefone precisa ser válido.
-        const lembr = (ags || []).filter(a => !a.lembrete_enviado_em && validarTelefone(a.clientes?.telefone))
-        if (lembr.length) {
-          lista.push({
-            id: 'lembr', icon: Bell, cor: '#15803D', bg: '#DCFCE7',
-            titulo: `${lembr.length} lembrete${lembr.length > 1 ? 's' : ''} para enviar amanhã`,
-            sub: 'Clientes com atendimento amanhã que ainda não receberam lembrete',
-            detalhe: lembr.slice(0, 4).map(a => a.clientes?.nome?.split(' ')[0]).join(', '),
-            to: '/app/lembretes',
-          })
-        }
-      }
-    }
-
-    if (!isProfissional) {
-      const { data: cls } = await supabase.from('clientes')
-        .select('id, nome, ultimo_atendimento, data_nascimento, arquivada, dias_retorno')
-        .eq('salao_id', salaoId)
-      const ativas = (cls || []).filter(c => !c.arquivada)
-
-      // Clientes sumidas — usa o ciclo individual (dias_retorno) ou o padrão do salão
-      const sumidas = ativas.filter(c =>
-        c.ultimo_atendimento &&
-        differenceInDays(new Date(), new Date(c.ultimo_atendimento + 'T12:00:00')) >= (c.dias_retorno ?? diasAlerta)
-      )
-      if (sumidas.length) {
-        lista.push({
-          id: 'sumidas', icon: UserX, cor: '#B91C1C', bg: '#FEE2E2',
-          titulo: `${sumidas.length} ${sumidas.length > 1 ? 'clientes passaram' : 'cliente passou'} do retorno`,
-          sub: 'Clientes sem atendimento há muito tempo — que tal entrar em contato?',
-          detalhe: sumidas.slice(0, 5).map(c => c.nome.split(' ')[0]).join(', '),
-          to: '/app/clientes',
-          urgente: sumidas.length > 3,
-        })
-      }
-
-      // Aniversariantes
-      const aniv = ativas.filter(c => {
-        if (!c.data_nascimento) return false
-        const n = new Date(c.data_nascimento + 'T12:00:00')
-        const a = new Date(new Date().getFullYear(), n.getMonth(), n.getDate())
-        const d = differenceInCalendarDays(a, new Date())   // dias de calendário (ignora a hora)
-        return d >= 0 && d <= 7
-      })
-      if (aniv.length) {
-        lista.push({
-          id: 'aniv', icon: Cake, cor: '#86198F', bg: '#FAE8FF',
-          titulo: `${aniv.length} aniversariante${aniv.length > 1 ? 's' : ''} essa semana 🎂`,
-          sub: 'Que tal enviar uma mensagem especial?',
-          detalhe: aniv.map(c => c.nome.split(' ')[0]).join(', '),
-          to: '/app/clientes',
-        })
-      }
-    }
-
-    setAlertas(lista)
-    setLoading(false)
-  }
+  const { alertas, loading, reload } = useAvisos()
 
   return (
     <div style={s.page}>
@@ -132,7 +17,7 @@ export default function Avisos() {
             <p style={s.sub}>Ações e alertas do seu salão</p>
           </div>
         </div>
-        <button style={s.refreshBtn} onClick={load} title="Atualizar">
+        <button style={s.refreshBtn} onClick={reload} title="Atualizar">
           <RefreshCw size={15} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
         </button>
       </div>

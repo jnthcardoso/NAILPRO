@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin, useAssinatura } from '../../contexts/AssinaturaContext'
 import { useSalao } from '../../contexts/SalaoContext'
 import { LumenLogo, LumenFlameIcon } from '../common/Brand'
-import Notificacoes from '../common/Notificacoes'
+import { useAvisos } from '../../hooks/useAvisos'
 
 // Itens completos (dona / recepcionista — gerenciam tudo)
 // `primary` = aparece fixo na barra inferior do celular; o resto vai pro menu "Mais".
@@ -38,6 +38,8 @@ export default function AppLayout() {
   const { isAdmin } = useIsAdmin()
   const { gerenciaTudo, isProfissional, podeGerenciarEquipe } = useSalao()
   const { podeUsuariosAdicionais } = useAssinatura()
+  const { alertas } = useAvisos()
+  const numAvisos = alertas.length
   // "Equipe" só faz sentido no plano Salão (logins de equipe). Solo/Pro não veem.
   const mostraEquipe = podeGerenciarEquipe && podeUsuariosAdicionais
   const navItems = isProfissional ? navItemsProfissional : navItemsCompleto
@@ -121,11 +123,12 @@ export default function AppLayout() {
           {navItems.map(({ to, icon: Icon, label, exact }) => {
             const active = isActive(to, exact)
             return (
-              <NavLink 
-                key={to} 
-                to={to} 
-                style={{ 
-                  ...sb.navItem, 
+              <NavLink
+                key={to}
+                to={to}
+                style={{
+                  ...sb.navItem,
+                  position: 'relative',
                   ...(active ? sb.navItemActive : {}),
                   ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
                 }}
@@ -133,6 +136,9 @@ export default function AppLayout() {
               >
                 <Icon size={19} strokeWidth={active ? 2.5 : 1.8} />
                 {!isSidebarCollapsed && <span>{label}</span>}
+                {to === '/app/avisos' && numAvisos > 0 && (
+                  <span style={isSidebarCollapsed ? sb.navBadgeCollapsed : sb.navBadge}>{numAvisos}</span>
+                )}
               </NavLink>
             )
           })}
@@ -228,8 +234,9 @@ export default function AppLayout() {
             <div style={mh.date}>
               {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
             </div>
-            <NavLink to="/app/avisos" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', position: 'relative' }}>
+            <NavLink to="/app/avisos" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', position: 'relative' }} aria-label={`Avisos${numAvisos ? ` (${numAvisos})` : ''}`}>
                 <Bell size={18} />
+                {numAvisos > 0 && <span style={mh.badge}>{numAvisos}</span>}
               </NavLink>
             {gerenciaTudo && (
               <NavLink to="/app/configuracoes" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center' }}>
@@ -340,6 +347,8 @@ const sb = {
   nav: { display: 'flex', flexDirection: 'column', gap: 2, padding: '0 10px' },
   navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
   navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 38, 85, 0.4)' },
+  navBadge: { marginLeft: 'auto', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  navBadgeCollapsed: { position: 'absolute', top: 2, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 8, background: '#EF4444', color: 'white', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
   // Sem `display` aqui de propósito: quem controla é o CSS (.sidebar-toggle-float),
   // que esconde no celular (display:none) e mostra no desktop (display:flex).
@@ -367,6 +376,7 @@ const mh = {
     lineHeight: 1,
   },
   date: { fontSize: 12, background: 'rgba(255,255,255,0.16)', padding: '5px 12px', borderRadius: 'var(--radius-pill)', textTransform: 'capitalize', flexShrink: 0 },
+  badge: { position: 'absolute', top: -6, right: -7, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 8, background: '#EF4444', color: 'white', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #170D14' },
 }
 
 /* Bottom nav styles */
