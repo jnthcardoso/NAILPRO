@@ -13,9 +13,9 @@ export default function BarChart({ data = [], cor = 'var(--pink)', prefixo = '',
   const max = Math.max(...data.map(d => d.valor), 1)
   const barWidth = 100 / data.length
 
+  // Número cheio (sem abreviação "k"), formato BR e sem centavos: "R$ 9.000".
   function fmt(v) {
-    if (v >= 1000) return `${prefixo}${(v / 1000).toFixed(1)}k`
-    return `${prefixo}${v.toFixed(0)}`
+    return `${prefixo}${Math.round(v).toLocaleString('pt-BR')}`
   }
 
   return (
@@ -86,7 +86,7 @@ const s = {
   wrap: { padding: 4 },
   chart: { display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 0 0', borderBottom: '1px solid var(--border)' },
   barCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', position: 'relative' },
-  barValueTop: { fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: 'var(--text2)', fontWeight: 600, marginBottom: 2, whiteSpace: 'nowrap' },
+  barValueTop: { fontSize: 8, fontFamily: "'JetBrains Mono', monospace", color: 'var(--text2)', fontWeight: 600, marginBottom: 2, whiteSpace: 'nowrap', letterSpacing: '-0.3px' },
   bar: { width: '70%', borderRadius: '4px 4px 0 0', minHeight: 2, transition: 'height 0.4s ease', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   barLabel: { fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginTop: 6, textAlign: 'center', textTransform: 'capitalize' },
   empty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '24px 12px' },

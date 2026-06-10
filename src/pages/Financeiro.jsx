@@ -547,11 +547,13 @@ export default function Financeiro() {
     .map(([nome, v]) => ({ label: nome, valor: v.valor, qtd: v.qtd }))
     .sort((a, b) => b.valor - a.valor).slice(0, 5)
 
-  const FORMA_LABEL = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito' }
-  const FORMA_COR = { pix: '#15803D', dinheiro: '#D4AF37', cartao_debito: '#3B82F6', cartao_credito: '#8B2655' }
+  // 'sem' = pagamento pago sem forma preenchida (aparece como fatia cinza própria).
+  const FORMA_LABEL = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito', sem: 'Sem forma registrada' }
+  const FORMA_COR = { pix: '#15803D', dinheiro: '#D4AF37', cartao_debito: '#3B82F6', cartao_credito: '#8B2655', sem: '#9CA3AF' }
   const formaMap = {}
   pagamentos.filter(p => p.status === 'pago').forEach(p => {
-    formaMap[p.forma] = (formaMap[p.forma] || 0) + (p.valor || 0)
+    const forma = p.forma || 'sem'
+    formaMap[forma] = (formaMap[forma] || 0) + (p.valor || 0)
   })
   const dadosFormas = Object.entries(formaMap).map(([forma, valor]) => ({
     label: FORMA_LABEL[forma] || forma, valor, cor: FORMA_COR[forma] || '#888',
@@ -702,12 +704,13 @@ export default function Financeiro() {
               <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={160} />
             </div>
 
-            {dadosDespesas.length > 0 && (
-              <div style={s.graficoCard}>
-                <div style={s.graficoTitulo}>Despesas por categoria</div>
-                <DonutChart data={dadosDespesas} size={160} centerLabel={formatBRL(totalDespesas)} centerSub="total" />
-              </div>
-            )}
+            <div style={s.graficoCard}>
+              <div style={s.graficoTitulo}>Despesas por categoria</div>
+              {dadosDespesas.length === 0
+                ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem despesas no período</div>
+                : <DonutChart data={dadosDespesas} size={160} centerLabel={formatBRL(totalDespesas)} centerSub="total" />
+              }
+            </div>
 
             <div style={s.graficoCard}>
               <div style={s.graficoTitulo}>Como você recebeu</div>
@@ -718,7 +721,7 @@ export default function Financeiro() {
             </div>
 
             <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
-              <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
+              <div style={s.graficoTitulo}>Top serviços por receita</div>
               <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => formatBRL(v)} />
             </div>
           </div>
