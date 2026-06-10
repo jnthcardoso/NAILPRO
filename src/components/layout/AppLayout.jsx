@@ -114,7 +114,7 @@ export default function AppLayout() {
           ) : (
             <>
               <LumenLogo size={24} variant="reverso" style={{ marginBottom: 4 }} />
-              <div style={sb.logoTagline}>gestão para nail designers</div>
+              <div style={sb.logoTagline}>Agenda · Clientes · Financeiro</div>
             </>
           )}
         </NavLink>
@@ -357,7 +357,7 @@ const sb = {
   logoTagline: { fontSize: 10, color: 'rgba(255, 255, 255, 0.45)', fontWeight: 400, marginLeft: 2, textTransform: 'uppercase', letterSpacing: '0.4px' },
   userCard: { display: 'flex', alignItems: 'center', gap: 11, margin: '2px 14px 10px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, padding: '9px 12px', border: '1px solid rgba(255, 255, 255, 0.04)', transition: 'all 0.28s' },
   userCardCollapsed: { background: 'transparent', margin: '2px 0 8px', padding: '8px 0', justifyContent: 'center', border: '1px solid transparent' },
-  userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, overflow: 'hidden', border: '1.5px solid rgba(255, 255, 255, 0.15)' },
+  userAvatar: { width: 44, height: 44, borderRadius: '50%', background: 'var(--pink)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, flexShrink: 0, overflow: 'hidden', border: '1.5px solid rgba(255, 255, 255, 0.15)' },
   userName: {
     fontFamily: "var(--font-display)",
     fontStyle: 'italic',

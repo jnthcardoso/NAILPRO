@@ -56,6 +56,10 @@ export function LumenLogo({ size = 26, variant = 'default', layout = 'horizontal
         color: textColor,
         letterSpacing: '-0.04em',
         lineHeight: 1,
+        // A chama tem a massa visual embaixo (o brilho); descer o texto um tico
+        // faz a palavra "lumen" sentar na mesma linha óptica da chama.
+        position: 'relative',
+        top: Math.max(1, Math.round(altura * 0.08)),
       }}>
         lumen<span style={{ color: dotColor }}>.</span>
       </span>
