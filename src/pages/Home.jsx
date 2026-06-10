@@ -25,7 +25,7 @@ const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Home() {
   const { user } = useAuth()
-  const { salaoId } = useSalao()
+  const { salaoId, isProfissional, membroId } = useSalao()
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
 
@@ -136,10 +136,16 @@ export default function Home() {
       // Pedidos que chegaram pelo link público e ainda aguardam confirmação
       // (de hoje em diante). É o "loop" do agendamento online: sem isso, um
       // pedido que cai sozinho pode passar batido se a dona não abrir a Agenda.
-      supabase.from('agendamentos')
-        .select('*', { count: 'exact', head: true })
-        .eq('salao_id', salaoId).eq('origem', 'publica').eq('status', 'pendente')
-        .gte('data', hoje),
+      // Profissional vê só os pedidos atribuídos a ela; dona/recepção veem os do salão.
+      (isProfissional && membroId
+        ? supabase.from('agendamentos')
+            .select('*', { count: 'exact', head: true })
+            .eq('salao_id', salaoId).eq('profissional_id', membroId)
+            .eq('origem', 'publica').eq('status', 'pendente').gte('data', hoje)
+        : supabase.from('agendamentos')
+            .select('*', { count: 'exact', head: true })
+            .eq('salao_id', salaoId)
+            .eq('origem', 'publica').eq('status', 'pendente').gte('data', hoje)),
     ])
 
     // Config
