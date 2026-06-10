@@ -613,7 +613,7 @@ export default function Financeiro() {
       </div>
 
       {/* ── Tabs ── */}
-      <div style={tabs.bar}>
+      <div className="fin-tabs" style={tabs.bar}>
         {[
           { id: 'resumo',   label: 'Resumo',   icon: DollarSign },
           { id: 'analises', label: 'Análises', icon: BarChart2 },

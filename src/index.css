@@ -87,6 +87,34 @@ html, body, #root {
   .fin-card-value { grid-area: value; text-align: right; font-size: 23px !important; }
 }
 
+/* ── Ajustes SÓ de celular (desktop fica inalterado) ────────────────────── */
+@media (max-width: 768px) {
+  /* Relatórios (Admin): rótulo em cima (sem cortar) + valor à direita, e a
+     barra ocupa a largura toda embaixo. Some o "espremido" e deixa todas as
+     barras do funil consistentes (inclusive "Cadastraram"). */
+  .rel-bar-row {
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas: "label val" "track track" !important;
+    row-gap: 5px !important;
+    column-gap: 8px !important;
+  }
+  .rel-bar-row > .rel-bar-label { grid-area: label; white-space: normal !important; }
+  .rel-bar-row > .rel-bar-val   { grid-area: val; text-align: right; }
+  .rel-bar-row > .rel-bar-track { grid-area: track; }
+
+  /* Abas do Financeiro: as 5 abas cabem numa linha só (sem arrastar) —
+     esconde os ícones e compacta o espaçamento no celular. */
+  .fin-tabs { gap: 2px !important; }
+  .fin-tabs > button { min-width: 0 !important; padding: 9px 3px !important; font-size: 12px !important; gap: 0 !important; }
+  .fin-tabs > button > svg { display: none !important; }
+
+  /* Metas: os 3 indicadores (Meta/Realizado/Projeção) empilham como linhas
+     (rótulo à esquerda, valor à direita) → não vazam mais pra fora da tela. */
+  .meta-ind-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
+  .meta-ind { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 10px !important; }
+  .meta-ind > .meta-ind-label { margin-bottom: 0 !important; }
+}
+
 button { font-family: var(--font); cursor: pointer; border: none; }
 input, select, textarea { font-family: var(--font); }
 a { text-decoration: none; color: inherit; }

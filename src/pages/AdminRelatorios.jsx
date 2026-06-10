@@ -102,12 +102,12 @@ export default function AdminRelatorios() {
           {adocao.map(r => {
             const p = pct(r.usados, r.total)
             return (
-              <div key={r.recurso} style={s.barraLinha}>
-                <div style={s.barraLabel}>{r.recurso}</div>
-                <div style={s.barraTrack}>
+              <div key={r.recurso} className="rel-bar-row" style={s.barraLinha}>
+                <div className="rel-bar-label" style={s.barraLabel}>{r.recurso}</div>
+                <div className="rel-bar-track" style={s.barraTrack}>
                   <div style={{ ...s.barraFill, width: `${p}%` }} />
                 </div>
-                <div style={s.barraVal}>{r.usados}<span style={s.barraValSub}>/{r.total} · {p}%</span></div>
+                <div className="rel-bar-val" style={s.barraVal}>{r.usados}<span style={s.barraValSub}>/{r.total} · {p}%</span></div>
               </div>
             )
           })}
@@ -126,12 +126,12 @@ export default function AdminRelatorios() {
             const p = pct(etp.contas, cadastroBase)
             const queda = i > 0 ? pct(etp.contas, funil[i - 1].contas) : 100
             return (
-              <div key={etp.etapa} style={s.barraLinha}>
-                <div style={s.barraLabel}>{etp.etapa}</div>
-                <div style={s.barraTrack}>
+              <div key={etp.etapa} className="rel-bar-row" style={s.barraLinha}>
+                <div className="rel-bar-label" style={s.barraLabel}>{etp.etapa}</div>
+                <div className="rel-bar-track" style={s.barraTrack}>
                   <div style={{ ...s.barraFill, width: `${p}%`, background: 'var(--gold, #D4AF37)' }} />
                 </div>
-                <div style={s.barraVal}>
+                <div className="rel-bar-val" style={s.barraVal}>
                   {etp.contas}
                   <span style={s.barraValSub}>{i > 0 ? ` · ${queda}% do passo anterior` : ` · ${p}%`}</span>
                 </div>

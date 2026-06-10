@@ -338,17 +338,17 @@ export default function Metas() {
                     <button style={s.iconBtn} onClick={() => excluirMeta(meta)}><X size={14} /></button>
                   </div>
                 </div>
-                <div style={s.indicadoresGrid}>
-                  <div style={s.indicador}>
-                    <div style={s.indicadorLabel}><Target size={11} /> Meta</div>
+                <div className="meta-ind-grid" style={s.indicadoresGrid}>
+                  <div className="meta-ind" style={s.indicador}>
+                    <div className="meta-ind-label" style={s.indicadorLabel}><Target size={11} /> Meta</div>
                     <div style={{ ...s.indicadorValor, color: 'var(--text)' }}>{formatBRL(meta.valor_meta)}</div>
                   </div>
-                  <div style={s.indicador}>
-                    <div style={s.indicadorLabel}><DollarSign size={11} /> Realizado</div>
+                  <div className="meta-ind" style={s.indicador}>
+                    <div className="meta-ind-label" style={s.indicadorLabel}><DollarSign size={11} /> Realizado</div>
                     <div style={{ ...s.indicadorValor, color: cor }}>{formatBRL(realizado)}</div>
                   </div>
-                  <div style={s.indicador}>
-                    <div style={s.indicadorLabel}><Zap size={11} /> Projeção</div>
+                  <div className="meta-ind" style={s.indicador}>
+                    <div className="meta-ind-label" style={s.indicadorLabel}><Zap size={11} /> Projeção</div>
                     <div style={{ ...s.indicadorValor, color: projOnTrack ? 'var(--green)' : '#D97706' }}>{formatBRL(projecao)}</div>
                   </div>
                 </div>
