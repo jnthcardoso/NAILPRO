@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
   TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
-  BarChart2, ListOrdered
+  BarChart2, ListOrdered, CalendarClock
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -15,7 +15,7 @@ import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
 import PagamentoModal from '../components/agenda/PagamentoModal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from 'date-fns'
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
@@ -227,6 +227,8 @@ export default function Financeiro() {
   const [showDespesaModal, setShowDespesaModal] = useState(false)
   const [editandoDespesa, setEditandoDespesa] = useState(null)
   const [agendamentos, setAgendamentos] = useState([])
+  // Previsão = receita futura (agendamentos pendentes/confirmados a partir de hoje).
+  const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
@@ -269,7 +271,7 @@ export default function Financeiro() {
   useEffect(() => {
     if (!salaoId) return
     setLoading(true)
-    Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas()]).finally(() => setLoading(false))
+    Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas(), loadPrevisao()]).finally(() => setLoading(false))
   }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
   // Recarrega ao voltar o foco para a aba/janela: mantém os números frescos
@@ -300,6 +302,32 @@ export default function Financeiro() {
       .select('data, valor, status').eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio6m).lte('data', fim6m)
     setPagamentos6m(data6m || [])
+  }
+
+  // Previsão de receita: o que AINDA vai entrar (agendamentos pendentes/confirmados
+  // de hoje em diante). Independe do período selecionado — é sempre "daqui pra frente".
+  async function loadPrevisao() {
+    const hoje = format(new Date(), 'yyyy-MM-dd')
+    const fimSemana = format(endOfWeek(new Date(), { locale: ptBR }), 'yyyy-MM-dd')
+    const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
+    const fimAno = format(endOfYear(new Date()), 'yyyy-MM-dd')
+
+    const { data: ags } = await supabase
+      .from('agendamentos').select('data, valor, status')
+      .eq('salao_id', salaoId)
+      .gte('data', hoje)
+      .in('status', ['pendente', 'confirmado'])
+
+    if (!ags) return
+    const soma = (arr) => arr.reduce((acc, a) => acc + (a.valor || 0), 0)
+    setPrevisao({
+      hoje: soma(ags.filter(a => a.data === hoje)),
+      semana: soma(ags.filter(a => a.data > hoje && a.data <= fimSemana)),
+      mes: soma(ags.filter(a => a.data > fimSemana && a.data <= fimMes)),
+      ano: soma(ags.filter(a => a.data > fimMes && a.data <= fimAno)),
+      confirmados: soma(ags.filter(a => a.status === 'confirmado')),
+      pendentes: soma(ags.filter(a => a.status === 'pendente')),
+    })
   }
 
   async function loadDespesas() {
@@ -588,6 +616,7 @@ export default function Financeiro() {
           { id: 'resumo',   label: 'Resumo',   icon: DollarSign },
           { id: 'analises', label: 'Análises', icon: BarChart2 },
           { id: 'receitas', label: 'Receitas', icon: TrendingUp },
+          { id: 'previsao', label: 'Previsão', icon: CalendarClock },
           { id: 'despesas', label: 'Despesas', icon: Receipt },
         ].map(t => {
           const Ico = t.icon
@@ -743,6 +772,58 @@ export default function Financeiro() {
               )
             })
           }
+        </div>
+      )}
+
+      {/* ── ABA: Previsão ── */}
+      {!loading && tab === 'previsao' && (
+        <div style={s.tabContent}>
+          <div style={s.prevInfo}>
+            💡 Receita dos agendamentos confirmados e pendentes nos próximos períodos
+          </div>
+
+          {/* Receita futura por período (não cumulativo) */}
+          <div style={s.prevSection}>Receita prevista por período</div>
+          <div style={s.prevGrid}>
+            {[
+              { label: 'Hoje', valor: previsao.hoje, sub: 'agendamentos de hoje' },
+              { label: 'Próx. dias', valor: previsao.semana, sub: 'restante desta semana' },
+              { label: 'Restante do mês', valor: previsao.mes, sub: 'após esta semana' },
+              { label: 'Restante do ano', valor: previsao.ano, sub: 'após este mês' },
+            ].map(({ label, valor, sub }) => (
+              <div key={label} style={s.prevCard}>
+                <div style={s.prevLabel}>{label}</div>
+                <div style={s.prevValor}>{formatBRL(valor)}</div>
+                <div style={s.prevSub}>{sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pipeline por status */}
+          <div style={{ ...s.prevSection, marginTop: 6 }}>Pipeline por status</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ ...s.prevPipeCard, borderColor: '#4ADE80', background: '#F0FDF4' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmados</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#15803D' }}>
+                {formatBRL(previsao.confirmados)}
+              </div>
+              <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>já confirmado pela cliente</div>
+            </div>
+            <div style={{ ...s.prevPipeCard, borderColor: '#FCD34D', background: '#FFFBEB' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Aguardando</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#D97706' }}>
+                {formatBRL(previsao.pendentes)}
+              </div>
+              <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>pendente de confirmação</div>
+            </div>
+          </div>
+
+          <div style={s.prevTotal}>
+            <span style={{ color: 'var(--text2)', fontSize: 13 }}>Total previsto</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' }}>
+              {formatBRL(previsao.confirmados + previsao.pendentes)}
+            </span>
+          </div>
         </div>
       )}
 
@@ -912,6 +993,16 @@ export default function Financeiro() {
 
 const s = {
   page: { padding: 16, paddingBottom: 80 },
+  /* Previsão (receita futura) */
+  prevInfo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 13px', fontSize: 12, color: 'var(--text2)' },
+  prevSection: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' },
+  prevGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 },
+  prevCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 13px', boxShadow: 'var(--shadow-xs)' },
+  prevLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 },
+  prevValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' },
+  prevSub: { fontSize: 10, color: 'var(--text3)', marginTop: 2 },
+  prevPipeCard: { background: 'var(--surface)', border: '1.5px solid', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-xs)' },
+  prevTotal: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', boxShadow: 'var(--shadow-xs)' },
   modoTabs: { display: 'flex', gap: 6, marginBottom: 10 },
   modoTab: { flex: 1, padding: '7px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   modoTabAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', fontWeight: 700 },

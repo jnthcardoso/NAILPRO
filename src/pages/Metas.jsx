@@ -8,8 +8,7 @@ import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatBRL } from '../lib/formatters'
 import {
-  format, endOfMonth, endOfYear, startOfMonth, startOfYear,
-  endOfWeek, startOfWeek, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
+  format, endOfMonth, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -31,9 +30,6 @@ export default function Metas() {
   const [form, setForm] = useState({ tipo: 'mes', periodo: format(new Date(), 'yyyy-MM'), valor_meta: '' })
   const [saving, setSaving] = useState(false)
 
-  // ── Previsão ─────────────────────────────────────────
-  const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0 })
-
   // ── KPIs ─────────────────────────────────────────────
   const [kpiMeses, setKpiMeses] = useState('3')
   const [retencaoDias, setRetencaoDias] = useState(45)
@@ -43,7 +39,7 @@ export default function Metas() {
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
   const [loadingFatur, setLoadingFatur] = useState(false) // carga isolada do faturamento
 
-  useEffect(() => { if (salaoId) { loadConfig(); loadMetas(); loadPrevisao() } }, [salaoId])
+  useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
   // Carga inicial: carrega TODOS os KPIs quando entra na tab
   useEffect(() => { if (salaoId && tab === 'kpis') loadKpis() }, [salaoId, tab])
   // kpiMeses → só recarrega faturamento
@@ -57,34 +53,6 @@ export default function Metas() {
     const { data } = await supabase.from('configuracoes')
       .select('dias_semana').eq('salao_id', salaoId).maybeSingle()
     if (data?.dias_semana?.length) setDiasFuncionamento(data.dias_semana)
-  }
-
-  // ── Previsão ──────────────────────────────────────────
-  async function loadPrevisao() {
-    const hoje = format(new Date(), 'yyyy-MM-dd')
-    const fimSemana = format(endOfWeek(new Date(), { locale: ptBR }), 'yyyy-MM-dd')
-    const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
-    const fimAno = format(endOfYear(new Date()), 'yyyy-MM-dd')
-
-    // Previsão = receita que AINDA vai entrar → só pendente + confirmado.
-    // Os "realizados" já aconteceram (entram no Financeiro como receita), não em
-    // previsão. Assim os cards por período batem com o pipeline por status.
-    const { data: ags } = await supabase
-      .from('agendamentos').select('data, valor, status')
-      .eq('salao_id', salaoId)
-      .gte('data', hoje)
-      .in('status', ['pendente', 'confirmado'])
-
-    if (!ags) return
-    const soma = (arr) => arr.reduce((s, a) => s + (a.valor || 0), 0)
-    setPrevisao({
-      hoje: soma(ags.filter(a => a.data === hoje)),
-      semana: soma(ags.filter(a => a.data > hoje && a.data <= fimSemana)),
-      mes: soma(ags.filter(a => a.data > fimSemana && a.data <= fimMes)),
-      ano: soma(ags.filter(a => a.data > fimMes && a.data <= fimAno)),
-      confirmados: soma(ags.filter(a => a.status === 'confirmado')),
-      pendentes: soma(ags.filter(a => a.status === 'pendente')),
-    })
   }
 
   // ── Metas ─────────────────────────────────────────────
@@ -323,9 +291,6 @@ export default function Metas() {
         <button style={{ ...tabs.btn, ...(tab === 'metas' ? tabs.btnAtivo : {}) }} onClick={() => setTab('metas')}>
           <Target size={14} /> Metas
         </button>
-        <button style={{ ...tabs.btn, ...(tab === 'previsao' ? tabs.btnAtivo : {}) }} onClick={() => setTab('previsao')}>
-          <TrendingUp size={14} /> Previsão
-        </button>
         <button style={{ ...tabs.btn, ...(tab === 'kpis' ? tabs.btnAtivo : {}) }} onClick={() => setTab('kpis')}>
           <BarChart2 size={14} /> KPIs
         </button>
@@ -413,58 +378,6 @@ export default function Metas() {
           <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova meta">
             <Plus size={22} color="white" />
           </button>
-        </>
-      )}
-
-      {/* ── TAB: PREVISÃO ──────────────────────────────── */}
-      {tab === 'previsao' && (
-        <>
-          <div style={s.kpiInfo}>
-            💡 Receita dos agendamentos confirmados e pendentes nos próximos períodos
-          </div>
-
-          {/* Receita futura por período (não cumulativo) */}
-          <div style={s.sectionLabel}>Receita prevista por período</div>
-          <div style={s.grid4}>
-            {[
-              { label: 'Hoje', valor: previsao.hoje, sub: 'agendamentos de hoje' },
-              { label: 'Próx. dias', valor: previsao.semana, sub: 'restante desta semana' },
-              { label: 'Restante do mês', valor: previsao.mes, sub: 'após esta semana' },
-              { label: 'Restante do ano', valor: previsao.ano, sub: 'após este mês' },
-            ].map(({ label, valor, sub }) => (
-              <div key={label} style={s.estimCard}>
-                <div style={s.estimLabel}>{label}</div>
-                <div style={s.estimValor}>{formatBRL(valor)}</div>
-                <div style={s.estimSub}>{sub}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Pipeline por status */}
-          <div style={{ ...s.sectionLabel, marginTop: 20 }}>Pipeline por status</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ ...s.pipelineCard, borderColor: '#4ADE80', background: '#F0FDF4' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmados</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#15803D' }}>
-                {formatBRL(previsao.confirmados)}
-              </div>
-              <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>já confirmado pela cliente</div>
-            </div>
-            <div style={{ ...s.pipelineCard, borderColor: '#FCD34D', background: '#FFFBEB' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Aguardando</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#D97706' }}>
-                {formatBRL(previsao.pendentes)}
-              </div>
-              <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>pendente de confirmação</div>
-            </div>
-          </div>
-
-          <div style={s.totalPrevisao}>
-            <span style={{ color: 'var(--text2)', fontSize: 13 }}>Total previsto</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' }}>
-              {formatBRL(previsao.confirmados + previsao.pendentes)}
-            </span>
-          </div>
         </>
       )}
 
@@ -670,16 +583,6 @@ const s = {
   mesNavBtn: { background: 'none', border: 'none', fontSize: 22, color: 'var(--text2)', cursor: 'pointer', padding: '0 6px', lineHeight: 1, fontFamily: 'inherit' },
   mesNavLabel: { display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' },
   mesAtualChip: { fontSize: 10, fontWeight: 700, background: 'var(--pink)', color: 'white', borderRadius: 'var(--radius-pill)', padding: '2px 8px' },
-  sectionLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 },
-  // Previsão
-  kpiInfo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 13px', fontSize: 12, color: 'var(--text2)', marginBottom: 16 },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 14 },
-  estimCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 13px', boxShadow: 'var(--shadow-xs)' },
-  estimLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 },
-  estimValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' },
-  estimSub: { fontSize: 10, color: 'var(--text3)', marginTop: 2 },
-  pipelineCard: { background: 'var(--surface)', border: '1.5px solid', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-xs)' },
-  totalPrevisao: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginTop: 12, boxShadow: 'var(--shadow-xs)' },
   // Metas
   metaCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 15px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' },
   metaHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, gap: 8 },
