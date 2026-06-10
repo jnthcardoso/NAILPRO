@@ -11,10 +11,21 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
     return <div style={s.empty}>Sem dados ainda</div>
   }
 
-  const r = size / 2 - 14
+  const stroke = 14
+  const r = size / 2 - stroke
   const cx = size / 2
   const cy = size / 2
   const circ = 2 * Math.PI * r
+
+  // Espaço livre DENTRO do anel (diâmetro do buraco) — o texto central tem que
+  // caber aqui com folga pra nunca encostar no círculo. Reduz a fonte conforme
+  // o valor cresce (ex.: "R$ 10.450,00"), respeitando esse limite.
+  const buracoD = 2 * (r - stroke / 2)
+  const maxTextW = buracoD - 14
+  const len = String(centerLabel).length || 1
+  let labelFont = 16
+  while (labelFont > 10 && len * labelFont * 0.6 > maxTextW) labelFont -= 1
+
   let acumulado = 0
 
   return (
@@ -22,7 +33,7 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
       <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <svg width={size} height={size}>
           {/* Trilha de fundo */}
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border)" strokeWidth="14" />
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
           {/* Fatias */}
           {data.map((d, i) => {
             const frac = d.valor / total
@@ -37,7 +48,7 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
                 r={r}
                 fill="none"
                 stroke={d.cor}
-                strokeWidth="14"
+                strokeWidth={stroke}
                 strokeDasharray={dasharray}
                 strokeDashoffset={offset}
                 strokeLinecap="butt"
@@ -49,7 +60,7 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
         </svg>
         {/* Centro */}
         <div style={s.center}>
-          <div style={s.centerLabel}>{centerLabel}</div>
+          <div style={{ ...s.centerLabel, fontSize: labelFont, maxWidth: maxTextW }}>{centerLabel}</div>
           {centerSub && <div style={s.centerSub}>{centerSub}</div>}
         </div>
       </div>
@@ -74,7 +85,7 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
 const s = {
   wrap: { display: 'flex', alignItems: 'center', gap: 18, padding: 4 },
   center: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  centerLabel: { fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
+  centerLabel: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--text)', lineHeight: 1, whiteSpace: 'nowrap', textAlign: 'center' },
   centerSub: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
   legend: { flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 0 },
   legendItem: { display: 'flex', alignItems: 'center', gap: 8 },
