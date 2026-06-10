@@ -258,7 +258,7 @@ export default function Admin() {
 
     return (
       <div style={s.userCard}>
-        <div style={s.userMain}>
+        <div className="admin-user-main" style={s.userMain}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={s.userNome}>
               {u.nome || u.email?.split('@')[0]}
@@ -296,7 +296,7 @@ export default function Admin() {
             )}
           </div>
 
-          <div style={s.userRight}>
+          <div className="admin-user-right" style={s.userRight}>
             <span style={{ ...s.statusBadge, background: st.bg, color: st.color }}>{st.label}</span>
             <div style={s.planoTexto}>
               {u.assinatura_plano === 'salao' ? 'SALÃO' : u.assinatura_plano?.toUpperCase() || '—'}

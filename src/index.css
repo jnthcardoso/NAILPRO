@@ -118,6 +118,26 @@ html, body, #root {
      (em 4 colunas o valor do MRR não cabe). O 5º ("A renovar") ocupa a linha. */
   .admin-stats { grid-template-columns: repeat(2, 1fr) !important; }
   .admin-stats > div:nth-child(5) { grid-column: 1 / -1 !important; }
+
+  /* Admin: no card de usuário, a coluna da direita (status/plano/renovação)
+     deixa de disputar a largura e vira uma linha de rodapé full-width
+     (status · plano · renovação lado a lado). O conteúdo principal ganha
+     a largura toda e nada fica espremido. */
+  .admin-user-main { flex-wrap: wrap !important; }
+  .admin-user-right {
+    order: 3 !important;
+    flex-basis: 100% !important;
+    width: 100% !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px 10px !important;
+    margin-top: 9px !important;
+    padding-top: 9px !important;
+    border-top: 1px solid var(--border) !important;
+  }
+  .admin-user-right > div { margin-top: 0 !important; }
 }
 
 button { font-family: var(--font); cursor: pointer; border: none; }
