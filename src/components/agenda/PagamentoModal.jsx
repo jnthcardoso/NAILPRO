@@ -1,6 +1,7 @@
 import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
 import { FORMAS } from '../../pages/Agenda.constants'
+import { formatBRL } from '../../lib/formatters'
 
 // Modal de registro de pagamento de um agendamento (1 ou 2 formas).
 // Apresentacional: recebe estado e handlers do componente Agenda.
@@ -87,7 +88,7 @@ export default function PagamentoModal({
           {(parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0) > 0 && (
             <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
               Total: <strong style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                R$ {((parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0)).toFixed(2)}
+                {formatBRL((parseFloat(formPag.valor) || 0) + (parseFloat(formPag.valor2) || 0))}
               </strong>
             </div>
           )}

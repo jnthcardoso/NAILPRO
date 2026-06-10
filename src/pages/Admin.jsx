@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale'
 import { CardSkeleton } from '../components/common/Skeleton'
 import Modal from '../components/common/Modal'
 import { useToast } from '../contexts/ToastContext'
+import { formatBRL } from '../lib/formatters'
 
 // Tempo relativo amigável: "há 2 dias", "há 5 minutos", "nunca".
 function quando(ts) {
@@ -439,7 +440,7 @@ export default function Admin() {
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid var(--gold, #D4AF37)' }}>
           <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)' }}>
-            R$ {(stats.mrrCentavos / 100).toFixed(0)}
+            {formatBRL(stats.mrrCentavos / 100)}
           </div>
           <div style={s.statLabel}>MRR</div>
         </div>

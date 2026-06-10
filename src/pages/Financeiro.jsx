@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
-import { formatBRL } from '../lib/formatters'
+import { formatBRL, formatMoeda } from '../lib/formatters'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
@@ -68,15 +68,15 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
   doc.setFont('helvetica', 'bold')
   doc.text('RESUMO DO PERÍODO', 14, 38)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Receita recebida: R$ ${recebido.toFixed(2)}`, 14, 45)
-  doc.text(`A receber: R$ ${pendente.toFixed(2)}`, 14, 51)
-  doc.text(`Total de despesas: R$ ${totalDespesas.toFixed(2)}`, 14, 57)
+  doc.text(`Receita recebida: R$ ${formatMoeda(recebido)}`, 14, 45)
+  doc.text(`A receber: R$ ${formatMoeda(pendente)}`, 14, 51)
+  doc.text(`Total de despesas: R$ ${formatMoeda(totalDespesas)}`, 14, 57)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(lucro >= 0 ? 21 : 185, lucro >= 0 ? 128 : 28, lucro >= 0 ? 61 : 28)
-  doc.text(`LUCRO LÍQUIDO: R$ ${lucro.toFixed(2)}`, 14, 64)
+  doc.text(`LUCRO LÍQUIDO: R$ ${formatMoeda(lucro)}`, 14, 64)
   doc.setTextColor(0, 0, 0)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Ticket médio: R$ ${ticket.toFixed(2)} (${qtd} atendimentos)`, 14, 71)
+  doc.text(`Ticket médio: R$ ${formatMoeda(ticket)} (${qtd} atendimentos)`, 14, 71)
 
   const totalPago = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
   const totalPendente = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
@@ -90,13 +90,13 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
         p.agendamentos?.clientes?.nome || '—',
         p.agendamentos?.servico || '—',
         ({ pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito' }[p.forma]) || p.forma,
-        `R$ ${p.valor.toFixed(2)}`,
+        `R$ ${formatMoeda(p.valor)}`,
         p.status === 'pago' ? 'Pago' : 'Pendente',
       ]),
       foot: [[
         '', '', '', 'TOTAL RECEBIDO',
-        `R$ ${totalPago.toFixed(2)}`,
-        totalPendente > 0 ? `+ R$ ${totalPendente.toFixed(2)} pend.` : '',
+        `R$ ${formatMoeda(totalPago)}`,
+        totalPendente > 0 ? `+ R$ ${formatMoeda(totalPendente)} pend.` : '',
       ]],
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [139, 38, 85] },
@@ -121,9 +121,9 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
         format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
         CATEGORIAS.find(c => c.id === d.categoria)?.label || d.categoria,
         d.descricao,
-        `R$ ${d.valor.toFixed(2)}`,
+        `R$ ${formatMoeda(d.valor)}`,
       ]),
-      foot: [['', '', 'TOTAL DESPESAS', `R$ ${totalDespesas.toFixed(2)}`]],
+      foot: [['', '', 'TOTAL DESPESAS', `R$ ${formatMoeda(totalDespesas)}`]],
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [185, 28, 28] },
       footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
@@ -134,7 +134,7 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(10)
     doc.setTextColor(lucro >= 0 ? 21 : 185, lucro >= 0 ? 128 : 28, lucro >= 0 ? 61 : 28)
-    doc.text(`LUCRO LÍQUIDO DO PERÍODO: R$ ${lucro.toFixed(2)} (margem ${margemFinal}%)`, 14, finalYDespesas + 12)
+    doc.text(`LUCRO LÍQUIDO DO PERÍODO: R$ ${formatMoeda(lucro)} (margem ${margemFinal}%)`, 14, finalYDespesas + 12)
     doc.setTextColor(0, 0, 0)
   }
 
@@ -178,9 +178,9 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
     const lucro = receita - despesa
     return [
       format(m, 'MMMM', { locale: ptBR }),
-      `R$ ${receita.toFixed(2)}`,
-      `R$ ${despesa.toFixed(2)}`,
-      `R$ ${lucro.toFixed(2)}`,
+      `R$ ${formatMoeda(receita)}`,
+      `R$ ${formatMoeda(despesa)}`,
+      `R$ ${formatMoeda(lucro)}`,
       receita > 0 ? `${((lucro / receita) * 100).toFixed(1)}%` : '—',
     ]
   })
@@ -194,17 +194,17 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
   doc.text(`Período: Janeiro a Dezembro de ${ano}`, 14, 27)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
-  doc.text(`RECEITA TOTAL: R$ ${totalReceita.toFixed(2)}`, 14, 38)
-  doc.text(`DESPESA TOTAL: R$ ${totalDespesa.toFixed(2)}`, 14, 45)
+  doc.text(`RECEITA TOTAL: R$ ${formatMoeda(totalReceita)}`, 14, 38)
+  doc.text(`DESPESA TOTAL: R$ ${formatMoeda(totalDespesa)}`, 14, 45)
   doc.setTextColor(totalLucro >= 0 ? 21 : 185, totalLucro >= 0 ? 128 : 28, totalLucro >= 0 ? 61 : 28)
-  doc.text(`LUCRO LÍQUIDO: R$ ${totalLucro.toFixed(2)}`, 14, 52)
+  doc.text(`LUCRO LÍQUIDO: R$ ${formatMoeda(totalLucro)}`, 14, 52)
   doc.setTextColor(0, 0, 0)
 
   autoTable(doc, {
     startY: 60,
     head: [['Mês', 'Receita', 'Despesas', 'Lucro', 'Margem']],
     body: linhasMeses,
-    foot: [['TOTAL ANUAL', `R$ ${totalReceita.toFixed(2)}`, `R$ ${totalDespesa.toFixed(2)}`, `R$ ${totalLucro.toFixed(2)}`, totalReceita > 0 ? `${((totalLucro / totalReceita) * 100).toFixed(1)}%` : '—']],
+    foot: [['TOTAL ANUAL', `R$ ${formatMoeda(totalReceita)}`, `R$ ${formatMoeda(totalDespesa)}`, `R$ ${formatMoeda(totalLucro)}`, totalReceita > 0 ? `${((totalLucro / totalReceita) * 100).toFixed(1)}%` : '—']],
     styles: { fontSize: 10, cellPadding: 4 },
     headStyles: { fillColor: [139, 38, 85], fontSize: 10 },
     footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
@@ -396,7 +396,7 @@ export default function Financeiro() {
   async function excluirDespesa(despesa) {
     const ok = await confirmar({
       titulo: 'Excluir esta despesa?',
-      mensagem: `${despesa.descricao} - R$ ${despesa.valor.toFixed(2)}`,
+      mensagem: `${despesa.descricao} - ${formatBRL(despesa.valor)}`,
       confirmarLabel: 'Sim, excluir',
       tipo: 'perigo',
     })
@@ -610,12 +610,12 @@ export default function Financeiro() {
           <div style={s.grid4} className="fin-resumo-grid">
             <div style={{ ...s.card, borderTop: '3px solid var(--green)' }} className="fin-resumo-card">
               <div style={s.cardLabel} className="fin-card-label"><DollarSign size={11} /> Recebido</div>
-              <div style={{ ...s.cardValue, color: 'var(--green)' }} className="fin-card-value">R$ {recebido.toFixed(0)}</div>
+              <div style={{ ...s.cardValue, color: 'var(--green)' }} className="fin-card-value">{formatBRL(recebido)}</div>
               <div style={s.cardSub} className="fin-card-sub">{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
             </div>
             <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }} className="fin-resumo-card">
               <div style={s.cardLabel} className="fin-card-label"><Receipt size={11} /> Despesas</div>
-              <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">R$ {totalDespesas.toFixed(0)}</div>
+              <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">{formatBRL(totalDespesas)}</div>
               <div style={s.cardSub} className="fin-card-sub">{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
             </div>
             <div
@@ -625,12 +625,12 @@ export default function Financeiro() {
               title="Ver receitas pendentes"
             >
               <div style={s.cardLabel} className="fin-card-label">⏰ A receber</div>
-              <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }} className="fin-card-value">R$ {pendente.toFixed(0)}</div>
+              <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }} className="fin-card-value">{formatBRL(pendente)}</div>
               <div style={s.cardSub} className="fin-card-sub">{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
             </div>
             <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }} className="fin-resumo-card">
               <div style={s.cardLabel} className="fin-card-label">{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
-              <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }} className="fin-card-value">R$ {lucro.toFixed(0)}</div>
+              <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }} className="fin-card-value">{formatBRL(lucro)}</div>
               <div style={s.cardSub} className="fin-card-sub">{margemLucro.toFixed(0)}% de margem</div>
             </div>
           </div>
@@ -640,16 +640,16 @@ export default function Financeiro() {
             <div style={s.dreTitulo}>📊 DRE — {periodoLabel}</div>
             <div style={s.dreLinha}>
               <span>(+) Receitas recebidas</span>
-              <span style={{ ...s.mono, color: 'var(--green)' }}>R$ {recebido.toFixed(2)}</span>
+              <span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(recebido)}</span>
             </div>
             <div style={s.dreLinha}>
               <span>(−) Despesas totais</span>
-              <span style={{ ...s.mono, color: '#B91C1C' }}>− R$ {totalDespesas.toFixed(2)}</span>
+              <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesas)}</span>
             </div>
             <div style={s.dreDivider} />
             <div style={{ ...s.dreLinha, ...s.dreTotal }}>
               <span>(=) Lucro líquido</span>
-              <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>R$ {lucro.toFixed(2)}</span>
+              <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>{formatBRL(lucro)}</span>
             </div>
             {recebido > 0 && (
               <div style={s.dreMargem}>
@@ -676,7 +676,7 @@ export default function Financeiro() {
             {dadosDespesas.length > 0 && (
               <div style={s.graficoCard}>
                 <div style={s.graficoTitulo}>Despesas por categoria</div>
-                <DonutChart data={dadosDespesas} size={160} centerLabel={`R$ ${totalDespesas.toFixed(0)}`} centerSub="total" />
+                <DonutChart data={dadosDespesas} size={160} centerLabel={formatBRL(totalDespesas)} centerSub="total" />
               </div>
             )}
 
@@ -684,13 +684,13 @@ export default function Financeiro() {
               <div style={s.graficoTitulo}>Como você recebeu</div>
               {dadosFormas.length === 0
                 ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
-                : <DonutChart data={dadosFormas} size={160} centerLabel={`R$ ${recebido.toFixed(0)}`} centerSub="recebido" />
+                : <DonutChart data={dadosFormas} size={160} centerLabel={formatBRL(recebido)} centerSub="recebido" />
               }
             </div>
 
             <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
               <div style={s.graficoTitulo}>Top serviços do mês (por receita)</div>
-              <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => `R$ ${v.toFixed(0)}`} />
+              <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => formatBRL(v)} />
             </div>
           </div>
         </div>

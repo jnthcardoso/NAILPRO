@@ -381,7 +381,7 @@ export default function Home() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                       <span style={{ ...s.badge, background: st.bg, color: st.color }}>{st.label}</span>
-                      {ag.valor > 0 && <span style={{ ...s.mono, fontSize: 12, color: 'var(--pink)' }}>R$ {ag.valor.toFixed(0)}</span>}
+                      {ag.valor > 0 && <span style={{ ...s.mono, fontSize: 12, color: 'var(--pink)' }}>{formatBRL(ag.valor)}</span>}
                     </div>
                   </div>
                 )
@@ -408,7 +408,7 @@ export default function Home() {
                     Seu dia mais lucrativo é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
                   </div>
                   <div style={{ ...s.insightSub, color: '#1E40AF' }}>
-                    R$ {diaTop.valor.toFixed(0)} acumulado nos últimos 90 dias
+                    {formatBRL(diaTop.valor)} acumulado nos últimos 90 dias
                   </div>
                 </div>
               </div>
@@ -466,7 +466,7 @@ export default function Home() {
           </div>
           <div style={s.kpiSub}>
             {variacaoReceita !== null
-              ? `vs R$ ${stats.receitaOntem.toFixed(0)} ontem`
+              ? `vs ${formatBRL(stats.receitaOntem)} ontem`
               : `${stats.hoje} ${stats.hoje === 1 ? 'serviço' : 'serviços'}`}
           </div>
         </div>
@@ -499,14 +499,14 @@ export default function Home() {
           </div>
           <div style={s.kpiLabel}>Meta do mês</div>
           <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--pink)', fontSize: 17 }}>
-            R$ {stats.receitaMes.toFixed(0)}
+            {formatBRL(stats.receitaMes)}
           </div>
           <div style={s.progressBar}>
             <div style={{ ...s.progressFill, width: `${progressoMeta}%` }} />
           </div>
           <div style={s.kpiSub}>
             {faltaMeta > 0
-              ? `R$ ${necessarioPorDia.toFixed(0)}/dia em ${diasRestantesMes}d`
+              ? `${formatBRL(necessarioPorDia)}/dia em ${diasRestantesMes}d`
               : 'meta batida! 🎉'}
           </div>
         </div>
@@ -519,7 +519,7 @@ export default function Home() {
             <div>
               <div style={s.chartTitle}>📈 Receita da semana</div>
               <div style={s.chartSub}>
-                Total: <strong>R$ {receita7Dias.reduce((s, d) => s + d.valor, 0).toFixed(0)}</strong>
+                Total: <strong>{formatBRL(receita7Dias.reduce((s, d) => s + d.valor, 0))}</strong>
               </div>
             </div>
           </div>

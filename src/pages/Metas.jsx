@@ -6,6 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
+import { formatBRL } from '../lib/formatters'
 import {
   format, endOfMonth, endOfYear, startOfMonth, startOfYear,
   endOfWeek, startOfWeek, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
@@ -171,7 +172,7 @@ export default function Metas() {
   async function excluirMeta(meta) {
     const ok = await confirmar({
       titulo: 'Excluir esta meta?',
-      mensagem: `${labelTipo(meta.tipo)} de ${labelPeriodo(meta)} - R$ ${meta.valor_meta.toFixed(0)}`,
+      mensagem: `${labelTipo(meta.tipo)} de ${labelPeriodo(meta)} - ${formatBRL(meta.valor_meta)}`,
       confirmarLabel: 'Sim, excluir', cancelarLabel: 'Cancelar', tipo: 'perigo',
     })
     if (!ok) return
@@ -375,15 +376,15 @@ export default function Metas() {
                 <div style={s.indicadoresGrid}>
                   <div style={s.indicador}>
                     <div style={s.indicadorLabel}><Target size={11} /> Meta</div>
-                    <div style={{ ...s.indicadorValor, color: 'var(--text)' }}>R$ {meta.valor_meta.toFixed(0)}</div>
+                    <div style={{ ...s.indicadorValor, color: 'var(--text)' }}>{formatBRL(meta.valor_meta)}</div>
                   </div>
                   <div style={s.indicador}>
                     <div style={s.indicadorLabel}><DollarSign size={11} /> Realizado</div>
-                    <div style={{ ...s.indicadorValor, color: cor }}>R$ {realizado.toFixed(0)}</div>
+                    <div style={{ ...s.indicadorValor, color: cor }}>{formatBRL(realizado)}</div>
                   </div>
                   <div style={s.indicador}>
                     <div style={s.indicadorLabel}><Zap size={11} /> Projeção</div>
-                    <div style={{ ...s.indicadorValor, color: projOnTrack ? 'var(--green)' : '#D97706' }}>R$ {projecao.toFixed(0)}</div>
+                    <div style={{ ...s.indicadorValor, color: projOnTrack ? 'var(--green)' : '#D97706' }}>{formatBRL(projecao)}</div>
                   </div>
                 </div>
                 <div style={s.metaValores}>
@@ -402,8 +403,8 @@ export default function Metas() {
                   <TrendingUp size={13} />
                   <span>
                     {projOnTrack
-                      ? `📈 Você está no ritmo de bater a meta! Projetado: R$ ${projecao.toFixed(0)} (${projecaoPct}%)`
-                      : `⚠️ Ritmo abaixo. Precisa de R$ ${((meta.valor_meta - realizado) / Math.max(1, diasUteisRestantes)).toFixed(0)}/dia útil pra bater`}
+                      ? `📈 Você está no ritmo de bater a meta! Projetado: ${formatBRL(projecao)} (${projecaoPct}%)`
+                      : `⚠️ Ritmo abaixo. Precisa de ${formatBRL((meta.valor_meta - realizado) / Math.max(1, diasUteisRestantes))}/dia útil pra bater`}
                   </span>
                 </div>
               </div>
@@ -433,7 +434,7 @@ export default function Metas() {
             ].map(({ label, valor, sub }) => (
               <div key={label} style={s.estimCard}>
                 <div style={s.estimLabel}>{label}</div>
-                <div style={s.estimValor}>R$ {valor.toFixed(0)}</div>
+                <div style={s.estimValor}>{formatBRL(valor)}</div>
                 <div style={s.estimSub}>{sub}</div>
               </div>
             ))}
@@ -445,14 +446,14 @@ export default function Metas() {
             <div style={{ ...s.pipelineCard, borderColor: '#4ADE80', background: '#F0FDF4' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmados</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#15803D' }}>
-                R$ {previsao.confirmados.toFixed(0)}
+                {formatBRL(previsao.confirmados)}
               </div>
               <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>já confirmado pela cliente</div>
             </div>
             <div style={{ ...s.pipelineCard, borderColor: '#FCD34D', background: '#FFFBEB' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Aguardando</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#D97706' }}>
-                R$ {previsao.pendentes.toFixed(0)}
+                {formatBRL(previsao.pendentes)}
               </div>
               <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>pendente de confirmação</div>
             </div>
@@ -461,7 +462,7 @@ export default function Metas() {
           <div style={s.totalPrevisao}>
             <span style={{ color: 'var(--text2)', fontSize: 13 }}>Total previsto</span>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' }}>
-              R$ {(previsao.confirmados + previsao.pendentes).toFixed(0)}
+              {formatBRL(previsao.confirmados + previsao.pendentes)}
             </span>
           </div>
         </>
@@ -522,7 +523,7 @@ export default function Metas() {
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{item.nome}</span>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--pink)', fontWeight: 600 }}>
-                            R$ {item.valor.toFixed(0)}
+                            {formatBRL(item.valor)}
                           </span>
                           <span style={{ fontSize: 10, color: 'var(--text3)', minWidth: 28, textAlign: 'right' }}>{item.pct}%</span>
                         </div>
