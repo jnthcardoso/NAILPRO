@@ -396,9 +396,37 @@ export default function Clientes() {
         </div>
       </div>
 
-      {/* Filtros + Ordenação (menus compactos lado a lado) */}
-      <div style={s.filtrosWrap}>
-        <div style={s.selectGroup}>
+      {/* Computador: chips + ordenar (escondido no celular via CSS) */}
+      <div className="clientes-filtros-chips">
+        <div style={s.filtrosChips}>
+          {[
+            { id: 'todas', label: 'Todas' },
+            { id: 'vip', label: '✦ VIP' },
+            { id: 'sumidas', label: '⏰ Retorno' },
+            { id: 'sem_visita', label: '🆕 Novas' },
+            ...(aniversariantes.length ? [{ id: 'aniversariantes', label: `🎂 Aniversários (${aniversariantes.length})` }] : []),
+            ...(arquivadas.length ? [{ id: 'arquivadas', label: `🗄 Arquivadas (${arquivadas.length})` }] : []),
+          ].map(f => (
+            <button
+              key={f.id}
+              style={{ ...s.filtroChip, ...(filtro === f.id ? s.filtroChipAtivo : {}) }}
+              onClick={() => setFiltro(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <select style={s.sortSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
+          <option value="nome">A–Z</option>
+          <option value="gasto">Maior gasto</option>
+          <option value="visitas">Mais visitas</option>
+          <option value="recente">Mais recente</option>
+        </select>
+      </div>
+
+      {/* Celular: menus compactos (escondido no computador via CSS) */}
+      <div className="clientes-filtros-selects">
+        <div style={{ ...s.selectGroup, flex: 1.8 }}>
           <span style={s.selectLabel}>Mostrar</span>
           <select style={s.filtroSelect} value={filtro} onChange={e => setFiltro(e.target.value)}>
             <option value="todas">Todas ({ativas.length})</option>
@@ -411,7 +439,7 @@ export default function Clientes() {
               <option value="arquivadas">🗄 Arquivadas ({arquivadas.length})</option>}
           </select>
         </div>
-        <div style={s.selectGroup}>
+        <div style={{ ...s.selectGroup, flex: 1 }}>
           <span style={s.selectLabel}>Ordenar</span>
           <select style={s.filtroSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
             <option value="nome">A–Z</option>
@@ -604,10 +632,15 @@ const s = {
   statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', transition: 'border 0.15s' },
   statNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
   statLabel: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: 3 },
-  filtrosWrap: { display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 12 },
-  selectGroup: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
+  // Chips (computador)
+  filtrosChips: { display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap' },
+  filtroChip: { flexShrink: 0, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
+  filtroChipAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', boxShadow: 'var(--shadow-pink)' },
+  sortSelect: { flexShrink: 0, padding: '6px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
+  // Menus compactos (celular)
+  selectGroup: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
   selectLabel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingLeft: 2 },
-  filtroSelect: { width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
+  filtroSelect: { width: '100%', height: 42, boxSizing: 'border-box', padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
   card: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
   avatar: { width: 42, height: 42, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--pink)', flexShrink: 0 },
   cardName: { fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' },

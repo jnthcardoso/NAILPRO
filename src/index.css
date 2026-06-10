@@ -171,6 +171,15 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* ── Filtros da página de Clientes ── */
+/* Celular: menus compactos "Mostrar" + "Ordenar". Computador: chips. */
+.clientes-filtros-chips { display: none; }
+.clientes-filtros-selects { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+@media (min-width: 769px) {
+  .clientes-filtros-chips { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .clientes-filtros-selects { display: none; }
+}
+
 /* ── "Mais" sheet (mobile bottom nav overflow) ── */
 .mais-sheet-overlay {
   position: fixed;
