@@ -122,7 +122,7 @@ const s = {
   container: { maxWidth: 760, margin: '0 auto' },
   voltarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 13, cursor: 'pointer', padding: '6px 0', marginBottom: 18, fontFamily: 'inherit' },
   header: { textAlign: 'center', marginBottom: 32 },
-  icon: { width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 8px 20px rgba(139,38,85,0.3)' },
+  icon: { width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 8px 20px rgba(var(--pink-rgb),0.3)' },
   titulo: { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 32, fontWeight: 400, color: 'var(--text)', margin: 0 },
   versao: { fontSize: 12, color: 'var(--text3)', margin: '8px 0 0' },
   conteudo: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '32px 28px', fontSize: 14, lineHeight: 1.7, color: 'var(--text2)', boxShadow: 'var(--shadow-sm)' },

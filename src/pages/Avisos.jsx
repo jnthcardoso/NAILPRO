@@ -58,7 +58,7 @@ const s = {
   page: { padding: '20px 20px 80px' },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
-  iconBox: { width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655 0%, #C13B7A 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(139,38,85,0.3)' },
+  iconBox: { width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655 0%, var(--pink-bright) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(var(--pink-rgb),0.3)' },
   title: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0 },
   sub: { fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' },
   refreshBtn: { width: 36, height: 36, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text2)' },

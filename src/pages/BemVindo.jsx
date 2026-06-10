@@ -178,7 +178,7 @@ export default function BemVindo() {
           <div style={s.stepBox}>
             <div style={s.stepNumber}>Passo 2 de 4</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-              <MessageCircle size={28} color="#25D366" />
+              <MessageCircle size={28} color="var(--whatsapp)" />
             </div>
             <h1 style={s.title}>Seu WhatsApp?</h1>
             <p style={s.subtitle}>
@@ -322,7 +322,7 @@ const s = {
     background: 'var(--surface)',
     borderRadius: 24,
     padding: '28px 24px',
-    boxShadow: '0 20px 60px rgba(139,38,85,0.15)',
+    boxShadow: '0 20px 60px rgba(var(--pink-rgb),0.15)',
     border: '1px solid var(--border)',
   },
   topBar: {
@@ -361,12 +361,12 @@ const s = {
     width: 64,
     height: 64,
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)',
+    background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     margin: '0 auto 4px',
-    boxShadow: '0 8px 20px rgba(139,38,85,0.3)',
+    boxShadow: '0 8px 20px rgba(var(--pink-rgb),0.3)',
   },
   stepNumber: {
     fontSize: 11,
@@ -481,7 +481,7 @@ const s = {
   metaCardActive: {
     border: '1.5px solid var(--pink)',
     background: 'var(--pink-light)',
-    boxShadow: '0 4px 12px rgba(139,38,85,0.15)',
+    boxShadow: '0 4px 12px rgba(var(--pink-rgb),0.15)',
   },
   metaValor: {
     fontFamily: "'JetBrains Mono', monospace",
@@ -505,7 +505,7 @@ const s = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)',
+    background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)',
     color: 'white',
     border: 'none',
     borderRadius: 12,
@@ -513,7 +513,7 @@ const s = {
     fontSize: 15,
     fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 6px 16px rgba(139,38,85,0.3)',
+    boxShadow: '0 6px 16px rgba(var(--pink-rgb),0.3)',
     transition: 'transform 0.15s',
     fontFamily: 'inherit',
   },

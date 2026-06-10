@@ -74,14 +74,14 @@ const s = {
     borderRadius: 20,
     padding: '32px 26px',
     textAlign: 'center',
-    boxShadow: '0 12px 40px rgba(139,38,85,0.12)',
+    boxShadow: '0 12px 40px rgba(var(--pink-rgb),0.12)',
   },
   iconBox: {
     width: 70, height: 70, borderRadius: '50%',
-    background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)',
+    background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     margin: '0 auto 16px',
-    boxShadow: '0 8px 24px rgba(139,38,85,0.35)',
+    boxShadow: '0 8px 24px rgba(var(--pink-rgb),0.35)',
   },
   proBadge: {
     display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -109,11 +109,11 @@ const s = {
   },
   btn: {
     width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-    background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)',
+    background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)',
     color: 'white', border: 'none', borderRadius: 12,
     padding: '13px', fontSize: 14, fontWeight: 700,
     cursor: 'pointer', fontFamily: 'inherit',
-    boxShadow: '0 6px 16px rgba(139,38,85,0.3)',
+    boxShadow: '0 6px 16px rgba(var(--pink-rgb),0.3)',
     marginBottom: 8,
   },
   btnGhost: {

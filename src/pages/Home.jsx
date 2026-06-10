@@ -689,7 +689,7 @@ const s = {
   quickActions: { display: 'flex', flexDirection: 'column', gap: 8 },
   qaBtn: { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 12px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'left', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden' },
   qaIcon: { width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  qaBtnPink: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', boxShadow: 'var(--shadow-pink)' },
+  qaBtnPink: { background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   qaBtnLight: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' },
 
   /* ─── Insights ─── */
@@ -709,7 +709,7 @@ const s = {
   emptyBtn: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
 
   /* ─── Chip pedidos do link público ─── */
-  pedidoChip: { display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
+  pedidoChip: { display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
   pedidoChipIcon: { width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   pedidoChipTitle: { fontSize: 13, fontWeight: 700, color: 'white' },
   pedidoChipSub: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },

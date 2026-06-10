@@ -142,7 +142,7 @@ export default function Planos() {
       {!isActive && (
         <div style={s.demoCtaWrap}>
           <button style={s.demoCtaPill} onClick={abrirDemoWhatsapp}>
-            <MessageCircle size={14} color="#25D366" />
+            <MessageCircle size={14} color="var(--whatsapp)" />
             <span>Quer ver antes? <strong style={{ color: 'var(--pink)' }}>Agende uma demonstração</strong></span>
           </button>
         </div>
@@ -467,8 +467,8 @@ const s = {
 
   planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 24 },
   planoCard: { position: 'relative', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '28px 22px', boxShadow: 'var(--shadow-sm)' },
-  planoCardPro: { border: '2px solid var(--pink)', boxShadow: '0 12px 32px rgba(139,38,85,0.18)' },
-  popularBadge: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', boxShadow: 'var(--shadow-pink)', whiteSpace: 'nowrap' },
+  planoCardPro: { border: '2px solid var(--pink)', boxShadow: '0 12px 32px rgba(var(--pink-rgb),0.18)' },
+  popularBadge: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)', color: 'white', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', boxShadow: 'var(--shadow-pink)', whiteSpace: 'nowrap' },
   atualBadge: { position: 'absolute', top: 12, right: 12, background: 'var(--green-bg)', color: 'var(--green)', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 'var(--radius-pill)' },
   planoNome: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 8 },
   planoPreco: { display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 },
@@ -491,7 +491,7 @@ const s = {
   stepperVal: { fontFamily: "'JetBrains Mono', monospace", fontSize: 17, fontWeight: 700, color: 'var(--text)', minWidth: 22, textAlign: 'center' },
 
   btnAssinar: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--surface2)', color: 'var(--text)', border: '1.5px solid var(--border2)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 18, fontFamily: 'inherit', transition: 'all 0.15s' },
-  btnAssinarPro: { background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', color: 'white', border: 'none', boxShadow: '0 6px 16px rgba(139,38,85,0.3)' },
+  btnAssinarPro: { background: 'linear-gradient(135deg, var(--pink) 0%, var(--pink-bright) 100%)', color: 'white', border: 'none', boxShadow: '0 6px 16px rgba(var(--pink-rgb),0.3)' },
   btnAssinarAtual: { background: 'var(--green-bg)', color: 'var(--green)', border: '1.5px solid var(--green)', cursor: 'default', boxShadow: 'none' },
   planoSubtitulo: { fontSize: 12.5, fontWeight: 600, color: 'var(--text3)', marginBottom: 12 },
   heranca: { fontSize: 13, color: 'var(--text)', background: 'var(--pink-light)', border: '1px solid var(--border2)', borderRadius: 10, padding: '8px 12px', marginBottom: 12 },
@@ -516,7 +516,7 @@ const s = {
 
   garantia: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 18px', fontSize: 13, color: 'var(--text2)' },
   erroCard: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#B91C1C' },
-  erroWpp: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#25D366', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' },
+  erroWpp: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--whatsapp)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' },
   segurancaRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--text3)', marginBottom: 24, flexWrap: 'wrap', textAlign: 'center' },
   planoCardDestaque: { border: '2px solid #D4AF37', boxShadow: '0 12px 32px rgba(212,175,55,0.2)' },
   destaqueBadge: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #D4AF37, #E6C260)', color: '#180712', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },

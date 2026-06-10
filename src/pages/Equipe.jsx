@@ -254,7 +254,7 @@ export default function Equipe() {
       {membroConvite && (
         <div style={s.conviteCard}>
           <div style={s.conviteIconWrap}>
-            <MessageCircle size={20} color="#25D366" />
+            <MessageCircle size={20} color="var(--whatsapp)" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={s.conviteTitulo}>Convide {membroConvite.nome.split(' ')[0]} pelo WhatsApp</div>
@@ -324,7 +324,7 @@ export default function Equipe() {
             {salvando ? 'Adicionando...' : 'Adicionar membro'}
           </button>
           <div style={s.formNota}>
-            <MessageCircle size={12} style={{ flexShrink: 0, color: '#25D366' }} />
+            <MessageCircle size={12} style={{ flexShrink: 0, color: 'var(--whatsapp)' }} />
             Após adicionar, você poderá enviar um convite via WhatsApp com o link de cadastro.
           </div>
         </form>
@@ -379,7 +379,7 @@ export default function Equipe() {
                       window.open(link, '_blank')
                     }}
                   >
-                    <MessageCircle size={14} color="#25D366" />
+                    <MessageCircle size={14} color="var(--whatsapp)" />
                   </button>
                 )}
 
@@ -409,7 +409,7 @@ export default function Equipe() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   header: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 },
-  headerIcon: { width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655 0%, #C13B7A 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(139,38,85,0.3)' },
+  headerIcon: { width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655 0%, var(--pink-bright) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(var(--pink-rgb),0.3)' },
   title: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: 0 },
   sub: { fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' },
   addBtn: { display: 'flex', alignItems: 'center', gap: 6, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, boxShadow: 'var(--shadow-pink)' },
@@ -420,14 +420,14 @@ const s = {
   licencaValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 24, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1, marginTop: 2 },
   licencaHint: { fontSize: 10, color: 'var(--text3)', marginTop: 2 },
   licencaInfo: { display: 'flex', gap: 6, alignItems: 'flex-start', background: 'var(--surface2)', borderRadius: 8, padding: '9px 11px', fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.5 },
-  licencaBtn: { width: '100%', marginTop: 10, background: '#25D366', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  licencaBtn: { width: '100%', marginTop: 10, background: 'var(--whatsapp)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 
   /* Card de convite */
   conviteCard: { display: 'flex', alignItems: 'center', gap: 12, background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, boxShadow: 'var(--shadow-xs)' },
   conviteIconWrap: { width: 38, height: 38, borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   conviteTitulo: { fontSize: 13, fontWeight: 700, color: '#15803D' },
   conviteSub: { fontSize: 11, color: '#166534', marginTop: 2, lineHeight: 1.4 },
-  conviteBtnEnviar: { background: '#25D366', color: 'white', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  conviteBtnEnviar: { background: 'var(--whatsapp)', color: 'white', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   conviteBtnFechar: { background: 'transparent', border: '1px solid #86EFAC', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#15803D' },
 
   form: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 16, marginBottom: 14, boxShadow: 'var(--shadow-xs)' },

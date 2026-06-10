@@ -4,10 +4,13 @@
 :root {
   /* ── Berry Color System ─────────── */
   --pink: #8B2655;          /* Berry  – primary */
+  --pink-rgb: 139, 38, 85;  /* Berry em RGB – para sombras/overlays: rgba(var(--pink-rgb), .X) */
   --pink-dark: #5E1839;     /* Wine   – hover / pressed */
+  --pink-bright: #C73B6F;   /* Berry claro – usado nos gradientes do primário */
   --pink-light: #FAF6F6;    /* Powder (Ajustado para o fundo off-white exato das imagens) */
   --pink-mid: #D9A0B8;      /* Petal  */
   --rose: #B34678;          /* Rosé   */
+  --whatsapp: #25D366;      /* Verde do WhatsApp – fixo (não muda no white-label) */
   --gold: #E6C260;          /* Gold   – premium accents (Ajustado para o dourado exato da imagem) */
   --brand-dark-bg: #170D14; /* Reverso/Escuro – Fundo das telas dark luxo */
   

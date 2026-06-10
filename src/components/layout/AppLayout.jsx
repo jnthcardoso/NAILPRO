@@ -368,14 +368,14 @@ const sb = {
   divider: { height: 1, background: 'rgba(255, 255, 255, 0.06)', margin: '0 14px 8px', transition: 'margin 0.28s' },
   nav: { display: 'flex', flexDirection: 'column', gap: 2, padding: '0 10px' },
   navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
-  navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 38, 85, 0.4)' },
+  navItemActive: { background: 'var(--pink)', color: '#FFFFFF', fontWeight: 700, boxShadow: '0 4px 14px rgba(var(--pink-rgb), 0.4)' },
   navBadge: { marginLeft: 'auto', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   navBadgeCollapsed: { position: 'absolute', top: 2, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 8, background: '#EF4444', color: 'white', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
   // Sem `display` aqui de propósito: quem controla é o CSS (.sidebar-toggle-float),
   // que esconde no celular (display:none) e mostra no desktop (display:flex).
   // Se puser display:flex inline, ele vence o CSS e o botão vaza pro celular.
-  toggleFloatBtn: { width: 30, height: 30, borderRadius: 9, background: 'var(--pink)', border: '2px solid var(--bg, #FBF6F8)', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', boxShadow: '0 3px 12px rgba(139, 38, 85, 0.45)', outline: 'none', padding: 0 },
+  toggleFloatBtn: { width: 30, height: 30, borderRadius: 9, background: 'var(--pink)', border: '2px solid var(--bg, #FBF6F8)', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', cursor: 'pointer', boxShadow: '0 3px 12px rgba(var(--pink-rgb), 0.45)', outline: 'none', padding: 0 },
 }
 
 /* Mobile header styles */
@@ -404,7 +404,7 @@ const mh = {
 /* Bottom nav styles */
 const bn = {
   item: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, color: 'var(--text3)', borderTop: '2px solid transparent', transition: 'all 0.15s', textDecoration: 'none' },
-  itemActive: { color: 'var(--pink)', borderTopColor: 'var(--pink)', background: 'rgba(139,38,85,0.04)' },
+  itemActive: { color: 'var(--pink)', borderTopColor: 'var(--pink)', background: 'rgba(var(--pink-rgb),0.04)' },
   label: { fontSize: 10, fontWeight: 600 },
   maisBtn: { background: 'transparent', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: 0 },
 }
@@ -417,7 +417,7 @@ const ms = {
   closeBtn: { background: 'var(--surface2, rgba(0,0,0,0.04))', border: 'none', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2, var(--text3))', cursor: 'pointer' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 },
   gridItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '16px 6px', borderRadius: 14, background: 'var(--surface2, rgba(0,0,0,0.03))', color: 'var(--text2, var(--text))', textDecoration: 'none', textAlign: 'center', border: '1px solid var(--border)' },
-  gridItemActive: { background: 'var(--pink)', color: '#FFFFFF', borderColor: 'var(--pink)', boxShadow: '0 4px 14px rgba(139,38,85,0.35)' },
+  gridItemActive: { background: 'var(--pink)', color: '#FFFFFF', borderColor: 'var(--pink)', boxShadow: '0 4px 14px rgba(var(--pink-rgb),0.35)' },
   gridLabel: { fontSize: 11.5, fontWeight: 600, lineHeight: 1.2 },
   sairBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 12, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.18)', color: '#DC2626', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' },
 }

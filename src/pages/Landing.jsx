@@ -548,12 +548,12 @@ const fv = {
 
   fin: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 },
   bars: { display: 'flex', alignItems: 'flex-end', gap: 7, height: 60 },
-  bar: { width: 16, borderRadius: '4px 4px 0 0', background: 'linear-gradient(180deg, #C73B6F, #8B2655)' },
+  bar: { width: 16, borderRadius: '4px 4px 0 0', background: 'linear-gradient(180deg, var(--pink-bright), #8B2655)' },
   finVal: { fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700, color: '#180712' },
   finUp: { fontSize: 10, fontWeight: 700, color: '#15803D', marginLeft: 4 },
 
   cli: { display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #EAD5E2', borderRadius: 12, padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
-  avatar: { width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  avatar: { width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, var(--pink-bright))', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cliNome: { fontSize: 13, fontWeight: 700, color: '#180712' },
   cliBadge: { fontSize: 10.5, color: '#92400E', background: '#FEF3C7', borderRadius: 'var(--radius-pill)', padding: '2px 8px', fontWeight: 600, marginTop: 3, display: 'inline-block' },
 
@@ -566,14 +566,14 @@ const fv = {
   reserva: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 600, color: '#180712', background: '#fff', border: '1px solid #E3EDE6', borderRadius: 8, padding: '6px 10px' },
 
   equipe: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
-  avatarSm: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #fff', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+  avatarSm: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #fff', background: 'linear-gradient(135deg, #8B2655, var(--pink-bright))', color: '#fff', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   equipeTxt: { fontSize: 10.5, fontWeight: 600, color: '#6b5560', textAlign: 'center' },
 
   metas: { width: '100%', maxWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 },
   metaTop: { display: 'flex', justifyContent: 'space-between', fontSize: 10.5, fontWeight: 700, color: '#6b5560' },
   metaPct: { color: '#8B2655' },
   metaTrack: { height: 10, borderRadius: 'var(--radius-pill)', background: '#EAD5E2', overflow: 'hidden' },
-  metaFill: { width: '72%', height: '100%', borderRadius: 'var(--radius-pill)', background: 'linear-gradient(90deg, #C73B6F, #8B2655)' },
+  metaFill: { width: '72%', height: '100%', borderRadius: 'var(--radius-pill)', background: 'linear-gradient(90deg, var(--pink-bright), #8B2655)' },
   metaVal: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5, fontWeight: 700, color: '#180712' },
   metaProj: { fontFamily: 'inherit', fontSize: 10.5, fontWeight: 600, color: '#9b8690' },
 
@@ -588,11 +588,11 @@ const fv = {
 }
 
 const dep = {
-  card: { background: 'white', border: '1px solid var(--border)', borderRadius: 18, padding: '24px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)', display: 'flex', flexDirection: 'column', gap: 14 },
+  card: { background: 'white', border: '1px solid var(--border)', borderRadius: 18, padding: '24px 22px', boxShadow: '0 2px 12px rgba(var(--pink-rgb),0.06)', display: 'flex', flexDirection: 'column', gap: 14 },
   aspas: { fontSize: 48, lineHeight: 1, color: 'var(--pink)', fontFamily: 'Georgia, serif', marginTop: -10 },
   texto: { fontSize: 14, lineHeight: 1.7, color: 'var(--text2)', margin: 0, flex: 1 },
   perfil: { display: 'flex', alignItems: 'center', gap: 12 },
-  avatar: { width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, #C73B6F)', color: 'white', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  avatar: { width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #8B2655, var(--pink-bright))', color: 'white', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   nome: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
   cargo: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
 }
@@ -710,7 +710,7 @@ function FaqList() {
 }
 
 const faq = {
-  card: { background: '#fff', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 6px rgba(139,38,85,0.05)' },
+  card: { background: '#fff', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 6px rgba(var(--pink-rgb),0.05)' },
   pergunta: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '18px 20px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: 'var(--text)', textAlign: 'left', fontFamily: 'inherit' },
   icone: { fontSize: 22, fontWeight: 300, color: 'var(--pink)', flexShrink: 0, transition: 'transform 0.2s', lineHeight: 1 },
   resposta: { padding: '0 20px 18px', fontSize: 14, color: 'var(--text2)', lineHeight: 1.7, borderTop: '1px solid var(--border)' },
@@ -759,13 +759,13 @@ const s = {
   navLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: 500, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' },
   navLinkIndica: { display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold, #E6C260)', fontSize: 14, fontWeight: 700, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' },
   navBtns: { display: 'flex', gap: 8, alignItems: 'center' },
-  navBtnWhats: { display: 'flex', alignItems: 'center', gap: 6, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' },
+  navBtnWhats: { display: 'flex', alignItems: 'center', gap: 6, background: 'var(--whatsapp)', color: '#fff', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' },
   navBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   hamburger: { display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 },
   mobileMenu: { background: BERRY, borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px 20px', display: 'flex', flexDirection: 'column', gap: 4 },
   mobileLink: { background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 500, padding: '10px 0', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', width: '100%' },
   mobileDivider: { height: 1, background: 'rgba(255,255,255,0.1)', margin: '8px 0' },
-  mobileBtnWhats: { display: 'flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '11px 18px', fontSize: 14, fontWeight: 700, textDecoration: 'none', justifyContent: 'center', marginBottom: 8 },
+  mobileBtnWhats: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--whatsapp)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '11px 18px', fontSize: 14, fontWeight: 700, textDecoration: 'none', justifyContent: 'center', marginBottom: 8 },
   mobileBtnLogin: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-pill)', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 
   hero: { background: `linear-gradient(160deg, ${BERRY} 0%, #5E1839 100%)`, color: '#fff', padding: '100px 20px 56px', textAlign: 'center', position: 'relative' },
@@ -783,13 +783,13 @@ const s = {
   secaoTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 28, fontWeight: 800, textAlign: 'center', letterSpacing: '-0.03em', margin: '0 0 32px', color: 'var(--text)' },
   secaoLabelLight: { fontSize: 11, fontWeight: 700, color: 'var(--gold, #E8C66A)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 14 },
   benGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 18 },
-  benCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 16, padding: '22px 20px', boxShadow: '0 2px 10px rgba(139,38,85,0.05)' },
+  benCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 16, padding: '22px 20px', boxShadow: '0 2px 10px rgba(var(--pink-rgb),0.05)' },
   benIcon: { width: 44, height: 44, borderRadius: 12, background: 'var(--pink-light, #FAF0F4)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   benTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 17, fontWeight: 700, marginBottom: 6 },
   benTexto: { fontSize: 13.5, color: 'var(--text2, #6b5560)', lineHeight: 1.55 },
 
   featGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, maxWidth: 1080, margin: '0 auto' },
-  featCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 18px rgba(139,38,85,0.06)', display: 'flex', flexDirection: 'column' },
+  featCard: { background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 18px rgba(var(--pink-rgb),0.06)', display: 'flex', flexDirection: 'column' },
   featVisual: { height: 124, background: 'linear-gradient(135deg, #EECCDC 0%, #DDB1C9 100%)', borderBottom: '1px solid #D9A9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14 },
   featBody: { padding: '16px 18px 20px' },
   featHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 },
@@ -806,12 +806,12 @@ const s = {
   planosTitulo: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 28, fontWeight: 800, textAlign: 'center', letterSpacing: '-0.03em', margin: '0 0 20px' },
   toggleCard: { display: 'inline-flex', background: '#fff', border: '1px solid var(--border, #EAD5E2)', borderRadius: 'var(--radius-pill)', padding: 4, gap: 4, boxShadow: '0 1px 4px rgba(24,7,18,0.07)' },
   toggleBtn: { display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px', borderRadius: 'var(--radius-pill)', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: 'var(--text3, #8B6070)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' },
-  toggleBtnActive: { background: 'var(--pink, #8B2655)', color: '#fff', boxShadow: '0 3px 10px rgba(139,38,85,0.25)' },
+  toggleBtnActive: { background: 'var(--pink, #8B2655)', color: '#fff', boxShadow: '0 3px 10px rgba(var(--pink-rgb),0.25)' },
   economiaBadge: { background: 'var(--gold, #E6C260)', color: '#170D14', borderRadius: 'var(--radius-pill)', padding: '1px 7px', fontSize: 10, fontWeight: 800 },
   planosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18, maxWidth: 1100, margin: '0 auto' },
-  planoCard: { position: 'relative', background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, padding: '26px 22px', boxShadow: '0 2px 12px rgba(139,38,85,0.06)' },
-  planoCardPro: { border: `2px solid ${BERRY}`, boxShadow: '0 14px 36px rgba(139,38,85,0.18)' },
-  popular: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: `linear-gradient(135deg, ${BERRY}, #C73B6F)`, color: '#fff', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },
+  planoCard: { position: 'relative', background: '#fff', border: '1px solid var(--border, #Eadfe4)', borderRadius: 18, padding: '26px 22px', boxShadow: '0 2px 12px rgba(var(--pink-rgb),0.06)' },
+  planoCardPro: { border: `2px solid ${BERRY}`, boxShadow: '0 14px 36px rgba(var(--pink-rgb),0.18)' },
+  popular: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: `linear-gradient(135deg, ${BERRY}, var(--pink-bright))`, color: '#fff', fontSize: 11, fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },
   planoNome: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 800, marginBottom: 10 },
   planoPreco: { display: 'flex', alignItems: 'baseline', gap: 4 },
   moeda: { fontSize: 14, fontWeight: 600, color: 'var(--text2, #6b5560)' },
@@ -819,10 +819,10 @@ const s = {
   ciclo: { fontSize: 13, color: 'var(--text3, #9b8690)', fontWeight: 500 },
   planoNota: { fontSize: 12, color: 'var(--text3, #9b8690)', margin: '6px 0 16px' },
   planoBtn: { width: '100%', background: 'var(--surface2, #F6EEF1)', color: 'var(--text)', border: '1.5px solid var(--border2, #E2d3da)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 18 },
-  planoBtnPro: { background: `linear-gradient(135deg, ${BERRY}, #C73B6F)`, color: '#fff', border: 'none', boxShadow: '0 6px 16px rgba(139,38,85,0.3)' },
+  planoBtnPro: { background: `linear-gradient(135deg, ${BERRY}, var(--pink-bright))`, color: '#fff', border: 'none', boxShadow: '0 6px 16px rgba(var(--pink-rgb),0.3)' },
   feats: { display: 'flex', flexDirection: 'column', gap: 10 },
   planoSubtitulo: { fontSize: 12.5, fontWeight: 600, color: 'var(--text3, #9b8690)', marginBottom: 12 },
-  heranca: { fontSize: 13, color: 'var(--text)', background: 'rgba(139,38,85,0.06)', border: '1px solid rgba(139,38,85,0.15)', borderRadius: 10, padding: '8px 12px', marginBottom: 12 },
+  heranca: { fontSize: 13, color: 'var(--text)', background: 'rgba(var(--pink-rgb),0.06)', border: '1px solid rgba(var(--pink-rgb),0.15)', borderRadius: 10, padding: '8px 12px', marginBottom: 12 },
   garantia: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 28, fontSize: 14, color: 'var(--text2, #6b5560)' },
 
   ctaFinal: { textAlign: 'center', padding: '64px 20px', maxWidth: 640, margin: '0 auto' },
@@ -841,7 +841,7 @@ const s = {
   footerNavLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', padding: '3px 0', lineHeight: 1.6 },
   footerContato: { display: 'flex', alignItems: 'flex-start', gap: 9, color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 1.5 },
   footerContatoLink: { color: 'rgba(255,255,255,0.75)', textDecoration: 'none', wordBreak: 'break-all' },
-  footerBtnWhats: { display: 'inline-flex', alignItems: 'center', gap: 7, background: '#25D366', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '9px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none', marginTop: 6, width: 'fit-content' },
+  footerBtnWhats: { display: 'inline-flex', alignItems: 'center', gap: 7, background: 'var(--whatsapp)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '9px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none', marginTop: 6, width: 'fit-content' },
   footerBottom: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '18px 40px', borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: 'rgba(255,255,255,0.45)', maxWidth: 1100, margin: '0 auto' },
   footerBottomLinks: { display: 'flex', gap: 16, alignItems: 'center' },
   footerBottomLink: { color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: 12 },

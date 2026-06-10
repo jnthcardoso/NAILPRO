@@ -361,7 +361,7 @@ const s = {
   backBtn: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, cursor: 'pointer', color: 'var(--text)', display: 'flex', padding: '6px 8px' },
   topTitle: { fontSize: 15, fontWeight: 700 },
   profile: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20, gap: 7 },
-  avatar: { width: 76, height: 76, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--pink)', marginBottom: 4, boxShadow: '0 4px 16px rgba(139,38,85,0.18)' },
+  avatar: { width: 76, height: 76, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--pink)', marginBottom: 4, boxShadow: '0 4px 16px rgba(var(--pink-rgb),0.18)' },
   profileName: { fontSize: 20, fontWeight: 700 },
   /* VIP badge: Gold + Noir */
   vipBadge: { fontSize: 12, padding: '3px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
