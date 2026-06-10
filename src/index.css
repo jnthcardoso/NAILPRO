@@ -113,6 +113,11 @@ html, body, #root {
   .meta-ind-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
   .meta-ind { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 10px !important; }
   .meta-ind > .meta-ind-label { margin-bottom: 0 !important; }
+
+  /* Admin (Assinaturas): os cartões de resumo vão de 4 → 2 colunas no celular
+     (em 4 colunas o valor do MRR não cabe). O 5º ("A renovar") ocupa a linha. */
+  .admin-stats { grid-template-columns: repeat(2, 1fr) !important; }
+  .admin-stats > div:nth-child(5) { grid-column: 1 / -1 !important; }
 }
 
 button { font-family: var(--font); cursor: pointer; border: none; }

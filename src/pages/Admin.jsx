@@ -431,7 +431,7 @@ export default function Admin() {
       </div>
 
       {/* Stats */}
-      <div style={s.stats}>
+      <div className="admin-stats" style={s.stats}>
         <div style={s.statCard}>
           <div style={s.statValor}>{stats.total}</div>
           <div style={s.statLabel}>Total</div>
