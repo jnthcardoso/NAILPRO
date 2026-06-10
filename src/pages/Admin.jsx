@@ -1,12 +1,17 @@
 import { useEffect, useState, useRef } from 'react'
-import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target } from 'lucide-react'
+import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { format, differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CardSkeleton } from '../components/common/Skeleton'
 import Modal from '../components/common/Modal'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import { formatBRL } from '../lib/formatters'
+import AdminRelatorios from './AdminRelatorios'
+
+// Relatórios são exclusivos da conta de desenvolvedor (mesmo outros admins não veem).
+const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
 
 // Tempo relativo amigável: "há 2 dias", "há 5 minutos", "nunca".
 function quando(ts) {
@@ -57,6 +62,8 @@ function salvarNotas(notas) {
 
 export default function Admin() {
   const { confirmar, sucesso, erro: toastErro } = useToast()
+  const { user } = useAuth()
+  const isDev = user?.email === EMAIL_DEV
   const [usuarios, setUsuarios] = useState([])
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
@@ -472,6 +479,14 @@ export default function Admin() {
             <span style={s.abaBadge}>{stats.inativos}</span>
           )}
         </button>
+        {isDev && (
+          <button
+            style={{ ...s.aba, ...(aba === 'relatorios' ? s.abaAtiva : {}) }}
+            onClick={() => setAba('relatorios')}
+          >
+            <BarChart3 size={13} /> Relatórios
+          </button>
+        )}
       </div>
 
       {/* ── ABA: Assinaturas ── */}
@@ -537,6 +552,9 @@ export default function Admin() {
           )}
         </>
       )}
+
+      {/* ── ABA: Relatórios (exclusiva da conta dev) ── */}
+      {aba === 'relatorios' && isDev && <AdminRelatorios />}
 
       {/* ── Modal: feed de atividade ── */}
       {atividadeUser && (
