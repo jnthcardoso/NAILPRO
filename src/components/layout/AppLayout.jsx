@@ -13,6 +13,14 @@ function lerAvisosVistos() {
   try { return JSON.parse(localStorage.getItem(AVISOS_VISTOS_KEY) || '[]') } catch { return [] }
 }
 
+// Saudação pela hora do dia — mais calorosa que um "oi" genérico.
+function saudacao() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
 // Itens completos (dona / recepcionista — gerenciam tudo)
 // `primary` = aparece fixo na barra inferior do celular; o resto vai pro menu "Mais".
 const navItemsCompleto = [
@@ -126,10 +134,7 @@ export default function AppLayout() {
           {!isSidebarCollapsed && (
             <div>
               <div style={sb.userName}>
-                <em>oi {firstName},</em>
-              </div>
-              <div style={sb.userDate}>
-                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                <em>{saudacao()}, {firstName}</em>
               </div>
             </div>
           )}
@@ -245,7 +250,7 @@ export default function AppLayout() {
               <LumenLogo size={18} variant="reverso" />
             </NavLink>
             <div style={mh.sub}>
-              <em>oi {firstName},</em>
+              <em>{saudacao()}, {firstName}</em>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -360,7 +365,6 @@ const sb = {
     color: '#FFFFFF',
     lineHeight: 1.3,
   },
-  userDate: { fontSize: 10, color: 'rgba(255, 255, 255, 0.4)', marginTop: 3, textTransform: 'capitalize', lineHeight: 1.2 },
   divider: { height: 1, background: 'rgba(255, 255, 255, 0.06)', margin: '0 14px 8px', transition: 'margin 0.28s' },
   nav: { display: 'flex', flexDirection: 'column', gap: 2, padding: '0 10px' },
   navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', borderRadius: 10, fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.65)', textDecoration: 'none', transition: 'all 0.2s', cursor: 'pointer' },
