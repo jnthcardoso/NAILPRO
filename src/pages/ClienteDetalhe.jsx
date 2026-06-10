@@ -11,6 +11,7 @@ import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, valida
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
+import { traduzErro } from '../lib/erros'
 
 export default function ClienteDetalhe() {
   const { id } = useParams()
@@ -30,7 +31,7 @@ export default function ClienteDetalhe() {
 
   async function loadCliente() {
     const { data, error } = await supabase.from('clientes').select('*').eq('id', id).eq('salao_id', salaoId).maybeSingle()
-    if (error) { erro('Erro ao carregar cliente: ' + error.message); return } // erro de rede ≠ cliente inexistente
+    if (error) { erro(traduzErro(error, 'Não foi possível carregar a cliente.')); return } // erro de rede ≠ cliente inexistente
     if (!data) { navigate('/app/clientes'); return } // Bloqueia acesso a clientes de outros salões
     setCliente(data)
   }
@@ -68,7 +69,7 @@ export default function ClienteDetalhe() {
     }
     const { error } = await supabase.from('clientes').update(updates).eq('id', id).eq('salao_id', salaoId)
     setSavingEdit(false)
-    if (error) { erro('Erro ao salvar: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível salvar as alterações.')); return }
     setCliente({ ...cliente, ...updates })
     setShowEdit(false)
     sucesso('Cliente atualizada')
@@ -82,7 +83,7 @@ export default function ClienteDetalhe() {
       .eq('cliente_id', id)
       .order('data', { ascending: false })
       .order('horario', { ascending: false })
-    if (error) { erro('Erro ao carregar histórico: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível carregar o histórico.')); return }
     setHistorico(data || [])
   }
 
@@ -104,7 +105,7 @@ export default function ClienteDetalhe() {
     setArquivando(true)
     const { error } = await supabase.from('clientes').update({ arquivada: arquivar }).eq('id', id).eq('salao_id', salaoId)
     setArquivando(false)
-    if (error) { erro('Erro: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível concluir a ação.')); return }
     if (arquivar) {
       sucesso('Cliente arquivada')
       navigate('/app/clientes')

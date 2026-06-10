@@ -18,6 +18,7 @@ import {
   startOfWeek, endOfWeek, startOfMonth, endOfMonth
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { traduzErro } from '../lib/erros'
 
 export default function Agenda() {
   const { user } = useAuth()
@@ -146,7 +147,7 @@ export default function Agenda() {
     if (filtroProf) q = q.eq('profissional_id', filtroProf)
     const { data, error } = await q.order('data').order('horario')
     setLoadingAgenda(false)
-    if (error) { erro('Erro ao carregar a agenda: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível carregar a agenda.')); return }
     setAgendamentos(data || [])
   }
 

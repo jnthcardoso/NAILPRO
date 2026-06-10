@@ -6,6 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { linkWhatsApp } from '../lib/formatters'
+import { traduzErro } from '../lib/erros'
 
 const PAPEIS = {
   dona: { label: 'Dona', icon: Crown, cor: '#D4AF37', desc: 'Acesso total + gestão da equipe e licença' },
@@ -91,7 +92,7 @@ export default function Equipe() {
     })
     setSalvando(false)
 
-    if (error) { erro('Não foi possível adicionar: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível adicionar o membro.')); return }
 
     sucesso('Membro adicionado')
     // Guarda dados para o card de convite
@@ -105,7 +106,7 @@ export default function Equipe() {
     if (membro.papel === 'dona') return
     const { error } = await supabase.from('salao_membros')
       .update({ papel: novoPapel }).eq('id', membro.id)
-    if (error) { erro('Erro ao alterar função: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível alterar a função.')); return }
     sucesso('Função atualizada')
     load()
   }
@@ -114,7 +115,7 @@ export default function Equipe() {
     if (membro.papel === 'dona') return
     const { error } = await supabase.from('salao_membros')
       .update({ ativo: !membro.ativo }).eq('id', membro.id)
-    if (error) { erro('Erro: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível concluir a ação.')); return }
     sucesso(membro.ativo ? 'Acesso suspenso' : 'Acesso reativado')
     load()
   }
@@ -129,7 +130,7 @@ export default function Equipe() {
     })
     if (!ok) return
     const { error } = await supabase.from('salao_membros').delete().eq('id', membro.id)
-    if (error) { erro('Erro ao remover: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível remover o membro.')); return }
     sucesso('Membro removido')
     // Limpa convite se era desse membro
     if (membroConvite?.email === membro.email) setMembroConvite(null)

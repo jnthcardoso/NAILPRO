@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 import { LumenLogo, LumenFlameIcon } from '../components/common/Brand'
 import { formatTelefone, unformatTelefone, validarTelefone, linkWhatsApp } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
+import { traduzErro } from '../lib/erros'
 
 const DIAS_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
@@ -176,7 +177,7 @@ export default function AgendaPublica() {
       } else {
         setTentativas(novasTentativas)
       }
-      toastErro('Erro ao criar agendamento: ' + error.message)
+      toastErro(traduzErro(error, 'Não foi possível enviar seu agendamento. Tente novamente.'))
       return
     }
     setStep(4)

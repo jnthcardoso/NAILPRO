@@ -20,6 +20,7 @@ import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
 import { useToast } from '../contexts/ToastContext'
+import { traduzErro } from '../lib/erros'
 
 const CATEGORIAS = [
   { id: 'aluguel', label: 'Aluguel', cor: '#B91C1C', icon: '🏠' },
@@ -293,7 +294,7 @@ export default function Financeiro() {
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
     const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
-    if (error) { toastErro('Erro ao carregar pagamentos: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
     setPagamentos(data || [])
 
     const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
@@ -339,7 +340,7 @@ export default function Financeiro() {
       .gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     q = gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id)
     const { data, error } = await q
-    if (error) { toastErro('Erro ao carregar despesas: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as despesas.')); return }
     setDespesas(data || [])
   }
 
@@ -353,7 +354,7 @@ export default function Financeiro() {
     setSaving(true)
     const { error } = await supabase.from('pagamentos').insert({ ...form, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
     setSaving(false)
-    if (error) { toastErro('Erro ao registrar pagamento: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível registrar o pagamento.')); return }
     setShowModal(false)
     setForm({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
     loadPagamentos()
@@ -387,7 +388,7 @@ export default function Financeiro() {
       : await base.insert(dados)
     setSavingDespesa(false)
     if (resp.error) {
-      toastErro('Erro: ' + resp.error.message)
+      toastErro(traduzErro(resp.error, 'Não foi possível salvar a despesa.'))
       return
     }
     sucesso(editandoDespesa ? 'Despesa atualizada ✓' : 'Despesa registrada ✓')
@@ -431,7 +432,7 @@ export default function Financeiro() {
     if (!ok) return
     const delQ = supabase.from('despesas').delete().eq('id', despesa.id)
     const { error } = await (gerenciaTudo ? delQ.eq('salao_id', salaoId) : delQ.eq('user_id', user.id))
-    if (error) { toastErro('Erro ao excluir despesa: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível excluir a despesa.')); return }
     sucesso('Despesa excluída', {
       acaoLabel: 'Desfazer',
       acao: async () => {
@@ -453,7 +454,7 @@ export default function Financeiro() {
     })
     if (!ok) return
     const { error } = await supabase.from('pagamentos').update({ status: 'pendente' }).eq('id', pag.id).eq('salao_id', salaoId)
-    if (error) { toastErro('Erro ao atualizar pagamento: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível atualizar o pagamento.')); return }
     loadPagamentos()
   }
 

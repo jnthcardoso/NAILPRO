@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatBRL } from '../lib/formatters'
+import { traduzErro } from '../lib/erros'
 import {
   format, endOfMonth, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
 } from 'date-fns'
@@ -146,7 +147,7 @@ export default function Metas() {
     if (!ok) return
     const metaAnterior = meta
     const { error } = await supabase.from('metas').delete().eq('id', meta.id).eq('salao_id', salaoId)
-    if (error) { toastErro('Erro ao excluir meta: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível excluir a meta.')); return }
     setMetas(m => m.filter(x => x.id !== meta.id))
     sucesso('Meta excluída', {
       duracao: 5000, acaoLabel: 'Desfazer',

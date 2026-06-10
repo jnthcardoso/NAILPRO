@@ -10,6 +10,7 @@ import { UpgradeBlock } from '../components/common/UpgradeBlock'
 import { format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { linkWhatsApp, dataParaDate, validarTelefone, quandoRelativo, MSG_LEMBRETE_PADRAO } from '../lib/formatters'
+import { traduzErro } from '../lib/erros'
 
 const TABS = [
   { id: 'amanha', label: 'Amanhã', dias: 1 },
@@ -66,7 +67,7 @@ export default function Lembretes() {
       .in('status', ['pendente', 'confirmado'])
       .order('data').order('horario')
 
-    if (error) { erro('Erro ao carregar lembretes: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível carregar os lembretes.')); return }
     let lista = data || []
 
     // Aba "Hoje": não faz sentido lembrar de horário que já passou.

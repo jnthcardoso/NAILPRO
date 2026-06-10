@@ -14,6 +14,7 @@ import EmptyState from '../components/common/EmptyState'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate, formatBRL } from '../lib/formatters'
 import { MSG_ANIVERSARIO_PADRAO, aplicarVariaveis } from '../lib/mensagens'
+import { traduzErro } from '../lib/erros'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
 
@@ -75,7 +76,7 @@ export default function Clientes() {
   async function loadClientes() {
     const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno, data_nascimento, parabens_enviado_em').eq('salao_id', salaoId).order('nome')
     setLoading(false)
-    if (error) { erro('Erro ao carregar clientes: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível carregar as clientes.')); return }
     setClientes(data || [])
   }
 
@@ -124,7 +125,7 @@ export default function Clientes() {
       salao_id: salaoId,
     })
     setSaving(false)
-    if (error) { erro('Erro ao cadastrar: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível cadastrar a cliente.')); return }
     setShowModal(false)
     setForm({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
     setErros({})
@@ -240,7 +241,7 @@ export default function Clientes() {
     const payload = aInserir.map(c => ({ ...c, salao_id: salaoId, user_id: user.id }))
     const { error } = await supabase.from('clientes').insert(payload)
     setImportando(false)
-    if (error) { erro('Erro ao importar: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não foi possível importar a planilha.')); return }
     await loadClientes()
     fecharImport()
     sucesso(`${aInserir.length} cliente(s) importada(s)!${cortadas ? ` (${cortadas} não couberam no limite do plano)` : ''}`)
@@ -331,7 +332,7 @@ export default function Clientes() {
     const { error } = await supabase.from('clientes')
       .update({ parabens_enviado_em: new Date().toISOString() })
       .eq('id', c.id).eq('salao_id', salaoId)
-    if (error) { erro('Não consegui registrar: ' + error.message); return }
+    if (error) { erro(traduzErro(error, 'Não consegui registrar a ação.')); return }
     setClientes(prev => prev.map(x => x.id === c.id ? { ...x, parabens_enviado_em: new Date().toISOString() } : x))
     sucesso('Parabéns registrado 🎂')
   }

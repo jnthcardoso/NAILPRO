@@ -56,6 +56,7 @@ export default function Home() {
   const [totalClientes, setTotalClientes] = useState(null)
   const [totalAgendamentos, setTotalAgendamentos] = useState(null)
   const [lembretesPendentes, setLembretesPendentes] = useState(0)
+  const [pedidosPublicos, setPedidosPublicos] = useState(0)
   const [receita7Dias, setReceita7Dias] = useState([])
   const [diaTop, setDiaTop] = useState(null) // { dia: 4 (qui), valor: 1200 }
   const [loading, setLoading] = useState(true)
@@ -99,6 +100,7 @@ export default function Home() {
       { count: countClientes },
       { count: countAgendamentos },
       { data: ags },
+      { count: countPedidos },
     ] = await Promise.all([
       supabase.from('configuracoes')
         .select('meta_mensal, nome_salao, lembretes_ativos').eq('salao_id', salaoId).single(),
@@ -131,6 +133,13 @@ export default function Home() {
         .select('lembrete_enviado_em, clientes(telefone)')
         .eq('salao_id', salaoId).eq('data', amanha)
         .in('status', ['pendente', 'confirmado']),
+      // Pedidos que chegaram pelo link público e ainda aguardam confirmação
+      // (de hoje em diante). É o "loop" do agendamento online: sem isso, um
+      // pedido que cai sozinho pode passar batido se a dona não abrir a Agenda.
+      supabase.from('agendamentos')
+        .select('*', { count: 'exact', head: true })
+        .eq('salao_id', salaoId).eq('origem', 'publica').eq('status', 'pendente')
+        .gte('data', hoje),
     ])
 
     // Config
@@ -218,6 +227,16 @@ export default function Home() {
       }
     }
 
+    // Pedidos do link público aguardando confirmação
+    const qtdPedidos = countPedidos ?? 0
+    setPedidosPublicos(qtdPedidos)
+    if (qtdPedidos > 0) {
+      notificarUmaVezPorDia('pedidos-publicos', `${qtdPedidos} ${qtdPedidos === 1 ? 'novo pedido' : 'novos pedidos'} de agendamento`, {
+        body: `${qtdPedidos === 1 ? 'Uma cliente agendou' : `${qtdPedidos} clientes agendaram`} pelo seu link e aguarda${qtdPedidos === 1 ? '' : 'm'} confirmação.`,
+        tag: 'pedidos-publicos',
+      })
+    }
+
   }
 
   async function loadAgendamentosData() {
@@ -283,6 +302,20 @@ export default function Home() {
 
       {/* Skeleton enquanto o dashboard carrega */}
       {loading && <HomeSkeleton />}
+
+      {/* Chip de pedidos do link público aguardando confirmação */}
+      {!loading && pedidosPublicos > 0 && (
+        <div style={s.pedidoChip} onClick={() => navigate('/app/agenda')}>
+          <div style={s.pedidoChipIcon}><Calendar size={16} color="white" /></div>
+          <div style={{ flex: 1 }}>
+            <div style={s.pedidoChipTitle}>
+              {pedidosPublicos} {pedidosPublicos === 1 ? 'novo pedido' : 'novos pedidos'} pelo seu link
+            </div>
+            <div style={s.pedidoChipSub}>Aguardando sua confirmação · toque para ver na agenda</div>
+          </div>
+          <ChevronRight size={18} color="white" />
+        </div>
+      )}
 
       {/* Chip de lembretes pendentes */}
       {!loading && !contaNova && lembretesPendentes > 0 && (
@@ -668,6 +701,12 @@ const s = {
   badge: { fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 },
   emptyDay: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' },
   emptyBtn: { background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
+
+  /* ─── Chip pedidos do link público ─── */
+  pedidoChip: { display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, var(--pink) 0%, #C73B6F 100%)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, cursor: 'pointer', boxShadow: 'var(--shadow-pink)' },
+  pedidoChipIcon: { width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  pedidoChipTitle: { fontSize: 13, fontWeight: 700, color: 'white' },
+  pedidoChipSub: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
 
   /* ─── Chip lembretes ─── */
   lembreteChip: { display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },

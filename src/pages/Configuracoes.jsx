@@ -14,6 +14,7 @@ import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { s, tabs } from './Configuracoes.styles'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
+import { traduzErro } from '../lib/erros'
 
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -313,7 +314,7 @@ export default function Configuracoes() {
     const { error } = await supabase.auth.updateUser({ password: novaSenha })
     setSenhaSaving(false)
     if (error) {
-      setSenhaMsg({ tipo: 'erro', texto: error.message })
+      setSenhaMsg({ tipo: 'erro', texto: traduzErro(error, 'Não foi possível alterar a senha.') })
     } else {
       setSenhaMsg({ tipo: 'ok', texto: 'Senha alterada com sucesso!' })
       setSenhaAtual('')
@@ -348,7 +349,7 @@ export default function Configuracoes() {
     const { error } = await supabase.rpc('excluir_minha_conta')
     if (error) {
       setExcluindo(false)
-      toastErro('Erro ao excluir: ' + error.message)
+      toastErro(traduzErro(error, 'Não foi possível excluir a conta.'))
       return
     }
     await signOut()

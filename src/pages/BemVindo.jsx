@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { formatTelefone, unformatTelefone } from '../lib/formatters'
+import { traduzErro } from '../lib/erros'
 
 const SERVICOS_SUGERIDOS = [
   'Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure',
@@ -66,7 +67,7 @@ export default function BemVindo() {
     })
     setSaving(false)
     if (error) {
-      toastErro('Erro ao salvar: ' + error.message)
+      toastErro(traduzErro(error, 'Não foi possível salvar. Tente novamente.'))
       return
     }
     if (form.nome_salao) {
@@ -95,7 +96,7 @@ export default function BemVindo() {
       onboarding_completo: true,
     })
     if (error) {
-      toastErro('Erro ao salvar: ' + error.message)
+      toastErro(traduzErro(error, 'Não foi possível salvar. Tente novamente.'))
       return
     }
     // Se veio da landing com plano selecionado, vai para /planos

@@ -6,6 +6,7 @@ import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { formatTelefone, unformatTelefone, linkWhatsAppCompleto } from '../lib/formatters'
 import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
+import { traduzErro } from '../lib/erros'
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
@@ -130,7 +131,7 @@ export default function MinhasConfiguracoes() {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'membro_id' })
     setSaving(false)
-    if (error) { toastErro('Erro ao salvar: ' + error.message); return }
+    if (error) { toastErro(traduzErro(error, 'Não foi possível salvar as configurações.')); return }
     up('slug', slug)
     sucesso('Configurações salvas! ✨')
   }
