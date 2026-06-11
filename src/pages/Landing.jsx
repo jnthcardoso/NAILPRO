@@ -754,7 +754,9 @@ const s = {
   navbar: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: BERRY, transition: 'box-shadow 0.2s' },
   navbarScrolled: { boxShadow: '0 4px 24px rgba(0,0,0,0.25)' },
   navInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 64, maxWidth: 1100, margin: '0 auto' },
-  navLinks: { display: 'flex', gap: 8, '@media(max-width:768px)': { display: 'none' } },
+  // O "esconder no celular" é feito pela classe .lp-nav-links no <style> acima
+  // (media query de verdade). Estilo inline não aceita @media.
+  navLinks: { display: 'flex', gap: 8 },
   logoBtn: { background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 },
   navLink: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: 500, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' },
   navLinkIndica: { display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold, #E6C260)', fontSize: 14, fontWeight: 700, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' },
