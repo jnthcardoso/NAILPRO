@@ -126,10 +126,15 @@ export default function Landing() {
         .hero-inner { display: flex; align-items: center; justify-content: space-between; gap: 40px; max-width: 1100px; margin: 0 auto; text-align: left; padding: 0 24px; }
         .hero-text { flex: 1; min-width: 0; }
         .hero-mock { flex-shrink: 0; }
+        .lumen-live-dot { animation: lumenLivePulse 1.6s ease-out infinite; }
+        @keyframes lumenLivePulse { 0% { box-shadow: 0 0 0 0 rgba(255,90,122,0.55); } 70% { box-shadow: 0 0 0 9px rgba(255,90,122,0); } 100% { box-shadow: 0 0 0 0 rgba(255,90,122,0); } }
+        .lumen-feed-in { animation: lumenFeedIn 0.5s cubic-bezier(0.16,1,0.3,1); }
+        @keyframes lumenFeedIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .lumen-live-dot, .lumen-feed-in { animation: none !important; } }
         .hero-ctas-inner { justify-content: flex-start !important; }
         @media (max-width: 860px) {
           .hero-inner { flex-direction: column; text-align: center; padding: 0 16px; }
-          .hero-mock { display: none; }
+          .hero-mock { width: 100%; max-width: 360px; margin: 4px auto 0; }
           .hero-ctas-inner { justify-content: center !important; }
         }
         @media (max-width: 768px) {
@@ -216,9 +221,9 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Mockup do app */}
+          {/* Feed ao vivo do app */}
           <div className="hero-mock">
-            <AppMockup />
+            <LiveFeed />
           </div>
         </div>
       </section>
@@ -467,75 +472,61 @@ export default function Landing() {
   )
 }
 
-// Mockup visual do app no hero
-function AppMockup() {
+// Feed "ao vivo" do app no hero — eventos reais entrando em tempo real
+function LiveFeed() {
+  const tempos = ['agora', '1 min', '4 min', '9 min', '15 min']
+  const POOL = [
+    { ic: DollarSign, strong: 'Ana Paula',        rest: ' pagou ',              amt: 'R$ 90',  bg: 'var(--green-bg)', col: 'var(--green)' },
+    { ic: Check,      strong: 'Mariana',          rest: ' confirmou no WhatsApp',              bg: '#E4F8EE',         col: '#1FA463' },
+    { ic: Calendar,   strong: 'Nova reserva',     rest: ': Carla · 16:00',                     bg: 'var(--surface2)', col: 'var(--pink)' },
+    { ic: Sparkles,   strong: 'Júlia',            rest: ' virou cliente VIP',                  bg: 'var(--amber-bg)', col: 'var(--amber)' },
+    { ic: Bell,       strong: 'Lembrete enviado', rest: ' para 6 clientes',                    bg: '#E9F0FF',         col: '#3556B5' },
+    { ic: DollarSign, strong: 'Bruna',            rest: ' pagou ',              amt: 'R$ 120', bg: 'var(--green-bg)', col: 'var(--green)' },
+  ]
+  const [items, setItems] = useState(() => POOL.slice(0, 5).map((p, i) => ({ ...p, key: i, time: tempos[i] })))
+  useEffect(() => {
+    let k = 5, i = 5
+    const iv = setInterval(() => {
+      const p = POOL[i % POOL.length]; i++
+      setItems(prev => {
+        const aged = prev.slice(0, 4).map((it, idx) => ({ ...it, time: tempos[idx + 1] }))
+        return [{ ...p, key: k++, time: 'agora' }, ...aged]
+      })
+    }, 2900)
+    return () => clearInterval(iv)
+  }, [])
   return (
-    <div style={mock.phone}>
-      {/* Header do app */}
-      <div style={mock.header}>
-        <div style={mock.headerDot} />
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>lumen.</div>
-        <div style={mock.headerDot} />
+    <div style={feed.wrap}>
+      <div style={feed.head}>
+        <span style={feed.dot} className="lumen-live-dot" /> AO VIVO · seu dia acontecendo
       </div>
-
-      {/* Saudação */}
-      <div style={mock.body}>
-        <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Sábado, 31 de Maio</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#180712', marginBottom: 12 }}>
-          <em style={{ fontFamily: 'serif', fontStyle: 'italic' }}>oi Letícia,</em>
-        </div>
-
-        {/* Cards de resumo */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-          <div style={mock.card}>
-            <div style={{ fontSize: 9, color: '#999', marginBottom: 2 }}>Recebido hoje</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#8B2655' }}>R$ 420</div>
+      {items.map((e, idx) => {
+        const Ic = e.ic
+        return (
+          <div key={e.key} style={feed.card} className={idx === 0 ? 'lumen-feed-in' : undefined}>
+            <span style={{ ...feed.ico, background: e.bg }}><Ic size={19} color={e.col} /></span>
+            <span style={feed.text}>
+              <strong style={feed.strong}>{e.strong}</strong>{e.rest}
+              {e.amt && <strong style={{ ...feed.amt, color: e.col }}> {e.amt}</strong>}
+            </span>
+            <span style={feed.time}>{e.time}</span>
           </div>
-          <div style={mock.card}>
-            <div style={{ fontSize: 9, color: '#999', marginBottom: 2 }}>Este mês</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#15803D' }}>R$ 3.810</div>
-          </div>
-        </div>
-
-        {/* Próximos atendimentos */}
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hoje</div>
-        {[
-          { hora: '09:00', nome: 'Ana Paula', servico: 'Gel francês' },
-          { hora: '11:00', nome: 'Mariana', servico: 'Alongamento gel' },
-          { hora: '14:00', nome: 'Carla', servico: 'Manutenção' },
-        ].map((ag, i) => (
-          <div key={i} style={mock.ag}>
-            <div style={mock.agHora}>{ag.hora}</div>
-            <div style={mock.agBar} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#180712' }}>{ag.nome}</div>
-              <div style={{ fontSize: 10, color: '#888' }}>{ag.servico}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom nav */}
-      <div style={mock.nav}>
-        {['🏠','📅','💰','👥'].map((ic, i) => (
-          <div key={i} style={{ ...mock.navItem, ...(i === 0 ? { color: '#8B2655' } : {}) }}>{ic}</div>
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
 }
 
-const mock = {
-  phone: { width: 220, background: '#F8F4F6', borderRadius: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15)', overflow: 'hidden', border: '6px solid rgba(255,255,255,0.1)' },
-  header: { background: '#8B2655', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  headerDot: { width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' },
-  body: { padding: '12px 14px 8px' },
-  card: { background: 'white', borderRadius: 10, padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
-  ag: { display: 'flex', alignItems: 'center', gap: 8, background: 'white', borderRadius: 8, padding: '7px 9px', marginBottom: 5, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  agHora: { fontSize: 10, fontWeight: 700, color: '#8B2655', minWidth: 30 },
-  agBar: { width: 2, height: 24, background: '#8B2655', borderRadius: 2, flexShrink: 0 },
-  nav: { display: 'flex', borderTop: '1px solid #eee', background: 'white', padding: '8px 0' },
-  navItem: { flex: 1, textAlign: 'center', fontSize: 16, color: '#ccc' },
+const feed = {
+  wrap: { width: 380, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 11 },
+  head: { display: 'inline-flex', alignItems: 'center', gap: 9, color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.3px', marginBottom: 2, alignSelf: 'flex-start' },
+  dot: { width: 9, height: 9, borderRadius: '50%', background: '#ff5a7a', flexShrink: 0 },
+  card: { display: 'flex', alignItems: 'center', gap: 13, background: 'white', borderRadius: 16, padding: '13px 16px', boxShadow: '0 16px 38px rgba(24,7,18,0.18)' },
+  ico: { width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  text: { fontSize: 14, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 },
+  strong: { fontWeight: 800 },
+  amt: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 },
+  time: { marginLeft: 'auto', fontSize: 11.5, fontWeight: 600, color: 'var(--text3)', whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start' },
 }
 
 // Estilos das mini-prévias visuais das funcionalidades
