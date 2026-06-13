@@ -60,13 +60,29 @@ export default function Metas() {
   async function loadMetas() {
     const { data } = await supabase.from('metas').select('*').eq('salao_id', salaoId).order('created_at', { ascending: false })
     setMetas(data || [])
-    if (!data?.length) return
-    const pros = {}
-    for (const meta of data) {
+    if (!data?.length) { setProgressos({}); return }
+    // 1 só consulta: busca todos os pagamentos pagos no intervalo que cobre todas as metas
+    // (em vez de 1 consulta por meta) e soma cada meta no cliente.
+    // Limita ao dia de hoje — não existe faturamento "realizado" no futuro.
+    const hojeStr = format(new Date(), 'yyyy-MM-dd')
+    let minIni = null, maxFim = null
+    data.forEach(meta => {
       const { inicio, fim } = periodoMeta(meta)
-      const { data: ps } = await supabase.from('pagamentos')
-        .select('valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio).lte('data', fim)
-      pros[meta.id] = (ps || []).reduce((s, p) => s + (p.valor || 0), 0)
+      if (!minIni || inicio < minIni) minIni = inicio
+      if (!maxFim || fim > maxFim) maxFim = fim
+    })
+    if (maxFim > hojeStr) maxFim = hojeStr
+    const pros = {}
+    if (minIni && maxFim && minIni <= maxFim) {
+      const { data: pags } = await supabase.from('pagamentos')
+        .select('valor, data').eq('salao_id', salaoId).eq('status', 'pago')
+        .gte('data', minIni).lte('data', maxFim)
+      data.forEach(meta => {
+        const { inicio, fim } = periodoMeta(meta)
+        const fimReal = fim > hojeStr ? hojeStr : fim
+        pros[meta.id] = (pags || []).reduce(
+          (s, p) => (p.data >= inicio && p.data <= fimReal ? s + (p.valor || 0) : s), 0)
+      })
     }
     setProgressos(pros)
   }
@@ -110,13 +126,17 @@ export default function Metas() {
 
   async function salvarMeta() {
     if (!form.valor_meta || parseFloat(form.valor_meta) <= 0) { toastErro('Informe um valor válido'); return }
+    // Evita criar duas metas para o mesmo período (uma só por tipo/período).
+    if (!editando && metas.some(m => m.tipo === form.tipo && m.periodo === form.periodo)) {
+      toastErro('Já existe uma meta para este período. Edite a meta existente.'); return
+    }
     setSaving(true)
     const dados = { user_id: user.id, salao_id: salaoId, tipo: form.tipo, periodo: form.periodo, valor_meta: parseFloat(form.valor_meta) }
     const resp = editando
       ? await supabase.from('metas').update(dados).eq('id', editando.id).eq('salao_id', salaoId)
       : await supabase.from('metas').insert(dados)
     setSaving(false)
-    if (resp.error) { toastErro('Erro ao salvar'); return }
+    if (resp.error) { toastErro(traduzErro(resp.error, 'Não foi possível salvar a meta.')); return }
     sucesso(editando ? 'Meta atualizada ✓' : 'Meta criada ✓')
     fecharModal(); loadMetas()
   }
@@ -188,8 +208,11 @@ export default function Metas() {
     if (agsServ) {
       const grouped = {}
       agsServ.forEach(a => {
+        // Faturamento = dinheiro efetivamente recebido (pagamento "pago"),
+        // mesma definição do "Realizado" das metas e do Financeiro.
         const pag = a.pagamentos?.find(p => p.status === 'pago')
-        const val = pag ? pag.valor : (a.valor || 0)
+        if (!pag) return
+        const val = pag.valor || 0
         if (val > 0) grouped[a.servico] = (grouped[a.servico] || 0) + val
       })
       const sorted = Object.entries(grouped)
@@ -210,7 +233,7 @@ export default function Metas() {
       .from('agendamentos')
       .select('cliente_id, data')
       .eq('salao_id', salaoId)
-      .in('status', ['realizado', 'confirmado'])
+      .eq('status', 'realizado')
       .order('data')
     if (agsRet) {
       const byClient = {}
@@ -370,7 +393,9 @@ export default function Metas() {
                   <span>
                     {projOnTrack
                       ? `📈 Você está no ritmo de bater a meta! Projetado: ${formatBRL(projecao)} (${projecaoPct}%)`
-                      : `⚠️ Ritmo abaixo. Precisa de ${formatBRL((meta.valor_meta - realizado) / Math.max(1, diasUteisRestantes))}/dia útil pra bater`}
+                      : diasUteisRestantes === 0
+                        ? `Período encerrado. Faltaram ${formatBRL(Math.max(0, meta.valor_meta - realizado))} pra meta`
+                        : `⚠️ Ritmo abaixo. Precisa de ${formatBRL((meta.valor_meta - realizado) / diasUteisRestantes)}/dia útil pra bater`}
                   </span>
                 </div>
               </div>
@@ -548,7 +573,6 @@ export default function Metas() {
                 setForm(f => ({ ...f, tipo, periodo }))
               }} disabled={!!editando}>
                 <option value="mes">Mensal</option>
-                <option value="semana">Semanal</option>
                 <option value="ano">Anual</option>
               </select>
               {editando && <div style={{ fontSize: 11, color: 'var(--text3)' }}>Tipo não pode ser alterado após criação</div>}
