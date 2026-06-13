@@ -3,16 +3,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // ───────────────────────────────────────────────────────────────────────────
 // Integração Google Agenda no SERVIDOR (authorization code flow + refresh token)
 //
-// Uma única função com várias "ações":
-//   GET  ?action=callback   -> Google redireciona pra cá após o consentimento.
-//                              Troca o code pela chave-mestra (refresh_token),
-//                              guarda na caixa-forte e fecha o popup.
-//   POST {action:'auth-url'} -> devolve a URL de consentimento do Google.
-//   POST {action:'status'}   -> { conectado, email }
-//   POST {action:'disconnect'} -> revoga no Google e apaga a chave-mestra.
+//   GET  (com ?code=… &state=…)  -> Google redireciona pra cá após o consentimento.
+//        Troca o code pela chave-mestra (refresh_token), guarda na caixa-forte e
+//        REDIRECIONA o popup pra ${APP_URL}/?gcal=ok (o site fecha a janela).
+//        Obs.: o Supabase força text/plain em respostas HTML do domínio .supabase.co
+//        (proteção anti-phishing), por isso a página que fecha o popup vive no app.
+//   POST {action:'auth-url'}    -> devolve a URL de consentimento do Google.
+//   POST {action:'status'}      -> { conectado, email }
+//   POST {action:'disconnect'}  -> revoga no Google e apaga a chave-mestra.
 //   POST {action:'criar-evento' | 'atualizar-evento' | 'excluir-evento'}
 //
-// Segredos necessários (Supabase > Edge Functions > Secrets):
+// Segredos (Supabase > Edge Functions > Secrets):
 //   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL (já existe p/ Asaas)
 //   SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY (automáticos)
 // ───────────────────────────────────────────────────────────────────────────
@@ -29,7 +30,6 @@ const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID') ?? ''
 const CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET') ?? ''
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://lumengestaoempresarial.com.br'
-// Endereço fixo que o Google chama de volta (precisa estar idêntico no Google Cloud).
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-oauth`
 
 const corsHeaders = {
@@ -40,9 +40,7 @@ const corsHeaders = {
 // Cliente "admin" (ignora RLS) só pra mexer na caixa-forte.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY)
 
-// ── State assinado (anti-falsificação) ─────────────────────────────────────
-// O "state" leva o id do usuário até o callback. Assinamos com HMAC pra que
-// ninguém consiga forjar um state e gravar uma chave em nome de outra pessoa.
+// ── State assinado (anti-falsificação) ──────────────────────────────────────
 const enc = new TextEncoder()
 async function hmac(data: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -53,8 +51,7 @@ async function hmac(data: string): Promise<string> {
 }
 async function signState(userId: string): Promise<string> {
   const exp = Date.now() + 10 * 60 * 1000 // vale 10 minutos
-  const payload = `${userId}.${exp}`
-  return `${payload}.${await hmac(payload)}`
+  return `${userId}.${exp}.${await hmac(`${userId}.${exp}`)}`
 }
 async function verifyState(state: string): Promise<string | null> {
   const parts = state.split('.')
@@ -83,9 +80,7 @@ async function getAccessToken(userId: string): Promise<string> {
   const tok = await res.json()
   if (!res.ok || !tok.access_token) {
     // refresh_token revogado/expirado pelo usuário no Google -> limpa e sinaliza.
-    if (tok.error === 'invalid_grant') {
-      await admin.from('google_credenciais').delete().eq('user_id', userId)
-    }
+    if (tok.error === 'invalid_grant') await admin.from('google_credenciais').delete().eq('user_id', userId)
     throw new Error('NAO_CONECTADO')
   }
   return tok.access_token as string
@@ -108,30 +103,22 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   const json = (o: unknown, status = 200) =>
     new Response(JSON.stringify(o), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-  const html = (body: string) =>
-    new Response(`<!doctype html><meta charset="utf-8">${body}`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 
   try {
     const url = new URL(req.url)
 
     // ── 1) CALLBACK do Google (GET, sem JWT — quem chama é o navegador via Google) ──
     if (req.method === 'GET' && (url.searchParams.has('code') || url.searchParams.get('action') === 'callback')) {
+      // Redireciona o popup pro app (que serve HTML e fecha a janela sozinho).
+      const fechar = (ok: boolean) =>
+        new Response(null, { status: 302, headers: { Location: `${APP_URL}/?gcal=${ok ? 'ok' : 'erro'}` } })
+
       const code = url.searchParams.get('code')
       const state = url.searchParams.get('state') ?? ''
-      const err = url.searchParams.get('error')
-      const fechar = (msg: string, ok: boolean) => html(
-        `<body style="font-family:system-ui;text-align:center;padding:40px;color:#333">
-         <p>${msg}</p>
-         <script>
-           try { window.opener && window.opener.postMessage(${JSON.stringify({ tipo: 'google-oauth', ok })}, '*'); } catch(e){}
-           setTimeout(function(){ window.close(); }, 1200);
-         </script></body>`)
-
-      if (err) return fechar('Conexão cancelada. Pode fechar esta janela.', false)
+      if (url.searchParams.get('error')) return fechar(false)
       const userId = await verifyState(state)
-      if (!code || !userId) return fechar('Link inválido ou expirado. Tente conectar de novo.', false)
+      if (!code || !userId) return fechar(false)
 
-      // Troca o code por tokens (aqui vem o refresh_token, só na 1ª autorização com prompt=consent).
       const res = await fetch(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -146,15 +133,16 @@ Deno.serve(async (req: Request) => {
       const tok = await res.json()
       if (!res.ok || !tok.refresh_token) {
         console.error('Falha ao trocar code:', JSON.stringify(tok))
-        return fechar('Não consegui concluir a conexão. Tente novamente.', false)
+        return fechar(false)
       }
-      await admin.from('google_credenciais').upsert({
+      const { error: upErr } = await admin.from('google_credenciais').upsert({
         user_id: userId,
         refresh_token: tok.refresh_token,
         atualizado_em: new Date().toISOString(),
       }, { onConflict: 'user_id' })
+      if (upErr) { console.error('Erro ao salvar credencial:', JSON.stringify(upErr)); return fechar(false) }
 
-      return fechar('Google Agenda conectado! Pode fechar esta janela. ✓', true)
+      return fechar(true)
     }
 
     // ── 2) AÇÕES autenticadas (POST com JWT do usuário logado) ──
@@ -168,7 +156,6 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'auth-url') {
       if (!CLIENT_ID) return json({ error: 'GOOGLE_CLIENT_ID não configurado no servidor' }, 500)
-      const state = await signState(user.id)
       const link = `${AUTH_URL}?${new URLSearchParams({
         client_id: CLIENT_ID,
         redirect_uri: REDIRECT_URI,
@@ -177,7 +164,7 @@ Deno.serve(async (req: Request) => {
         access_type: 'offline',   // pede refresh_token
         prompt: 'consent',        // garante refresh_token mesmo se já autorizou antes
         include_granted_scopes: 'true',
-        state,
+        state: await signState(user.id),
       })}`
       return json({ url: link })
     }
@@ -215,7 +202,7 @@ Deno.serve(async (req: Request) => {
 
       if (action === 'atualizar-evento') {
         const r = await fetch(`${CAL_BASE}/${args.eventId}`, { method: 'PATCH', headers, body: JSON.stringify(buildEvento(args.ag, args.clienteNome || '', args.duracao || 60)) })
-        // 404/410 = evento sumiu no Google; tenta recriar pra não perder a sincronia.
+        // 404/410 = evento sumiu no Google; recria pra não perder a sincronia.
         if (r.status === 404 || r.status === 410) {
           const r2 = await fetch(CAL_BASE, { method: 'POST', headers, body: JSON.stringify(buildEvento(args.ag, args.clienteNome || '', args.duracao || 60)) })
           if (!r2.ok) return json({ error: `Falha ao recriar evento: ${r2.status}` }, 502)
