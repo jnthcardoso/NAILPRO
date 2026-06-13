@@ -354,7 +354,7 @@ export default function Metas() {
               <div key={meta.id} style={s.metaCard}>
                 <div style={s.metaHeader}>
                   <div style={{ flex: 1 }}>
-                    <div style={s.metaTipo}>{meta.tipo === 'mes' ? '📅' : meta.tipo === 'semana' ? '🗓' : '🎯'} {labelTipo(meta)}</div>
+                    <div style={s.metaTipo}>{meta.tipo === 'mes' ? '📅' : meta.tipo === 'semana' ? '🗓' : '🎯'} {labelTipo(meta.tipo)}</div>
                     <div style={s.metaPeriodo}>{labelPeriodo(meta)}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
