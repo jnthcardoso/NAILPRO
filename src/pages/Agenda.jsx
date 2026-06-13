@@ -3,7 +3,7 @@ import { Plus, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
-import { initTokenClient, criarEvento, excluirEvento, conectarGoogle } from '../lib/googleCalendar'
+import { criarEvento, excluirEvento, atualizarEvento, conectarGoogle } from '../lib/googleCalendar'
 import { useToast } from '../contexts/ToastContext'
 import { CardSkeleton } from '../components/common/Skeleton'
 import { s } from './Agenda.styles'
@@ -216,23 +216,18 @@ export default function Agenda() {
       : await supabase.from('configuracoes').select('google_conectado, duracao_atendimento').eq('salao_id', salaoId).maybeSingle()
     if (data?.duracao_atendimento) setDuracaoAtend(data.duracao_atendimento)
     if (data?.google_conectado) {
+      // Conexão agora vive no servidor (refresh token): se está conectado, está
+      // pronto pra sincronizar — sem precisar carregar o GIS nem reconectar.
       setGoogleConectado(true)
-      const tryInit = (tentativas = 0) => {
-        if (window.google?.accounts?.oauth2) {
-          initTokenClient((ok) => setGooglePronto(ok))
-        } else if (tentativas < 20) {
-          setTimeout(() => tryInit(tentativas + 1), 300)
-        }
-      }
-      tryInit()
+      setGooglePronto(true)
     }
   }
 
   async function handleReconectarGoogle() {
     try {
-      initTokenClient((ok) => setGooglePronto(ok))
       await conectarGoogle()
-      tentadosGoogleRef.current = new Set() // token novo: permite retentar os que falharam
+      tentadosGoogleRef.current = new Set() // reconectou: permite retentar os que falharam
+      setGoogleConectado(true)
       setGooglePronto(true)
       showGoogleMsg('Google Agenda reconectado ✓', 'success')
       sincronizarGoogle(agendamentos)
@@ -341,6 +336,27 @@ export default function Agenda() {
         profissional_id: profIdEdit,
       }).eq('id', editando.id)
       if (updateError) { erro('Erro ao atualizar agendamento. Tente novamente.'); return }
+
+      // Reflete a edição no Google Agenda (data/hora/serviço). Antes isso não
+      // acontecia — o evento ficava no horário antigo. Best-effort, não trava o save.
+      if (googleConectado && editando.google_event_id) {
+        try {
+          const agAtualizado = {
+            ...editando,
+            data: formEdit.data,
+            horario: formEdit.horario,
+            servico: formEdit.servico,
+            observacoes: formEdit.observacoes,
+          }
+          const nomeCli = clientes.find(c => c.id === formEdit.cliente_id)?.nome || editando.clientes?.nome || ''
+          const r = await atualizarEvento(editando.google_event_id, agAtualizado, nomeCli, duracaoAtend)
+          // Se o evento sumiu no Google, atualizarEvento recria e devolve novo id.
+          if (r?.id && r.id !== editando.google_event_id) {
+            await supabase.from('agendamentos').update({ google_event_id: r.id }).eq('id', editando.id)
+          }
+        } catch (e) { console.error('Falha ao atualizar evento no Google:', e) }
+      }
+
       setEditando(null)
       loadAgendamentos()
     } finally {

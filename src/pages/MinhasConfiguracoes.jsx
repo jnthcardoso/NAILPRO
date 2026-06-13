@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { formatTelefone, unformatTelefone, linkWhatsAppCompleto } from '../lib/formatters'
-import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
+import { conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 import { traduzErro } from '../lib/erros'
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -139,7 +139,6 @@ export default function MinhasConfiguracoes() {
   async function conectarGoogleAgenda() {
     setGoogleBusy(true)
     try {
-      initTokenClient()
       await conectarGoogle()
       await supabase.from('agenda_profissional').upsert({
         membro_id: membroId, user_id: user.id, salao_id: salaoId, google_conectado: true, updated_at: new Date().toISOString(),
@@ -152,7 +151,7 @@ export default function MinhasConfiguracoes() {
   }
 
   async function desconectarGoogleAgenda() {
-    desconectarGoogle()
+    await desconectarGoogle()
     await supabase.from('agenda_profissional').update({ google_conectado: false }).eq('membro_id', membroId)
     up('google_conectado', false)
   }

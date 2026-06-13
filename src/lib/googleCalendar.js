@@ -1,108 +1,88 @@
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const SCOPE = 'https://www.googleapis.com/auth/calendar.events'
-const BASE = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
+import { supabase } from './supabase'
 
-let _client = null
-let _token = null
-let _expiry = 0
+// ───────────────────────────────────────────────────────────────────────────
+// Google Agenda — agora 100% no SERVIDOR (Edge Function `google-oauth`).
+//
+// A "chave-mestra" (refresh_token) fica guardada no servidor, então a conexão é
+// "conecta 1x e funciona pra sempre": não há mais popup ao renovar o token, e a
+// sincronização continua mesmo depois de fechar e reabrir o app.
+//
+// O popup só aparece UMA vez, no clique de "Conectar" (consentimento do Google).
+// ───────────────────────────────────────────────────────────────────────────
 
-export function initTokenClient(onReady) {
-  if (!window.google?.accounts?.oauth2 || !CLIENT_ID) return
-  _client = window.google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPE,
-    callback: (resp) => {
-      if (resp.access_token) {
-        _token = resp.access_token
-        _expiry = Date.now() + (resp.expires_in - 60) * 1000
-      }
-      onReady?.(!!resp.access_token)
-    },
+async function chamar(action, payload = {}) {
+  const { data, error } = await supabase.functions.invoke('google-oauth', {
+    body: { action, ...payload },
   })
-  return _client
+  if (error) {
+    let detalhe = ''
+    try { const corpo = await error.context?.json(); detalhe = corpo?.error || '' } catch { /* ignora */ }
+    throw new Error(detalhe || error.message || 'Falha na integração com o Google')
+  }
+  return data
 }
 
+// Abre o consentimento do Google numa janela e resolve quando o servidor avisa
+// que guardou a chave-mestra (postMessage vindo do callback) ou a janela fecha.
 export function conectarGoogle() {
-  return new Promise((resolve, reject) => {
-    if (!_client) { reject(new Error('GIS não carregado')); return }
-    _client.callback = (resp) => {
-      if (resp.error) { reject(new Error(resp.error)); return }
-      _token = resp.access_token
-      _expiry = Date.now() + (resp.expires_in - 60) * 1000
-      resolve(true)
-    }
-    _client.requestAccessToken({ prompt: 'consent' })
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { url } = await chamar('auth-url')
+      if (!url) { reject(new Error('Não foi possível iniciar a conexão')); return }
+
+      const w = 500, h = 640
+      const left = window.screenX + (window.outerWidth - w) / 2
+      const top = window.screenY + (window.outerHeight - h) / 2
+      const popup = window.open(url, 'google-oauth', `width=${w},height=${h},left=${left},top=${top}`)
+      if (!popup) { reject(new Error('Permita pop-ups para conectar o Google')); return }
+
+      let resolvido = false
+      const finalizar = (ok) => {
+        if (resolvido) return
+        resolvido = true
+        window.removeEventListener('message', onMsg)
+        clearInterval(timer)
+        ok ? resolve(true) : reject(new Error('Conexão não concluída'))
+      }
+      const onMsg = (ev) => {
+        if (ev.data?.tipo === 'google-oauth') finalizar(!!ev.data.ok)
+      }
+      window.addEventListener('message', onMsg)
+
+      // Se o usuário fechar a janela sem concluir, confere o status no servidor.
+      const timer = setInterval(async () => {
+        if (popup.closed) {
+          clearInterval(timer)
+          try { const st = await statusGoogle(); finalizar(!!st.conectado) }
+          catch { finalizar(false) }
+        }
+      }, 600)
+    } catch (e) { reject(e) }
   })
 }
 
-export function desconectarGoogle() {
-  if (_token && window.google?.accounts?.oauth2) {
-    window.google.accounts.oauth2.revoke(_token, () => {})
-  }
-  _token = null
-  _expiry = 0
+export async function desconectarGoogle() {
+  try { await chamar('disconnect') } catch (e) { console.error('Falha ao desconectar Google:', e) }
 }
 
-// O modelo de token do Google (GIS) SEMPRE abre uma janela popup ao pedir um
-// token novo — não existe "refresh silencioso" no navegador. Por isso:
-//   interactive=false → só usa o token que já está em memória; se não houver,
-//                       devolve null (NÃO abre popup). É o padrão do auto-sync.
-//   interactive=true  → pode abrir a janela do Google (só em ação explícita,
-//                       como o botão Conectar nas Integrações).
-async function getToken(interactive = false) {
-  if (_token && Date.now() < _expiry) return _token
-  if (!interactive) return null
-  return new Promise((resolve, reject) => {
-    if (!_client) { reject(new Error('Google não conectado')); return }
-    _client.callback = (resp) => {
-      if (resp.error) { reject(new Error(resp.error)); return }
-      _token = resp.access_token
-      _expiry = Date.now() + (resp.expires_in - 60) * 1000
-      resolve(_token)
-    }
-    _client.requestAccessToken({ prompt: '' })
-  })
+export async function statusGoogle() {
+  try { return await chamar('status') } catch { return { conectado: false } }
 }
 
-export async function criarEvento(ag, clienteNome, duracao = 60, interactive = false) {
-  const token = await getToken(interactive)
-  if (!token) return null
-  const res = await fetch(BASE, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildEvento(ag, clienteNome, duracao)),
-  })
-  if (!res.ok) throw new Error(`Falha ao criar evento: ${res.status}`)
-  return res.json()
+// Cria evento no Google. Retorna { id } ou null se a conta não estiver conectada.
+export async function criarEvento(ag, clienteNome, duracao = 60) {
+  const r = await chamar('criar-evento', { ag, clienteNome, duracao })
+  if (r?.conectado === false) return null
+  return r?.id ? { id: r.id } : null
 }
 
-export async function excluirEvento(eventId, interactive = false) {
-  const token = await getToken(interactive)
-  if (!token) return
-  const res = await fetch(`${BASE}/${eventId}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok && res.status !== 404 && res.status !== 410) {
-    throw new Error(`Falha ao excluir evento: ${res.status}`)
-  }
+// Atualiza o evento de um agendamento editado (NOVO — antes não existia).
+export async function atualizarEvento(eventId, ag, clienteNome, duracao = 60) {
+  const r = await chamar('atualizar-evento', { eventId, ag, clienteNome, duracao })
+  if (r?.conectado === false) return null
+  return r?.id ? { id: r.id } : null
 }
 
-function buildEvento(ag, clienteNome, duracao) {
-  const start = new Date(`${ag.data}T${ag.horario.slice(0, 8)}`)
-  const end = new Date(start.getTime() + duracao * 60000)
-  return {
-    summary: `${clienteNome} — ${ag.servico}`,
-    description: ag.observacoes || '',
-    start: { dateTime: start.toISOString(), timeZone: 'America/Sao_Paulo' },
-    end: { dateTime: end.toISOString(), timeZone: 'America/Sao_Paulo' },
-    colorId: '4',
-    reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'popup', minutes: 60 },
-        { method: 'popup', minutes: 30 },
-      ],
-    },
-  }
+export async function excluirEvento(eventId) {
+  await chamar('excluir-evento', { eventId })
 }

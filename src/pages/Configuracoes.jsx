@@ -13,7 +13,7 @@ import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContex
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { s, tabs } from './Configuracoes.styles'
-import { initTokenClient, conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
+import { conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 import { traduzErro } from '../lib/erros'
 
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
@@ -251,16 +251,6 @@ export default function Configuracoes() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [googleErro, setGoogleErro] = useState('')
 
-  function waitForGIS() {
-    return new Promise((resolve) => {
-      if (window.google?.accounts?.oauth2) { resolve(); return }
-      const check = setInterval(() => {
-        if (window.google?.accounts?.oauth2) { clearInterval(check); resolve() }
-      }, 200)
-      setTimeout(() => { clearInterval(check); resolve() }, 5000)
-    })
-  }
-
   async function handleConectarGoogle() {
     if (!temAcesso('googleCalendar')) {
       setShowUpgrade({ aberto: true, feature: 'Google Calendar' })
@@ -269,20 +259,18 @@ export default function Configuracoes() {
     setGoogleLoading(true)
     setGoogleErro('')
     try {
-      await waitForGIS()
-      initTokenClient()
       await conectarGoogle()
       await supabase.from('configuracoes').update({ google_conectado: true }).eq('salao_id', salaoId)
       setForm(f => ({ ...f, google_conectado: true }))
     } catch (e) {
-      setGoogleErro('Não foi possível conectar. Verifique o Client ID e tente novamente.')
+      setGoogleErro('Não foi possível conectar. Tente novamente.')
     } finally {
       setGoogleLoading(false)
     }
   }
 
   async function handleDesconectarGoogle() {
-    desconectarGoogle()
+    await desconectarGoogle()
     await supabase.from('configuracoes').update({ google_conectado: false }).eq('salao_id', salaoId)
     setForm(f => ({ ...f, google_conectado: false }))
   }
@@ -806,11 +794,6 @@ export default function Configuracoes() {
               </button>
           }
         </div>
-        {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-          <div style={{ ...s.hint, color: 'var(--amber, #B45309)', marginTop: 6 }}>
-            ⚠ VITE_GOOGLE_CLIENT_ID não configurado no .env
-          </div>
-        )}
       </div>
 
       {/* ── Notificações ────────────────────── */}
