@@ -119,8 +119,10 @@ export default function ClienteDetalhe() {
   const realizados = historico.filter(h => h.status === 'realizado')
   const cancelados = historico.filter(h => h.status === 'cancelado')
   const totalRecebido = historico.reduce((acc, h) => {
-    const pago = h.pagamentos?.[0]
-    return acc + (pago?.status === 'pago' ? (pago.valor || h.valor || 0) : 0)
+    // Um atendimento pode ter 2 pagamentos (pago em 2 formas) — soma TODOS os pagos,
+    // não só o primeiro, senão o recebido/ticket da cliente fica subestimado.
+    const pagos = (h.pagamentos || []).filter(p => p.status === 'pago')
+    return acc + pagos.reduce((s, p) => s + (p.valor || 0), 0)
   }, 0)
   const ticketMedio = realizados.length ? totalRecebido / realizados.length : 0
 

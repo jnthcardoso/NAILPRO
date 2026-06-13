@@ -372,7 +372,7 @@ export default function Clientes() {
             <div style={{ fontWeight: 700, color: noLimite ? '#7F1D1D' : '#78350F' }}>
               {noLimite
                 ? `Você atingiu o limite de ${limiteClientes} clientes do plano ${plano?.nome}`
-                : `${clientes.length} de ${limiteClientes} clientes (${plano?.nome})`}
+                : `${ativas.length} de ${limiteClientes} clientes (${plano?.nome})`}
             </div>
             <div style={{ color: noLimite ? '#991B1B' : '#92400E', marginTop: 2 }}>
               Faça upgrade pro Pro pra cadastrar clientes ilimitadas →
