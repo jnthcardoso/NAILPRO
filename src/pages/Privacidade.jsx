@@ -107,7 +107,7 @@ export default function Privacidade() {
           <p>Podemos atualizar esta política. Alterações relevantes serão comunicadas por e-mail e no app com 30 dias de antecedência.</p>
 
           <h2 style={s.h2}>13. Encarregado de Dados (DPO)</h2>
-          <p>Jonathan Cardoso<br />
+          <p>Nicole Larissa<br />
           E-mail: suporte@lumengestaoempresarial.com.br<br />
           WhatsApp: (54) 99918-5715<br />
           Instagram: <a href="https://instagram.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>@lumengestaoempresarial</a><br />
