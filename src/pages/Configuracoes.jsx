@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
 import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
-import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO } from '../lib/mensagens'
@@ -19,10 +19,6 @@ import { traduzErro } from '../lib/erros'
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
-
-function slugify(text) {
-  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-}
 
 export default function Configuracoes() {
   const { user, signOut } = useAuth()

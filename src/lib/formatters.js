@@ -50,6 +50,13 @@ export function linkWhatsAppCompleto(numeroCompleto, mensagem = '') {
   return `https://wa.me/${destino}${texto}`
 }
 
+// ─── Slug / URL (link público de agendamento) ───
+// 'Vivi Nails ✨' → 'vivi-nails'. Tira acentos, espaços e símbolos.
+export function slugify(text) {
+  return (text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
 // ─── Datas (string 'YYYY-MM-DD' sem problemas de fuso) ───
 // '2026-06-02' → Date no fuso local (evita o shift de UTC do new Date(str)).
 export function dataParaDate(str) {

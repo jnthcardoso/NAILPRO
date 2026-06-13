@@ -4,18 +4,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
-import { formatTelefone, unformatTelefone, linkWhatsAppCompleto } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, linkWhatsAppCompleto, slugify } from '../lib/formatters'
 import { conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 import { traduzErro } from '../lib/erros'
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
 const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art']
-
-function slugify(text) {
-  return (text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-}
 
 export default function MinhasConfiguracoes() {
   const { user } = useAuth()
