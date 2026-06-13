@@ -109,7 +109,7 @@ export default function Privacidade() {
           <h2 style={s.h2}>13. Encarregado de Dados (DPO)</h2>
           <p>Jonathan Cardoso<br />
           E-mail: suporte@lumengestaoempresarial.com.br<br />
-          WhatsApp: (54) 99941-9628<br />
+          WhatsApp: (54) 99918-5715<br />
           Instagram: <a href="https://instagram.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>@lumengestaoempresarial</a><br />
           Facebook: <a href="https://facebook.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>/lumengestaoempresarial</a></p>
 

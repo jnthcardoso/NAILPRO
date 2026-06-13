@@ -149,7 +149,7 @@ export const PLANOS = {
 PLANOS.starter = { ...PLANOS.solo, id: 'starter', nome: 'Solo' }
 
 // WhatsApp do suporte para assinaturas (você recebe as solicitações aqui)
-export const SUPORTE_WHATSAPP = import.meta.env.VITE_SUPORTE_WHATSAPP || '5554999419628'
+export const SUPORTE_WHATSAPP = import.meta.env.VITE_SUPORTE_WHATSAPP || '5554999185715'
 
 // Centavos → "127,50" (sem símbolo). Reaproveita o util compartilhado.
 function formatPreco(centavos) {

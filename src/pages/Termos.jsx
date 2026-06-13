@@ -100,7 +100,7 @@ export default function Termos() {
           <h2 style={s.h2}>14. Contato</h2>
           <p>Em caso de dúvidas, sugestões ou solicitações, entre em contato:</p>
           <ul style={s.lista}>
-            <li>WhatsApp: (54) 99941-9628</li>
+            <li>WhatsApp: (54) 99918-5715</li>
             <li>E-mail: suporte@lumengestaoempresarial.com.br</li>
             <li>Instagram: <a href="https://instagram.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>@lumengestaoempresarial</a></li>
             <li>Facebook: <a href="https://facebook.com/lumengestaoempresarial" target="_blank" rel="noreferrer" style={s.link}>/lumengestaoempresarial</a></li>
