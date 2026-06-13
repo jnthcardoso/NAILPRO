@@ -167,9 +167,11 @@ export function AssinaturaProvider({ children }) {
 
   const carregar = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
+    // Pega a assinatura mais RECENTE (DESC): se um dia houver mais de uma linha
+    // pro mesmo salão (ex.: re-assinatura), vale a atual — nunca uma antiga já vencida.
     const { data } = await supabase.from('assinaturas')
       .select('*')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     setAssinatura(data)
@@ -179,7 +181,9 @@ export function AssinaturaProvider({ children }) {
   useEffect(() => { carregar() }, [carregar])
 
   const plano = assinatura ? (PLANOS[assinatura.plano] || PLANOS.pro) : PLANOS.pro
-  const status = assinatura?.status || 'trialing'
+  // Sem linha de assinatura = nega por padrão (pending = "criou conta mas não
+  // contratou"). Evita liberar tudo por engano se a assinatura não carregar.
+  const status = assinatura?.status || 'pending'
   const isTrialing = status === 'trialing'
   const isActive = status === 'active'
   const isExpired = status === 'expired' || status === 'canceled'

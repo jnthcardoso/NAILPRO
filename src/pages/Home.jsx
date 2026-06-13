@@ -101,9 +101,10 @@ export default function Home() {
       { count: countAgendamentos },
       { data: ags },
       { count: countPedidos },
+      { data: pagDia },
     ] = await Promise.all([
       supabase.from('configuracoes')
-        .select('meta_mensal, nome_salao, lembretes_ativos').eq('salao_id', salaoId).single(),
+        .select('meta_mensal, nome_salao, lembretes_ativos').eq('salao_id', salaoId).maybeSingle(),
       supabase.from('metas')
         .select('valor_meta')
         .eq('salao_id', salaoId).eq('tipo', 'mes').eq('periodo', periodoAtual)
@@ -146,6 +147,10 @@ export default function Home() {
             .select('*', { count: 'exact', head: true })
             .eq('salao_id', salaoId)
             .eq('origem', 'publica').eq('status', 'pendente').gte('data', hoje)),
+      // Receita do dia (hoje e ontem) = só dinheiro recebido (pagamentos pagos).
+      supabase.from('pagamentos')
+        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago')
+        .gte('data', ontem).lte('data', hoje),
     ])
 
     // Config
@@ -157,13 +162,11 @@ export default function Home() {
 
     // Atendimentos hoje (não cancelados)
     if (agendHoje) {
-      const receita = agendHoje.reduce((s, a) => s + (a.valor || 0), 0)
       const realizados = agendHoje.filter(a => a.status === 'realizado').length
       const pendentes = agendHoje.filter(a => a.status === 'pendente' || a.status === 'confirmado').length
       setStats(s => ({
         ...s,
         hoje: agendHoje.length,
-        receitaHoje: receita,
         realizadosHoje: realizados,
         pendentesHoje: pendentes,
       }))
@@ -178,11 +181,19 @@ export default function Home() {
       }
     }
 
-    // Atendimentos ontem (comparativo)
+    // Atendimentos ontem (comparativo) — só a contagem; receita vem dos pagamentos.
     if (agendOntem) {
-      const receitaOntem = agendOntem.reduce((s, a) => s + (a.valor || 0), 0)
-      setStats(s => ({ ...s, receitaOntem, atendimentosOntem: agendOntem.length }))
+      setStats(s => ({ ...s, atendimentosOntem: agendOntem.length }))
     }
+
+    // Receita do dia = só o que foi efetivamente RECEBIDO (pagamentos pagos),
+    // excluindo cancelados e agendamentos apenas marcados/pendentes. Mesma
+    // definição de receita do Financeiro e das Metas.
+    setStats(s => ({
+      ...s,
+      receitaHoje: (pagDia || []).filter(p => p.data === hoje).reduce((acc, p) => acc + (p.valor || 0), 0),
+      receitaOntem: (pagDia || []).filter(p => p.data === ontem).reduce((acc, p) => acc + (p.valor || 0), 0),
+    }))
 
     // A receber (todo o mês corrente)
     if (pagPendentes) {
