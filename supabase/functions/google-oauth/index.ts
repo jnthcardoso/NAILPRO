@@ -86,14 +86,25 @@ async function getAccessToken(userId: string): Promise<string> {
   return tok.access_token as string
 }
 
+// São Paulo é UTC-3 fixo (sem horário de verão desde 2019). Formatamos o horário
+// SEMPRE no fuso de São Paulo, independente do servidor (que roda em UTC) — senão
+// o "11:00" vira 11:00 UTC e o Google mostra 08:00 (bug de cliente->servidor).
+const SP_OFFSET_MS = 3 * 60 * 60 * 1000
+function toSPString(date: Date): string {
+  const sp = new Date(date.getTime() - SP_OFFSET_MS)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${sp.getUTCFullYear()}-${p(sp.getUTCMonth() + 1)}-${p(sp.getUTCDate())}T${p(sp.getUTCHours())}:${p(sp.getUTCMinutes())}:${p(sp.getUTCSeconds())}-03:00`
+}
 function buildEvento(ag: any, clienteNome: string, duracao = 60) {
-  const start = new Date(`${ag.data}T${String(ag.horario).slice(0, 8)}`)
+  const hms = String(ag.horario).length >= 8 ? String(ag.horario).slice(0, 8) : `${String(ag.horario).slice(0, 5)}:00`
+  // -03:00 explícito no input: o instante é lido certo mesmo com o servidor em UTC.
+  const start = new Date(`${ag.data}T${hms}-03:00`)
   const end = new Date(start.getTime() + duracao * 60000)
   return {
     summary: `${clienteNome} — ${ag.servico}`,
     description: ag.observacoes || '',
-    start: { dateTime: start.toISOString(), timeZone: 'America/Sao_Paulo' },
-    end: { dateTime: end.toISOString(), timeZone: 'America/Sao_Paulo' },
+    start: { dateTime: toSPString(start), timeZone: 'America/Sao_Paulo' },
+    end: { dateTime: toSPString(end), timeZone: 'America/Sao_Paulo' },
     colorId: '4',
     reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 60 }, { method: 'popup', minutes: 30 }] },
   }
