@@ -223,18 +223,31 @@ export default function Home() {
     })
     setReceita7Dias(receitaDias)
 
-    // Dia da semana mais lucrativo (insight) - últimos 90 dias
+    // Dia da semana mais RENTÁVEL (insight) - últimos 90 dias.
+    // Usa MÉDIA por dia trabalhado (total ÷ nº de dias daquele dia-da-semana com
+    // faturamento), não o total — senão o dia em que se trabalha mais "ganha" só
+    // por aparecer mais vezes. Só considera dias com histórico suficiente
+    // (>= MIN_OCORRENCIAS), pra não concluir de 1-2 dias.
+    const MIN_OCORRENCIAS = 3
     if (pag90d?.length) {
-      const porDiaSemana = [0, 0, 0, 0, 0, 0, 0]
+      const totalPorDia = [0, 0, 0, 0, 0, 0, 0]
+      const datasPorDia = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set(), new Set()]
       pag90d.forEach(p => {
         const dia = getDay(new Date(p.data + 'T12:00:00'))
-        porDiaSemana[dia] += p.valor || 0
+        const v = p.valor || 0
+        totalPorDia[dia] += v
+        if (v > 0) datasPorDia[dia].add(p.data)
       })
-      const max = Math.max(...porDiaSemana)
-      if (max > 0) {
-        const idxMax = porDiaSemana.indexOf(max)
-        setDiaTop({ dia: idxMax, valor: max })
+      let melhor = null
+      for (let d = 0; d < 7; d++) {
+        const ocorrencias = datasPorDia[d].size
+        if (ocorrencias < MIN_OCORRENCIAS) continue
+        const media = totalPorDia[d] / ocorrencias
+        if (!melhor || media > melhor.valor) melhor = { dia: d, valor: media, ocorrencias }
       }
+      setDiaTop(melhor)
+    } else {
+      setDiaTop(null)
     }
 
     // Counts pra conta nova
@@ -483,10 +496,10 @@ export default function Home() {
                 <Award size={18} color="#1E40AF" />
                 <div style={{ flex: 1 }}>
                   <div style={{ ...s.insightTitle, color: '#1E3A8A' }}>
-                    Seu dia mais lucrativo é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
+                    Seu dia mais rentável é <strong>{DIAS_SEMANA_LABEL[diaTop.dia]}</strong>
                   </div>
                   <div style={{ ...s.insightSub, color: '#1E40AF' }}>
-                    {formatBRL(diaTop.valor)} acumulado nos últimos 90 dias
+                    Média de {formatBRL(diaTop.valor)} por {DIAS_SEMANA_LABEL[diaTop.dia]} · últimos 90 dias
                   </div>
                 </div>
               </div>
