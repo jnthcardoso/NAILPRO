@@ -16,7 +16,7 @@ import { traduzErro } from '../lib/erros'
 export default function ClienteDetalhe() {
   const { id } = useParams()
   const { user } = useAuth()
-  const { salaoId } = useSalao()
+  const { salaoId, gerenciaTudo } = useSalao()
   const navigate = useNavigate()
   const { confirmar, sucesso, erro } = useToast()
   const [cliente, setCliente] = useState(null)
@@ -116,14 +116,16 @@ export default function ClienteDetalhe() {
   }
 
   // Resumo do histórico
+  // Um atendimento pode ter 2 pagamentos (pago em 2 formas) — soma TODOS os pagos,
+  // não só o primeiro, senão o recebido/ticket da cliente fica subestimado.
+  const somaPagos = (h) => (h.pagamentos || [])
+    .filter(p => p.status === 'pago')
+    .reduce((s, p) => s + (p.valor || 0), 0)
   const realizados = historico.filter(h => h.status === 'realizado')
   const cancelados = historico.filter(h => h.status === 'cancelado')
-  const totalRecebido = historico.reduce((acc, h) => {
-    // Um atendimento pode ter 2 pagamentos (pago em 2 formas) — soma TODOS os pagos,
-    // não só o primeiro, senão o recebido/ticket da cliente fica subestimado.
-    const pagos = (h.pagamentos || []).filter(p => p.status === 'pago')
-    return acc + pagos.reduce((s, p) => s + (p.valor || 0), 0)
-  }, 0)
+  // Recebido e ticket usam a MESMA base (só realizados), pra bater com o "total gasto"
+  // do topo e não inflar o ticket com pagamento de atendimento não-realizado.
+  const totalRecebido = realizados.reduce((acc, h) => acc + somaPagos(h), 0)
   const ticketMedio = realizados.length ? totalRecebido / realizados.length : 0
 
   if (!cliente) return <div style={{ padding: 24, color: 'var(--text3)' }}>Carregando...</div>
@@ -175,6 +177,12 @@ export default function ClienteDetalhe() {
         </div>
       </div>
 
+      {/* Profissional vê o histórico só dos atendimentos dela (RLS); os cards acima
+          são do salão inteiro. Avisa pra não parecer número errado. */}
+      {!gerenciaTudo && (
+        <div style={s.escopoNota}>Resumo geral do salão</div>
+      )}
+
       {cliente.observacoes && (
         <div style={s.obs}>
           <div style={s.obsTitle}>Observações</div>
@@ -198,6 +206,9 @@ export default function ClienteDetalhe() {
       </div>
 
       {/* Resumo do histórico */}
+      {historico.length > 0 && !gerenciaTudo && (
+        <div style={s.resumoEscopoTitulo}>Seus atendimentos com esta cliente</div>
+      )}
       {historico.length > 0 && (
         <div style={s.resumoGrid}>
           <div style={s.resumoCard}>
@@ -226,8 +237,14 @@ export default function ClienteDetalhe() {
           <div style={s.timeline}>
             {historico.map((h, i) => {
               const st = HIST_STATUS[h.status] || HIST_STATUS.pendente
-              const pag = h.pagamentos?.[0]
-              const pago = pag?.status === 'pago'
+              const pagamentos = h.pagamentos || []
+              const pagos = pagamentos.filter(p => p.status === 'pago')
+              const temPag = pagamentos.length > 0
+              // quitado só quando TODOS os pagamentos do atendimento estão pagos
+              const pago = temPag && pagos.length === pagamentos.length
+              const valorPago = pagos.reduce((s, p) => s + (p.valor || 0), 0)
+              const valorExibido = pagos.length ? valorPago : (h.valor ?? 0)
+              const formasPagas = [...new Set(pagos.map(p => FORMA_LABEL[p.forma] || p.forma).filter(Boolean))].join(' + ')
               const cancelado = h.status === 'cancelado'
               const ultimo = i === historico.length - 1
               return (
@@ -247,12 +264,12 @@ export default function ClienteDetalhe() {
                       </div>
                       <span style={{ ...s.badge, background: st.bg, color: st.cor }}>{st.label}</span>
                     </div>
-                    {!cancelado && (h.valor > 0 || pag) && (
+                    {!cancelado && (h.valor > 0 || temPag) && (
                       <div style={s.tlPagRow}>
-                        <span style={s.histValor}>{formatBRL(pag?.valor ?? h.valor ?? 0)}</span>
-                        {pag && (
+                        <span style={s.histValor}>{formatBRL(valorExibido)}</span>
+                        {temPag && (
                           <span style={{ ...s.badge, ...(pago ? s.badgePago : s.badgePendente) }}>
-                            {pago ? '✓ Pago' : '⏳ Pendente'}{pag.forma ? ` · ${FORMA_LABEL[pag.forma] || pag.forma}` : ''}
+                            {pago ? '✓ Pago' : '⏳ Pendente'}{formasPagas ? ` · ${formasPagas}` : ''}
                           </span>
                         )}
                       </div>
@@ -394,6 +411,8 @@ const s = {
   btnSecondary: { ...btnSecondaryBase, padding: '10px' },
   sectionTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 12px' },
   cancelInfo: { color: '#B91C1C', fontWeight: 600 },
+  escopoNota: { fontSize: 11, color: 'var(--text3)', textAlign: 'center', marginTop: -8, marginBottom: 16, fontWeight: 500 },
+  resumoEscopoTitulo: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 },
   resumoGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 18 },
   resumoCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
   resumoValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 17, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
