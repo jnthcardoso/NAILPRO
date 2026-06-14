@@ -79,7 +79,7 @@ export const s = {
   statusBtn2: { padding: '11px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', color: 'var(--text2)', transition: 'all 0.15s' },
   statusPagoActive: { border: '1.5px solid #4ADE80', background: '#DCFCE7', color: '#15803D', fontWeight: 700 },
   statusPendenteActive: { border: '1.5px solid #FCD34D', background: '#FEF3C7', color: '#92400E', fontWeight: 700 },
-  field: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 },
+  field: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: { fontSize: 11, fontWeight: 600, color: 'var(--text2)' },
   input: inputBase,
   row: { display: 'flex', gap: 10 },
