@@ -1,5 +1,5 @@
 import { s } from '../../pages/Agenda.styles'
-import { STATUS, FORMAS, temPagamentoPendente, PAG_PENDENTE_COR, PAG_PENDENTE_BG } from '../../pages/Agenda.constants'
+import { STATUS, temPagamentoPendente, resumoPagamento, PAG_PENDENTE_COR, PAG_PENDENTE_BG } from '../../pages/Agenda.constants'
 import { formatBRL } from '../../lib/formatters'
 
 // Cards de agendamento usados nas views da Agenda. Apresentacionais:
@@ -25,7 +25,7 @@ export function CardCompacto({ ag, onSelect }) {
 // Card completo para view Dia
 export function CardDia({ ag, onSelect }) {
   const st = STATUS[ag.status] || STATUS.pendente
-  const pag = ag.pagamentos?.[0]
+  const pag = resumoPagamento(ag)
   const pend = temPagamentoPendente(ag)
   return (
     <div style={{ ...s.card, borderLeftColor: pend ? PAG_PENDENTE_COR : st.border, cursor: 'pointer', ...(pend ? { background: PAG_PENDENTE_BG } : {}) }} onClick={() => onSelect(ag)}>
@@ -41,8 +41,8 @@ export function CardDia({ ag, onSelect }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={s.cardValor}>{formatBRL(ag.valor)}</div>
           {pag && (
-            <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
-              {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
+            <span style={{ ...s.badge, background: pag.pago ? '#DCFCE7' : '#FEF3C7', color: pag.pago ? '#15803D' : '#92400E', fontSize: 10 }}>
+              {pag.pago ? '✓ Pago' : '⏳ Pendente'} · {pag.formas}
             </span>
           )}
         </div>

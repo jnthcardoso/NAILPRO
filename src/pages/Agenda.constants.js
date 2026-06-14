@@ -26,3 +26,14 @@ export function temPagamentoPendente(ag) {
   const pags = ag.pagamentos || []
   return pags.length === 0 || pags.some(p => p.status === 'pendente')
 }
+
+// Resumo do pagamento p/ o card/drawer, considerando pagamento em 1 OU 2 formas.
+// Retorna null se não há pagamento. pago = todos os lançamentos estão pagos.
+// formas = nomes curtos, sem repetir, juntados (ex.: "Pix + Crédito").
+export function resumoPagamento(ag) {
+  const pags = ag?.pagamentos || []
+  if (!pags.length) return null
+  const pago = pags.every(p => p.status === 'pago')
+  const nomes = pags.map(p => FORMAS.find(f => f.value === p.forma)?.label.split(' ')[1] || p.forma)
+  return { pago, formas: [...new Set(nomes)].join(' + ') }
+}

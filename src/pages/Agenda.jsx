@@ -588,10 +588,21 @@ export default function Agenda() {
           onCancelar={() => { setAgDetalhe(null); atualizarStatus(agDetalhe, 'cancelado') }}
           onEditar={() => { setAgDetalhe(null); abrirEdicao(agDetalhe) }}
           onRegistrarPagamento={() => {
-            const pag = agDetalhe.pagamentos?.[0]
+            const pags = agDetalhe.pagamentos || []
             setAgDetalhe(null)
             setAgSelecionado(agDetalhe)
-            setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || agDetalhe.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+            if (pags.length >= 2) {
+              // Já tinha pagamento em 2 formas: reabre no modo duplo com os dois
+              // lançamentos, pra editar não apagar a 2ª forma sem querer.
+              setFormPag({
+                forma: pags[0].forma || 'pix', valor: String(pags[0].valor ?? ''),
+                status: pags[0].status || 'pago', modo: 'duplo',
+                forma2: pags[1].forma || 'cartao_credito', valor2: String(pags[1].valor ?? ''),
+              })
+            } else {
+              const pag = pags[0]
+              setFormPag({ forma: pag?.forma || 'pix', status: pag?.status || 'pago', valor: String(pag?.valor || agDetalhe.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
+            }
             setShowPagModal(true)
           }}
         />

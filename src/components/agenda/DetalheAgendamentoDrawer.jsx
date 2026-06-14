@@ -1,7 +1,7 @@
 import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User } from 'lucide-react'
 import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
-import { STATUS, FORMAS } from '../../pages/Agenda.constants'
+import { STATUS, resumoPagamento } from '../../pages/Agenda.constants'
 import { formatBRL, linkWhatsApp, dataBR } from '../../lib/formatters'
 
 // Monta o link de WhatsApp com a mensagem de confirmação do horário.
@@ -23,7 +23,7 @@ export default function DetalheAgendamentoDrawer({
   ag, onClose, onConfirmar, onRealizar, onCancelar, onEditar, onRegistrarPagamento,
 }) {
   const st = STATUS[ag.status] || STATUS.pendente
-  const pag = ag.pagamentos?.[0]
+  const pag = resumoPagamento(ag)
   const waConfirm = buildWhatsAppConfirm(ag)
   const tel = (ag.clientes?.telefone || '').replace(/\D/g, '')
   const waDirectUrl = tel ? linkWhatsApp(tel) : null
@@ -61,8 +61,8 @@ export default function DetalheAgendamentoDrawer({
               {formatBRL(ag.valor)}
             </span>
             {pag && (
-              <span style={{ ...s.badge, background: pag.status === 'pago' ? '#DCFCE7' : '#FEF3C7', color: pag.status === 'pago' ? '#15803D' : '#92400E', fontSize: 10 }}>
-                {pag.status === 'pago' ? '✓ Pago' : '⏳ Pendente'} · {FORMAS.find(f => f.value === pag.forma)?.label.split(' ')[1] || pag.forma}
+              <span style={{ ...s.badge, background: pag.pago ? '#DCFCE7' : '#FEF3C7', color: pag.pago ? '#15803D' : '#92400E', fontSize: 10 }}>
+                {pag.pago ? '✓ Pago' : '⏳ Pendente'} · {pag.formas}
               </span>
             )}
           </div>
