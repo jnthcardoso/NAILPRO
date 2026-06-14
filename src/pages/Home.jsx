@@ -592,17 +592,14 @@ export default function Home() {
           <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--pink)', fontSize: 17 }}>
             {formatBRL(stats.receitaMes)}
           </div>
-          <div style={{ fontSize: 10.5, color: 'var(--text3)', fontWeight: 500, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            de {formatBRL(stats.metaMes)}
-          </div>
           <div style={s.progressBar}>
             <div style={{ ...s.progressFill, width: `${progressoMeta}%` }} />
           </div>
-          <div style={{ ...s.kpiSub, whiteSpace: 'normal', lineHeight: 1.3 }}>
+          <div style={s.kpiSub}>
             {faltaMeta > 0
               ? (diasUteisRestantes > 0
-                  ? `${formatBRL(necessarioPorDia)}/dia útil · faltam ${diasUteisRestantes}d`
-                  : `falta ${formatBRL(faltaMeta)} no mês`)
+                  ? `${formatBRL(necessarioPorDia)}/dia em ${diasUteisRestantes}d`
+                  : `falta ${formatBRL(faltaMeta)}`)
               : 'meta batida! 🎉'}
           </div>
         </div>
