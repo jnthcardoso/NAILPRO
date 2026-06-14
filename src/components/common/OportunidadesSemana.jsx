@@ -15,22 +15,19 @@ import { ptBR } from 'date-fns/locale'
 // Só leitura; não cria nada no banco.
 const primeiroNome = (nome) => (nome || '').split(' ')[0]
 
-// Memória local de quem já foi contatada, pra não repetir o mesmo aviso todo dia
-// (evita também mandar a mesma mensagem duas vezes pra mesma cliente).
+// Memória de quem já foi contatada, pra não repetir o mesmo aviso todo dia.
+// Fonte de verdade = banco (tabela oportunidade_contatos), sincroniza entre
+// aparelhos. O localStorage continua como reforço (offline + transição suave).
 const CONTATADOS_KEY = 'oportunidades_contatadas'
 const JANELA_ANIV = 8    // dias que esconde a aniversariante após contatar
 const JANELA_SUMIDA = 14 // dias que esconde a sumida após contatar
-function getContatados() {
+function getContatadosLocal() {
   try { return JSON.parse(localStorage.getItem(CONTATADOS_KEY) || '{}') } catch { return {} }
 }
-function marcarContatada(tipo, clienteId) {
-  const m = getContatados()
-  m[`${tipo}_${clienteId}`] = new Date().toISOString()
+function marcarContatadaLocal(tipo, clienteId, quando) {
+  const m = getContatadosLocal()
+  m[`${tipo}_${clienteId}`] = quando
   try { localStorage.setItem(CONTATADOS_KEY, JSON.stringify(m)) } catch { /* ignora */ }
-}
-function foiContatada(tipo, clienteId, dias) {
-  const ts = getContatados()[`${tipo}_${clienteId}`]
-  return ts ? differenceInDays(new Date(), new Date(ts)) < dias : false
 }
 
 export default function OportunidadesSemana({ variant = 'banner', withHeader = false }) {
@@ -38,7 +35,9 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   const { sucesso, erro } = useToast()
   const navigate = useNavigate()
   const [dados, setDados] = useState(null)
-  const [, setRefresh] = useState(0) // força re-render ao marcar uma cliente como contatada
+  // Quem já foi contatada (mapa "tipo_clienteId" -> ISO). Começa do localStorage
+  // (offline/transição) e é mesclado com o banco ao carregar.
+  const [contatados, setContatados] = useState(() => getContatadosLocal())
 
   useEffect(() => {
     // A profissional não enxerga dados do salão inteiro.
@@ -50,7 +49,7 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
       const fim7Str = format(addDays(hoje, 6), 'yyyy-MM-dd')
       const inicio90 = format(addDays(hoje, -90), 'yyyy-MM-dd')
 
-      const [{ data: clientes }, { data: pagos }, { data: ags }, { data: config }] = await Promise.all([
+      const [{ data: clientes }, { data: pagos }, { data: ags }, { data: config }, { data: contatos }] = await Promise.all([
         supabase.from('clientes')
           .select('id, nome, telefone, ultimo_atendimento, data_nascimento, dias_retorno, arquivada')
           .eq('salao_id', salaoId),
@@ -61,6 +60,8 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
         supabase.from('configuracoes')
           .select('slug, agenda_publica_ativa, nome_salao, dias_semana, msg_aniversario, msg_retorno')
           .eq('salao_id', salaoId).maybeSingle(),
+        supabase.from('oportunidade_contatos')
+          .select('cliente_id, tipo, contatado_em').eq('salao_id', salaoId),
       ])
 
       // Só clientes acionáveis (com telefone) — alinha a contagem com a ação possível.
@@ -101,6 +102,12 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
           tplRetorno: config?.msg_retorno || MSG_RETORNO_PADRAO,
           aniversariantes, sumidas, diasLivres,
         })
+        // Mescla os contatos do banco por cima do que veio do localStorage.
+        setContatados(prev => {
+          const m = { ...prev }
+          ;(contatos || []).forEach(c => { m[`${c.tipo}_${c.cliente_id}`] = c.contatado_em })
+          return m
+        })
       }
     })()
     return () => { ativo = false }
@@ -109,7 +116,11 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   if (!dados) return null
   const { ticket, slug, agendaPublicaAtiva, nomeSalao, tplAniversario, tplRetorno } = dados
 
-  // Esconde quem já foi contatada recentemente (memória local) — não repete o aviso.
+  // Esconde quem já foi contatada recentemente (banco + aparelho) — não repete o aviso.
+  const foiContatada = (tipo, clienteId, dias) => {
+    const ts = contatados[`${tipo}_${clienteId}`]
+    return ts ? differenceInDays(new Date(), new Date(ts)) < dias : false
+  }
   const aniversariantes = dados.aniversariantes.filter(c => !foiContatada('aniv', c.id, JANELA_ANIV))
   const sumidas = dados.sumidas.filter(c => !foiContatada('retorno', c.id, JANELA_SUMIDA))
   const diasLivres = dados.diasLivres
@@ -126,7 +137,16 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
       .catch(() => erro('Não consegui copiar. Copie pela tela de Configurações.'))
   }
 
-  const contatar = (tipo, id) => { marcarContatada(tipo, id); setRefresh(x => x + 1) }
+  // Marca a cliente como contatada: atualiza a tela na hora (otimista), grava no
+  // aparelho (offline) e no banco (sincroniza entre dispositivos).
+  const contatar = (tipo, id) => {
+    const agora = new Date().toISOString()
+    setContatados(prev => ({ ...prev, [`${tipo}_${id}`]: agora }))
+    marcarContatadaLocal(tipo, id, agora)
+    supabase.from('oportunidade_contatos')
+      .upsert({ salao_id: salaoId, cliente_id: id, tipo, contatado_em: agora }, { onConflict: 'salao_id,cliente_id,tipo' })
+      .then(({ error }) => { if (error) console.warn('Oportunidades: falha ao salvar contato —', error.message) })
+  }
   const msgAniversario = (nome) => aplicarVariaveis(tplAniversario, { nome, salao: nomeSalao })
   const msgRetorno = (nome) => aplicarVariaveis(tplRetorno, { nome, salao: nomeSalao })
 
