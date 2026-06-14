@@ -23,10 +23,14 @@ async function sha256Hex(input: string): Promise<string> {
 async function enviarCompraMeta(opts: {
   pixelId: string; token: string; appUrl: string;
   eventId: string; emailHash: string | null; userIdHash: string;
+  fbp: string | null; fbc: string | null;
   valor: number; plano: string; ciclo: string;
 }): Promise<void> {
   const userData: Record<string, unknown> = { external_id: [opts.userIdHash] }
   if (opts.emailHash) userData.em = [opts.emailHash]
+  // Carimbos do clique do anuncio — melhoram a atribuicao da venda a campanha.
+  if (opts.fbp) userData.fbp = opts.fbp
+  if (opts.fbc) userData.fbc = opts.fbc
 
   const payload = {
     data: [{
@@ -143,7 +147,9 @@ Deno.serve(async (req: Request) => {
       // Libera os assentos de manicure pagos no checkout (Salao). A enforcement no banco
       // bloqueia adicionar mais profissionais do que o pago.
       if (plano === 'salao') upd.licencas_pagas = manicuresPagas
-      const { error } = await supabase.from('assinaturas').update(upd).eq('user_id', userId)
+      // Retorna fbp/fbc (carimbos do anuncio gravados no checkout) p/ atribuir o Purchase.
+      const { data: assRow, error } = await supabase.from('assinaturas')
+        .update(upd).eq('user_id', userId).select('fbp, fbc').maybeSingle()
       if (error) console.error('Erro update (ok):', error.message)
       else console.log('Assinatura ATIVADA/renovada:', userId, plano, ciclo)
 
@@ -165,7 +171,10 @@ Deno.serve(async (req: Request) => {
             const email = u?.user?.email
             if (email) emailHash = await sha256Hex(email.trim().toLowerCase())
             const userIdHash = await sha256Hex(userId)
-            await enviarCompraMeta({ pixelId, token: metaToken, appUrl: APP_URL, eventId, emailHash, userIdHash, valor, plano, ciclo })
+            await enviarCompraMeta({
+              pixelId, token: metaToken, appUrl: APP_URL, eventId, emailHash, userIdHash,
+              fbp: assRow?.fbp ?? null, fbc: assRow?.fbc ?? null, valor, plano, ciclo,
+            })
           } else {
             console.warn('CAPI nao configurada (faltam META_PIXEL_ID / META_CAPI_TOKEN)')
           }

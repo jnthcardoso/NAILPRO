@@ -62,9 +62,15 @@ export default function Planos() {
       valorAnalytics += qtdManicures * (PRECO_USUARIO_ADICIONAL / 100) * (ciclo === 'anual' ? 12 : 1)
     }
     trackInicioAssinatura(planoId, ciclo, valorAnalytics)
+    // Carimbos do anuncio (Meta): cookies _fbp/_fbc do navegador. Vao para o
+    // checkout e ficam guardados p/ o webhook atribuir o Purchase (CAPI) ao anuncio.
+    const lerCookie = (nome) => {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + nome + '=([^;]*)'))
+      return m ? decodeURIComponent(m[1]) : null
+    }
     try {
       const { data, error } = await supabase.functions.invoke('asaas-criar-checkout', {
-        body: { plano: planoId, ciclo, manicures: qtdManicures },
+        body: { plano: planoId, ciclo, manicures: qtdManicures, fbp: lerCookie('_fbp'), fbc: lerCookie('_fbc') },
       })
       if (error) {
         // A função retorna o motivo real do Asaas no corpo (campo "error"); extrai pra mostrar.

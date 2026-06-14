@@ -39,9 +39,32 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) return json({ error: 'Nao autorizado' }, 401)
 
-    const { plano, ciclo, manicures } = await req.json()
+    const { plano, ciclo, manicures, fbp, fbc } = await req.json()
     const valorBase = PRECOS[`${plano}_${ciclo}`]
     if (!valorBase) return json({ error: 'Plano invalido' }, 400)
+
+    // Carimbos do anuncio (Meta): guarda _fbp/_fbc na assinatura para o webhook
+    // atribuir o Purchase (CAPI) ao anuncio que trouxe a cliente. So aceita o
+    // formato esperado do Meta ("fb.1...."); qualquer outra coisa e ignorada.
+    const fbCookie = (v: unknown) =>
+      typeof v === 'string' && /^fb\.\d\.\d+\..+$/.test(v) && v.length <= 255 ? v : null
+    const fbpOk = fbCookie(fbp)
+    const fbcOk = fbCookie(fbc)
+    if (fbpOk || fbcOk) {
+      try {
+        const admin = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        )
+        const patch: Record<string, string> = {}
+        if (fbpOk) patch.fbp = fbpOk
+        if (fbcOk) patch.fbc = fbcOk
+        const { error: upErr } = await admin.from('assinaturas').update(patch).eq('user_id', user.id)
+        if (upErr) console.error('Falha ao gravar fbp/fbc (ignorado):', upErr.message)
+      } catch (e) {
+        console.error('Erro ao gravar fbp/fbc (ignorado):', e)
+      }
+    }
 
     const isAnual = ciclo === 'anual'
     // Manicures adicionais so valem para o Salao; clampa em 0..MAX para nao confiar no cliente.
