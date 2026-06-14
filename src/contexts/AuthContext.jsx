@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { setPixelUser } from '../lib/analytics'
 
 const AuthContext = createContext({})
 
@@ -12,10 +13,12 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      if (session?.user?.email) setPixelUser(session.user.email) // Advanced Matching (Meta)
       setLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user?.email) setPixelUser(session.user.email) // Advanced Matching (Meta)
     })
     return () => subscription.unsubscribe()
   }, [])
