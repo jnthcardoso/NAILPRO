@@ -59,14 +59,22 @@ export default function Home() {
   const [pedidosPublicos, setPedidosPublicos] = useState(0)
   const [receita7Dias, setReceita7Dias] = useState([])
   const [diaTop, setDiaTop] = useState(null) // { dia: 4 (qui), valor: 1200 }
+  const [diasFuncionamento, setDiasFuncionamento] = useState([1, 2, 3, 4, 5]) // dias úteis do salão (p/ a meta bater com o módulo Metas)
   const [loading, setLoading] = useState(true)
+  const [erroDashboard, setErroDashboard] = useState(false)
 
   useEffect(() => { if (salaoId) loadDashboard() }, [salaoId])
   useEffect(() => { if (salaoId) loadAgendamentosData() }, [salaoId, dataFiltro])
 
   async function loadDashboard() {
+    setErroDashboard(false)
     try {
       await carregarDashboard()
+    } catch (e) {
+      // Rede de proteção: se alguma consulta falhar, mostra aviso amigável
+      // com "tentar de novo" em vez de deixar o painel em branco.
+      console.error('Erro ao carregar o início:', e)
+      setErroDashboard(true)
     } finally {
       setLoading(false)
     }
@@ -104,7 +112,7 @@ export default function Home() {
       { data: pagDia },
     ] = await Promise.all([
       supabase.from('configuracoes')
-        .select('meta_mensal, nome_salao, lembretes_ativos').eq('salao_id', salaoId).maybeSingle(),
+        .select('meta_mensal, nome_salao, lembretes_ativos, dias_semana').eq('salao_id', salaoId).maybeSingle(),
       supabase.from('metas')
         .select('valor_meta')
         .eq('salao_id', salaoId).eq('tipo', 'mes').eq('periodo', periodoAtual)
@@ -155,6 +163,7 @@ export default function Home() {
 
     // Config
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
+    if (config?.dias_semana?.length) setDiasFuncionamento(config.dias_semana)
 
     // Meta do mês: prioriza tabela metas, fallback pra config.meta_mensal
     const valorMeta = metaAtual?.valor_meta || config?.meta_mensal || 4000
@@ -265,11 +274,15 @@ export default function Home() {
 
   // Computeds
   const progressoMeta = Math.min(100, Math.round((stats.receitaMes / stats.metaMes) * 100))
-  const diaAtual = new Date().getDate()
-  const diasNoMes = endOfMonth(new Date()).getDate()
-  const diasRestantesMes = diasNoMes - diaAtual + 1
   const faltaMeta = Math.max(0, stats.metaMes - stats.receitaMes)
-  const necessarioPorDia = diasRestantesMes > 0 ? faltaMeta / diasRestantesMes : 0
+  // Dias ÚTEIS restantes no mês — MESMA lógica do módulo Metas, pra os dois baterem:
+  // total de dias de funcionamento do mês menos os que já passaram (hoje incluso).
+  const _hojeMeta = new Date()
+  const _uteisNoIntervalo = (ini, fim) =>
+    eachDayOfInterval({ start: ini, end: fim }).filter(d => diasFuncionamento.includes(getDay(d))).length
+  const diasUteisRestantes = Math.max(0,
+    _uteisNoIntervalo(startOfMonth(_hojeMeta), endOfMonth(_hojeMeta)) - _uteisNoIntervalo(startOfMonth(_hojeMeta), _hojeMeta))
+  const necessarioPorDia = diasUteisRestantes > 0 ? faltaMeta / diasUteisRestantes : 0
   const isHoje = dataFiltro === format(new Date(), 'yyyy-MM-dd')
   const contaNova = totalClientes === 0 && totalAgendamentos === 0
 
@@ -316,6 +329,21 @@ export default function Home() {
       </div>
 
       <TrialBanner />
+
+      {/* Rede de proteção: se o carregamento falhar, aviso amigável com "tentar de novo" */}
+      {!loading && erroDashboard && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
+          <AlertTriangle size={18} color="#B91C1C" style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: '#7F1D1D', fontSize: 13 }}>Não consegui carregar tudo agora</div>
+            <div style={{ fontSize: 12, color: '#991B1B' }}>Verifique sua conexão e toque pra tentar de novo.</div>
+          </div>
+          <button onClick={() => { setLoading(true); loadDashboard() }}
+            style={{ background: '#B91C1C', color: 'white', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+            Tentar de novo
+          </button>
+        </div>
+      )}
 
       {/* Skeleton enquanto o dashboard carrega */}
       {loading && <HomeSkeleton />}
@@ -547,16 +575,21 @@ export default function Home() {
               {progressoMeta}%
             </span>
           </div>
-          <div style={s.kpiLabel}>Meta do mês</div>
+          <div style={s.kpiLabel}>Receita do mês</div>
           <div style={{ ...s.kpiValue, ...s.mono, color: 'var(--pink)', fontSize: 17 }}>
             {formatBRL(stats.receitaMes)}
+            <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 500, marginLeft: 6 }}>
+              de {formatBRL(stats.metaMes)}
+            </span>
           </div>
           <div style={s.progressBar}>
             <div style={{ ...s.progressFill, width: `${progressoMeta}%` }} />
           </div>
           <div style={s.kpiSub}>
             {faltaMeta > 0
-              ? `${formatBRL(necessarioPorDia)}/dia em ${diasRestantesMes}d`
+              ? (diasUteisRestantes > 0
+                  ? `${formatBRL(necessarioPorDia)}/dia útil · faltam ${diasUteisRestantes}d`
+                  : `falta ${formatBRL(faltaMeta)} no mês`)
               : 'meta batida! 🎉'}
           </div>
         </div>
