@@ -121,7 +121,7 @@ export default function Home() {
         .select('valor').eq('salao_id', salaoId).eq('status', 'pendente')
         .gte('data', inicioMes).lte('data', fimMes),
       supabase.from('pagamentos')
-        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes),
+        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', fimMes),
       supabase.from('pagamentos')
         .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr),
       supabase.from('pagamentos')
