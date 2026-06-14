@@ -71,6 +71,11 @@ html, body, #root {
     font-size: 16px !important;
   }
 
+  /* No celular os campos de data/hora nativos (16px) nao encolhem abaixo da
+     largura do texto; lado a lado a data estoura pra fora. Empilha um em cima
+     do outro (no desktop continuam lado a lado). */
+  .form-row-stack { flex-direction: column; }
+
   /* Resumo financeiro no celular: cards viram barras horizontais empilhadas
      (label+sub à esquerda, valor à direita). Desktop fica inalterado. */
   .fin-resumo-grid {

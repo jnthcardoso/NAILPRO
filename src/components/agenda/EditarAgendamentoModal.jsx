@@ -33,7 +33,7 @@ export default function EditarAgendamentoModal({
         )}
       </div>
 
-      <div style={s.row}>
+      <div className="form-row-stack" style={s.row}>
         <div style={{ ...s.field, flex: 1 }}>
           <label style={s.label}>Data</label>
           <input style={s.input} type="date" value={formEdit.data} onChange={e => setFormEdit({ ...formEdit, data: e.target.value })} />
