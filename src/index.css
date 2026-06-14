@@ -176,6 +176,14 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(217,160,184,0.25) !important;
 }
 
+/* Campos de data/hora: a borda/foco moram na DIV-barra (.lumen-input-bar);
+   o input interno fica sem moldura propria para nao duplicar o anel de foco. */
+.lumen-input-bar:focus-within {
+  border-color: var(--pink-mid);
+  box-shadow: 0 0 0 3px rgba(217,160,184,0.25);
+}
+.lumen-input-bar input:focus { box-shadow: none !important; }
+
 /* ── App Layout ──────────────────────────── */
 
 .app-root {

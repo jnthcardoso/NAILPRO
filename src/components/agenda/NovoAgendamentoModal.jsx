@@ -53,11 +53,15 @@ export default function NovoAgendamentoModal({
       <div className="form-row-stack" style={s.row}>
         <div style={{ ...s.field, flex: 1 }}>
           <label style={s.label}>Data</label>
-          <input style={s.input} type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} />
+          <div className="lumen-input-bar" style={s.dateBar}>
+            <input style={s.dateInput} type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} />
+          </div>
         </div>
         <div style={{ ...s.field, flex: 1 }}>
           <label style={s.label}>Horário</label>
-          <input style={s.input} type="time" value={form.horario} onChange={e => setForm({ ...form, horario: e.target.value })} />
+          <div className="lumen-input-bar" style={s.dateBar}>
+            <input style={s.dateInput} type="time" value={form.horario} onChange={e => setForm({ ...form, horario: e.target.value })} />
+          </div>
         </div>
       </div>
       <div style={s.row}>
