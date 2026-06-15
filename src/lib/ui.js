@@ -15,9 +15,6 @@ export const inputBase = {
   background: 'var(--surface)',
   color: 'var(--text)',
   fontFamily: 'inherit',
-  width: '100%',
-  boxSizing: 'border-box',
-  minWidth: 0,
 }
 
 // Rótulo de campo.

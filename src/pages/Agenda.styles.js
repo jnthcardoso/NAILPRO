@@ -82,11 +82,6 @@ export const s = {
   field: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: { fontSize: 11, fontWeight: 600, color: 'var(--text2)' },
   input: inputBase,
-  // Barra para campos nativos de data/hora: a borda/fundo ficam nesta DIV
-  // (sempre 100%); o <input> nativo fica dentro, transparente. Assim a barra
-  // nao encolhe mesmo quando o iOS dimensiona o campo de hora de forma estranha.
-  dateBar: { ...inputBase, padding: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' },
-  dateInput: { border: 'none', outline: 'none', background: 'transparent', width: '100%', minWidth: 0, padding: '10px 13px', fontFamily: 'inherit', fontSize: 14, color: 'var(--text)', boxSizing: 'border-box' },
   row: { display: 'flex', gap: 10 },
   btnPrimary: btnPrimaryBase,
   btnSecondary: btnSecondaryBase,

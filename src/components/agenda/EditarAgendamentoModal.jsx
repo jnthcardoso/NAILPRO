@@ -33,29 +33,25 @@ export default function EditarAgendamentoModal({
         )}
       </div>
 
-      <div className="form-row-stack" style={s.row}>
+      <div style={s.row}>
         <div style={{ ...s.field, flex: 1 }}>
           <label style={s.label}>Data</label>
-          <div className="lumen-input-bar" style={s.dateBar}>
-            <input style={s.dateInput} type="date" value={formEdit.data} onChange={e => setFormEdit({ ...formEdit, data: e.target.value })} />
-          </div>
+          <input style={s.input} type="date" value={formEdit.data} onChange={e => setFormEdit({ ...formEdit, data: e.target.value })} />
         </div>
         <div style={{ ...s.field, flex: 1 }}>
           <label style={s.label}>Horário</label>
-          <div className="lumen-input-bar" style={s.dateBar}>
-            <input style={s.dateInput} type="time" value={formEdit.horario} onChange={e => setFormEdit({ ...formEdit, horario: e.target.value })} />
-          </div>
+          <input style={s.input} type="time" value={formEdit.horario} onChange={e => setFormEdit({ ...formEdit, horario: e.target.value })} />
         </div>
       </div>
 
       <div style={s.row}>
-        <div style={{ ...s.field, flex: 1 }}>
+        <div style={{ ...s.field, flex: 1, minWidth: 0 }}>
           <label style={s.label}>Valor (R$)</label>
-          <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={formEdit.valor} onChange={e => setFormEdit({ ...formEdit, valor: e.target.value })} />
+          <input style={{ ...s.input, width: '100%', fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={formEdit.valor} onChange={e => setFormEdit({ ...formEdit, valor: e.target.value })} />
         </div>
-        <div style={{ ...s.field, flex: 1 }}>
+        <div style={{ ...s.field, flex: 1, minWidth: 0 }}>
           <label style={s.label}>Status</label>
-          <select style={s.input} value={formEdit.status} onChange={e => setFormEdit({ ...formEdit, status: e.target.value })}>
+          <select style={{ ...s.input, width: '100%' }} value={formEdit.status} onChange={e => setFormEdit({ ...formEdit, status: e.target.value })}>
             <option value="pendente">Aguardando</option>
             <option value="confirmado">Confirmada</option>
             <option value="realizado">Realizado</option>

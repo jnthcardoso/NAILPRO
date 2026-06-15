@@ -71,11 +71,6 @@ html, body, #root {
     font-size: 16px !important;
   }
 
-  /* No celular os campos de data/hora nativos (16px) nao encolhem abaixo da
-     largura do texto; lado a lado a data estoura pra fora. Empilha um em cima
-     do outro (no desktop continuam lado a lado). */
-  .form-row-stack { flex-direction: column; }
-
   /* Resumo financeiro no celular: cards viram barras horizontais empilhadas
      (label+sub à esquerda, valor à direita). Desktop fica inalterado. */
   .fin-resumo-grid {
@@ -152,20 +147,6 @@ button { font-family: var(--font); cursor: pointer; border: none; }
 input, select, textarea { font-family: var(--font); }
 a { text-decoration: none; color: inherit; }
 
-/* iOS: campos nativos de data/hora ignoram width:100% e usam uma largura
-   intrinseca grande, estourando o container. Resetar a aparencia faz eles
-   respeitarem a largura do campo (continuam abrindo o seletor ao tocar). */
-input[type="date"], input[type="time"] {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;      /* iOS: sem isso, o campo VAZIO encolhe em vez de ocupar 100% */
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-input[type="date"]::-webkit-date-and-time-value,
-input[type="time"]::-webkit-date-and-time-value { text-align: left; }
-
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -175,14 +156,6 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--pink-mid) !important;
   box-shadow: 0 0 0 3px rgba(217,160,184,0.25) !important;
 }
-
-/* Campos de data/hora: a borda/foco moram na DIV-barra (.lumen-input-bar);
-   o input interno fica sem moldura propria para nao duplicar o anel de foco. */
-.lumen-input-bar:focus-within {
-  border-color: var(--pink-mid);
-  box-shadow: 0 0 0 3px rgba(217,160,184,0.25);
-}
-.lumen-input-bar input:focus { box-shadow: none !important; }
 
 /* ── App Layout ──────────────────────────── */
 
