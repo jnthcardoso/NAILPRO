@@ -242,8 +242,8 @@ export default function Financeiro() {
   const [filtro, setFiltro] = useState('todos')
   const [periodoSel, setPeriodoSel] = useState(new Date())
   const [rangeMode, setRangeMode] = useState('mes') // 'mes' | 'custom'
-  const [customInicio, setCustomInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'))
-  const [customFim, setCustomFim] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [customInicio, setCustomInicio] = useState('') // vazios: o usuario escolhe
+  const [customFim, setCustomFim] = useState('')
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
