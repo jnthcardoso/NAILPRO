@@ -187,8 +187,11 @@ export default function Configuracoes() {
       return
     }
     setSaving(true)
-    
-    const { error: configError } = await supabase.from('configuracoes').update({ ...form }).eq('salao_id', salaoId)
+
+    // slug vazio precisa virar NULL: a coluna tem índice único e '' (string vazia)
+    // colide entre todos os salões sem link público. NULL pode repetir à vontade.
+    const payload = { ...form, slug: form.slug?.trim() || null }
+    const { error: configError } = await supabase.from('configuracoes').update(payload).eq('salao_id', salaoId)
     if (!configError && form.nome_salao && salaoId) {
       await supabase.from('saloes').update({ nome: form.nome_salao }).eq('id', salaoId)
     }
@@ -902,12 +905,26 @@ export default function Configuracoes() {
         <div style={{ marginTop: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>Alterar senha</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Campo de usuário oculto: dá ao navegador um alvo de "usuário" dentro
+                do bloco de senha, para ele não autopreencher o e-mail no input de
+                serviços nem oferecer "salvar senha" ao digitar um serviço. */}
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={user?.email || ''}
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{ display: 'none' }}
+            />
             <input
               style={s.input}
               type="password"
               placeholder="Senha atual"
               value={senhaAtual}
               onChange={e => setSenhaAtual(e.target.value)}
+              autoComplete="current-password"
             />
             <input
               style={s.input}
@@ -915,6 +932,7 @@ export default function Configuracoes() {
               placeholder="Nova senha (mín. 6 caracteres)"
               value={novaSenha}
               onChange={e => setNovaSenha(e.target.value)}
+              autoComplete="new-password"
             />
             <input
               style={s.input}
@@ -922,6 +940,7 @@ export default function Configuracoes() {
               placeholder="Confirmar nova senha"
               value={confirmaSenha}
               onChange={e => setConfirmaSenha(e.target.value)}
+              autoComplete="new-password"
             />
             {senhaMsg && (
               <div style={{ fontSize: 12, fontWeight: 600, color: senhaMsg.tipo === 'ok' ? 'var(--green)' : 'var(--red)' }}>
