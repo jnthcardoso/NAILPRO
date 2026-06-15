@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react'
 import { s } from '../../pages/Agenda.styles'
 import { STATUS, temPagamentoPendente, resumoPagamento, PAG_PENDENTE_COR, PAG_PENDENTE_BG } from '../../pages/Agenda.constants'
 import { formatBRL } from '../../lib/formatters'
@@ -5,8 +6,23 @@ import { formatBRL } from '../../lib/formatters'
 // Cards de agendamento usados nas views da Agenda. Apresentacionais:
 // recebem o agendamento e um callback onSelect (abre o drawer de detalhe).
 
+const BLOQ_COR = '#94A3B8'
+const BLOQ_BG = '#F1F5F9'
+const bloqLabel = (ag) => ag.dia_inteiro ? 'Dia inteiro' : `${ag.horario?.slice(0, 5)}–${ag.horario_fim?.slice(0, 5)}`
+
 // Card compacto para view Semana
 export function CardCompacto({ ag, onSelect }) {
+  if (ag.tipo === 'bloqueio') {
+    return (
+      <div style={{ ...s.cardCompacto, borderLeftColor: BLOQ_COR, background: BLOQ_BG }} onClick={() => onSelect(ag)}>
+        <Lock size={12} color={BLOQ_COR} style={{ flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={s.cardCompactoNome}>Bloqueado</div>
+          <div style={s.cardCompactoServ}>{ag.dia_inteiro ? 'Dia inteiro' : bloqLabel(ag)}</div>
+        </div>
+      </div>
+    )
+  }
   const st = STATUS[ag.status] || STATUS.pendente
   const pend = temPagamentoPendente(ag)
   const cor = pend ? PAG_PENDENTE_COR : st.border
@@ -24,6 +40,21 @@ export function CardCompacto({ ag, onSelect }) {
 
 // Card completo para view Dia
 export function CardDia({ ag, onSelect }) {
+  if (ag.tipo === 'bloqueio') {
+    return (
+      <div style={{ ...s.card, borderLeftColor: BLOQ_COR, background: BLOQ_BG, cursor: 'pointer' }} onClick={() => onSelect(ag)}>
+        <div style={s.cardHeader}>
+          <div style={{ ...s.cardTime, color: BLOQ_COR, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Lock size={14} />{ag.dia_inteiro ? '' : ag.horario?.slice(0, 5)}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={s.cardName}>Bloqueado · {bloqLabel(ag)}</div>
+            <div style={s.cardService}>{ag.motivo || 'Indisponível para agendamento'}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
   const st = STATUS[ag.status] || STATUS.pendente
   const pag = resumoPagamento(ag)
   const pend = temPagamentoPendente(ag)

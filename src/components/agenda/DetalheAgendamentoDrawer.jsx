@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User } from 'lucide-react'
+import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User, Lock, Trash2 } from 'lucide-react'
 import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
 import { STATUS, resumoPagamento } from '../../pages/Agenda.constants'
@@ -20,8 +20,41 @@ function buildWhatsAppConfirm(ag) {
 // pagamento, edição, WhatsApp e cancelamento. Apresentacional: a lógica fica
 // no componente Agenda e chega via callbacks já compostos.
 export default function DetalheAgendamentoDrawer({
-  ag, onClose, onConfirmar, onRealizar, onCancelar, onEditar, onRegistrarPagamento,
+  ag, onClose, onConfirmar, onRealizar, onCancelar, onEditar, onRegistrarPagamento, onExcluirBloqueio,
 }) {
+  // Bloqueio de horário: detalhe simplificado, só com a opção de remover.
+  if (ag.tipo === 'bloqueio') {
+    const periodo = ag.dia_inteiro
+      ? 'Dia inteiro'
+      : `${ag.horario?.slice(0, 5)} às ${ag.horario_fim?.slice(0, 5)}`
+    return (
+      <Modal onClose={onClose} boxStyle={s.modal}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <Lock size={17} color="var(--text2)" />
+          <div style={{ fontSize: 17, fontWeight: 700 }}>Horário bloqueado</div>
+        </div>
+        <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, justifyContent: 'space-between' }}>
+            <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+              <Calendar size={14} color="var(--text3)" />
+              <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{dataBR(ag.data)} · {periodo}</span>
+            </span>
+            {ag.profissional?.nome && (
+              <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--pink)', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                <User size={12} />{ag.profissional.nome}
+              </span>
+            )}
+          </div>
+          {ag.motivo && <div style={{ fontSize: 12.5, color: 'var(--text3)', fontStyle: 'italic' }}>{ag.motivo}</div>}
+        </div>
+        <button style={{ ...s.btnSecondary, color: '#B91C1C', borderColor: '#FCA5A5' }} onClick={() => onExcluirBloqueio(ag.bloqueioId)}>
+          <Trash2 size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />Remover bloqueio
+        </button>
+        <button style={s.btnSecondary} onClick={onClose}>Fechar</button>
+      </Modal>
+    )
+  }
+
   const st = STATUS[ag.status] || STATUS.pendente
   const pag = resumoPagamento(ag)
   const waConfirm = buildWhatsAppConfirm(ag)

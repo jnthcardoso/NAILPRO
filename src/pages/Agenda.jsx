@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Plus, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Search, X, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -9,6 +9,7 @@ import { CardSkeleton } from '../components/common/Skeleton'
 import { s } from './Agenda.styles'
 import { VIEWS } from './Agenda.constants'
 import NovoAgendamentoModal from '../components/agenda/NovoAgendamentoModal'
+import BloqueioModal from '../components/agenda/BloqueioModal'
 import EditarAgendamentoModal from '../components/agenda/EditarAgendamentoModal'
 import PagamentoModal from '../components/agenda/PagamentoModal'
 import { ViewDia, ViewSemana, ViewMes, ViewBusca } from '../components/agenda/views'
@@ -56,6 +57,11 @@ export default function Agenda() {
   const [busca, setBusca] = useState('')
   const [resultados, setResultados] = useState([])
   const [buscando, setBuscando] = useState(false)
+  // ── Bloqueios de horário ──
+  const [bloqueios, setBloqueios] = useState([])
+  const [showBloqueio, setShowBloqueio] = useState(false)
+  const [savingBloqueio, setSavingBloqueio] = useState(false)
+  const [formBloqueio, setFormBloqueio] = useState({ data: format(new Date(), 'yyyy-MM-dd'), dia_inteiro: false, horario_inicio: '12:00', horario_fim: '13:00', motivo: '', profissional_id: '' })
 
   const buscaAtiva = busca.trim().length >= 2
 
@@ -149,6 +155,19 @@ export default function Agenda() {
     setLoadingAgenda(false)
     if (error) { erro(traduzErro(error, 'Não foi possível carregar a agenda.')); return }
     setAgendamentos(data || [])
+    loadBloqueios(inicio, fim)
+  }
+
+  async function loadBloqueios(inicio, fim) {
+    let q = supabase
+      .from('agenda_bloqueios')
+      .select('*, profissional:salao_membros(id, nome)')
+      .eq('salao_id', salaoId)
+      .gte('data', inicio).lte('data', fim)
+    // Com filtro por profissional, mostra os dela + os do salão inteiro (sem profissional).
+    if (filtroProf) q = q.or(`profissional_id.eq.${filtroProf},profissional_id.is.null`)
+    const { data } = await q.order('data').order('horario_inicio')
+    setBloqueios(data || [])
   }
 
   async function loadClientes() {
@@ -165,6 +184,54 @@ export default function Agenda() {
   async function loadServicosPadrao() {
     const { data } = await supabase.from('configuracoes').select('servicos_padrao').eq('salao_id', salaoId).maybeSingle()
     if (data?.servicos_padrao?.length) setServicosPadrao(data.servicos_padrao)
+  }
+
+  function abrirBloqueio() {
+    setFormBloqueio({ data: format(dataSel, 'yyyy-MM-dd'), dia_inteiro: false, horario_inicio: '12:00', horario_fim: '13:00', motivo: '', profissional_id: '' })
+    setShowBloqueio(true)
+  }
+
+  async function salvarBloqueio() {
+    const f = formBloqueio
+    if (!f.data) { erro('Escolha a data do bloqueio.'); return }
+    if (!f.dia_inteiro) {
+      if (!f.horario_inicio || !f.horario_fim) { erro('Informe início e fim do bloqueio.'); return }
+      if (f.horario_fim <= f.horario_inicio) { erro('O fim precisa ser depois do início.'); return }
+    }
+    // Profissional só bloqueia a própria agenda; dona escolhe (vazio = salão inteiro).
+    const profId = isProfissional ? membroId : (f.profissional_id || null)
+    setSavingBloqueio(true)
+    const { error: insErr } = await supabase.from('agenda_bloqueios').insert({
+      user_id: user.id,
+      salao_id: salaoId,
+      profissional_id: profId,
+      data: f.data,
+      dia_inteiro: f.dia_inteiro,
+      horario_inicio: f.dia_inteiro ? null : f.horario_inicio + ':00',
+      horario_fim: f.dia_inteiro ? null : f.horario_fim + ':00',
+      motivo: f.motivo?.trim() || null,
+    })
+    setSavingBloqueio(false)
+    if (insErr) { erro(traduzErro(insErr, 'Não foi possível criar o bloqueio.')); return }
+    setShowBloqueio(false)
+    sucesso('Horário bloqueado')
+    loadAgendamentos()
+  }
+
+  async function excluirBloqueio(id) {
+    const ok = await confirmar({
+      titulo: 'Remover bloqueio?',
+      mensagem: 'O período volta a ficar disponível para agendamentos.',
+      confirmarLabel: 'Remover',
+      cancelarLabel: 'Voltar',
+      tipo: 'perigo',
+    })
+    if (!ok) return
+    const { error: delErr } = await supabase.from('agenda_bloqueios').delete().eq('id', id).eq('salao_id', salaoId)
+    if (delErr) { erro(traduzErro(delErr, 'Não foi possível remover o bloqueio.')); return }
+    setAgDetalhe(null)
+    sucesso('Bloqueio removido')
+    loadAgendamentos()
   }
 
   function showGoogleMsg(msg, tipo = 'info') {
@@ -241,6 +308,15 @@ export default function Agenda() {
 
     // profissional que vai realizar (profissional só agenda pra si)
     const profId = isProfissional ? membroId : (form.profissional_id || membroId)
+
+    // ── Aviso (não trava) se cair sobre um bloqueio ──
+    const hm = (t) => { const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m }
+    const sobreBloqueio = bloqueios.some(b =>
+      b.data === form.data &&
+      (b.profissional_id == null || b.profissional_id === profId) &&
+      (b.dia_inteiro || (hm(form.horario) >= hm(b.horario_inicio) && hm(form.horario) < hm(b.horario_fim)))
+    )
+    if (sobreBloqueio) aviso('Atenção: esse horário está dentro de um bloqueio — o agendamento será criado mesmo assim.')
 
     // ── Detecção de conflito de horário (por profissional) ──
     let cq = supabase
@@ -493,9 +569,25 @@ export default function Agenda() {
   }
 
   // Lista base já filtrada por status de pagamento (alimenta as views de calendário)
-  const agendamentosBase = filtroPag === 'todos'
+  const agsFiltrados = filtroPag === 'todos'
     ? agendamentos
     : agendamentos.filter(a => pagState(a) === filtroPag)
+  // Bloqueios entram na mesma lista das views (sempre visíveis — não dependem do
+  // filtro de pagamento). Recebem tipo 'bloqueio' para os cards os renderizarem
+  // de forma diferente (faixa cinza com cadeado).
+  const bloqueiosItens = bloqueios.map(b => ({
+    id: 'bloq-' + b.id,
+    bloqueioId: b.id,
+    tipo: 'bloqueio',
+    data: b.data,
+    horario: b.dia_inteiro ? null : b.horario_inicio,
+    horario_fim: b.horario_fim,
+    dia_inteiro: b.dia_inteiro,
+    motivo: b.motivo,
+    profissional: b.profissional,
+  }))
+  const hmSort = (t) => { if (!t) return -1; const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m }
+  const agendamentosBase = [...agsFiltrados, ...bloqueiosItens].sort((a, b) => hmSort(a.horario) - hmSort(b.horario))
 
   return (
     <div style={s.page}>
@@ -551,6 +643,15 @@ export default function Agenda() {
         </div>
       )}
 
+      {!buscaAtiva && (
+        <button
+          onClick={abrirBloqueio}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start', background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 4 }}
+        >
+          <Lock size={13} /> Bloquear horário
+        </button>
+      )}
+
       {loadingAgenda && !buscaAtiva ? <CardSkeleton count={4} /> : buscaAtiva ? (
         <ViewBusca buscando={buscando} resultados={resultados} busca={busca} onSelect={setAgDetalhe} />
       ) : (
@@ -582,6 +683,7 @@ export default function Agenda() {
       {agDetalhe && (
         <DetalheAgendamentoDrawer
           ag={agDetalhe}
+          onExcluirBloqueio={excluirBloqueio}
           onClose={() => setAgDetalhe(null)}
           onConfirmar={() => { atualizarStatus(agDetalhe, 'confirmado'); setAgDetalhe(null) }}
           onRealizar={() => { atualizarStatus(agDetalhe, 'realizado'); setAgDetalhe(null) }}
@@ -650,6 +752,19 @@ export default function Agenda() {
           pagModalObrigatorio={pagModalObrigatorio}
           onSalvar={salvarPagamento}
           onFechar={fecharPagModal}
+        />
+      )}
+
+      {/* ── Modal de bloqueio de horário ────── */}
+      {showBloqueio && (
+        <BloqueioModal
+          formBloqueio={formBloqueio}
+          setFormBloqueio={setFormBloqueio}
+          profissionais={profissionais}
+          gerenciaTudo={gerenciaTudo}
+          saving={savingBloqueio}
+          onSalvar={salvarBloqueio}
+          onCancelar={() => setShowBloqueio(false)}
         />
       )}
 

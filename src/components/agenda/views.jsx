@@ -120,6 +120,7 @@ export function ViewMes({ agendamentosBase, dataSel, diaSelecionadoMes, setDiaSe
                   agsDia.length > 0 && (
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
                       {agsDia.slice(0, 3).map((ag, i) => {
+                        if (ag.tipo === 'bloqueio') return <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8', display: 'block', flexShrink: 0 }} />
                         const st = STATUS[ag.status] || STATUS.pendente
                         const cor = temPagamentoPendente(ag) ? PAG_PENDENTE_COR : st.border
                         return <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: cor, display: 'block', flexShrink: 0 }} />
@@ -133,6 +134,7 @@ export function ViewMes({ agendamentosBase, dataSel, diaSelecionadoMes, setDiaSe
                   /* Desktop: text cards */
                   <>
                     {agsDia.slice(0, 2).map((ag, i) => {
+                      if (ag.tipo === 'bloqueio') return <div key={i} style={{ ...s.calEvent, background: '#F1F5F9', color: '#64748B' }}>🔒 {ag.dia_inteiro ? 'Dia todo' : ag.horario?.slice(0, 5)}</div>
                       const st = STATUS[ag.status] || STATUS.pendente
                       const pend = temPagamentoPendente(ag)
                       return <div key={i} style={{ ...s.calEvent, background: pend ? PAG_PENDENTE_BG : st.bg, color: pend ? PAG_PENDENTE_COR : st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>

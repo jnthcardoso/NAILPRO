@@ -55,6 +55,8 @@ export default function AgendaPublica() {
   })
   const [ocupadosPeriodo, setOcupadosPeriodo] = useState({})
   const [ocupadosCarregados, setOcupadosCarregados] = useState(false)
+  const [bloqueiosDia, setBloqueiosDia] = useState([])      // bloqueios do dia selecionado
+  const [bloqueiosPeriodo, setBloqueiosPeriodo] = useState({}) // mapa dataStr -> [bloqueios] do mês
 
   useEffect(() => { loadConfig() }, [slug])
   useEffect(() => { if (dataSel && config) carregarSlotsOcupados() }, [dataSel, profSel])
@@ -109,6 +111,13 @@ export default function AgendaPublica() {
     // que a cliente escolha um horário ja ocupado e so descubra ao confirmar).
     if (error) { toastErro('Não foi possível carregar os horários. Tente novamente.'); return }
     setSlotsOcupados(data?.map(a => a.horario.slice(0, 5)) || [])
+
+    // Bloqueios do dia (compromissos pessoais / dia inteiro) — somem dos horários.
+    const diaStr = format(dataSel, 'yyyy-MM-dd')
+    const { data: blocks } = await supabase.rpc('agenda_publica_bloqueios_periodo', {
+      p_slug: slug, p_inicio: diaStr, p_fim: diaStr, p_profissional_id: profSel || null,
+    })
+    setBloqueiosDia(blocks || [])
   }
 
   async function carregarOcupadosMes() {
@@ -127,6 +136,17 @@ export default function AgendaPublica() {
     })
     setOcupadosPeriodo(mapa)
     setOcupadosCarregados(true)
+
+    // Bloqueios do mês (para cinzar dias com bloqueio de dia inteiro no calendário).
+    const { data: blocks } = await supabase.rpc('agenda_publica_bloqueios_periodo', {
+      p_slug: slug, p_inicio: inicio, p_fim: fim, p_profissional_id: profSel || null,
+    })
+    const mapaBloq = {}
+    ;(blocks || []).forEach(b => {
+      if (!mapaBloq[b.data]) mapaBloq[b.data] = []
+      mapaBloq[b.data].push(b)
+    })
+    setBloqueiosPeriodo(mapaBloq)
   }
 
   function novoAgendamento() {
@@ -192,11 +212,24 @@ export default function AgendaPublica() {
   const hojeStr = format(new Date(), 'yyyy-MM-dd')
   const agoraMin = new Date().getHours() * 60 + new Date().getMinutes()
 
-  // Horários livres de um dia: tira os ocupados e, se for hoje, os que já passaram.
-  function slotsLivres(diaStr, ocupados) {
+  const horaMin = (t) => { const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m }
+  // Um horário está bloqueado se cair num bloqueio de dia inteiro ou dentro de um
+  // intervalo bloqueado [início, fim) daquele dia.
+  function slotBloqueado(slot, blocks) {
+    if (!blocks || blocks.length === 0) return false
+    const sm = horaMin(slot)
+    return blocks.some(b =>
+      b.dia_inteiro ||
+      (b.horario_inicio && b.horario_fim && sm >= horaMin(b.horario_inicio) && sm < horaMin(b.horario_fim))
+    )
+  }
+
+  // Horários livres de um dia: tira os ocupados, os bloqueados e, se for hoje, os que já passaram.
+  function slotsLivres(diaStr, ocupados, blocks) {
     const ehHoje = diaStr === hojeStr
     return todosSlots.filter(slot => {
       if (ocupados.has(slot)) return false
+      if (slotBloqueado(slot, blocks)) return false
       if (ehHoje) {
         const [h, m] = slot.split(':').map(Number)
         if (h * 60 + m <= agoraMin) return false
@@ -212,7 +245,7 @@ export default function AgendaPublica() {
     // Já carregou a ocupação do mês? Esconde dias sem nenhum horário livre.
     if (ocupadosCarregados) {
       const dStr = format(dia, 'yyyy-MM-dd')
-      if (slotsLivres(dStr, ocupadosPeriodo[dStr] || new Set()).length === 0) return false
+      if (slotsLivres(dStr, ocupadosPeriodo[dStr] || new Set(), bloqueiosPeriodo[dStr] || []).length === 0) return false
     }
     return true
   }
@@ -220,7 +253,8 @@ export default function AgendaPublica() {
   // Horários do dia selecionado (ocupação "fresca" + remove passados se for hoje).
   const slotsDisponiveis = slotsLivres(
     dataSel ? format(dataSel, 'yyyy-MM-dd') : '',
-    new Set(slotsOcupados)
+    new Set(slotsOcupados),
+    bloqueiosDia
   )
 
   // Navegação do calendário: do mês atual até 3 meses à frente.
