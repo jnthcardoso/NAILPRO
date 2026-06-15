@@ -160,6 +160,16 @@ a { text-decoration: none; color: inherit; }
   .form-row-stack { flex-direction: column; }
 }
 
+/* No computador, filtros de Receitas ocupam a largura toda (igual Despesas). */
+@media (min-width: 769px) {
+  .fin-filtros-receita > button { flex: 1; padding-top: 7px; padding-bottom: 7px; font-size: 12px; }
+}
+
+/* No celular, filtros de Despesas ficam so com o texto (sem emoji na frente). */
+@media (max-width: 768px) {
+  .filtro-emoji { display: none; }
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }

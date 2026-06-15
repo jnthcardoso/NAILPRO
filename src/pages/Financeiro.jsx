@@ -829,7 +829,7 @@ export default function Financeiro() {
             </button>
           </div>
 
-          <div style={s.filtros}>
+          <div style={s.filtros} className="fin-filtros-receita">
             {['todos', 'pago', 'pendente'].map(f => (
               <button key={f} style={{ ...s.filtroBtn, ...(filtro === f ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f)}>
                 {f === 'todos' ? 'Todos' : f === 'pago' ? 'Pagos' : 'Pendentes'}
@@ -933,13 +933,13 @@ export default function Financeiro() {
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
             {[
-              { id: 'todas', label: 'Todas' },
-              { id: 'recorrentes', label: '🔁 Recorrentes' },
-              { id: 'preencher', label: '⚠️ A preencher' },
+              { id: 'todas', emoji: '', label: 'Todas' },
+              { id: 'recorrentes', emoji: '🔁', label: 'Recorrentes' },
+              { id: 'preencher', emoji: '⚠️', label: 'A preencher' },
             ].map(f => (
               <button key={f.id} onClick={() => setFiltroDespesa(f.id)}
                 style={{ ...s.modoTab, ...(filtroDespesa === f.id ? s.modoTabAtivo : {}) }}>
-                {f.label}
+                {f.emoji && <span className="filtro-emoji">{f.emoji} </span>}{f.label}
               </button>
             ))}
           </div>
