@@ -1015,7 +1015,7 @@ export default function Financeiro() {
                 </select>
               </div>
             </div>
-            <div style={s.row}>
+            <div className="form-row-stack" style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Status</label>
                 <select style={s.input} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
@@ -1047,7 +1047,7 @@ export default function Financeiro() {
                 {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
               </select>
             </div>
-            <div style={s.row}>
+            <div className="form-row-stack" style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Valor (R$){formDespesa.recorrente && formDespesa.valor_variavel ? '' : ' *'}</label>
                 <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder={formDespesa.recorrente && formDespesa.valor_variavel ? 'pode deixar em branco' : '0,00'} value={formDespesa.valor} onChange={e => setFormDespesa({ ...formDespesa, valor: e.target.value })} />

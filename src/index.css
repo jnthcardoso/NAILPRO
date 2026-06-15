@@ -154,6 +154,12 @@ a { text-decoration: none; color: inherit; }
   .fin-range-inputs { flex-direction: column; flex-basis: 100%; min-width: 0; }
 }
 
+/* Linhas de 2 colunas com campo de data: no celular empilham (o campo de data
+   nativo nao cabe em meia largura a 16px e vaza). No computador ficam lado a lado. */
+@media (max-width: 768px) {
+  .form-row-stack { flex-direction: column; }
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
