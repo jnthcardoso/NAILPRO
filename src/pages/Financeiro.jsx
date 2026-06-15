@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
@@ -269,10 +269,14 @@ export default function Financeiro() {
   // Data de referência (para janela de 6 meses e relatório anual)
   const refDate = (rangeMode === 'custom' && customFim) ? new Date(customFim + 'T12:00:00') : periodoSel
 
+  // Mostra o esqueleto só na 1ª carga. Ao trocar mês/período, rebusca em
+  // segundo plano mantendo os números antigos na tela (sem "piscar" reload).
+  const primeiraCarga = useRef(true)
   useEffect(() => {
     if (!salaoId) return
-    setLoading(true)
-    Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas(), loadPrevisao()]).finally(() => setLoading(false))
+    if (primeiraCarga.current) setLoading(true)
+    Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas(), loadPrevisao()])
+      .finally(() => { setLoading(false); primeiraCarga.current = false })
   }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
   // Recarrega ao voltar o foco para a aba/janela: mantém os números frescos
@@ -590,7 +594,7 @@ export default function Financeiro() {
             <button style={s.navBtn} onClick={() => setPeriodoSel(addMonths(periodoSel, 1))}><ChevronRight size={18} /></button>
           </>
         ) : (
-          <div style={s.rangeInputs}>
+          <div className="fin-range-inputs">
             <div style={s.rangeField}>
               <label style={s.rangeLabel}>De</label>
               <input style={s.rangeInput} type="date" value={customInicio} onChange={e => setCustomInicio(e.target.value)} />
@@ -1010,8 +1014,7 @@ const s = {
   modoTabs: { display: 'flex', gap: 6, marginBottom: 10 },
   modoTab: { flex: 1, padding: '7px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   modoTabAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', fontWeight: 700 },
-  rangeInputs: { display: 'flex', flexDirection: 'column', gap: 8, flexBasis: '100%', width: '100%', minWidth: 0 },
-  rangeField: { display: 'flex', flexDirection: 'column', gap: 2, width: '100%', minWidth: 0 },
+  rangeField: { display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 },
   rangeLabel: { fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' },
   rangeInput: { border: '1px solid var(--border2)', borderRadius: 8, padding: '6px 8px', fontSize: 13, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box', minWidth: 0 },
   periodoNav: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)', flexWrap: 'wrap' },

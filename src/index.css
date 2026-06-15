@@ -147,6 +147,13 @@ button { font-family: var(--font); cursor: pointer; border: none; }
 input, select, textarea { font-family: var(--font); }
 a { text-decoration: none; color: inherit; }
 
+/* Período personalizado do Financeiro: De/Até lado a lado no computador;
+   no celular empilham (os campos nativos de data nao cabem em 50% a 16px). */
+.fin-range-inputs { display: flex; gap: 8px; flex: 1; min-width: 200px; flex-wrap: wrap; }
+@media (max-width: 768px) {
+  .fin-range-inputs { flex-direction: column; flex-basis: 100%; min-width: 0; }
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
