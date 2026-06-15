@@ -232,7 +232,7 @@ export default function Financeiro() {
   const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
-  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
+  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
   // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
@@ -240,6 +240,7 @@ export default function Financeiro() {
   const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
   const [savingPag, setSavingPag] = useState(false)
   const [filtro, setFiltro] = useState('todos')
+  const [filtroDespesa, setFiltroDespesa] = useState('todas') // 'todas' | 'recorrentes' | 'preencher'
   const [periodoSel, setPeriodoSel] = useState(new Date())
   const [rangeMode, setRangeMode] = useState('mes') // 'mes' | 'custom'
   const [customInicio, setCustomInicio] = useState('') // vazios: o usuario escolhe
@@ -366,43 +367,96 @@ export default function Financeiro() {
   }
 
   async function salvarDespesa() {
-    if (!formDespesa.descricao || !formDespesa.valor) {
+    // Recorrente variável: o valor pode ficar em branco (entra como "a preencher").
+    const ehVariavel = formDespesa.recorrente && formDespesa.valor_variavel
+    if (!formDespesa.descricao || (!formDespesa.valor && !ehVariavel)) {
       toastErro('Preencha descrição e valor')
       return
     }
+    if (formDespesa.recorrente && !editandoDespesa && !formDespesa.recorrente_ate) {
+      toastErro('Escolha até quando repetir a despesa')
+      return
+    }
     setSavingDespesa(true)
-    const dados = {
+    const baseValor = formDespesa.valor ? parseFloat(formDespesa.valor) : 0
+    // Profissional: despesa privada (sem vínculo ao salão, fora do DRE da dona).
+    const comum = {
       user_id: user.id,
-      // Profissional: despesa privada (sem vínculo ao salão, fora do DRE da dona).
       salao_id: gerenciaTudo ? salaoId : null,
       descricao: formDespesa.descricao,
       categoria: formDespesa.categoria,
-      valor: parseFloat(formDespesa.valor),
-      data: formDespesa.data,
       forma_pagamento: formDespesa.forma_pagamento || null,
-      recorrente: formDespesa.recorrente,
       observacoes: formDespesa.observacoes || null,
     }
-    // Escopo da edição igual ao da leitura: dona por salão, profissional por user_id.
-    const base = supabase.from('despesas')
-    const resp = editandoDespesa
-      ? await (gerenciaTudo
-          ? base.update(dados).eq('id', editandoDespesa.id).eq('salao_id', salaoId)
-          : base.update(dados).eq('id', editandoDespesa.id).eq('user_id', user.id))
-      : await base.insert(dados)
-    setSavingDespesa(false)
-    if (resp.error) {
-      toastErro(traduzErro(resp.error, 'Não foi possível salvar a despesa.'))
+
+    // EDIÇÃO: atualiza só ESTE lançamento (não regenera a série). Útil também
+    // pra preencher o valor de um card variável "a preencher".
+    if (editandoDespesa) {
+      const dados = {
+        ...comum,
+        valor: baseValor,
+        data: formDespesa.data,
+        recorrente: formDespesa.recorrente,
+        valor_variavel: formDespesa.valor_variavel,
+        valor_a_preencher: !!editandoDespesa.valor_a_preencher && baseValor === 0,
+      }
+      const base = supabase.from('despesas')
+      const resp = gerenciaTudo
+        ? await base.update(dados).eq('id', editandoDespesa.id).eq('salao_id', salaoId)
+        : await base.update(dados).eq('id', editandoDespesa.id).eq('user_id', user.id)
+      setSavingDespesa(false)
+      if (resp.error) { toastErro(traduzErro(resp.error, 'Não foi possível salvar a despesa.')); return }
+      sucesso('Despesa atualizada ✓')
+      fecharDespesaModal(); loadDespesas()
       return
     }
-    sucesso(editandoDespesa ? 'Despesa atualizada ✓' : 'Despesa registrada ✓')
-    fecharDespesaModal()
-    loadDespesas()
+
+    // CRIAÇÃO simples (não recorrente).
+    if (!formDespesa.recorrente) {
+      const { error } = await supabase.from('despesas').insert({
+        ...comum, valor: baseValor, data: formDespesa.data,
+        recorrente: false, valor_variavel: false, valor_a_preencher: false,
+      })
+      setSavingDespesa(false)
+      if (error) { toastErro(traduzErro(error, 'Não foi possível salvar a despesa.')); return }
+      sucesso('Despesa registrada ✓')
+      fecharDespesaModal(); loadDespesas()
+      return
+    }
+
+    // CRIAÇÃO recorrente: gera um lançamento por mês, no mesmo dia, até "repetir até".
+    //   - fixo:     todos os meses com o valor.
+    //   - variável: 1º mês usa o que foi digitado; meses seguintes entram em
+    //               branco (valor 0, "a preencher").
+    const recorrenciaId = crypto.randomUUID()
+    const inicio = new Date(formDespesa.data + 'T12:00:00')
+    const ate = new Date(formDespesa.recorrente_ate + 'T12:00:00')
+    const LIMITE_MESES = 36
+    const linhas = []
+    for (let i = 0; i < LIMITE_MESES; i++) {
+      const dt = addMonths(inicio, i)
+      if (dt > ate) break
+      const valorMes = i === 0 ? baseValor : (formDespesa.valor_variavel ? 0 : baseValor)
+      linhas.push({
+        ...comum,
+        data: format(dt, 'yyyy-MM-dd'),
+        valor: valorMes,
+        recorrente: true,
+        recorrencia_id: recorrenciaId,
+        valor_variavel: formDespesa.valor_variavel,
+        valor_a_preencher: formDespesa.valor_variavel && valorMes === 0,
+      })
+    }
+    const { error } = await supabase.from('despesas').insert(linhas)
+    setSavingDespesa(false)
+    if (error) { toastErro(traduzErro(error, 'Não foi possível criar a despesa recorrente.')); return }
+    sucesso(`Despesa recorrente criada (${linhas.length} ${linhas.length === 1 ? 'mês' : 'meses'}) ✓`)
+    fecharDespesaModal(); loadDespesas()
   }
 
   function abrirNovaDespesa() {
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '' })
     setShowDespesaModal(true)
   }
 
@@ -415,6 +469,8 @@ export default function Financeiro() {
       data: despesa.data,
       forma_pagamento: despesa.forma_pagamento || 'pix',
       recorrente: despesa.recorrente || false,
+      valor_variavel: despesa.valor_variavel || false,
+      recorrente_ate: '',
       observacoes: despesa.observacoes || '',
     })
     setShowDespesaModal(true)
@@ -423,7 +479,7 @@ export default function Financeiro() {
   function fecharDespesaModal() {
     setShowDespesaModal(false)
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, observacoes: '' })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '' })
   }
 
   async function excluirDespesa(despesa) {
@@ -434,6 +490,27 @@ export default function Financeiro() {
       tipo: 'perigo',
     })
     if (!ok) return
+
+    // Se faz parte de uma série recorrente, oferece apagar os próximos também.
+    if (despesa.recorrencia_id) {
+      const serie = await confirmar({
+        titulo: 'Apagar os próximos também?',
+        mensagem: 'Esta despesa se repete nos próximos meses. Quer apagar também os lançamentos seguintes (do mesmo dia em diante)?',
+        confirmarLabel: 'Sim, apagar os próximos',
+        cancelarLabel: 'Não, só esta',
+        tipo: 'perigo',
+      })
+      if (serie) {
+        const dq = supabase.from('despesas').delete()
+          .eq('recorrencia_id', despesa.recorrencia_id).gte('data', despesa.data)
+        const { error } = await (gerenciaTudo ? dq.eq('salao_id', salaoId) : dq.eq('user_id', user.id))
+        if (error) { toastErro(traduzErro(error, 'Não foi possível excluir os lançamentos.')); return }
+        sucesso('Despesas recorrentes excluídas (deste mês em diante)')
+        loadDespesas()
+        return
+      }
+    }
+
     const delQ = supabase.from('despesas').delete().eq('id', despesa.id)
     const { error } = await (gerenciaTudo ? delQ.eq('salao_id', salaoId) : delQ.eq('user_id', user.id))
     if (error) { toastErro(traduzErro(error, 'Não foi possível excluir a despesa.')); return }
@@ -576,6 +653,12 @@ export default function Financeiro() {
       return { label: c?.label || cat, valor, cor: c?.cor || '#888' }
     })
     .sort((a, b) => b.valor - a.valor)
+
+  // Filtro da lista de despesas (todas / só recorrentes / só "a preencher").
+  const despesasVisiveis = despesas.filter(d =>
+    filtroDespesa === 'recorrentes' ? d.recorrente
+    : filtroDespesa === 'preencher' ? d.valor_a_preencher
+    : true)
 
   return (
     <div style={s.page}>
@@ -841,16 +924,29 @@ export default function Financeiro() {
           <div style={s.colHeader}>
             <div style={s.colTitulo}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
-              Despesas ({despesas.length})
+              Despesas ({despesasVisiveis.length})
             </div>
             <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
               <Plus size={13} /> Despesa
             </button>
           </div>
 
-          {despesas.length === 0
-            ? <div style={s.empty}>Nenhuma despesa registrada</div>
-            : despesas.map(d => {
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+            {[
+              { id: 'todas', label: 'Todas' },
+              { id: 'recorrentes', label: '🔁 Recorrentes' },
+              { id: 'preencher', label: '⚠️ A preencher' },
+            ].map(f => (
+              <button key={f.id} onClick={() => setFiltroDespesa(f.id)}
+                style={{ ...s.modoTab, ...(filtroDespesa === f.id ? s.modoTabAtivo : {}) }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {despesasVisiveis.length === 0
+            ? <div style={s.empty}>Nenhuma despesa {filtroDespesa === 'recorrentes' ? 'recorrente' : filtroDespesa === 'preencher' ? 'a preencher' : 'registrada'}</div>
+            : despesasVisiveis.map(d => {
               const cat = CATEGORIAS.find(c => c.id === d.categoria)
               return (
                 <div key={d.id} style={s.finCard}>
@@ -861,11 +957,13 @@ export default function Financeiro() {
                     <div style={s.finNome}>{d.descricao}</div>
                     <div style={s.finSub}>
                       {cat?.label || d.categoria} · {format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                      {d.recorrente && ' · 🔁 mensal'}
+                      {d.recorrente && ' · 🔁 mensal'}{d.valor_variavel && ' (valor varia)'}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ ...s.finValor, color: '#B91C1C' }}>− {formatBRL(d.valor ?? 0)}</div>
+                    {d.valor_a_preencher
+                      ? <div style={{ ...s.finValor, color: '#B45309', fontSize: 12 }}>⚠️ a preencher</div>
+                      : <div style={{ ...s.finValor, color: '#B91C1C' }}>− {formatBRL(d.valor ?? 0)}</div>}
                     <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
                       <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
                         <Pencil size={11} />
@@ -951,8 +1049,8 @@ export default function Financeiro() {
             </div>
             <div style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Valor (R$) *</label>
-                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder="0,00" value={formDespesa.valor} onChange={e => setFormDespesa({ ...formDespesa, valor: e.target.value })} />
+                <label style={s.label}>Valor (R$){formDespesa.recorrente && formDespesa.valor_variavel ? '' : ' *'}</label>
+                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder={formDespesa.recorrente && formDespesa.valor_variavel ? 'pode deixar em branco' : '0,00'} value={formDespesa.valor} onChange={e => setFormDespesa({ ...formDespesa, valor: e.target.value })} />
               </div>
               <div style={{ ...s.field, flex: 1 }}>
                 <label style={s.label}>Data *</label>
@@ -965,10 +1063,42 @@ export default function Financeiro() {
                 {FORMAS_PAGAMENTO.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={formDespesa.recorrente} onChange={e => setFormDespesa({ ...formDespesa, recorrente: e.target.checked })} />
-              🔁 Despesa mensal recorrente
-            </label>
+            {editandoDespesa ? (
+              formDespesa.recorrente && (
+                <div style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px' }}>
+                  🔁 Faz parte de uma despesa recorrente{formDespesa.valor_variavel ? ' (valor varia todo mês)' : ''}. Editar aqui altera só este mês.
+                </div>
+              )
+            ) : (
+              <>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={formDespesa.recorrente} onChange={e => {
+                    const checked = e.target.checked
+                    setFormDespesa(f => ({
+                      ...f,
+                      recorrente: checked,
+                      valor_variavel: checked ? f.valor_variavel : false,
+                      recorrente_ate: checked && !f.recorrente_ate
+                        ? format(addMonths(new Date((f.data || format(new Date(), 'yyyy-MM-dd')) + 'T12:00:00'), 12), 'yyyy-MM-dd')
+                        : f.recorrente_ate,
+                    }))
+                  }} />
+                  🔁 Despesa mensal recorrente
+                </label>
+                {formDespesa.recorrente && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 12px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formDespesa.valor_variavel} onChange={e => setFormDespesa({ ...formDespesa, valor_variavel: e.target.checked })} />
+                      💧 O valor muda todo mês (futuros entram em branco pra preencher)
+                    </label>
+                    <div style={s.field}>
+                      <label style={s.label}>Repetir até *</label>
+                      <input style={s.input} type="date" value={formDespesa.recorrente_ate} onChange={e => setFormDespesa({ ...formDespesa, recorrente_ate: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             <div style={s.field}>
               <label style={s.label}>Observações</label>
               <input style={s.input} placeholder="Opcional..." value={formDespesa.observacoes} onChange={e => setFormDespesa({ ...formDespesa, observacoes: e.target.value })} />
