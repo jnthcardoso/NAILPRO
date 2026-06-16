@@ -129,12 +129,13 @@ export default function Agenda() {
       if (e.key !== 'Escape') return
       if (agDetalhe) { setAgDetalhe(null); return }
       if (editando) { setEditando(null); return }
+      if (showBloqueio) { setShowBloqueio(false); setEditandoBloqueio(null); return }
       if (showPagModal) { setShowPagModal(false); return }
       if (showModal) { setShowModal(false); return }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [agDetalhe, editando, showPagModal, showModal])
+  }, [agDetalhe, editando, showBloqueio, showPagModal, showModal])
 
   async function loadAgendamentos() {
     let inicio, fim
