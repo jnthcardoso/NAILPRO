@@ -24,7 +24,7 @@ export default function Configuracoes() {
   const { user, signOut } = useAuth()
   const { salaoId } = useSalao()
   const navigate = useNavigate()
-  const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial, temAcesso } = useAssinatura()
+  const { assinatura, plano, status, isTrialing, isActive, isExpired, trialAcabou, diasRestantesTrial, temAcesso, podeUsuariosAdicionais } = useAssinatura()
   const { sucesso, erro: toastErro } = useToast()
   const [showUpgrade, setShowUpgrade] = useState({ aberto: false, feature: '' })
   const [showExcluir, setShowExcluir] = useState(false)
@@ -33,8 +33,21 @@ export default function Configuracoes() {
   const [exportando, setExportando] = useState(false)
   const [permNotif, setPermNotif] = useState('default')
   const [tab, setTab] = useState('perfil')
+  // Nº de profissionais "escolhíveis" no link público — mesma regra da RPC
+  // agenda_publica_profissionais (ativo + papel dona/profissional + nome). Usado
+  // para só mostrar "Cliente escolhe a profissional" quando há equipe de verdade.
+  const [qtdEscolhiveis, setQtdEscolhiveis] = useState(1)
 
   useEffect(() => { setPermNotif(statusPermissao()) }, [])
+
+  useEffect(() => {
+    if (!salaoId) return
+    supabase.from('salao_membros')
+      .select('id', { count: 'exact', head: true })
+      .eq('salao_id', salaoId).eq('ativo', true)
+      .in('papel', ['dona', 'profissional'])
+      .then(({ count }) => setQtdEscolhiveis(count ?? 1))
+  }, [salaoId])
 
   async function ativarNotificacoes() {
     const r = await pedirPermissao()
@@ -692,8 +705,9 @@ export default function Configuracoes() {
           </div>
         </div>
 
-        {/* Deixar a cliente escolher a profissional (salões com equipe) */}
-        {form.agenda_publica_ativa && temAcesso('agendaPublica') && (
+        {/* Deixar a cliente escolher a profissional — só faz sentido com equipe
+            de verdade: plano Salão E mais de uma profissional escolhível. */}
+        {form.agenda_publica_ativa && temAcesso('agendaPublica') && podeUsuariosAdicionais && qtdEscolhiveis > 1 && (
           <div
             style={s.toggleRow}
             onClick={() => setForm(f => ({ ...f, agenda_publica_escolher_profissional: !f.agenda_publica_escolher_profissional }))}
