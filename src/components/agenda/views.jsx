@@ -134,7 +134,7 @@ export function ViewMes({ agendamentosBase, dataSel, diaSelecionadoMes, setDiaSe
                   /* Desktop: text cards */
                   <>
                     {agsDia.slice(0, 2).map((ag, i) => {
-                      if (ag.tipo === 'bloqueio') return <div key={i} style={{ ...s.calEvent, background: '#F1F5F9', color: '#64748B' }}>🔒 {ag.dia_inteiro ? 'Dia todo' : ag.horario?.slice(0, 5)}</div>
+                      if (ag.tipo === 'bloqueio') return <div key={i} style={{ ...s.calEvent, background: '#F1F5F9', color: '#64748B' }}>🔒 {ag.motivo || (ag.dia_inteiro ? 'Dia todo' : ag.horario?.slice(0, 5))}</div>
                       const st = STATUS[ag.status] || STATUS.pendente
                       const pend = temPagamentoPendente(ag)
                       return <div key={i} style={{ ...s.calEvent, background: pend ? PAG_PENDENTE_BG : st.bg, color: pend ? PAG_PENDENTE_COR : st.color }}>{ag.horario?.slice(0, 5)} {ag.clientes?.nome?.split(' ')[0]}</div>

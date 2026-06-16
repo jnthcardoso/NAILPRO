@@ -17,7 +17,7 @@ export function CardCompacto({ ag, onSelect }) {
       <div style={{ ...s.cardCompacto, borderLeftColor: BLOQ_COR, background: BLOQ_BG }} onClick={() => onSelect(ag)}>
         <Lock size={12} color={BLOQ_COR} style={{ flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={s.cardCompactoNome}>Bloqueado</div>
+          <div style={s.cardCompactoNome}>{ag.motivo || 'Bloqueado'}</div>
           <div style={s.cardCompactoServ}>{ag.dia_inteiro ? 'Dia inteiro' : bloqLabel(ag)}</div>
         </div>
       </div>
@@ -48,8 +48,8 @@ export function CardDia({ ag, onSelect }) {
             <Lock size={14} />{ag.dia_inteiro ? '' : ag.horario?.slice(0, 5)}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={s.cardName}>Bloqueado · {bloqLabel(ag)}</div>
-            <div style={s.cardService}>{ag.motivo || 'Indisponível para agendamento'}</div>
+            <div style={s.cardName}>{ag.motivo || 'Bloqueado'}</div>
+            <div style={s.cardService}>{bloqLabel(ag)}</div>
           </div>
         </div>
       </div>

@@ -1,8 +1,10 @@
-import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User, Lock, Trash2 } from 'lucide-react'
+import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User, Lock, Trash2, Repeat } from 'lucide-react'
 import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
 import { STATUS, resumoPagamento } from '../../pages/Agenda.constants'
 import { formatBRL, linkWhatsApp, dataBR } from '../../lib/formatters'
+
+const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 // Monta o link de WhatsApp com a mensagem de confirmação do horário.
 function buildWhatsAppConfirm(ag) {
@@ -20,18 +22,22 @@ function buildWhatsAppConfirm(ag) {
 // pagamento, edição, WhatsApp e cancelamento. Apresentacional: a lógica fica
 // no componente Agenda e chega via callbacks já compostos.
 export default function DetalheAgendamentoDrawer({
-  ag, onClose, onConfirmar, onRealizar, onCancelar, onEditar, onRegistrarPagamento, onExcluirBloqueio,
+  ag, onClose, onConfirmar, onRealizar, onCancelar, onEditar, onRegistrarPagamento, onExcluirBloqueio, onEditarBloqueio,
 }) {
-  // Bloqueio de horário: detalhe simplificado, só com a opção de remover.
+  // Bloqueio de horário: detalhe com editar e remover.
   if (ag.tipo === 'bloqueio') {
+    const serie = ag.bloqueio || ag
     const periodo = ag.dia_inteiro
       ? 'Dia inteiro'
       : `${ag.horario?.slice(0, 5)} às ${ag.horario_fim?.slice(0, 5)}`
+    const recorrente = serie.recorrencia === 'semanal'
+    const diasTxt = recorrente ? (serie.dias_semana || []).slice().sort().map(d => DIAS_CURTOS[d]).join(', ') : ''
+    const ateTxt = recorrente && serie.data_fim ? ` até ${dataBR(serie.data_fim)}` : ''
     return (
       <Modal onClose={onClose} boxStyle={s.modal}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <Lock size={17} color="var(--text2)" />
-          <div style={{ fontSize: 17, fontWeight: 700 }}>Horário bloqueado</div>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>{ag.motivo || 'Horário bloqueado'}</div>
         </div>
         <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, justifyContent: 'space-between' }}>
@@ -45,11 +51,24 @@ export default function DetalheAgendamentoDrawer({
               </span>
             )}
           </div>
-          {ag.motivo && <div style={{ fontSize: 12.5, color: 'var(--text3)', fontStyle: 'italic' }}>{ag.motivo}</div>}
+          {recorrente && (
+            <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 12.5, color: 'var(--text3)' }}>
+              <Repeat size={13} />Repete toda semana: {diasTxt}{ateTxt}
+            </div>
+          )}
         </div>
-        <button style={{ ...s.btnSecondary, color: '#B91C1C', borderColor: '#FCA5A5' }} onClick={() => onExcluirBloqueio(ag.bloqueioId)}>
-          <Trash2 size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />Remover bloqueio
-        </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: 1, justifyContent: 'center' }}
+            onClick={() => onEditarBloqueio(serie)}>
+            <Pencil size={13} />Editar
+          </button>
+          <button style={{ ...s.actionBtn, background: 'var(--surface2)', color: '#B91C1C', border: '1px solid #FCA5A5', flex: 1, justifyContent: 'center' }}
+            onClick={() => onExcluirBloqueio(ag.bloqueioId)}>
+            <Trash2 size={13} />Remover
+          </button>
+        </div>
+        {recorrente && <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 2 }}>Editar/remover vale para toda a repetição.</div>}
         <button style={s.btnSecondary} onClick={onClose}>Fechar</button>
       </Modal>
     )

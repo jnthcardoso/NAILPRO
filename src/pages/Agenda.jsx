@@ -16,7 +16,7 @@ import { ViewDia, ViewSemana, ViewMes, ViewBusca } from '../components/agenda/vi
 import DetalheAgendamentoDrawer from '../components/agenda/DetalheAgendamentoDrawer'
 import {
   format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
-  startOfWeek, endOfWeek, startOfMonth, endOfMonth
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { traduzErro } from '../lib/erros'
@@ -61,7 +61,9 @@ export default function Agenda() {
   const [bloqueios, setBloqueios] = useState([])
   const [showBloqueio, setShowBloqueio] = useState(false)
   const [savingBloqueio, setSavingBloqueio] = useState(false)
-  const [formBloqueio, setFormBloqueio] = useState({ data: format(new Date(), 'yyyy-MM-dd'), dia_inteiro: false, horario_inicio: '12:00', horario_fim: '13:00', motivo: '', profissional_id: '' })
+  const [editandoBloqueio, setEditandoBloqueio] = useState(null) // id quando editando
+  const BLOQUEIO_VAZIO = { data: format(new Date(), 'yyyy-MM-dd'), dia_inteiro: false, horario_inicio: '12:00', horario_fim: '13:00', motivo: '', profissional_id: '', recorrencia: 'nenhuma', dias_semana: [], data_fim: '' }
+  const [formBloqueio, setFormBloqueio] = useState(BLOQUEIO_VAZIO)
 
   const buscaAtiva = busca.trim().length >= 2
 
@@ -155,19 +157,40 @@ export default function Agenda() {
     setLoadingAgenda(false)
     if (error) { erro(traduzErro(error, 'Não foi possível carregar a agenda.')); return }
     setAgendamentos(data || [])
-    loadBloqueios(inicio, fim)
+    loadBloqueios(inicio)
   }
 
-  async function loadBloqueios(inicio, fim) {
-    let q = supabase
+  async function loadBloqueios(inicio) {
+    // Traz os recorrentes (todos) + os de data única a partir do início visível.
+    // O recorte por dia/profissional é feito ao expandir (expandirBloqueios).
+    const { data } = await supabase
       .from('agenda_bloqueios')
       .select('*, profissional:salao_membros(id, nome)')
       .eq('salao_id', salaoId)
-      .gte('data', inicio).lte('data', fim)
-    // Com filtro por profissional, mostra os dela + os do salão inteiro (sem profissional).
-    if (filtroProf) q = q.or(`profissional_id.eq.${filtroProf},profissional_id.is.null`)
-    const { data } = await q.order('data').order('horario_inicio')
+      .or(`recorrencia.eq.semanal,data.gte.${inicio}`)
     setBloqueios(data || [])
+  }
+
+  // Faixa de datas visível conforme a view atual (mesma lógica do loadAgendamentos).
+  function rangeVisivel() {
+    if (view === 'Dia') { const d = format(dataSel, 'yyyy-MM-dd'); return { inicio: d, fim: d } }
+    if (view === 'Semana') return {
+      inicio: format(startOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd'),
+      fim: format(endOfWeek(dataSel, { locale: ptBR }), 'yyyy-MM-dd'),
+    }
+    return { inicio: format(startOfMonth(dataSel), 'yyyy-MM-dd'), fim: format(endOfMonth(dataSel), 'yyyy-MM-dd') }
+  }
+
+  // Um bloqueio atinge a data (yyyy-MM-dd)? Considera recorrência semanal.
+  function blocoAtingeData(b, dataStr) {
+    if (b.recorrencia === 'semanal') {
+      const dow = new Date(dataStr + 'T12:00').getDay()
+      if (!(b.dias_semana || []).includes(dow)) return false
+      if (dataStr < b.data) return false
+      if (b.data_fim && dataStr > b.data_fim) return false
+      return true
+    }
+    return b.data === dataStr
   }
 
   async function loadClientes() {
@@ -187,34 +210,60 @@ export default function Agenda() {
   }
 
   function abrirBloqueio() {
-    setFormBloqueio({ data: format(dataSel, 'yyyy-MM-dd'), dia_inteiro: false, horario_inicio: '12:00', horario_fim: '13:00', motivo: '', profissional_id: '' })
+    setEditandoBloqueio(null)
+    setFormBloqueio({ ...BLOQUEIO_VAZIO, data: format(dataSel, 'yyyy-MM-dd') })
+    setShowBloqueio(true)
+  }
+
+  function abrirEditarBloqueio(b) {
+    setEditandoBloqueio(b.id)
+    setFormBloqueio({
+      data: b.data,
+      dia_inteiro: !!b.dia_inteiro,
+      horario_inicio: b.horario_inicio ? b.horario_inicio.slice(0, 5) : '12:00',
+      horario_fim: b.horario_fim ? b.horario_fim.slice(0, 5) : '13:00',
+      motivo: b.motivo || '',
+      profissional_id: b.profissional_id || '',
+      recorrencia: b.recorrencia || 'nenhuma',
+      dias_semana: b.dias_semana || [],
+      data_fim: b.data_fim || '',
+    })
+    setAgDetalhe(null)
     setShowBloqueio(true)
   }
 
   async function salvarBloqueio() {
     const f = formBloqueio
     if (!f.data) { erro('Escolha a data do bloqueio.'); return }
+    if (f.recorrencia === 'semanal' && (!f.dias_semana || f.dias_semana.length === 0)) {
+      erro('Escolha pelo menos um dia da semana para repetir.'); return
+    }
     if (!f.dia_inteiro) {
       if (!f.horario_inicio || !f.horario_fim) { erro('Informe início e fim do bloqueio.'); return }
       if (f.horario_fim <= f.horario_inicio) { erro('O fim precisa ser depois do início.'); return }
     }
     // Profissional só bloqueia a própria agenda; dona escolhe (vazio = salão inteiro).
     const profId = isProfissional ? membroId : (f.profissional_id || null)
-    setSavingBloqueio(true)
-    const { error: insErr } = await supabase.from('agenda_bloqueios').insert({
-      user_id: user.id,
-      salao_id: salaoId,
+    const payload = {
       profissional_id: profId,
       data: f.data,
       dia_inteiro: f.dia_inteiro,
       horario_inicio: f.dia_inteiro ? null : f.horario_inicio + ':00',
       horario_fim: f.dia_inteiro ? null : f.horario_fim + ':00',
       motivo: f.motivo?.trim() || null,
-    })
+      recorrencia: f.recorrencia,
+      dias_semana: f.recorrencia === 'semanal' ? f.dias_semana : null,
+      data_fim: f.recorrencia === 'semanal' && f.data_fim ? f.data_fim : null,
+    }
+    setSavingBloqueio(true)
+    const { error: opErr } = editandoBloqueio
+      ? await supabase.from('agenda_bloqueios').update(payload).eq('id', editandoBloqueio).eq('salao_id', salaoId)
+      : await supabase.from('agenda_bloqueios').insert({ ...payload, user_id: user.id, salao_id: salaoId })
     setSavingBloqueio(false)
-    if (insErr) { erro(traduzErro(insErr, 'Não foi possível criar o bloqueio.')); return }
+    if (opErr) { erro(traduzErro(opErr, 'Não foi possível salvar o bloqueio.')); return }
     setShowBloqueio(false)
-    sucesso('Horário bloqueado')
+    sucesso(editandoBloqueio ? 'Bloqueio atualizado' : 'Horário bloqueado')
+    setEditandoBloqueio(null)
     loadAgendamentos()
   }
 
@@ -312,7 +361,7 @@ export default function Agenda() {
     // ── Aviso (não trava) se cair sobre um bloqueio ──
     const hm = (t) => { const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m }
     const sobreBloqueio = bloqueios.some(b =>
-      b.data === form.data &&
+      blocoAtingeData(b, form.data) &&
       (b.profissional_id == null || b.profissional_id === profId) &&
       (b.dia_inteiro || (hm(form.horario) >= hm(b.horario_inicio) && hm(form.horario) < hm(b.horario_fim)))
     )
@@ -573,19 +622,31 @@ export default function Agenda() {
     ? agendamentos
     : agendamentos.filter(a => pagState(a) === filtroPag)
   // Bloqueios entram na mesma lista das views (sempre visíveis — não dependem do
-  // filtro de pagamento). Recebem tipo 'bloqueio' para os cards os renderizarem
-  // de forma diferente (faixa cinza com cadeado).
-  const bloqueiosItens = bloqueios.map(b => ({
-    id: 'bloq-' + b.id,
-    bloqueioId: b.id,
-    tipo: 'bloqueio',
-    data: b.data,
-    horario: b.dia_inteiro ? null : b.horario_inicio,
-    horario_fim: b.horario_fim,
-    dia_inteiro: b.dia_inteiro,
-    motivo: b.motivo,
-    profissional: b.profissional,
-  }))
+  // filtro de pagamento). Cada ocorrência (inclusive recorrentes) vira um item
+  // com tipo 'bloqueio' na data certa; os cards o renderizam diferente.
+  const { inicio: iniView, fim: fimView } = rangeVisivel()
+  const diasVisiveis = eachDayOfInterval({ start: new Date(iniView + 'T12:00'), end: new Date(fimView + 'T12:00') })
+  const bloqueiosItens = []
+  for (const b of bloqueios) {
+    if (filtroProf && b.profissional_id && b.profissional_id !== filtroProf) continue
+    for (const dia of diasVisiveis) {
+      const ds = format(dia, 'yyyy-MM-dd')
+      if (!blocoAtingeData(b, ds)) continue
+      bloqueiosItens.push({
+        id: `bloq-${b.id}-${ds}`,
+        bloqueioId: b.id,
+        bloqueio: b,
+        tipo: 'bloqueio',
+        data: ds,
+        horario: b.dia_inteiro ? null : b.horario_inicio,
+        horario_fim: b.horario_fim,
+        dia_inteiro: b.dia_inteiro,
+        motivo: b.motivo,
+        recorrencia: b.recorrencia,
+        profissional: b.profissional,
+      })
+    }
+  }
   const hmSort = (t) => { if (!t) return -1; const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m }
   const agendamentosBase = [...agsFiltrados, ...bloqueiosItens].sort((a, b) => hmSort(a.horario) - hmSort(b.horario))
 
@@ -684,6 +745,7 @@ export default function Agenda() {
         <DetalheAgendamentoDrawer
           ag={agDetalhe}
           onExcluirBloqueio={excluirBloqueio}
+          onEditarBloqueio={abrirEditarBloqueio}
           onClose={() => setAgDetalhe(null)}
           onConfirmar={() => { atualizarStatus(agDetalhe, 'confirmado'); setAgDetalhe(null) }}
           onRealizar={() => { atualizarStatus(agDetalhe, 'realizado'); setAgDetalhe(null) }}
@@ -763,8 +825,9 @@ export default function Agenda() {
           profissionais={profissionais}
           gerenciaTudo={gerenciaTudo}
           saving={savingBloqueio}
+          editando={!!editandoBloqueio}
           onSalvar={salvarBloqueio}
-          onCancelar={() => setShowBloqueio(false)}
+          onCancelar={() => { setShowBloqueio(false); setEditandoBloqueio(null) }}
         />
       )}
 
