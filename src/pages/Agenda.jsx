@@ -356,6 +356,19 @@ export default function Agenda() {
   async function salvarAgendamento() {
     if (!form.cliente_id || !form.horario || !form.servico || !form.data) return
 
+    // ── Aviso (não trava) se a data/hora já passou — pega erro de digitação,
+    // mas permite lançar atendimento retroativo de propósito. ──
+    if (new Date(`${form.data}T${form.horario}`) < new Date()) {
+      const ok = await confirmar({
+        titulo: 'Data no passado',
+        mensagem: 'Esse atendimento é de uma data passada. Confirma?',
+        confirmarLabel: 'Sim, confirmar',
+        cancelarLabel: 'Voltar',
+        tipo: 'aviso',
+      })
+      if (!ok) return
+    }
+
     // profissional que vai realizar (profissional só agenda pra si)
     const profId = isProfissional ? membroId : (form.profissional_id || membroId)
 
@@ -392,7 +405,10 @@ export default function Agenda() {
         .select('*, clientes(nome)')
         .single()
       if (insertError) {
-        erro('Erro ao salvar agendamento. Tente novamente.')
+        // 23505 = índice único de horário: alguém reservou nesse meio-tempo.
+        erro(insertError.code === '23505'
+          ? 'Esse horário acabou de ser reservado. Escolha outro.'
+          : 'Erro ao salvar agendamento. Tente novamente.')
         return
       }
       if (ag && googleConectado) {
@@ -461,7 +477,12 @@ export default function Agenda() {
         observacoes: formEdit.observacoes,
         profissional_id: profIdEdit,
       }).eq('id', editando.id)
-      if (updateError) { erro('Erro ao atualizar agendamento. Tente novamente.'); return }
+      if (updateError) {
+        erro(updateError.code === '23505'
+          ? 'Esse horário acabou de ser reservado. Escolha outro.'
+          : 'Erro ao atualizar agendamento. Tente novamente.')
+        return
+      }
 
       // Reflete a edição no Google Agenda (data/hora/serviço). Antes isso não
       // acontecia — o evento ficava no horário antigo. Best-effort, não trava o save.
