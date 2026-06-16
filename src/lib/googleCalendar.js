@@ -11,10 +11,22 @@ import { supabase } from './supabase'
 // ───────────────────────────────────────────────────────────────────────────
 
 async function chamar(action, payload = {}) {
-  const { data, error } = await supabase.functions.invoke('google-oauth', {
-    body: { action, ...payload },
-  })
+  const invocar = () => supabase.functions.invoke('google-oauth', { body: { action, ...payload } })
+
+  let { data, error } = await invocar()
+
+  // Token de sessão pode estar expirado/rotacionado (ex.: app aberto há horas, ou
+  // login em mais de uma aba). Nesse caso a função responde 401 — tentamos renovar
+  // a sessão e repetir UMA vez antes de desistir.
+  if (error && error.context?.status === 401) {
+    const { error: refErr } = await supabase.auth.refreshSession()
+    if (!refErr) ({ data, error } = await invocar())
+  }
+
   if (error) {
+    if (error.context?.status === 401) {
+      throw new Error('Sua sessão expirou. Saia e entre de novo no Lumen para conectar o Google.')
+    }
     let detalhe = ''
     try { const corpo = await error.context?.json(); detalhe = corpo?.error || '' } catch { /* ignora */ }
     throw new Error(detalhe || error.message || 'Falha na integração com o Google')

@@ -262,7 +262,7 @@ export default function Configuracoes() {
       await supabase.from('configuracoes').update({ google_conectado: true }).eq('salao_id', salaoId)
       setForm(f => ({ ...f, google_conectado: true }))
     } catch (e) {
-      setGoogleErro('Não foi possível conectar. Tente novamente.')
+      setGoogleErro(e?.message || 'Não foi possível conectar. Tente novamente.')
     } finally {
       setGoogleLoading(false)
     }
