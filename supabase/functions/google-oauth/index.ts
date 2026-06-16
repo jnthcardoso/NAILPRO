@@ -5,7 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 //
 //   GET  (com ?code=… &state=…)  -> Google redireciona pra cá após o consentimento.
 //        Troca o code pela chave-mestra (refresh_token), guarda na caixa-forte e
-//        REDIRECIONA o popup pra ${APP_URL}/?gcal=ok (o site fecha a janela).
+//        REDIRECIONA pra ${APP_URL}/app/configuracoes?gcal=ok (desktop: o popup
+//        fecha sozinho; celular: a tela de Configurações finaliza a conexão).
 //        Obs.: o Supabase força text/plain em respostas HTML do domínio .supabase.co
 //        (proteção anti-phishing), por isso a página que fecha o popup vive no app.
 //   POST {action:'auth-url'}    -> devolve a URL de consentimento do Google.
@@ -120,9 +121,11 @@ Deno.serve(async (req: Request) => {
 
     // ── 1) CALLBACK do Google (GET, sem JWT — quem chama é o navegador via Google) ──
     if (req.method === 'GET' && (url.searchParams.has('code') || url.searchParams.get('action') === 'callback')) {
-      // Redireciona o popup pro app (que serve HTML e fecha a janela sozinho).
+      // Volta pro app com ?gcal=ok|erro. No desktop (popup) o index.html fecha a
+      // janela sozinho; no celular (redirect na mesma aba) a tela de Configurações
+      // finaliza a conexão e cai já na aba certa.
       const fechar = (ok: boolean) =>
-        new Response(null, { status: 302, headers: { Location: `${APP_URL}/?gcal=${ok ? 'ok' : 'erro'}` } })
+        new Response(null, { status: 302, headers: { Location: `${APP_URL}/app/configuracoes?gcal=${ok ? 'ok' : 'erro'}` } })
 
       const code = url.searchParams.get('code')
       const state = url.searchParams.get('state') ?? ''

@@ -250,6 +250,25 @@ export default function Configuracoes() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [googleErro, setGoogleErro] = useState('')
 
+  // Retorno do Google no CELULAR (fluxo de redirect): a Edge Function devolve a
+  // aba para /app/configuracoes?gcal=ok|erro. Aqui finalizamos: marca conectado
+  // no banco, mostra na aba Integrações e limpa o parâmetro da URL.
+  useEffect(() => {
+    if (!salaoId) return
+    const params = new URLSearchParams(window.location.search)
+    if (!params.has('gcal')) return
+    const ok = params.get('gcal') === 'ok'
+    params.delete('gcal')
+    navigate({ pathname: '/app/configuracoes', search: params.toString() }, { replace: true })
+    setTab('integracoes')
+    if (ok) {
+      supabase.from('configuracoes').update({ google_conectado: true }).eq('salao_id', salaoId)
+        .then(() => { setForm(f => ({ ...f, google_conectado: true })); sucesso('Google Agenda conectado ✅') })
+    } else {
+      setGoogleErro('Não foi possível conectar o Google. Tente novamente.')
+    }
+  }, [salaoId])
+
   async function handleConectarGoogle() {
     if (!temAcesso('googleCalendar')) {
       setShowUpgrade({ aberto: true, feature: 'Google Calendar' })

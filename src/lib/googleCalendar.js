@@ -34,19 +34,34 @@ async function chamar(action, payload = {}) {
   return data
 }
 
-// Abre o consentimento do Google numa janela e resolve quando o servidor avisa
-// que guardou a chave-mestra (postMessage vindo do callback) ou a janela fecha.
+// Detecta celular/touch: nesses aparelhos o popup é quase sempre bloqueado
+// (o window.open vem depois de um await, fora do gesto do toque).
+function ehMobile() {
+  try {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+  } catch { return false }
+}
+
+// Abre o consentimento do Google e resolve quando o servidor avisa que guardou a
+// chave-mestra (postMessage vindo do callback) ou a janela fecha.
+// No celular, redireciona a própria aba (sem popup); ao voltar, a tela de
+// Configurações finaliza a conexão pelo parâmetro ?gcal=ok na URL.
 export function conectarGoogle() {
   return new Promise(async (resolve, reject) => {
     try {
       const { url } = await chamar('auth-url')
       if (!url) { reject(new Error('Não foi possível iniciar a conexão')); return }
 
+      // Celular: vai direto pro Google na mesma aba (popup não abre no toque).
+      if (ehMobile()) { window.location.assign(url); return }
+
       const w = 500, h = 640
       const left = window.screenX + (window.outerWidth - w) / 2
       const top = window.screenY + (window.outerHeight - h) / 2
       const popup = window.open(url, 'google-oauth', `width=${w},height=${h},left=${left},top=${top}`)
-      if (!popup) { reject(new Error('Permita pop-ups para conectar o Google')); return }
+      // Popup bloqueado também no desktop → cai no mesmo fluxo de redirecionar a aba.
+      if (!popup) { window.location.assign(url); return }
 
       let resolvido = false
       const finalizar = (ok) => {
