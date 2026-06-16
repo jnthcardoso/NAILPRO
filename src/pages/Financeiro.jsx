@@ -156,13 +156,15 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
   let despQ = supabase.from('despesas').select('*').gte('data', inicio).lte('data', fim)
   despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', userId)
 
-  const [{ data: pags }, { data: desps }] = await Promise.all([
+  const [{ data: pagsRaw }, { data: desps }] = await Promise.all([
     supabase.from('pagamentos')
-      .select('data, valor, status, forma, agendamentos(servico, clientes(nome))')
+      .select('data, valor, status, forma, agendamentos(servico, status, clientes(nome))')
       .eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio).lte('data', fim),
     despQ,
   ])
+  // Não conta dinheiro de atendimento cancelado (igual ao resto do Financeiro).
+  const pags = (pagsRaw || []).filter(p => p.agendamentos?.status !== 'cancelado')
 
   const doc = new jsPDF()
   doc.setFont('helvetica', 'bold')
@@ -298,16 +300,18 @@ export default function Financeiro() {
 
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
-    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
-    setPagamentos(data || [])
+    // Pagamento de atendimento CANCELADO não é receita (some do perfil da cliente
+    // pelo mesmo motivo). Avulso (sem agendamento) continua contando.
+    setPagamentos((data || []).filter(p => p.agendamentos?.status !== 'cancelado'))
 
     const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
     const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
     const { data: data6m } = await supabase.from('pagamentos')
-      .select('data, valor, status').eq('salao_id', salaoId).eq('status', 'pago')
+      .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
       .gte('data', inicio6m).lte('data', fim6m)
-    setPagamentos6m(data6m || [])
+    setPagamentos6m((data6m || []).filter(p => p.agendamentos?.status !== 'cancelado'))
   }
 
   // Previsão de receita: o que AINDA vai entrar (agendamentos pendentes/confirmados
@@ -357,7 +361,9 @@ export default function Financeiro() {
   async function salvarPagamento() {
     if (!form.valor) return
     setSaving(true)
-    const { error } = await supabase.from('pagamentos').insert({ ...form, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
+    // agendamento_id vem '' quando nenhum atendimento é escolhido (pagamento
+    // avulso). '' não é uuid válido → precisa virar null, senão o insert falha.
+    const { error } = await supabase.from('pagamentos').insert({ ...form, agendamento_id: form.agendamento_id || null, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
     setSaving(false)
     if (error) { toastErro(traduzErro(error, 'Não foi possível registrar o pagamento.')); return }
     setShowModal(false)

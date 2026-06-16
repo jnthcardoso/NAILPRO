@@ -96,7 +96,7 @@ export default function Home() {
     // Todas as consultas são independentes (só dependem do salaoId), então
     // disparamos em paralelo — o tempo passa a ser o da query mais lenta,
     // não o somatório de todas.
-    const [
+    let [
       { data: config },
       { data: metaAtual },
       { data: agendHoje },
@@ -126,14 +126,14 @@ export default function Home() {
         .eq('salao_id', salaoId).eq('data', ontem)
         .neq('status', 'cancelado'),
       supabase.from('pagamentos')
-        .select('valor').eq('salao_id', salaoId).eq('status', 'pendente')
+        .select('valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pendente')
         .gte('data', inicioMes).lte('data', fimMes),
       supabase.from('pagamentos')
-        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', fimMes),
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', fimMes),
       supabase.from('pagamentos')
-        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr),
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr),
       supabase.from('pagamentos')
-        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d),
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d),
       supabase.from('clientes')
         .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId),
       supabase.from('agendamentos')
@@ -157,9 +157,18 @@ export default function Home() {
             .eq('origem', 'publica').eq('status', 'pendente').gte('data', hoje)),
       // Receita do dia (hoje e ontem) = só dinheiro recebido (pagamentos pagos).
       supabase.from('pagamentos')
-        .select('data, valor').eq('salao_id', salaoId).eq('status', 'pago')
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
         .gte('data', ontem).lte('data', hoje),
     ])
+
+    // Pagamento de atendimento cancelado não é receita (mesma regra do Financeiro
+    // e do perfil da cliente). Avulso, sem agendamento, continua contando.
+    const semCancelado = (arr) => (arr || []).filter(p => p.agendamentos?.status !== 'cancelado')
+    pagPendentes = semCancelado(pagPendentes)
+    pagMes = semCancelado(pagMes)
+    pag7d = semCancelado(pag7d)
+    pag90d = semCancelado(pag90d)
+    pagDia = semCancelado(pagDia)
 
     // Config
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
