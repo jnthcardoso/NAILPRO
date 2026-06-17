@@ -15,7 +15,7 @@ import { s, tabs } from './Configuracoes.styles'
 import { conectarGoogle, desconectarGoogle } from '../lib/googleCalendar'
 import { traduzErro } from '../lib/erros'
 
-const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
+const SUGERIDOS = ['Manutenção', 'Alongamento gel', 'Fibra de vidro', 'Pedicure', 'Manicure', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento']
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const DURACOES = [30, 45, 60, 90, 120]
 
