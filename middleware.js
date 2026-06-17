@@ -16,11 +16,10 @@ const ROBOS_PREVIEW = /whatsapp|facebookexternalhit|facebot|twitterbot|telegramb
 export default function middleware(request) {
   const ua = request.headers.get('user-agent') || ''
   if (ROBOS_PREVIEW.test(ua)) {
-    // Sem og:image, og:title nem <title> → o WhatsApp não monta card nenhum.
-    return new Response(
-      '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="robots" content="noindex"></head><body></body></html>',
-      { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }
-    )
+    // Página vazia (200) ainda fazia o WhatsApp montar um card mínimo só com o
+    // domínio. Devolvendo 404 pro robô, ele desiste de montar QUALQUER card.
+    // (A cliente, no navegador normal, nunca vê isto — passa direto pro app.)
+    return new Response(null, { status: 404 })
   }
   // Usuário normal: segue o fluxo normal (a SPA carrega a tela de confirmação).
   return next()
