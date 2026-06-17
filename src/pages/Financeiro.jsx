@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
   TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
-  BarChart2, ListOrdered, CalendarClock, MessageCircle
+  BarChart2, ListOrdered, CalendarClock, MessageCircle, Check
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -564,6 +564,16 @@ export default function Financeiro() {
     loadPagamentos()
   }
 
+  // Marca que a cobrança foi enviada (1º clique no "Cobrar"). Atualiza a tela na
+  // hora (otimista) e grava a data no banco — igual ao "enviado" dos lembretes.
+  // Reenvios não re-gravam: o link do WhatsApp abre normalmente nos dois casos.
+  async function marcarCobrado(pag) {
+    if (pag.cobranca_enviada_em) return
+    const agora = new Date().toISOString()
+    setPagamentos(prev => prev.map(x => x.id === pag.id ? { ...x, cobranca_enviada_em: agora } : x))
+    await supabase.from('pagamentos').update({ cobranca_enviada_em: agora }).eq('id', pag.id).eq('salao_id', salaoId)
+  }
+
   // Abre o modal (igual ao da agenda) para confirmar um pendente como pago.
   function abrirConfirmarPago(pag) {
     setFormPag({ forma: pag.forma || 'pix', status: 'pago', valor: String(pag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
@@ -869,6 +879,7 @@ export default function Financeiro() {
               const tel = p.agendamentos?.clientes?.telefone
               // Cobrança só faz sentido em pendente com telefone válido.
               const podeCobrar = !pago && validarTelefone(tel)
+              const cobrado = !!p.cobranca_enviada_em
               const msgCobranca = aplicarVariaveis(cobranca.template, {
                 nome: p.agendamentos?.clientes?.nome || '',
                 salao: cobranca.nomeSalao,
@@ -893,12 +904,13 @@ export default function Financeiro() {
                     <div style={{ display: 'flex', gap: 5, marginTop: 3, justifyContent: 'flex-end' }}>
                       {podeCobrar && (
                         <a
-                          style={s.cobrarBtn}
+                          style={cobrado ? s.cobradoBtn : s.cobrarBtn}
                           href={linkWhatsApp(tel, msgCobranca)}
                           target="_blank" rel="noreferrer"
-                          title="Cobrar pelo WhatsApp"
+                          onClick={() => marcarCobrado(p)}
+                          title={cobrado ? 'Cobrança já enviada — toque para reenviar' : 'Cobrar pelo WhatsApp'}
                         >
-                          <MessageCircle size={11} /> Cobrar
+                          {cobrado ? <><Check size={11} /> Cobrado</> : <><MessageCircle size={11} /> Cobrar</>}
                         </a>
                       )}
                       <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? reverterParaPendente(p) : abrirConfirmarPago(p)}>
@@ -1235,6 +1247,7 @@ const s = {
   finValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700 },
   statusBtn: { fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 600, border: 'none', cursor: 'pointer', marginTop: 3 },
   cobrarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer', textDecoration: 'none' },
+  cobradoBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', textDecoration: 'none' },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
 import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
-import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify, formatCPF, validarCPF, validarTelefone, validarEmail } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, MSG_COBRANCA_PADRAO } from '../lib/mensagens'
@@ -78,6 +78,7 @@ export default function Configuracoes() {
     msg_retorno: MSG_RETORNO_PADRAO,
     msg_cobranca: MSG_COBRANCA_PADRAO,
     chave_pix: '',
+    chave_pix_tipo: 'celular',
     agenda_externa_url: '',
   })
   const [novoServico, setNovoServico] = useState('')
@@ -151,6 +152,7 @@ export default function Configuracoes() {
         msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
         msg_cobranca: data.msg_cobranca || MSG_COBRANCA_PADRAO,
         chave_pix: data.chave_pix || '',
+        chave_pix_tipo: data.chave_pix_tipo || 'celular',
         agenda_externa_url: data.agenda_externa_url || '',
       })
     }
@@ -381,6 +383,34 @@ export default function Configuracoes() {
 
   const linkPublico = `${window.location.origin}/agendar/${form.slug}`
 
+  // ── Chave Pix (Perfil): seletor de tipo + máscara/validação por tipo ──
+  const PIX_TIPOS = [
+    { id: 'celular', label: 'Celular' },
+    { id: 'cpf', label: 'CPF' },
+    { id: 'email', label: 'E-mail' },
+    { id: 'aleatoria', label: 'Aleatória' },
+  ]
+  const PIX_PLACEHOLDER = {
+    celular: '(11) 99999-9999',
+    cpf: '000.000.000-00',
+    email: 'seu@email.com',
+    aleatoria: 'cole sua chave aleatória do banco',
+  }
+  function formatPix(tipo, v) {
+    if (tipo === 'cpf') return formatCPF(v)
+    if (tipo === 'celular') return formatTelefone(unformatTelefone(v))
+    return v
+  }
+  // Mensagem de erro só quando há algo digitado e ainda está incompleto/inválido.
+  const pixErro = (() => {
+    const v = form.chave_pix
+    if (!v) return ''
+    if (form.chave_pix_tipo === 'cpf' && !validarCPF(v)) return 'CPF deve ter 11 dígitos.'
+    if (form.chave_pix_tipo === 'celular' && !validarTelefone(v)) return 'Telefone incompleto.'
+    if (form.chave_pix_tipo === 'email' && !validarEmail(v)) return 'E-mail inválido.'
+    return ''
+  })()
+
   return (
     <div style={s.page}>
 
@@ -506,6 +536,42 @@ export default function Configuracoes() {
             inputMode="numeric"
           />
           <div style={s.hint}>Usado para enviar lembretes às clientes</div>
+        </div>
+
+        {/* Chave Pix — usada na cobrança dos pendentes (Financeiro) */}
+        <div style={s.field}>
+          <label style={s.label}>Chave Pix</label>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+            {PIX_TIPOS.map(t => {
+              const ativo = form.chave_pix_tipo === t.id
+              return (
+                <button
+                  key={t.id} type="button"
+                  onClick={() => setForm({ ...form, chave_pix_tipo: t.id, chave_pix: '' })}
+                  style={{
+                    padding: '5px 12px', borderRadius: 'var(--radius-pill)', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    border: '1px solid ' + (ativo ? 'var(--pink)' : 'var(--border2)'),
+                    background: ativo ? 'var(--pink)' : 'var(--surface)',
+                    color: ativo ? 'white' : 'var(--text3)',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+          <input
+            style={s.input}
+            type={form.chave_pix_tipo === 'email' ? 'email' : 'text'}
+            inputMode={form.chave_pix_tipo === 'cpf' || form.chave_pix_tipo === 'celular' ? 'numeric' : 'text'}
+            placeholder={PIX_PLACEHOLDER[form.chave_pix_tipo]}
+            value={form.chave_pix}
+            onChange={e => setForm({ ...form, chave_pix: formatPix(form.chave_pix_tipo, e.target.value) })}
+          />
+          {pixErro
+            ? <div style={{ ...s.hint, color: 'var(--red, #B91C1C)' }}>{pixErro}</div>
+            : <div style={s.hint}>Entra na cobrança dos pagamentos pendentes. Deixe em branco se não cobrar por Pix.</div>}
         </div>
       </div>
 
@@ -645,21 +711,14 @@ export default function Configuracoes() {
           {' '}· Deixe o campo em branco para usar o texto padrão.
         </div>
 
-        {/* ── Cobrança no WhatsApp (pendentes do Financeiro) ── */}
-        <div style={{ ...s.sectionTitle, marginTop: 22 }}>cobrança no whatsapp</div>
-        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
-          Usada no botão <strong>Cobrar</strong> dos pagamentos pendentes (no Financeiro).
-          A chave Pix entra na mensagem; se deixar em branco, a parte do Pix some sozinha.
-        </div>
+      </div>
 
-        <div style={s.field}>
-          <label style={s.label}>🔑 Sua chave Pix</label>
-          <input
-            style={s.input}
-            value={form.chave_pix}
-            onChange={e => setForm({ ...form, chave_pix: e.target.value })}
-            placeholder="Ex: seu@email.com, telefone ou chave aleatória"
-          />
+      {/* ── Cobrança no WhatsApp ─────────────── */}
+      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
+        <div style={s.sectionTitle}>cobrança no whatsapp</div>
+        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
+          Mensagem do botão <strong>Cobrar</strong> dos pagamentos pendentes (no Financeiro).
+          A chave Pix vem do seu <strong>Perfil</strong>; se estiver vazia, a parte do Pix some sozinha.
         </div>
 
         <div style={s.field}>
