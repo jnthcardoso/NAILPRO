@@ -18,7 +18,7 @@ function buildWhatsAppConfirm(ag) {
   // Link "Confirmar": a cliente toca e o agendamento vira 'confirmado' sozinho.
   const codigo = ag.codigo_confirmacao || ag.token_confirmacao
   if (codigo) {
-    msg += `\n\n✅ Confirmar: ${window.location.origin}/c/${codigo}`
+    msg += `\n\nConfirme aqui: ${window.location.origin}/c/${codigo}`
   }
   return linkWhatsApp(telefone, msg)
 }

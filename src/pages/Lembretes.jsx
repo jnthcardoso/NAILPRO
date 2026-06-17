@@ -104,7 +104,7 @@ export default function Lembretes() {
     const codigo = ag.codigo_confirmacao || ag.token_confirmacao
     if (codigo) {
       const url = `${window.location.origin}/c/${codigo}`
-      return `${texto}\n\n✅ Confirmar: ${url}`
+      return `${texto}\n\nConfirme aqui: ${url}`
     }
     return texto
   }
