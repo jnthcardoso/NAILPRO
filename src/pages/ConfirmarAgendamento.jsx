@@ -32,7 +32,7 @@ export default function ConfirmarAgendamento() {
   useEffect(() => {
     let cancelado = false
     async function confirmar() {
-      const { data, error } = await supabase.rpc('confirmar_agendamento_por_token', { p_token: token })
+      const { data, error } = await supabase.rpc('confirmar_agendamento', { p_codigo: token })
       if (cancelado) return
       if (error) {
         console.warn('Confirmar agendamento:', error.message)

@@ -101,8 +101,9 @@ export default function Lembretes() {
 
     // Link "Confirmar": a cliente toca e o agendamento vira 'confirmado' sozinho,
     // sem a manicure marcar na mão. (Se a cliente não quiser, é só responder a msg.)
-    if (ag.token_confirmacao) {
-      const url = `${window.location.origin}/c/${ag.token_confirmacao}`
+    const codigo = ag.codigo_confirmacao || ag.token_confirmacao
+    if (codigo) {
+      const url = `${window.location.origin}/c/${codigo}`
       return `${texto}\n\n✅ Confirmar: ${url}`
     }
     return texto

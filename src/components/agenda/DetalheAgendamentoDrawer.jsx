@@ -14,7 +14,12 @@ function buildWhatsAppConfirm(ag) {
   const [y, m, d] = ag.data.split('-')
   const dataFmt = `${d}/${m}`
   const horario = ag.horario?.slice(0, 5)
-  const msg = `Olá ${nome}! Confirmando seu horário para ${dataFmt} às ${horario} - ${ag.servico}. Pode confirmar presença? 💅`
+  let msg = `Olá ${nome}! Confirmando seu horário para ${dataFmt} às ${horario} - ${ag.servico}. Pode confirmar presença? 💅`
+  // Link "Confirmar": a cliente toca e o agendamento vira 'confirmado' sozinho.
+  const codigo = ag.codigo_confirmacao || ag.token_confirmacao
+  if (codigo) {
+    msg += `\n\n✅ Confirmar: ${window.location.origin}/c/${codigo}`
+  }
   return linkWhatsApp(telefone, msg)
 }
 
