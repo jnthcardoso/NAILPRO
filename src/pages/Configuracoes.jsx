@@ -6,7 +6,7 @@ import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } fr
 import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
-import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO } from '../lib/mensagens'
+import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, MSG_COBRANCA_PADRAO } from '../lib/mensagens'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -76,6 +76,8 @@ export default function Configuracoes() {
     mensagem_lembrete: MSG_LEMBRETE_PADRAO,
     msg_aniversario: MSG_ANIVERSARIO_PADRAO,
     msg_retorno: MSG_RETORNO_PADRAO,
+    msg_cobranca: MSG_COBRANCA_PADRAO,
+    chave_pix: '',
     agenda_externa_url: '',
   })
   const [novoServico, setNovoServico] = useState('')
@@ -147,6 +149,8 @@ export default function Configuracoes() {
         mensagem_lembrete: data.mensagem_lembrete || MSG_LEMBRETE_PADRAO,
         msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
         msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
+        msg_cobranca: data.msg_cobranca || MSG_COBRANCA_PADRAO,
+        chave_pix: data.chave_pix || '',
         agenda_externa_url: data.agenda_externa_url || '',
       })
     }
@@ -639,6 +643,43 @@ export default function Configuracoes() {
           <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
           <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
           {' '}· Deixe o campo em branco para usar o texto padrão.
+        </div>
+
+        {/* ── Cobrança no WhatsApp (pendentes do Financeiro) ── */}
+        <div style={{ ...s.sectionTitle, marginTop: 22 }}>cobrança no whatsapp</div>
+        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
+          Usada no botão <strong>Cobrar</strong> dos pagamentos pendentes (no Financeiro).
+          A chave Pix entra na mensagem; se deixar em branco, a parte do Pix some sozinha.
+        </div>
+
+        <div style={s.field}>
+          <label style={s.label}>🔑 Sua chave Pix</label>
+          <input
+            style={s.input}
+            value={form.chave_pix}
+            onChange={e => setForm({ ...form, chave_pix: e.target.value })}
+            placeholder="Ex: seu@email.com, telefone ou chave aleatória"
+          />
+        </div>
+
+        <div style={s.field}>
+          <label style={s.label}>💸 Mensagem de cobrança</label>
+          <textarea
+            style={{ ...s.input, minHeight: 88, resize: 'vertical', fontFamily: 'inherit' }}
+            value={form.msg_cobranca}
+            onChange={e => setForm({ ...form, msg_cobranca: e.target.value })}
+            placeholder={MSG_COBRANCA_PADRAO}
+          />
+        </div>
+
+        <div style={s.hint}>
+          Variáveis disponíveis:{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{valor}'}</code>{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{pix}'}</code>{' '}
+          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
+          {' '}· Quem não quiser mostrar o serviço, é só apagar o <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>.
         </div>
       </div>
 

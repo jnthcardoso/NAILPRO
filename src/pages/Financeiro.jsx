@@ -3,13 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
   TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
-  BarChart2, ListOrdered, CalendarClock
+  BarChart2, ListOrdered, CalendarClock, MessageCircle
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
-import { formatBRL, formatMoeda } from '../lib/formatters'
+import { formatBRL, formatMoeda, linkWhatsApp, validarTelefone } from '../lib/formatters'
+import { MSG_COBRANCA_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
@@ -250,7 +251,25 @@ export default function Financeiro() {
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
+  // Config de cobrança (chave Pix + modelo da mensagem) — usada no botão "Cobrar".
+  const [cobranca, setCobranca] = useState({ chavePix: '', template: MSG_COBRANCA_PADRAO, nomeSalao: '' })
   const [searchParams] = useSearchParams()
+
+  // Config de cobrança (chave Pix + modelo) — carrega uma vez por salão.
+  useEffect(() => {
+    if (!salaoId) return
+    supabase.from('configuracoes')
+      .select('chave_pix, msg_cobranca, nome_salao')
+      .eq('salao_id', salaoId).maybeSingle()
+      .then(({ data }) => {
+        if (!data) return
+        setCobranca({
+          chavePix: data.chave_pix || '',
+          template: data.msg_cobranca || MSG_COBRANCA_PADRAO,
+          nomeSalao: data.nome_salao || '',
+        })
+      })
+  }, [salaoId])
 
   // Atalho vindo da Home: ?ver=pendentes abre direto Receitas filtrado em pendentes.
   useEffect(() => {
@@ -300,7 +319,7 @@ export default function Financeiro() {
 
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
-    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome, telefone))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
     if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
     // Pagamento de atendimento CANCELADO não é receita (some do perfil da cliente
     // pelo mesmo motivo). Avulso (sem agendamento) continua contando.
@@ -847,6 +866,16 @@ export default function Financeiro() {
             ? <div style={s.empty}>Nenhum lançamento encontrado</div>
             : filtrados.map(p => {
               const pago = p.status === 'pago'
+              const tel = p.agendamentos?.clientes?.telefone
+              // Cobrança só faz sentido em pendente com telefone válido.
+              const podeCobrar = !pago && validarTelefone(tel)
+              const msgCobranca = aplicarVariaveis(cobranca.template, {
+                nome: p.agendamentos?.clientes?.nome || '',
+                salao: cobranca.nomeSalao,
+                servico: p.agendamentos?.servico || '',
+                valor: formatBRL(p.valor ?? 0),
+                pix: cobranca.chavePix,
+              })
               return (
                 <div key={p.id} style={s.finCard}>
                   <div style={{ ...s.dot, background: pago ? 'var(--green)' : '#F59E0B' }} />
@@ -861,9 +890,21 @@ export default function Financeiro() {
                     <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
                       {formatBRL(p.valor ?? 0)}
                     </div>
-                    <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? reverterParaPendente(p) : abrirConfirmarPago(p)}>
-                      {pago ? '✓ Pago' : '⏳ Pendente'}
-                    </button>
+                    <div style={{ display: 'flex', gap: 5, marginTop: 3, justifyContent: 'flex-end' }}>
+                      {podeCobrar && (
+                        <a
+                          style={s.cobrarBtn}
+                          href={linkWhatsApp(tel, msgCobranca)}
+                          target="_blank" rel="noreferrer"
+                          title="Cobrar pelo WhatsApp"
+                        >
+                          <MessageCircle size={11} /> Cobrar
+                        </a>
+                      )}
+                      <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? reverterParaPendente(p) : abrirConfirmarPago(p)}>
+                        {pago ? '✓ Pago' : '⏳ Pendente'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
@@ -1193,6 +1234,7 @@ const s = {
   finSub: { fontSize: 11, color: 'var(--text3)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   finValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700 },
   statusBtn: { fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 600, border: 'none', cursor: 'pointer', marginTop: 3 },
+  cobrarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer', textDecoration: 'none' },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
