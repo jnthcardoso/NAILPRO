@@ -33,21 +33,28 @@ export function formatBRL(reais) {
 }
 
 // ─── WhatsApp ───
-// Monta link wa.me a partir de um telefone BR (com ou sem máscara) e mensagem
-// opcional. Sempre aplica o DDI 55 e codifica o texto. Sem telefone, gera um
-// link "compartilhar" (só com texto).
+// Monta o link "Click to Chat" a partir de um telefone BR (com ou sem máscara)
+// e mensagem opcional. Sempre aplica o DDI 55 e codifica o texto. Sem telefone,
+// gera um link "compartilhar" (só com texto).
+// Usamos api.whatsapp.com/send (e não wa.me) porque o WhatsApp Web/Desktop e
+// algumas versões do Android decodificam EMOJI corretamente nesse endpoint —
+// no wa.me eles vinham como "�" na caixa de digitar.
 export function linkWhatsApp(telefone, mensagem = '') {
   const num = unformatTelefone(telefone)
   const destino = num ? `55${num}` : ''
-  const texto = mensagem ? `?text=${encodeURIComponent(mensagem)}` : ''
-  return `https://wa.me/${destino}${texto}`
+  const params = []
+  if (destino) params.push(`phone=${destino}`)
+  if (mensagem) params.push(`text=${encodeURIComponent(mensagem)}`)
+  return `https://api.whatsapp.com/send?${params.join('&')}`
 }
 
 // Variante para números que já incluem o DDI (ex.: SUPORTE_WHATSAPP = '5554...').
 export function linkWhatsAppCompleto(numeroCompleto, mensagem = '') {
   const destino = (numeroCompleto || '').replace(/\D/g, '')
-  const texto = mensagem ? `?text=${encodeURIComponent(mensagem)}` : ''
-  return `https://wa.me/${destino}${texto}`
+  const params = []
+  if (destino) params.push(`phone=${destino}`)
+  if (mensagem) params.push(`text=${encodeURIComponent(mensagem)}`)
+  return `https://api.whatsapp.com/send?${params.join('&')}`
 }
 
 // ─── Slug / URL (link público de agendamento) ───
