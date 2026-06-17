@@ -263,8 +263,8 @@ export default function Home() {
     setTotalClientes(countClientes ?? 0)
     setTotalAgendamentos(countAgendamentos ?? 0)
 
-    // Lembretes pendentes amanhã (só se a usuária deixou os lembretes ativos)
-    if (ags && config?.lembretes_ativos !== false) {
+    // Lembretes pendentes amanhã — sempre ativos no Dashboard, pra todo mundo.
+    if (ags) {
       const pend = ags.filter(a => !a.lembrete_enviado_em && validarTelefone(a.clientes?.telefone)).length
       setLembretesPendentes(pend)
       if (pend > 0) {

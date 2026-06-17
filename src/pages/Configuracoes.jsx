@@ -619,61 +619,29 @@ export default function Configuracoes() {
       {/* ── Lembretes WhatsApp ──────────────── */}
       <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>lembretes via WhatsApp</div>
-
-        <div
-          style={{ ...s.toggleRow, ...(temAcesso('lembretesWhatsapp') ? {} : { opacity: 0.7 }) }}
-          onClick={() => {
-            if (!temAcesso('lembretesWhatsapp')) {
-              setShowUpgrade({ aberto: true, feature: 'Lembretes WhatsApp' })
-              return
-            }
-            setForm(f => ({ ...f, lembretes_ativos: !f.lembretes_ativos }))
-          }}
-        >
-          <div>
-            <div style={s.toggleLabel}>
-              Ativar painel de lembretes
-              {!temAcesso('lembretesWhatsapp') && <span style={{ marginLeft: 6 }}><ProBadge /></span>}
-            </div>
-            <div style={s.hint}>Mostra agendamentos de amanhã no Dashboard com botão para enviar lembretes</div>
-          </div>
-          <div style={{ ...s.toggle, ...(form.lembretes_ativos && temAcesso('lembretesWhatsapp') ? s.toggleOn : {}) }}>
-            <div style={{ ...s.toggleThumb, ...(form.lembretes_ativos && temAcesso('lembretesWhatsapp') ? s.toggleThumbOn : {}) }} />
-          </div>
+        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
+          Agendamentos de amanhã aparecem no Dashboard com um botão para enviar o lembrete pelo WhatsApp.
         </div>
 
-        {form.lembretes_ativos && (
-          <>
-            <div style={s.field}>
-              <label style={s.label}>Mensagem do lembrete</label>
-              <textarea
-                style={{ ...s.input, minHeight: 90, resize: 'vertical', fontFamily: 'inherit' }}
-                value={form.mensagem_lembrete}
-                onChange={e => setForm({ ...form, mensagem_lembrete: e.target.value })}
-                placeholder="Oi {nome}! Lembrete: seu horário {quando} às {horario} - {servico}. Confirma?"
-              />
-              <div style={s.hint}>
-                Use variáveis: <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
-                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome_completo}'}</code>{' '}
-                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{quando}'}</code>{' '}
-                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{data}'}</code>{' '}
-                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{horario}'}</code>{' '}
-                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
-                <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
-                <div style={{ marginTop: 4 }}><strong>{'{quando}'}</strong> vira "hoje", "amanhã" ou "na terça-feira (10/06)" conforme a data — assim a mensagem nunca diz "amanhã" quando não é.</div>
-              </div>
-            </div>
-
-            <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 'var(--radius-sm)', padding: 12, marginTop: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>📱 Como funciona</div>
-              <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.5 }}>
-                Todo dia, agendamentos de <strong>amanhã</strong> aparecem no Dashboard.
-                Você clica em "Enviar" e abre o WhatsApp Web com a mensagem pronta — só apertar enviar.
-                Quem já recebeu fica marcado para não enviar duas vezes.
-              </div>
-            </div>
-          </>
-        )}
+        <div style={s.field}>
+          <label style={s.label}>Mensagem do lembrete</label>
+          <textarea
+            style={{ ...s.input, minHeight: 90, resize: 'vertical', fontFamily: 'inherit' }}
+            value={form.mensagem_lembrete}
+            onChange={e => setForm({ ...form, mensagem_lembrete: e.target.value })}
+            placeholder="Oi {nome}! Lembrete: seu horário {quando} às {horario} - {servico}. Confirma?"
+          />
+          <div style={s.hint}>
+            Use variáveis: <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome_completo}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{quando}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{data}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{horario}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
+            <div style={{ marginTop: 4 }}><strong>{'{quando}'}</strong> vira "hoje", "amanhã" ou "na terça-feira (10/06)" conforme a data — assim a mensagem nunca diz "amanhã" quando não é.</div>
+          </div>
+        </div>
       </div>
 
       {/* ── Mensagens das Oportunidades ─────── */}
