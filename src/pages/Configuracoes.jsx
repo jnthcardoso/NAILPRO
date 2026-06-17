@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, Bell, BellOff, User, Calendar, Plug, Briefcase } from 'lucide-react'
+import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
-import { statusPermissao, pedirPermissao, notificar, notificacoesSuportadas } from '../lib/notificacoes'
 import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify, formatCPF, validarCPF, validarTelefone, validarEmail } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
@@ -31,14 +30,11 @@ export default function Configuracoes() {
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState('')
   const [excluindo, setExcluindo] = useState(false)
   const [exportando, setExportando] = useState(false)
-  const [permNotif, setPermNotif] = useState('default')
   const [tab, setTab] = useState('perfil')
   // Nº de profissionais "escolhíveis" no link público — mesma regra da RPC
   // agenda_publica_profissionais (ativo + papel dona/profissional + nome). Usado
   // para só mostrar "Cliente escolhe a profissional" quando há equipe de verdade.
   const [qtdEscolhiveis, setQtdEscolhiveis] = useState(1)
-
-  useEffect(() => { setPermNotif(statusPermissao()) }, [])
 
   useEffect(() => {
     if (!salaoId) return
@@ -49,16 +45,6 @@ export default function Configuracoes() {
       .then(({ count }) => setQtdEscolhiveis(count ?? 1))
   }, [salaoId])
 
-  async function ativarNotificacoes() {
-    const r = await pedirPermissao()
-    setPermNotif(r)
-    if (r === 'granted') {
-      notificar('Notificações ativadas! 🔔', {
-        body: 'Vamos te avisar dos seus atendimentos do dia',
-        tag: 'welcome'
-      })
-    }
-  }
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || '')
   const [form, setForm] = useState({
     nome_salao: '',
@@ -894,42 +880,6 @@ export default function Configuracoes() {
               </button>
           }
         </div>
-      </div>
-
-      {/* ── Notificações ────────────────────── */}
-      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
-        <div style={s.sectionTitle}>notificações do navegador</div>
-        {notificacoesSuportadas() ? (
-          <div style={{ padding: '14px 16px', background: permNotif === 'granted' ? 'linear-gradient(135deg, #F0FDF4, #DCFCE7)' : 'linear-gradient(135deg, #FEF3C7, #FDE68A)', border: '1px solid ' + (permNotif === 'granted' ? '#86EFAC' : '#FCD34D'), borderRadius: 'var(--radius-sm)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: permNotif === 'granted' ? '#15803D' : '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {permNotif === 'granted' ? <Bell size={18} color="white" /> : <BellOff size={18} color="white" />}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: permNotif === 'granted' ? '#15803D' : '#78350F' }}>
-                  {permNotif === 'granted' && 'Notificações ativas ✓'}
-                  {permNotif === 'denied' && 'Notificações bloqueadas'}
-                  {permNotif === 'default' && 'Ativar notificações'}
-                </div>
-                <div style={{ fontSize: 11, color: permNotif === 'granted' ? '#166534' : '#92400E', marginTop: 2 }}>
-                  {permNotif === 'granted' && 'Você será avisada dos atendimentos do dia ao abrir o app'}
-                  {permNotif === 'denied' && 'Libere nas configurações do navegador'}
-                  {permNotif === 'default' && 'Receba alertas dos atendimentos e lembretes pendentes'}
-                </div>
-              </div>
-              {permNotif !== 'granted' && permNotif !== 'denied' && (
-                <button
-                  onClick={ativarNotificacoes}
-                  style={{ background: '#D97706', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Ativar
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div style={{ padding: 12, fontSize: 12, color: 'var(--text3)' }}>Seu navegador não suporta notificações.</div>
-        )}
       </div>
 
       {/* Botão Salvar aparece apenas nas abas com campos editáveis */}
