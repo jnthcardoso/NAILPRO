@@ -90,7 +90,7 @@ export default function Lembretes() {
 
     // Aceita as variáveis com ou sem acento ({horário}/{horario}, {salão}/{salao}, {serviço}/{servico}).
     // {quando} = "hoje" / "amanhã" / "na terça-feira (10/06)" conforme a data do agendamento.
-    return template
+    const texto = template
       .replace(/\{nome_completo\}/gi, nome)
       .replace(/\{nome\}/gi, nome.split(' ')[0])
       .replace(/\{quando\}/gi, quandoRelativo(ag.data))
@@ -98,6 +98,14 @@ export default function Lembretes() {
       .replace(/\{hor[aá]rio\}/gi, horario)
       .replace(/\{servi[cç]o\}/gi, ag.servico || '')
       .replace(/\{sal[aã]o\}/gi, config.nome_salao || '')
+
+    // Link "Confirmar": a cliente toca e o agendamento vira 'confirmado' sozinho,
+    // sem a manicure marcar na mão. (Se a cliente não quiser, é só responder a msg.)
+    if (ag.token_confirmacao) {
+      const url = `${window.location.origin}/c/${ag.token_confirmacao}`
+      return `${texto}\n\n✅ Confirmar: ${url}`
+    }
+    return texto
   }
 
   function buildLink(ag) {

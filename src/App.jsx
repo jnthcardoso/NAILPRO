@@ -26,6 +26,7 @@ const Privacidade = lazy(() => import('./pages/Privacidade'))
 const Landing = lazy(() => import('./pages/Landing'))
 const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha'))
 const Indicacao = lazy(() => import('./pages/Indicacao'))
+const ConfirmarAgendamento = lazy(() => import('./pages/ConfirmarAgendamento'))
 import { AssinaturaProvider, useAssinatura } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -134,6 +135,7 @@ export default function App() {
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
+            <Route path="/c/:token" element={<ConfirmarAgendamento />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/indicacao" element={<Indicacao />} />
             <Route path="/termos" element={<Termos />} />
