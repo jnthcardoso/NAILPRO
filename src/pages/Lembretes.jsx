@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, MessageCircle, Check, Send, Settings, AlertCircle, Phone } from 'lucide-react'
+import { Bell, MessageCircle, Check, Send, Settings, Phone } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -210,19 +210,6 @@ export default function Lembretes() {
           <Settings size={16} />
         </button>
       </div>
-
-      {/* Aviso lembretes desativados */}
-      {config.lembretes_ativos === false && (
-        <div style={s.warningCard}>
-          <AlertCircle size={16} />
-          <div>
-            Lembretes estão <strong>desativados</strong>.{' '}
-            <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => navigate('/app/configuracoes')}>
-              Ativar nas Configurações
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Resumo */}
       <div style={s.resumo}>
@@ -435,7 +422,6 @@ const s = {
   title: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: 0 },
   sub: { fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' },
   cfgBtn: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text2)' },
-  warningCard: { display: 'flex', alignItems: 'center', gap: 8, background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#92400E', fontWeight: 500 },
   resumo: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 },
   resumoCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 10px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' },
   resumoValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
