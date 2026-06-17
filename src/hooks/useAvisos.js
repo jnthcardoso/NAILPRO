@@ -56,25 +56,21 @@ export function useAvisos() {
     }
 
     // Lembretes de amanhã — só p/ quem gerencia (a página de Lembretes é bloqueada
-    // p/ a profissional) e se os lembretes estiverem ativos nas Configurações.
+    // p/ a profissional). Sempre ativos: o Dashboard e os Avisos mostram pra todos.
     if (!isProfissional) {
-      const { data: cfg } = await supabase.from('configuracoes')
-        .select('lembretes_ativos').eq('salao_id', salaoId).maybeSingle()
-      if (cfg?.lembretes_ativos !== false) {
-        const { data: ags } = await supabase.from('agendamentos')
-          .select('lembrete_enviado_em, clientes(nome, telefone)')
-          .eq('salao_id', salaoId).eq('data', amanha).in('status', ['pendente', 'confirmado'])
-        // Mesmo critério da página de Lembretes: telefone precisa ser válido.
-        const lembr = (ags || []).filter(a => !a.lembrete_enviado_em && validarTelefone(a.clientes?.telefone))
-        if (lembr.length) {
-          lista.push({
-            id: 'lembr', icon: Bell, cor: '#15803D', bg: '#DCFCE7',
-            titulo: `${lembr.length} lembrete${lembr.length > 1 ? 's' : ''} para enviar amanhã`,
-            sub: 'Clientes com atendimento amanhã que ainda não receberam lembrete',
-            detalhe: lembr.slice(0, 4).map(a => a.clientes?.nome?.split(' ')[0]).join(', '),
-            to: '/app/lembretes',
-          })
-        }
+      const { data: ags } = await supabase.from('agendamentos')
+        .select('lembrete_enviado_em, clientes(nome, telefone)')
+        .eq('salao_id', salaoId).eq('data', amanha).in('status', ['pendente', 'confirmado'])
+      // Mesmo critério da página de Lembretes: telefone precisa ser válido.
+      const lembr = (ags || []).filter(a => !a.lembrete_enviado_em && validarTelefone(a.clientes?.telefone))
+      if (lembr.length) {
+        lista.push({
+          id: 'lembr', icon: Bell, cor: '#15803D', bg: '#DCFCE7',
+          titulo: `${lembr.length} lembrete${lembr.length > 1 ? 's' : ''} para enviar amanhã`,
+          sub: 'Clientes com atendimento amanhã que ainda não receberam lembrete',
+          detalhe: lembr.slice(0, 4).map(a => a.clientes?.nome?.split(' ')[0]).join(', '),
+          to: '/app/lembretes',
+        })
       }
     }
 
