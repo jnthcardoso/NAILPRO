@@ -369,6 +369,9 @@ export default function Configuracoes() {
 
   const linkPublico = `${window.location.origin}/agendar/${form.slug}`
 
+  // Chip visual das variáveis (reaproveitado na legenda única das mensagens).
+  const codeVar = { background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }
+
   // ── Chave Pix (Perfil): seletor de tipo + máscara/validação por tipo ──
   const PIX_TIPOS = [
     { id: 'celular', label: 'Celular' },
@@ -602,12 +605,36 @@ export default function Configuracoes() {
         )}
       </div>
 
+      {/* ── Variáveis das mensagens (legenda única no topo) ── */}
+      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
+        <div style={s.sectionTitle}>variáveis das mensagens</div>
+        <div style={s.hint}>
+          Use estas variáveis nas mensagens abaixo — são trocadas pelos dados reais da cliente quando você envia.
+          Deixe um campo em branco para usar o texto padrão.
+        </div>
+        <div style={{ ...s.hint, marginTop: 10, lineHeight: 2.1 }}>
+          <strong>Em qualquer mensagem:</strong>{' '}
+          <code style={codeVar}>{'{nome}'}</code>{' '}
+          <code style={codeVar}>{'{nome_completo}'}</code>{' '}
+          <code style={codeVar}>{'{salao}'}</code><br />
+          <strong>No lembrete:</strong>{' '}
+          <code style={codeVar}>{'{quando}'}</code>{' '}
+          <code style={codeVar}>{'{data}'}</code>{' '}
+          <code style={codeVar}>{'{horario}'}</code>{' '}
+          <code style={codeVar}>{'{servico}'}</code><br />
+          <strong>Na cobrança:</strong>{' '}
+          <code style={codeVar}>{'{valor}'}</code>{' '}
+          <code style={codeVar}>{'{pix}'}</code>{' '}
+          <code style={codeVar}>{'{servico}'}</code>
+        </div>
+        <div style={{ ...s.hint, marginTop: 8 }}>
+          <strong>{'{quando}'}</strong> vira "hoje", "amanhã" ou "na terça-feira (10/06)" conforme a data — a mensagem nunca diz "amanhã" quando não é.
+        </div>
+      </div>
+
       {/* ── Lembretes WhatsApp ──────────────── */}
       <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>lembretes via WhatsApp</div>
-        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
-          Agendamentos de amanhã aparecem no Dashboard com um botão para enviar o lembrete pelo WhatsApp.
-        </div>
 
         <div style={s.field}>
           <label style={s.label}>Mensagem do lembrete</label>
@@ -617,26 +644,12 @@ export default function Configuracoes() {
             onChange={e => setForm({ ...form, mensagem_lembrete: e.target.value })}
             placeholder="Oi {nome}! Lembrete: seu horário {quando} às {horario} - {servico}. Confirma?"
           />
-          <div style={s.hint}>
-            Use variáveis: <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
-            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome_completo}'}</code>{' '}
-            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{quando}'}</code>{' '}
-            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{data}'}</code>{' '}
-            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{horario}'}</code>{' '}
-            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
-            <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
-            <div style={{ marginTop: 4 }}><strong>{'{quando}'}</strong> vira "hoje", "amanhã" ou "na terça-feira (10/06)" conforme a data — assim a mensagem nunca diz "amanhã" quando não é.</div>
-          </div>
         </div>
       </div>
 
       {/* ── Mensagens das Oportunidades ─────── */}
       <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>mensagens das oportunidades</div>
-        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
-          Textos usados nos cards de <strong>Oportunidades da semana</strong> (no início). As variáveis são
-          trocadas pelos dados reais da cliente quando você clica para enviar.
-        </div>
 
         <div style={s.field}>
           <label style={s.label}>🎂 Mensagem de aniversário</label>
@@ -657,23 +670,11 @@ export default function Configuracoes() {
             placeholder={MSG_RETORNO_PADRAO}
           />
         </div>
-
-        <div style={s.hint}>
-          Variáveis disponíveis:{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
-          {' '}· Deixe o campo em branco para usar o texto padrão.
-        </div>
-
       </div>
 
       {/* ── Cobrança no WhatsApp ─────────────── */}
       <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>cobrança no whatsapp</div>
-        <div style={{ ...s.hint, marginTop: -6, marginBottom: 14 }}>
-          Mensagem do botão <strong>Cobrar</strong> dos pagamentos pendentes (no Financeiro).
-          A chave Pix vem do seu <strong>Perfil</strong>; se estiver vazia, a parte do Pix some sozinha.
-        </div>
 
         <div style={s.field}>
           <label style={s.label}>💸 Mensagem de cobrança</label>
@@ -683,16 +684,6 @@ export default function Configuracoes() {
             onChange={e => setForm({ ...form, msg_cobranca: e.target.value })}
             placeholder={MSG_COBRANCA_PADRAO}
           />
-        </div>
-
-        <div style={s.hint}>
-          Variáveis disponíveis:{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{nome}'}</code>{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{valor}'}</code>{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{pix}'}</code>{' '}
-          <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{salao}'}</code>
-          {' '}· Quem não quiser mostrar o serviço, é só apagar o <code style={{ background: 'var(--surface2)', padding: '1px 5px', borderRadius: 3 }}>{'{servico}'}</code>.
         </div>
       </div>
 
