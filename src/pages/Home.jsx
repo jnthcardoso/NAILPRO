@@ -56,7 +56,7 @@ export default function Home() {
   const [totalClientes, setTotalClientes] = useState(null)
   const [totalAgendamentos, setTotalAgendamentos] = useState(null)
   const [lembretesPendentes, setLembretesPendentes] = useState(0)
-  const [contasAPagar, setContasAPagar] = useState({ qtd: 0, total: 0 })
+  const [contasAPagar, setContasAPagar] = useState({ qtd: 0, total: 0, vencidas: 0 })
   const [pedidosPublicos, setPedidosPublicos] = useState(0)
   const [receita7Dias, setReceita7Dias] = useState([])
   const [diaTop, setDiaTop] = useState(null) // { dia: 4 (qui), valor: 1200 }
@@ -278,11 +278,12 @@ export default function Home() {
 
     // Contas a pagar vencendo até o fim da semana (inclui vencidas) — pago = false.
     // Mesma regra de visibilidade do Financeiro: dona vê o salão; profissional, as dela.
-    let despQ = supabase.from('despesas').select('valor').eq('pago', false).lte('data', fimStr)
+    let despQ = supabase.from('despesas').select('valor, data').eq('pago', false).lte('data', fimStr)
     despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', user.id)
     const { data: contas } = await despQ
     const totalAPagar = (contas || []).reduce((sum, d) => sum + (d.valor || 0), 0)
-    setContasAPagar({ qtd: (contas || []).length, total: totalAPagar })
+    const vencidas = (contas || []).filter(d => d.data < hoje).length
+    setContasAPagar({ qtd: (contas || []).length, total: totalAPagar, vencidas })
 
     // Pedidos do link público aguardando confirmação
     const qtdPedidos = countPedidos ?? 0
@@ -413,9 +414,13 @@ export default function Home() {
           <div style={s.contaChipIcon}><DollarSign size={16} color="white" /></div>
           <div style={{ flex: 1 }}>
             <div style={s.contaChipTitle}>
-              {contasAPagar.qtd} conta{contasAPagar.qtd > 1 ? 's' : ''} a pagar esta semana
+              {contasAPagar.qtd} conta{contasAPagar.qtd > 1 ? 's' : ''} a pagar
             </div>
-            <div style={s.contaChipSub}>{formatBRL(contasAPagar.total)} · toque para ver no financeiro</div>
+            <div style={s.contaChipSub}>
+              {contasAPagar.vencidas > 0
+                ? `${contasAPagar.vencidas} vencida${contasAPagar.vencidas > 1 ? 's' : ''} · ${formatBRL(contasAPagar.total)} · toque para ver`
+                : `${formatBRL(contasAPagar.total)} · vence até domingo · toque para ver`}
+            </div>
           </div>
           <ChevronRight size={18} color="#7F1D1D" />
         </div>

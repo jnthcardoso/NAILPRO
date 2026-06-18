@@ -253,13 +253,18 @@ export default function Financeiro() {
   const [tab, setTab] = useState('resumo')
   // Config de cobrança (chave Pix + modelo da mensagem) — usada no botão "Cobrar".
   const [cobranca, setCobranca] = useState({ chavePix: '', template: MSG_COBRANCA_PADRAO, nomeSalao: '' })
+  // Pró-labore ("meu salário"): valor mensal que a dona tira pra ela.
+  const [proLabore, setProLabore] = useState(0)
+  const [showProLabore, setShowProLabore] = useState(false)
+  const [proLaboreInput, setProLaboreInput] = useState('')
+  const [savingProLabore, setSavingProLabore] = useState(false)
   const [searchParams] = useSearchParams()
 
   // Config de cobrança (chave Pix + modelo) — carrega uma vez por salão.
   useEffect(() => {
     if (!salaoId) return
     supabase.from('configuracoes')
-      .select('chave_pix, msg_cobranca, nome_salao')
+      .select('chave_pix, msg_cobranca, nome_salao, pro_labore')
       .eq('salao_id', salaoId).maybeSingle()
       .then(({ data }) => {
         if (!data) return
@@ -268,6 +273,7 @@ export default function Financeiro() {
           template: data.msg_cobranca || MSG_COBRANCA_PADRAO,
           nomeSalao: data.nome_salao || '',
         })
+        setProLabore(Number(data.pro_labore) || 0)
       })
   }, [salaoId])
 
@@ -501,6 +507,22 @@ export default function Financeiro() {
     if (error) { toastErro(traduzErro(error, 'Não foi possível criar a despesa recorrente.')); return }
     sucesso(`Despesa recorrente criada (${linhas.length} ${linhas.length === 1 ? 'mês' : 'meses'}) ✓`)
     fecharDespesaModal(); loadDespesas()
+  }
+
+  function abrirProLabore() {
+    setProLaboreInput(proLabore ? String(proLabore) : '')
+    setShowProLabore(true)
+  }
+
+  async function salvarProLabore() {
+    const valor = parseFloat(proLaboreInput) || 0
+    setSavingProLabore(true)
+    const { error } = await supabase.from('configuracoes').update({ pro_labore: valor }).eq('salao_id', salaoId)
+    setSavingProLabore(false)
+    if (error) { toastErro(traduzErro(error, 'Não foi possível salvar seu salário.')); return }
+    setProLabore(valor)
+    setShowProLabore(false)
+    sucesso('Pró-labore salvo ✓')
   }
 
   function abrirNovaDespesa() {
@@ -744,6 +766,10 @@ export default function Financeiro() {
   // Contas ainda a pagar no período (pago = false).
   const contasAPagar = despesas.filter(d => d.pago === false)
   const totalAPagar = contasAPagar.reduce((s, d) => s + (d.valor || 0), 0)
+  const totalDespesasPagas = totalDespesas - totalAPagar
+  // Pró-labore só faz sentido pra dona/recepção e num mês fechado (não em range custom).
+  const mostraProLabore = gerenciaTudo && rangeMode === 'mes'
+  const sobrouReinvestir = lucro - proLabore
 
   return (
     <div style={s.page}>
@@ -846,10 +872,23 @@ export default function Financeiro() {
               <span>(+) Receitas recebidas</span>
               <span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(recebido)}</span>
             </div>
-            <div style={s.dreLinha}>
-              <span>(−) Despesas totais</span>
-              <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesas)}</span>
-            </div>
+            {totalAPagar > 0 ? (
+              <>
+                <div style={s.dreLinha}>
+                  <span>(−) Despesas pagas <span style={{ color: 'var(--text3)', fontSize: 11 }}>(já saiu)</span></span>
+                  <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesasPagas)}</span>
+                </div>
+                <div style={s.dreLinha}>
+                  <span>(−) Contas a pagar <span style={{ color: 'var(--text3)', fontSize: 11 }}>(vai sair)</span></span>
+                  <span style={{ ...s.mono, color: '#B45309' }}>− {formatBRL(totalAPagar)}</span>
+                </div>
+              </>
+            ) : (
+              <div style={s.dreLinha}>
+                <span>(−) Despesas totais</span>
+                <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesas)}</span>
+              </div>
+            )}
             <div style={s.dreDivider} />
             <div style={{ ...s.dreLinha, ...s.dreTotal }}>
               <span>(=) Lucro líquido</span>
@@ -863,6 +902,28 @@ export default function Financeiro() {
                 {margemLucro >= 0 && margemLucro < 15 && ' ⚠️ Atenção'}
                 {margemLucro < 0 && ' 🚨 Prejuízo'}
               </div>
+            )}
+
+            {/* Pró-labore: "meu salário" → sobrou pra reinvestir (só dona, mês fechado) */}
+            {mostraProLabore && (
+              proLabore > 0 ? (
+                <>
+                  <div style={s.dreDivider} />
+                  <div style={s.dreLinha}>
+                    <span>
+                      (−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span>
+                      <button onClick={abrirProLabore} style={s.proLaboreEdit} title="Editar seu salário"><Pencil size={11} /></button>
+                    </span>
+                    <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(proLabore)}</span>
+                  </div>
+                  <div style={{ ...s.dreLinha, ...s.dreTotal }}>
+                    <span>(=) Sobrou pra reinvestir</span>
+                    <span style={{ ...s.mono, color: sobrouReinvestir >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 15 }}>{formatBRL(sobrouReinvestir)}</span>
+                  </div>
+                </>
+              ) : (
+                <button onClick={abrirProLabore} style={s.proLaboreBtn}>+ Definir seu salário (pró-labore)</button>
+              )
             )}
           </div>
         </div>
@@ -1183,6 +1244,23 @@ export default function Financeiro() {
         </Modal>
       )}
 
+      {/* Modal Pró-labore (seu salário) */}
+      {showProLabore && (
+        <Modal onClose={() => setShowProLabore(false)} variant="sheet" boxStyle={s.modal}>
+            <div style={s.modalTitle}>💜 Seu salário (pró-labore)</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 4 }}>
+              Quanto você tira pra você por mês? Entra no DRE como "(−) Seu salário" e mostra quanto <strong>sobra pra reinvestir</strong> no negócio.
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Valor por mês (R$)</label>
+              <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder="0,00" value={proLaboreInput} onChange={e => setProLaboreInput(e.target.value)} />
+              <div style={{ fontSize: 11, color: 'var(--text3)' }}>Deixe em 0 para não mostrar essa linha.</div>
+            </div>
+            <button style={s.btnPrimary} onClick={salvarProLabore} disabled={savingProLabore}>{savingProLabore ? 'Salvando...' : 'Salvar'}</button>
+            <button style={s.btnSecondary} onClick={() => setShowProLabore(false)}>Cancelar</button>
+        </Modal>
+      )}
+
       {/* Modal Despesa */}
       {showDespesaModal && (
         <Modal onClose={fecharDespesaModal} variant="sheet" boxStyle={s.modal}>
@@ -1361,6 +1439,8 @@ const s = {
   aPagarBadge: { fontSize: 10, fontWeight: 700, color: '#B45309', marginTop: 2 },
   pagarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer' },
   aPagarResumo: { display: 'flex', alignItems: 'center', gap: 6, background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 13px', marginBottom: 10, fontSize: 12.5, color: '#92400E', cursor: 'pointer', fontWeight: 500 },
+  proLaboreEdit: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '0 0 0 6px', verticalAlign: 'middle' },
+  proLaboreBtn: { width: '100%', marginTop: 10, background: 'var(--surface2)', border: '1px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '9px', fontSize: 12.5, color: 'var(--pink)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
