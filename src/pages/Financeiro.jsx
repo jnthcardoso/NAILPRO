@@ -235,7 +235,7 @@ export default function Financeiro() {
   const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
-  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '' })
+  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
   // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
@@ -276,6 +276,10 @@ export default function Financeiro() {
     if (searchParams.get('ver') === 'pendentes') {
       setTab('receitas')
       setFiltro('pendente')
+    }
+    if (searchParams.get('ver') === 'apagar') {
+      setTab('despesas')
+      setFiltroDespesa('a_pagar')
     }
   }, [searchParams])
 
@@ -424,6 +428,7 @@ export default function Financeiro() {
         recorrente: formDespesa.recorrente,
         valor_variavel: formDespesa.valor_variavel,
         valor_a_preencher: !!editandoDespesa.valor_a_preencher && baseValor === 0,
+        pago: formDespesa.pago,
       }
       const base = supabase.from('despesas')
       const resp = gerenciaTudo
@@ -441,6 +446,7 @@ export default function Financeiro() {
       const { error } = await supabase.from('despesas').insert({
         ...comum, valor: baseValor, data: formDespesa.data,
         recorrente: false, valor_variavel: false, valor_a_preencher: false,
+        pago: formDespesa.pago,
       })
       setSavingDespesa(false)
       if (error) { toastErro(traduzErro(error, 'Não foi possível salvar a despesa.')); return }
@@ -470,6 +476,8 @@ export default function Financeiro() {
         recorrencia_id: recorrenciaId,
         valor_variavel: formDespesa.valor_variavel,
         valor_a_preencher: formDespesa.valor_variavel && valorMes === 0,
+        // 1º mês segue o checkbox; meses futuros já nascem "a pagar".
+        pago: i === 0 ? formDespesa.pago : false,
       })
     }
     const { error } = await supabase.from('despesas').insert(linhas)
@@ -481,7 +489,7 @@ export default function Financeiro() {
 
   function abrirNovaDespesa() {
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '' })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
     setShowDespesaModal(true)
   }
 
@@ -497,6 +505,7 @@ export default function Financeiro() {
       valor_variavel: despesa.valor_variavel || false,
       recorrente_ate: '',
       observacoes: despesa.observacoes || '',
+      pago: despesa.pago !== false,
     })
     setShowDespesaModal(true)
   }
@@ -504,7 +513,28 @@ export default function Financeiro() {
   function fecharDespesaModal() {
     setShowDespesaModal(false)
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '' })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
+  }
+
+  // Marca uma conta a pagar como PAGA (botão rápido no card). Otimista + banco.
+  async function marcarDespesaPaga(despesa) {
+    setDespesas(prev => prev.map(d => d.id === despesa.id ? { ...d, pago: true } : d))
+    const q = supabase.from('despesas').update({ pago: true }).eq('id', despesa.id)
+    const { error } = await (gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id))
+    if (error) {
+      setDespesas(prev => prev.map(d => d.id === despesa.id ? { ...d, pago: false } : d))
+      toastErro(traduzErro(error, 'Não foi possível marcar como paga.'))
+      return
+    }
+    sucesso('Conta marcada como paga ✓', {
+      acaoLabel: 'Desfazer',
+      acao: async () => {
+        setDespesas(prev => prev.map(d => d.id === despesa.id ? { ...d, pago: false } : d))
+        const uq = supabase.from('despesas').update({ pago: false }).eq('id', despesa.id)
+        await (gerenciaTudo ? uq.eq('salao_id', salaoId) : uq.eq('user_id', user.id))
+        loadDespesas()
+      },
+    })
   }
 
   async function excluirDespesa(despesa) {
@@ -689,11 +719,15 @@ export default function Financeiro() {
     })
     .sort((a, b) => b.valor - a.valor)
 
-  // Filtro da lista de despesas (todas / só recorrentes / só "a preencher").
+  // Filtro da lista de despesas (todas / a pagar / recorrentes / "a preencher").
   const despesasVisiveis = despesas.filter(d =>
-    filtroDespesa === 'recorrentes' ? d.recorrente
+    filtroDespesa === 'a_pagar' ? d.pago === false
+    : filtroDespesa === 'recorrentes' ? d.recorrente
     : filtroDespesa === 'preencher' ? d.valor_a_preencher
     : true)
+  // Contas ainda a pagar no período (pago = false).
+  const contasAPagar = despesas.filter(d => d.pago === false)
+  const totalAPagar = contasAPagar.reduce((s, d) => s + (d.valor || 0), 0)
 
   return (
     <div style={s.page}>
@@ -993,6 +1027,7 @@ export default function Financeiro() {
           <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
             {[
               { id: 'todas', emoji: '', label: 'Todas' },
+              { id: 'a_pagar', emoji: '💸', label: 'A pagar' },
               { id: 'recorrentes', emoji: '🔁', label: 'Recorrentes' },
               { id: 'preencher', emoji: '⚠️', label: 'A preencher' },
             ].map(f => (
@@ -1003,8 +1038,15 @@ export default function Financeiro() {
             ))}
           </div>
 
+          {/* Resumo de contas a pagar no período (atalho pro filtro) */}
+          {contasAPagar.length > 0 && filtroDespesa !== 'a_pagar' && (
+            <div style={s.aPagarResumo} onClick={() => setFiltroDespesa('a_pagar')}>
+              💸 {contasAPagar.length} conta{contasAPagar.length > 1 ? 's' : ''} a pagar neste período · <strong>{formatBRL(totalAPagar)}</strong>
+            </div>
+          )}
+
           {despesasVisiveis.length === 0
-            ? <div style={s.empty}>Nenhuma despesa {filtroDespesa === 'recorrentes' ? 'recorrente' : filtroDespesa === 'preencher' ? 'a preencher' : 'registrada'}</div>
+            ? <div style={s.empty}>Nenhuma despesa {filtroDespesa === 'a_pagar' ? 'a pagar' : filtroDespesa === 'recorrentes' ? 'recorrente' : filtroDespesa === 'preencher' ? 'a preencher' : 'registrada'}</div>
             : despesasVisiveis.map(d => {
               const cat = CATEGORIAS.find(c => c.id === d.categoria)
               return (
@@ -1015,7 +1057,7 @@ export default function Financeiro() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={s.finNome}>{d.descricao}</div>
                     <div style={s.finSub}>
-                      {cat?.label || d.categoria} · {format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                      {cat?.label || d.categoria} · {d.pago === false ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
                       {d.recorrente && ' · 🔁 mensal'}{d.valor_variavel && ' (valor varia)'}
                     </div>
                   </div>
@@ -1023,7 +1065,13 @@ export default function Financeiro() {
                     {d.valor_a_preencher
                       ? <div style={{ ...s.finValor, color: '#B45309', fontSize: 12 }}>⚠️ a preencher</div>
                       : <div style={{ ...s.finValor, color: '#B91C1C' }}>− {formatBRL(d.valor ?? 0)}</div>}
+                    {d.pago === false && <div style={s.aPagarBadge}>💸 a pagar</div>}
                     <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
+                      {d.pago === false && !d.valor_a_preencher && (
+                        <button style={s.pagarBtn} onClick={() => marcarDespesaPaga(d)} title="Marcar como paga">
+                          <Check size={11} /> Pagar
+                        </button>
+                      )}
                       <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
                         <Pencil size={11} />
                       </button>
@@ -1122,6 +1170,19 @@ export default function Financeiro() {
                 {FORMAS_PAGAMENTO.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
+
+            {/* Já paga × conta a pagar (vencimento = data acima) */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={formDespesa.pago} onChange={e => setFormDespesa({ ...formDespesa, pago: e.target.checked })} />
+              ✅ Já paguei essa conta
+            </label>
+            {!formDespesa.pago && (
+              <div style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px' }}>
+                💸 Vai entrar em <strong>Contas a pagar</strong> com vencimento em {formDespesa.data ? format(new Date(formDespesa.data + 'T12:00:00'), 'dd/MM') : 'na data acima'}.
+                {formDespesa.recorrente && !editandoDespesa && ' Os próximos meses também já nascem a pagar.'}
+              </div>
+            )}
+
             {editandoDespesa ? (
               formDespesa.recorrente && (
                 <div style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px' }}>
@@ -1248,6 +1309,9 @@ const s = {
   statusBtn: { fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 600, border: 'none', cursor: 'pointer', marginTop: 3 },
   cobrarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer', textDecoration: 'none' },
   cobradoBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', textDecoration: 'none' },
+  aPagarBadge: { fontSize: 10, fontWeight: 700, color: '#B45309', marginTop: 2 },
+  pagarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer' },
+  aPagarResumo: { display: 'flex', alignItems: 'center', gap: 6, background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 13px', marginBottom: 10, fontSize: 12.5, color: '#92400E', cursor: 'pointer', fontWeight: 500 },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
