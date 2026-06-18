@@ -407,6 +407,8 @@ export default function Financeiro() {
       return
     }
     setSavingDespesa(true)
+    // "Contas a pagar" é Pro/Salão: no Solo, toda despesa entra como já paga.
+    const podeContasAPagar = temAcesso('contasAPagar')
     const baseValor = formDespesa.valor ? parseFloat(formDespesa.valor) : 0
     // Profissional: despesa privada (sem vínculo ao salão, fora do DRE da dona).
     const comum = {
@@ -428,7 +430,7 @@ export default function Financeiro() {
         recorrente: formDespesa.recorrente,
         valor_variavel: formDespesa.valor_variavel,
         valor_a_preencher: !!editandoDespesa.valor_a_preencher && baseValor === 0,
-        pago: formDespesa.pago,
+        pago: podeContasAPagar ? formDespesa.pago : true,
       }
       const base = supabase.from('despesas')
       const resp = gerenciaTudo
@@ -446,7 +448,7 @@ export default function Financeiro() {
       const { error } = await supabase.from('despesas').insert({
         ...comum, valor: baseValor, data: formDespesa.data,
         recorrente: false, valor_variavel: false, valor_a_preencher: false,
-        pago: formDespesa.pago,
+        pago: podeContasAPagar ? formDespesa.pago : true,
       })
       setSavingDespesa(false)
       if (error) { toastErro(traduzErro(error, 'Não foi possível salvar a despesa.')); return }
@@ -477,7 +479,7 @@ export default function Financeiro() {
         valor_variavel: formDespesa.valor_variavel,
         valor_a_preencher: formDespesa.valor_variavel && valorMes === 0,
         // 1º mês segue o checkbox; meses futuros já nascem "a pagar".
-        pago: i === 0 ? formDespesa.pago : false,
+        pago: podeContasAPagar ? (i === 0 ? formDespesa.pago : false) : true,
       })
     }
     const { error } = await supabase.from('despesas').insert(linhas)
@@ -912,7 +914,7 @@ export default function Financeiro() {
               const pago = p.status === 'pago'
               const tel = p.agendamentos?.clientes?.telefone
               // Cobrança só faz sentido em pendente com telefone válido.
-              const podeCobrar = !pago && validarTelefone(tel)
+              const podeCobrar = !pago && validarTelefone(tel) && temAcesso('cobrancaWhatsapp')
               const cobrado = !!p.cobranca_enviada_em
               const msgCobranca = aplicarVariaveis(cobranca.template, {
                 nome: p.agendamentos?.clientes?.nome || '',
@@ -1030,7 +1032,7 @@ export default function Financeiro() {
               { id: 'a_pagar', emoji: '💸', label: 'A pagar' },
               { id: 'recorrentes', emoji: '🔁', label: 'Recorrentes' },
               { id: 'preencher', emoji: '⚠️', label: 'A preencher' },
-            ].map(f => (
+            ].filter(f => f.id !== 'a_pagar' || temAcesso('contasAPagar')).map(f => (
               <button key={f.id} onClick={() => setFiltroDespesa(f.id)}
                 style={{ ...s.modoTab, ...(filtroDespesa === f.id ? s.modoTabAtivo : {}) }}>
                 {f.emoji && <span className="filtro-emoji">{f.emoji} </span>}{f.label}
@@ -1171,16 +1173,20 @@ export default function Financeiro() {
               </select>
             </div>
 
-            {/* Já paga × conta a pagar (vencimento = data acima) */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={formDespesa.pago} onChange={e => setFormDespesa({ ...formDespesa, pago: e.target.checked })} />
-              ✅ Já paguei essa conta
-            </label>
-            {!formDespesa.pago && (
-              <div style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px' }}>
-                💸 Vai entrar em <strong>Contas a pagar</strong> com vencimento em {formDespesa.data ? format(new Date(formDespesa.data + 'T12:00:00'), 'dd/MM') : 'na data acima'}.
-                {formDespesa.recorrente && !editandoDespesa && ' Os próximos meses também já nascem a pagar.'}
-              </div>
+            {/* Já paga × conta a pagar (Pro/Salão) — vencimento = data acima */}
+            {temAcesso('contasAPagar') && (
+              <>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={formDespesa.pago} onChange={e => setFormDespesa({ ...formDespesa, pago: e.target.checked })} />
+                  ✅ Já paguei essa conta
+                </label>
+                {!formDespesa.pago && (
+                  <div style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px' }}>
+                    💸 Vai entrar em <strong>Contas a pagar</strong> com vencimento em {formDespesa.data ? format(new Date(formDespesa.data + 'T12:00:00'), 'dd/MM') : 'na data acima'}.
+                    {formDespesa.recorrente && !editandoDespesa && ' Os próximos meses também já nascem a pagar.'}
+                  </div>
+                )}
+              </>
             )}
 
             {editandoDespesa ? (

@@ -527,7 +527,8 @@ export default function Configuracoes() {
           <div style={s.hint}>Usado para enviar lembretes às clientes</div>
         </div>
 
-        {/* Chave Pix — usada na cobrança dos pendentes (Financeiro) */}
+        {/* Chave Pix (Pro/Salão) — usada na cobrança dos pendentes (Financeiro) */}
+        {temAcesso('cobrancaWhatsapp') && (
         <div style={s.field}>
           <label style={s.label}>Chave Pix</label>
           <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -562,6 +563,7 @@ export default function Configuracoes() {
             ? <div style={{ ...s.hint, color: 'var(--red, #B91C1C)' }}>{pixErro}</div>
             : <div style={s.hint}>Entra na cobrança dos pagamentos pendentes. Deixe em branco se não cobrar por Pix.</div>}
         </div>
+        )}
       </div>
 
       {/* ── Serviços padrão ─────────────────── */}
@@ -672,7 +674,8 @@ export default function Configuracoes() {
         </div>
       </div>
 
-      {/* ── Cobrança no WhatsApp ─────────────── */}
+      {/* ── Cobrança no WhatsApp (Pro/Salão) ─────────────── */}
+      {temAcesso('cobrancaWhatsapp') && (
       <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>cobrança no whatsapp</div>
 
@@ -686,6 +689,7 @@ export default function Configuracoes() {
           />
         </div>
       </div>
+      )}
 
       {/* ── Agenda Online ───────────────────── */}
       <div style={{ ...s.section, display: tab === 'agenda' ? 'block' : 'none' }}>

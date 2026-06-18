@@ -3,6 +3,7 @@ import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
 import { STATUS, resumoPagamento } from '../../pages/Agenda.constants'
 import { formatBRL, linkWhatsApp, dataBR } from '../../lib/formatters'
+import { useAssinatura } from '../../contexts/AssinaturaContext'
 
 const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -29,6 +30,8 @@ function buildWhatsAppConfirm(ag) {
 export default function DetalheAgendamentoDrawer({
   ag, onClose, onConfirmar, onRealizar, onCancelar, onEditar, onRegistrarPagamento, onExcluirBloqueio, onEditarBloqueio,
 }) {
+  // Confirmação por link é Pro/Salão (reusa o gate de lembretes WhatsApp).
+  const { temAcesso } = useAssinatura()
   // Bloqueio de horário: detalhe com editar e remover.
   if (ag.tipo === 'bloqueio') {
     const serie = ag.bloqueio || ag
@@ -158,7 +161,7 @@ export default function DetalheAgendamentoDrawer({
       {/* WhatsApp */}
       {(waConfirm || waDirectUrl) && (
         <div style={{ display: 'flex', gap: 8 }}>
-          {waConfirm && (
+          {waConfirm && temAcesso('lembretesWhatsapp') && (
             <a href={waConfirm} target="_blank" rel="noopener noreferrer"
               style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D', border: '1px solid #4ADE80', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
               <MessageCircle size={13} />Confirmar via WA
