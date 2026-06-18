@@ -232,7 +232,7 @@ export default function Financeiro() {
   const [editandoDespesa, setEditandoDespesa] = useState(null)
   const [agendamentos, setAgendamentos] = useState([])
   // Previsão = receita futura (agendamentos pendentes/confirmados a partir de hoje).
-  const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0, entraSemana: 0, entraMes: 0, saiSemana: 0, saiMes: 0 })
+  const [previsao, setPrevisao] = useState({ entraSemana: 0, entraMes: 0, saiSemana: 0, saiMes: 0, confirmadoMes: 0, aguardandoMes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
@@ -369,17 +369,14 @@ export default function Financeiro() {
     const somaD = (arr) => (arr || []).reduce((acc, d) => acc + (d.valor || 0), 0)
 
     setPrevisao({
-      hoje: soma(ags.filter(a => a.data === hoje)),
-      semana: soma(ags.filter(a => a.data > hoje && a.data <= fimSemana)),
-      mes: soma(ags.filter(a => a.data > fimSemana && a.data <= fimMes)),
-      ano: soma(ags.filter(a => a.data > fimMes && a.data <= fimAno)),
-      confirmados: soma(ags.filter(a => a.status === 'confirmado')),
-      pendentes: soma(ags.filter(a => a.status === 'pendente')),
       // Fluxo de caixa cumulativo: o que entra/sai de hoje até o fim do período.
-      entraSemana: soma(ags.filter(a => a.data >= hoje && a.data <= fimSemana)),
-      entraMes: soma(ags.filter(a => a.data >= hoje && a.data <= fimMes)),
+      entraSemana: soma(ags.filter(a => a.data <= fimSemana)),
+      entraMes: soma(ags.filter(a => a.data <= fimMes)),
       saiSemana: somaD((desp || []).filter(d => d.data <= fimSemana)),
       saiMes: somaD(desp),
+      // Do "vai entrar" do mês: quanto já está confirmado × ainda aguardando.
+      confirmadoMes: soma(ags.filter(a => a.data <= fimMes && a.status === 'confirmado')),
+      aguardandoMes: soma(ags.filter(a => a.data <= fimMes && a.status === 'pendente')),
     })
   }
 
@@ -1039,8 +1036,12 @@ export default function Financeiro() {
       {/* ── ABA: Previsão ── */}
       {!loading && tab === 'previsao' && (
         <div style={s.tabContent}>
-          {/* Fluxo de caixa: entra − sai = sobra (cumulativo, esta semana / este mês) */}
-          <div style={s.prevSection}>Sobra prevista (entra − sai)</div>
+          <div style={s.prevInfo}>
+            📅 O que ainda vai <strong>entrar e sair</strong> daqui pra frente — pra você saber se a semana e o mês fecham no azul.
+          </div>
+
+          {/* 1) Vai sobrar quanto? (entra − sai = sobra) */}
+          <div style={s.prevSection}>Vai sobrar quanto?</div>
           <div style={s.prevGrid}>
             {[
               { label: 'Esta semana', entra: previsao.entraSemana, sai: previsao.saiSemana },
@@ -1051,8 +1052,8 @@ export default function Financeiro() {
               return (
                 <div key={label} style={{ ...s.prevCard, ...(neg ? { borderColor: '#FCA5A5', background: '#FEF2F2' } : {}) }}>
                   <div style={s.prevLabel}>{label}</div>
-                  <div style={s.fluxoLinha}><span>entra</span><span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(entra)}</span></div>
-                  <div style={s.fluxoLinha}><span>sai</span><span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(sai)}</span></div>
+                  <div style={s.fluxoLinha}><span>vai entrar</span><span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(entra)}</span></div>
+                  <div style={s.fluxoLinha}><span>vai sair</span><span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(sai)}</span></div>
                   <div style={s.fluxoSobra}>
                     <span style={{ fontSize: 12, fontWeight: 700 }}>sobra</span>
                     <span style={{ ...s.mono, fontWeight: 700, fontSize: 16, color: neg ? '#B91C1C' : 'var(--green)' }}>{formatBRL(sobra)}</span>
@@ -1063,54 +1064,22 @@ export default function Financeiro() {
             })}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>
-            "Entra" = agendamentos confirmados/pendentes. "Sai" = despesas a vencer e contas a pagar em aberto. Contas com valor "a preencher" ainda não entram no "sai".
+            <strong>Vai entrar</strong> = atendimentos já agendados. <strong>Vai sair</strong> = despesas a vencer e contas a pagar. (Contas com valor "a preencher" ainda não entram.)
           </div>
 
-          <div style={s.prevInfo}>
-            💡 Receita dos agendamentos confirmados e pendentes nos próximos períodos
-          </div>
-
-          {/* Receita futura por período (não cumulativo) */}
-          <div style={s.prevSection}>Receita prevista por período</div>
-          <div style={s.prevGrid}>
-            {[
-              { label: 'Hoje', valor: previsao.hoje, sub: 'agendamentos de hoje' },
-              { label: 'Próx. dias', valor: previsao.semana, sub: 'restante desta semana' },
-              { label: 'Restante do mês', valor: previsao.mes, sub: 'após esta semana' },
-              { label: 'Restante do ano', valor: previsao.ano, sub: 'após este mês' },
-            ].map(({ label, valor, sub }) => (
-              <div key={label} style={s.prevCard}>
-                <div style={s.prevLabel}>{label}</div>
-                <div style={s.prevValor}>{formatBRL(valor)}</div>
-                <div style={s.prevSub}>{sub}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Pipeline por status */}
-          <div style={{ ...s.prevSection, marginTop: 6 }}>Pipeline por status</div>
+          {/* 2) Do "vai entrar" do mês, quanto já está garantido */}
+          <div style={{ ...s.prevSection, marginTop: 6 }}>Desse "vai entrar" do mês, quanto já está garantido?</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div style={{ ...s.prevPipeCard, borderColor: '#4ADE80', background: '#F0FDF4' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmados</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#15803D' }}>
-                {formatBRL(previsao.confirmados)}
-              </div>
-              <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>já confirmado pela cliente</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmado</div>
+              <div style={{ ...s.mono, fontSize: 22, fontWeight: 700, color: '#15803D' }}>{formatBRL(previsao.confirmadoMes)}</div>
+              <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>a cliente confirmou que vem</div>
             </div>
             <div style={{ ...s.prevPipeCard, borderColor: '#FCD34D', background: '#FFFBEB' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Aguardando</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: '#D97706' }}>
-                {formatBRL(previsao.pendentes)}
-              </div>
-              <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>pendente de confirmação</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Ainda não confirmou</div>
+              <div style={{ ...s.mono, fontSize: 22, fontWeight: 700, color: '#D97706' }}>{formatBRL(previsao.aguardandoMes)}</div>
+              <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>mande um lembrete pra confirmar</div>
             </div>
-          </div>
-
-          <div style={s.prevTotal}>
-            <span style={{ color: 'var(--text2)', fontSize: 13 }}>Total previsto</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' }}>
-              {formatBRL(previsao.confirmados + previsao.pendentes)}
-            </span>
           </div>
         </div>
       )}
