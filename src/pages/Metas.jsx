@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useAssinatura } from '../contexts/AssinaturaContext'
+import { useNavigate } from 'react-router-dom'
+import { ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatBRL } from '../lib/formatters'
@@ -19,6 +22,8 @@ export default function Metas() {
   const { user } = useAuth()
   const { salaoId } = useSalao()
   const { confirmar, sucesso, erro: toastErro } = useToast()
+  const { temAcesso } = useAssinatura()
+  const navigate = useNavigate()
   const [tab, setTab] = useState('metas')
 
   // ── Metas ───────────────────────────────────────────
@@ -475,6 +480,9 @@ export default function Metas() {
                 }
               </div>
 
+              {/* 2 e 3 (retenção + novas clientes) são KPIs avançados: Pro/Salão. */}
+              {temAcesso('relatoriosAvancados') ? (
+              <>
               {/* 2. Taxa de retenção */}
               <div style={s.kpiCard}>
                 <div style={s.kpiCardTitle}><RefreshCw size={15} color="var(--pink)" /> Taxa de retenção</div>
@@ -556,6 +564,22 @@ export default function Metas() {
                   </span>
                 </div>
               </div>
+              </>
+              ) : (
+                <div style={{ ...s.kpiCard, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 10, minHeight: 180 }}>
+                  <RefreshCw size={26} color="var(--text3)" />
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    KPIs avançados <ProBadge />
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', maxWidth: 240, lineHeight: 1.5 }}>
+                    Taxa de retenção e novas clientes por mês fazem parte do plano Pro.
+                  </div>
+                  <button
+                    onClick={() => navigate('/planos')}
+                    style={{ marginTop: 4, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >Conhecer o Pro</button>
+                </div>
+              )}
             </div>
           )}
         </>
