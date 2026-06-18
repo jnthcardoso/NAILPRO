@@ -232,7 +232,7 @@ export default function Financeiro() {
   const [editandoDespesa, setEditandoDespesa] = useState(null)
   const [agendamentos, setAgendamentos] = useState([])
   // Previsão = receita futura (agendamentos pendentes/confirmados a partir de hoje).
-  const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0 })
+  const [previsao, setPrevisao] = useState({ hoje: 0, semana: 0, mes: 0, ano: 0, confirmados: 0, pendentes: 0, entraSemana: 0, entraMes: 0, saiSemana: 0, saiMes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
@@ -353,6 +353,15 @@ export default function Financeiro() {
 
     if (!ags) return
     const soma = (arr) => arr.reduce((acc, a) => acc + (a.valor || 0), 0)
+
+    // "Vai sair": despesas futuras (data >= hoje) + contas a pagar em aberto
+    // (pago = false, inclusive vencidas). Respeita quem-vê-o-quê (dona x profissional).
+    let despQ = supabase.from('despesas').select('data, valor, pago')
+      .lte('data', fimMes).or(`data.gte.${hoje},pago.eq.false`)
+    despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', user.id)
+    const { data: desp } = await despQ
+    const somaD = (arr) => (arr || []).reduce((acc, d) => acc + (d.valor || 0), 0)
+
     setPrevisao({
       hoje: soma(ags.filter(a => a.data === hoje)),
       semana: soma(ags.filter(a => a.data > hoje && a.data <= fimSemana)),
@@ -360,6 +369,11 @@ export default function Financeiro() {
       ano: soma(ags.filter(a => a.data > fimMes && a.data <= fimAno)),
       confirmados: soma(ags.filter(a => a.status === 'confirmado')),
       pendentes: soma(ags.filter(a => a.status === 'pendente')),
+      // Fluxo de caixa cumulativo: o que entra/sai de hoje até o fim do período.
+      entraSemana: soma(ags.filter(a => a.data >= hoje && a.data <= fimSemana)),
+      entraMes: soma(ags.filter(a => a.data >= hoje && a.data <= fimMes)),
+      saiSemana: somaD((desp || []).filter(d => d.data <= fimSemana)),
+      saiMes: somaD(desp),
     })
   }
 
@@ -964,6 +978,33 @@ export default function Financeiro() {
       {/* ── ABA: Previsão ── */}
       {!loading && tab === 'previsao' && (
         <div style={s.tabContent}>
+          {/* Fluxo de caixa: entra − sai = sobra (cumulativo, esta semana / este mês) */}
+          <div style={s.prevSection}>Sobra prevista (entra − sai)</div>
+          <div style={s.prevGrid}>
+            {[
+              { label: 'Esta semana', entra: previsao.entraSemana, sai: previsao.saiSemana },
+              { label: 'Este mês', entra: previsao.entraMes, sai: previsao.saiMes },
+            ].map(({ label, entra, sai }) => {
+              const sobra = entra - sai
+              const neg = sobra < 0
+              return (
+                <div key={label} style={{ ...s.prevCard, ...(neg ? { borderColor: '#FCA5A5', background: '#FEF2F2' } : {}) }}>
+                  <div style={s.prevLabel}>{label}</div>
+                  <div style={s.fluxoLinha}><span>entra</span><span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(entra)}</span></div>
+                  <div style={s.fluxoLinha}><span>sai</span><span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(sai)}</span></div>
+                  <div style={s.fluxoSobra}>
+                    <span style={{ fontSize: 12, fontWeight: 700 }}>sobra</span>
+                    <span style={{ ...s.mono, fontWeight: 700, fontSize: 16, color: neg ? '#B91C1C' : 'var(--green)' }}>{formatBRL(sobra)}</span>
+                  </div>
+                  {neg && <div style={{ fontSize: 10.5, color: '#B91C1C', marginTop: 4, fontWeight: 600 }}>⚠️ as contas passam o que entra</div>}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>
+            "Entra" = agendamentos confirmados/pendentes. "Sai" = despesas a vencer e contas a pagar em aberto. Contas com valor "a preencher" ainda não entram no "sai".
+          </div>
+
           <div style={s.prevInfo}>
             💡 Receita dos agendamentos confirmados e pendentes nos próximos períodos
           </div>
@@ -1265,6 +1306,8 @@ const s = {
   prevLabel: { fontSize: 11, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 },
   prevValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: 'var(--pink)' },
   prevSub: { fontSize: 10, color: 'var(--text3)', marginTop: 2 },
+  fluxoLinha: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: 'var(--text3)', marginTop: 4 },
+  fluxoSobra: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border)', marginTop: 7, paddingTop: 7 },
   prevPipeCard: { background: 'var(--surface)', border: '1.5px solid', borderRadius: 'var(--radius-sm)', padding: '14px 15px', boxShadow: 'var(--shadow-xs)' },
   prevTotal: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', boxShadow: 'var(--shadow-xs)' },
   modoTabs: { display: 'flex', gap: 6, marginBottom: 10 },
