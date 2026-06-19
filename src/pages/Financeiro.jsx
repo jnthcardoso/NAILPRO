@@ -235,7 +235,7 @@ export default function Financeiro() {
   const [previsao, setPrevisao] = useState({ entraSemana: 0, entraMes: 0, saiSemana: 0, saiMes: 0, confirmadoMes: 0, aguardandoMes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
-  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
+  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
   // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
@@ -435,6 +435,7 @@ export default function Financeiro() {
       categoria: formDespesa.categoria,
       forma_pagamento: formDespesa.forma_pagamento || null,
       observacoes: formDespesa.observacoes || null,
+      tipo: formDespesa.tipo || 'salao',
     }
 
     // EDIÇÃO: atualiza só ESTE lançamento (não regenera a série). Útil também
@@ -524,7 +525,7 @@ export default function Financeiro() {
 
   function abrirNovaDespesa() {
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
     setShowDespesaModal(true)
   }
 
@@ -541,6 +542,7 @@ export default function Financeiro() {
       recorrente_ate: '',
       observacoes: despesa.observacoes || '',
       pago: despesa.pago !== false,
+      tipo: despesa.tipo || 'salao',
     })
     setShowDespesaModal(true)
   }
@@ -548,7 +550,7 @@ export default function Financeiro() {
   function fecharDespesaModal() {
     setShowDespesaModal(false)
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
   }
 
   // Marca uma conta a pagar como PAGA (botão rápido no card). Otimista + banco.
@@ -695,7 +697,11 @@ export default function Financeiro() {
   const qtdPagos = pagamentos.filter(p => p.status === 'pago').length
   const ticketMedio = qtdPagos > 0 ? recebido / qtdPagos : 0
   const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0)
-  const lucro = recebido - totalDespesas
+  // Bolso: despesa do salão (custo do negócio) × pessoal (gasto da dona).
+  // Pessoal NÃO entra no lucro do salão — vai pro "seu bolso".
+  const totalDespesasPessoal = despesas.filter(d => d.tipo === 'pessoal').reduce((s, d) => s + (d.valor || 0), 0)
+  const totalDespesasSalao = totalDespesas - totalDespesasPessoal
+  const lucro = recebido - totalDespesasSalao
   const margemLucro = recebido > 0 ? (lucro / recebido) * 100 : 0
   const filtrados = filtro === 'todos' ? pagamentos : pagamentos.filter(p => p.status === filtro)
   const periodoLabel = (rangeMode === 'custom' && customInicio && customFim)
@@ -759,14 +765,20 @@ export default function Financeiro() {
     filtroDespesa === 'a_pagar' ? d.pago === false
     : filtroDespesa === 'recorrentes' ? d.recorrente
     : filtroDespesa === 'preencher' ? d.valor_a_preencher
+    : filtroDespesa === 'salao' ? d.tipo !== 'pessoal'
+    : filtroDespesa === 'pessoal' ? d.tipo === 'pessoal'
     : true)
   // Contas ainda a pagar no período (pago = false).
   const contasAPagar = despesas.filter(d => d.pago === false)
   const totalAPagar = contasAPagar.reduce((s, d) => s + (d.valor || 0), 0)
   const totalDespesasPagas = totalDespesas - totalAPagar
+  // Para o DRE do salão: pagas × a pagar SÓ das despesas do salão (sem pessoal).
+  const salaoAPagar = despesas.filter(d => d.pago === false && d.tipo !== 'pessoal').reduce((s, d) => s + (d.valor || 0), 0)
+  const salaoPagas = totalDespesasSalao - salaoAPagar
   // Pró-labore só faz sentido pra dona/recepção e num mês fechado (não em range custom).
   const mostraProLabore = gerenciaTudo && rangeMode === 'mes'
   const sobrouReinvestir = lucro - proLabore
+  const sobrouPraVoce = proLabore - totalDespesasPessoal
 
   return (
     <div style={s.page}>
@@ -841,9 +853,9 @@ export default function Financeiro() {
               <div style={s.cardSub} className="fin-card-sub">{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
             </div>
             <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }} className="fin-resumo-card">
-              <div style={s.cardLabel} className="fin-card-label"><Receipt size={11} /> Despesas</div>
-              <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">{formatBRL(totalDespesas)}</div>
-              <div style={s.cardSub} className="fin-card-sub">{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
+              <div style={s.cardLabel} className="fin-card-label"><Receipt size={11} /> Despesas do salão</div>
+              <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">{formatBRL(totalDespesasSalao)}</div>
+              <div style={s.cardSub} className="fin-card-sub">{despesas.filter(d => d.tipo !== 'pessoal').length} lançamento{despesas.filter(d => d.tipo !== 'pessoal').length !== 1 ? 's' : ''}</div>
             </div>
             <div
               style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}`, cursor: 'pointer' }}
@@ -869,26 +881,26 @@ export default function Financeiro() {
               <span>(+) Receitas recebidas</span>
               <span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(recebido)}</span>
             </div>
-            {totalAPagar > 0 ? (
+            {salaoAPagar > 0 ? (
               <>
                 <div style={s.dreLinha}>
-                  <span>(−) Despesas pagas <span style={{ color: 'var(--text3)', fontSize: 11 }}>(já saiu)</span></span>
-                  <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesasPagas)}</span>
+                  <span>(−) Despesas do salão <span style={{ color: 'var(--text3)', fontSize: 11 }}>(já pagas)</span></span>
+                  <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(salaoPagas)}</span>
                 </div>
                 <div style={s.dreLinha}>
                   <span>(−) Contas a pagar <span style={{ color: 'var(--text3)', fontSize: 11 }}>(vai sair)</span></span>
-                  <span style={{ ...s.mono, color: '#B45309' }}>− {formatBRL(totalAPagar)}</span>
+                  <span style={{ ...s.mono, color: '#B45309' }}>− {formatBRL(salaoAPagar)}</span>
                 </div>
               </>
             ) : (
               <div style={s.dreLinha}>
-                <span>(−) Despesas totais</span>
-                <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesas)}</span>
+                <span>(−) Despesas do salão</span>
+                <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesasSalao)}</span>
               </div>
             )}
             <div style={s.dreDivider} />
             <div style={{ ...s.dreLinha, ...s.dreTotal }}>
-              <span>(=) Lucro líquido</span>
+              <span>(=) Lucro do salão</span>
               <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>{formatBRL(lucro)}</span>
             </div>
             {recebido > 0 && (
@@ -921,6 +933,24 @@ export default function Financeiro() {
               ) : (
                 <button onClick={abrirProLabore} style={s.proLaboreBtn}>+ Definir seu salário (pró-labore)</button>
               )
+            )}
+
+            {/* Seu bolso: gastos pessoais (não entram no lucro do salão) */}
+            {mostraProLabore && totalDespesasPessoal > 0 && (
+              <>
+                <div style={s.dreDivider} />
+                <div style={s.dreLinha}>
+                  <span>👤 Gastos pessoais <span style={{ color: 'var(--text3)', fontSize: 11 }}>(seu bolso)</span></span>
+                  <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(totalDespesasPessoal)}</span>
+                </div>
+                {proLabore > 0 && (
+                  <div style={s.dreMargem}>
+                    {sobrouPraVoce >= 0
+                      ? <>Do seu salário de {formatBRL(proLabore)}, sobrou <strong>{formatBRL(sobrouPraVoce)}</strong> pra você 💜</>
+                      : <>🚨 Você gastou <strong>{formatBRL(-sobrouPraVoce)}</strong> a mais do que tirou de salário</>}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1118,6 +1148,8 @@ export default function Financeiro() {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <select value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={s.filtroSelect}>
                 <option value="todas">Todas</option>
+                <option value="salao">🏢 Do salão</option>
+                <option value="pessoal">👤 Pessoal</option>
                 {temAcesso('contasAPagar') && <option value="a_pagar">💸 A pagar</option>}
                 <option value="recorrentes">🔁 Recorrentes</option>
                 <option value="preencher">⚠️ A preencher</option>
@@ -1141,6 +1173,7 @@ export default function Financeiro() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={s.finNome}>{d.descricao}</div>
                     <div style={s.finSub}>
+                      {d.tipo === 'pessoal' && <span style={{ fontWeight: 700, color: '#7C3AED' }}>👤 Pessoal · </span>}
                       {cat?.label || d.categoria} · {ehAPagar ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
                       {d.recorrente && ' · 🔁 mensal'}{d.valor_variavel && ' (valor varia)'}
                     </div>
@@ -1249,6 +1282,26 @@ export default function Financeiro() {
       {showDespesaModal && (
         <Modal onClose={fecharDespesaModal} variant="sheet" boxStyle={s.modal}>
             <div style={s.modalTitle}>{editandoDespesa ? '✏️ Editar despesa' : '📉 Nova despesa'}</div>
+
+            {/* Bolso: do salão (custo do negócio) × pessoal (gasto da dona) */}
+            <div style={s.field}>
+              <label style={s.label}>De quem é esse gasto?</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[{ id: 'salao', label: '🏢 Do salão' }, { id: 'pessoal', label: '👤 Pessoal' }].map(o => {
+                  const ativo = (formDespesa.tipo || 'salao') === o.id
+                  return (
+                    <button key={o.id} type="button" onClick={() => setFormDespesa({ ...formDespesa, tipo: o.id })}
+                      style={{ flex: 1, padding: '9px 12px', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid ' + (ativo ? 'var(--pink)' : 'var(--border2)'), background: ativo ? 'var(--pink)' : 'var(--surface)', color: ativo ? 'white' : 'var(--text3)' }}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {(formDespesa.tipo || 'salao') === 'pessoal' && (
+                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Gasto seu (não conta no lucro do salão — vai pro "seu bolso").</div>
+              )}
+            </div>
+
             <div style={s.field}>
               <label style={s.label}>Descrição *</label>
               <input style={s.input} placeholder="Ex: Conta de luz" value={formDespesa.descricao} onChange={e => setFormDespesa({ ...formDespesa, descricao: e.target.value })} />
