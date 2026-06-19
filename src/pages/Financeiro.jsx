@@ -218,6 +218,40 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
   doc.save(`lumen-relatorio-anual-${ano}.pdf`)
 }
 
+// Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
+function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle }) {
+  return (
+    <>
+      <div style={{ ...s.dreLinha, cursor: 'pointer' }} onClick={onToggle}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <ChevronRight size={13} style={{ transition: 'transform .15s', transform: aberto ? 'rotate(90deg)' : 'none', flexShrink: 0 }} />
+          {label}{sub && <span style={{ color: 'var(--text3)', fontSize: 11 }}> {sub}</span>}
+        </span>
+        <span style={{ ...s.mono, color: cor }}>− {formatBRL(valor)}</span>
+      </div>
+      {aberto && (
+        <div style={s.dreSubLista}>
+          {items.length === 0
+            ? <div style={{ ...s.dreSubItem, color: 'var(--text3)' }}>nenhum lançamento</div>
+            : items.map(d => {
+              const c = CATEGORIAS.find(x => x.id === d.categoria)
+              return (
+                <div key={d.id} style={s.dreSubItem}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                    {c?.icon || '📦'} {d.descricao}
+                  </span>
+                  <span style={{ ...s.mono, color: 'var(--text2)', flexShrink: 0 }}>
+                    {d.valor_a_preencher ? '—' : formatBRL(d.valor)}
+                  </span>
+                </div>
+              )
+            })}
+        </div>
+      )}
+    </>
+  )
+}
+
 export default function Financeiro() {
   const { user } = useAuth()
   const { salaoId, gerenciaTudo } = useSalao()
@@ -258,6 +292,9 @@ export default function Financeiro() {
   const [showProLabore, setShowProLabore] = useState(false)
   const [proLaboreInput, setProLaboreInput] = useState('')
   const [savingProLabore, setSavingProLabore] = useState(false)
+  // Linhas do DRE que podem expandir a lista de lançamentos (pagas / a pagar / pessoal).
+  const [dreAberto, setDreAberto] = useState({})
+  const toggleDre = (k) => setDreAberto(p => ({ ...p, [k]: !p[k] }))
   const [searchParams] = useSearchParams()
 
   // Config de cobrança (chave Pix + modelo) — carrega uma vez por salão.
@@ -701,7 +738,11 @@ export default function Financeiro() {
   // Pessoal NÃO entra no lucro do salão — vai pro "seu bolso".
   const totalDespesasPessoal = despesas.filter(d => d.tipo === 'pessoal').reduce((s, d) => s + (d.valor || 0), 0)
   const totalDespesasSalao = totalDespesas - totalDespesasPessoal
-  const lucro = recebido - totalDespesasSalao
+  // Pró-labore é DESPESA operacional: abatido ANTES do lucro líquido (contábil).
+  // Só pra dona/recepção e em mês fechado (não em período personalizado).
+  const mostraProLabore = gerenciaTudo && rangeMode === 'mes'
+  const proLaboreEfetivo = mostraProLabore ? proLabore : 0
+  const lucro = recebido - totalDespesasSalao - proLaboreEfetivo
   const margemLucro = recebido > 0 ? (lucro / recebido) * 100 : 0
   const filtrados = filtro === 'todos' ? pagamentos : pagamentos.filter(p => p.status === filtro)
   const periodoLabel = (rangeMode === 'custom' && customInicio && customFim)
@@ -773,11 +814,12 @@ export default function Financeiro() {
   const totalAPagar = contasAPagar.reduce((s, d) => s + (d.valor || 0), 0)
   const totalDespesasPagas = totalDespesas - totalAPagar
   // Para o DRE do salão: pagas × a pagar SÓ das despesas do salão (sem pessoal).
-  const salaoAPagar = despesas.filter(d => d.pago === false && d.tipo !== 'pessoal').reduce((s, d) => s + (d.valor || 0), 0)
+  const despesasSalaoArr = despesas.filter(d => d.tipo !== 'pessoal')
+  const despesasPessoalArr = despesas.filter(d => d.tipo === 'pessoal')
+  const salaoPagasArr = despesasSalaoArr.filter(d => d.pago !== false)
+  const salaoAPagarArr = despesasSalaoArr.filter(d => d.pago === false)
+  const salaoAPagar = salaoAPagarArr.reduce((s, d) => s + (d.valor || 0), 0)
   const salaoPagas = totalDespesasSalao - salaoAPagar
-  // Pró-labore só faz sentido pra dona/recepção e num mês fechado (não em range custom).
-  const mostraProLabore = gerenciaTudo && rangeMode === 'mes'
-  const sobrouReinvestir = lucro - proLabore
   const sobrouPraVoce = proLabore - totalDespesasPessoal
 
   return (
@@ -883,24 +925,46 @@ export default function Financeiro() {
             </div>
             {salaoAPagar > 0 ? (
               <>
-                <div style={s.dreLinha}>
-                  <span>(−) Despesas do salão <span style={{ color: 'var(--text3)', fontSize: 11 }}>(já pagas)</span></span>
-                  <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(salaoPagas)}</span>
-                </div>
-                <div style={s.dreLinha}>
-                  <span>(−) Contas a pagar <span style={{ color: 'var(--text3)', fontSize: 11 }}>(vai sair)</span></span>
-                  <span style={{ ...s.mono, color: '#B45309' }}>− {formatBRL(salaoAPagar)}</span>
-                </div>
+                <LinhaDespesaExpansivel
+                  label="(−) Despesas do salão" sub="(já pagas)"
+                  valor={salaoPagas} cor="#B91C1C" items={salaoPagasArr}
+                  aberto={!!dreAberto.pagas} onToggle={() => toggleDre('pagas')}
+                />
+                <LinhaDespesaExpansivel
+                  label="(−) Contas a pagar" sub="(vai sair)"
+                  valor={salaoAPagar} cor="#B45309" items={salaoAPagarArr}
+                  aberto={!!dreAberto.apagar} onToggle={() => toggleDre('apagar')}
+                />
               </>
             ) : (
-              <div style={s.dreLinha}>
-                <span>(−) Despesas do salão</span>
-                <span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(totalDespesasSalao)}</span>
-              </div>
+              <LinhaDespesaExpansivel
+                label="(−) Despesas do salão"
+                valor={totalDespesasSalao} cor="#B91C1C" items={despesasSalaoArr}
+                aberto={!!dreAberto.salao} onToggle={() => toggleDre('salao')}
+              />
             )}
+
+            {/* Pró-labore é despesa operacional: vem ANTES do lucro líquido */}
+            {mostraProLabore && (
+              proLabore > 0 ? (
+                <div style={s.dreLinha}>
+                  <span>
+                    (−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span>
+                    <button onClick={abrirProLabore} style={s.proLaboreEdit} title="Editar seu salário"><Pencil size={11} /></button>
+                  </span>
+                  <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(proLabore)}</span>
+                </div>
+              ) : (
+                <div style={s.dreLinha}>
+                  <span>(−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span></span>
+                  <button onClick={abrirProLabore} style={s.proLaboreLink}>+ definir</button>
+                </div>
+              )
+            )}
+
             <div style={s.dreDivider} />
             <div style={{ ...s.dreLinha, ...s.dreTotal }}>
-              <span>(=) Lucro do salão</span>
+              <span>(=) Lucro líquido</span>
               <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>{formatBRL(lucro)}</span>
             </div>
             {recebido > 0 && (
@@ -913,43 +977,22 @@ export default function Financeiro() {
               </div>
             )}
 
-            {/* Pró-labore: "meu salário" → sobrou pra reinvestir (só dona, mês fechado) */}
-            {mostraProLabore && (
-              proLabore > 0 ? (
-                <>
-                  <div style={s.dreDivider} />
-                  <div style={s.dreLinha}>
-                    <span>
-                      (−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span>
-                      <button onClick={abrirProLabore} style={s.proLaboreEdit} title="Editar seu salário"><Pencil size={11} /></button>
-                    </span>
-                    <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(proLabore)}</span>
-                  </div>
-                  <div style={{ ...s.dreLinha, ...s.dreTotal }}>
-                    <span>(=) Sobrou pra reinvestir</span>
-                    <span style={{ ...s.mono, color: sobrouReinvestir >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 15 }}>{formatBRL(sobrouReinvestir)}</span>
-                  </div>
-                </>
-              ) : (
-                <button onClick={abrirProLabore} style={s.proLaboreBtn}>+ Definir seu salário (pró-labore)</button>
-              )
-            )}
-
             {/* Seu bolso: gastos pessoais (não entram no lucro do salão) */}
             {mostraProLabore && totalDespesasPessoal > 0 && (
               <>
                 <div style={s.dreDivider} />
-                <div style={s.dreLinha}>
-                  <span>👤 Gastos pessoais <span style={{ color: 'var(--text3)', fontSize: 11 }}>(seu bolso)</span></span>
-                  <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(totalDespesasPessoal)}</span>
-                </div>
-                {proLabore > 0 && (
-                  <div style={s.dreMargem}>
-                    {sobrouPraVoce >= 0
-                      ? <>Do seu salário de {formatBRL(proLabore)}, sobrou <strong>{formatBRL(sobrouPraVoce)}</strong> pra você 💜</>
-                      : <>🚨 Você gastou <strong>{formatBRL(-sobrouPraVoce)}</strong> a mais do que tirou de salário</>}
-                  </div>
-                )}
+                <LinhaDespesaExpansivel
+                  label="👤 Gastos pessoais" sub="(seu bolso)"
+                  valor={totalDespesasPessoal} cor="#7C3AED" items={despesasPessoalArr}
+                  aberto={!!dreAberto.pessoal} onToggle={() => toggleDre('pessoal')}
+                />
+                {proLabore > 0
+                  ? <div style={s.dreMargem}>
+                      {sobrouPraVoce >= 0
+                        ? <>Do seu salário de {formatBRL(proLabore)}, sobrou <strong>{formatBRL(sobrouPraVoce)}</strong> pra você 💜</>
+                        : <>🚨 Você gastou <strong>{formatBRL(-sobrouPraVoce)}</strong> a mais do que tirou de salário</>}
+                    </div>
+                  : <div style={s.dreMargem}>Defina seu salário acima pra saber se seus gastos pessoais cabem no que você tira. 💡</div>}
               </>
             )}
           </div>
@@ -1452,6 +1495,8 @@ const s = {
   dreTotal: { fontWeight: 700, color: 'var(--text)', paddingTop: 5 },
   dreMargem: { fontSize: 11, color: 'var(--text3)', marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border)' },
   mono: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 },
+  dreSubLista: { display: 'flex', flexDirection: 'column', gap: 5, padding: '2px 2px 9px 20px' },
+  dreSubItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text2)' },
   /* Gráficos */
   graficosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 },
   graficoCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 14px 10px', boxShadow: 'var(--shadow-xs)' },
@@ -1480,6 +1525,7 @@ const s = {
   aPagarResumo: { display: 'flex', alignItems: 'center', gap: 6, background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 13px', marginBottom: 10, fontSize: 12.5, color: '#92400E', cursor: 'pointer', fontWeight: 500 },
   proLaboreEdit: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '0 0 0 6px', verticalAlign: 'middle' },
   proLaboreBtn: { width: '100%', marginTop: 10, background: 'var(--surface2)', border: '1px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '9px', fontSize: 12.5, color: 'var(--pink)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  proLaboreLink: { background: 'none', border: 'none', color: 'var(--pink)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit', padding: 0 },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
