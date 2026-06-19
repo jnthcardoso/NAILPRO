@@ -897,9 +897,9 @@ export default function Financeiro() {
             {/* Previsão de receita do mês — só no mês atual */}
             {ehMesAtual && (
               <div style={{ ...s.card, borderTop: '3px solid var(--pink)' }} className="fin-resumo-card">
-                <div style={s.cardLabel} className="fin-card-label"><Calendar size={11} /> Previsão do mês</div>
+                <div style={s.cardLabel} className="fin-card-label"><Calendar size={11} /> Previsão de fechamento</div>
                 <div style={{ ...s.cardValue, color: 'var(--pink)' }} className="fin-card-value">{formatBRL(recebido + pendente + previsao.entraMes)}</div>
-                <div style={s.cardSub} className="fin-card-sub">{previsao.qtdEntraMes} agendado{previsao.qtdEntraMes !== 1 ? 's' : ''}</div>
+                <div style={s.cardSub} className="fin-card-sub">estimativa do mês</div>
               </div>
             )}
           </div>
