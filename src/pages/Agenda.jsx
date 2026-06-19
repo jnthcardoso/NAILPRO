@@ -557,6 +557,19 @@ export default function Agenda() {
     }
 
     if (novoStatus === 'realizado') {
+      // Rede de segurança: se o atendimento tem valor e ainda NÃO tem pagamento,
+      // já cria um PENDENTE — assim o dinheiro aparece em "A receber" no financeiro
+      // mesmo que a pessoa feche o modal sem registrar. Se ela registrar no modal,
+      // a RPC (delete+insert) substitui esse pendente pelo pagamento real.
+      const semPagamento = (ag.pagamentos?.length || 0) === 0
+      if (semPagamento && (ag.valor || 0) > 0) {
+        await supabase.rpc('salvar_pagamento_agendamento', {
+          p_agendamento_id: ag.id,
+          p_data: ag.data,
+          p_status: 'pendente',
+          p_pagamentos: [{ valor: ag.valor, forma: 'pix' }],
+        })
+      }
       setAgSelecionado(ag)
       setFormPag({ forma: 'pix', status: 'pago', valor: String(ag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
       setPagModalObrigatorio(true)
@@ -606,7 +619,7 @@ export default function Agenda() {
 
   function fecharPagModal() {
     if (pagModalObrigatorio) {
-      erro('⚠️ Agendamento marcado como realizado sem pagamento. Registre depois em "💳 Pagamento" no card.')
+      aviso('Atendimento realizado e deixado como "A receber" no financeiro. Registre o pagamento quando receber.')
     }
     setShowPagModal(false)
     setPagModalObrigatorio(false)
