@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['logo/favicon-32.png', 'logo/apple-touch-icon-180.png', 'logo/lumen-symbol.svg'],
       manifest: {
         name: 'Lumen',

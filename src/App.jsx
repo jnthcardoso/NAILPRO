@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import AppLayout from './components/layout/AppLayout'
+import AtualizacaoPWA from './components/common/AtualizacaoPWA'
 // Páginas carregadas sob demanda (code-splitting): cada rota baixa só o seu
 // código. Assim a landing/login/agenda pública não carregam as telas internas
 // pesadas (Agenda, Financeiro, etc.) e abrem muito mais rápido no celular.
@@ -162,6 +163,7 @@ export default function App() {
           </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
+        <AtualizacaoPWA />
         </ToastProvider>
       </AssinaturaProvider>
       </SalaoProvider>
