@@ -868,7 +868,7 @@ export default function Financeiro() {
       {!loading && tab === 'resumo' && (
         <div style={s.tabContent}>
           {/* KPIs */}
-          <div style={s.grid4} className="fin-resumo-grid">
+          <div style={{ ...s.grid4, ...(ehMesAtual ? { gridTemplateColumns: 'repeat(5, 1fr)' } : {}) }} className="fin-resumo-grid">
             <div style={{ ...s.card, borderTop: '3px solid var(--green)' }} className="fin-resumo-card">
               <div style={s.cardLabel} className="fin-card-label"><DollarSign size={11} /> Recebido</div>
               <div style={{ ...s.cardValue, color: 'var(--green)' }} className="fin-card-value">{formatBRL(recebido)}</div>
@@ -894,6 +894,14 @@ export default function Financeiro() {
               <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }} className="fin-card-value">{formatBRL(lucro)}</div>
               <div style={s.cardSub} className="fin-card-sub">{margemLucro.toFixed(0)}% de margem</div>
             </div>
+            {/* Previsão de receita do mês — só no mês atual */}
+            {ehMesAtual && (
+              <div style={{ ...s.card, borderTop: '3px solid var(--pink)' }} className="fin-resumo-card">
+                <div style={s.cardLabel} className="fin-card-label"><Calendar size={11} /> Previsão do mês</div>
+                <div style={{ ...s.cardValue, color: 'var(--pink)' }} className="fin-card-value">{formatBRL(recebido + pendente + previsao.entraMes)}</div>
+                <div style={s.cardSub} className="fin-card-sub">{previsao.qtdEntraMes} agendado{previsao.qtdEntraMes !== 1 ? 's' : ''}</div>
+              </div>
+            )}
           </div>
 
           {/* DRE */}
@@ -977,24 +985,6 @@ export default function Financeiro() {
             )}
           </div>
 
-          {/* Previsão de receita — só no mês atual (é "daqui pra frente") */}
-          {ehMesAtual && (
-            <div style={s.dreCard}>
-              <div style={s.dreTitulo}>📅 Previsão de receita — {periodoLabel}</div>
-              <div style={s.dreLinha}>
-                <span>Ainda vai entrar <span style={{ color: 'var(--text3)', fontSize: 11 }}>({previsao.qtdEntraMes} agendado{previsao.qtdEntraMes !== 1 ? 's' : ''})</span></span>
-                <span style={{ ...s.mono, color: 'var(--pink)' }}>{formatBRL(previsao.entraMes)}</span>
-              </div>
-              <div style={s.dreDivider} />
-              <div style={{ ...s.dreLinha, ...s.dreTotal }}>
-                <span>(=) Fechamento previsto</span>
-                <span style={{ ...s.mono, color: 'var(--text)', fontSize: 16 }}>{formatBRL(recebido + pendente + previsao.entraMes)}</span>
-              </div>
-              <div style={s.dreMargem}>
-                Já recebido {formatBRL(recebido)} + a receber {formatBRL(pendente)} + ainda vai entrar {formatBRL(previsao.entraMes)}.
-              </div>
-            </div>
-          )}
         </div>
       )}
 
