@@ -266,7 +266,7 @@ export default function Financeiro() {
   const [editandoDespesa, setEditandoDespesa] = useState(null)
   const [agendamentos, setAgendamentos] = useState([])
   // Previsão = receita futura (agendamentos pendentes/confirmados a partir de hoje).
-  const [previsao, setPrevisao] = useState({ entraSemana: 0, entraMes: 0, saiSemana: 0, saiMes: 0, confirmadoMes: 0, aguardandoMes: 0 })
+  const [previsao, setPrevisao] = useState({ entraMes: 0, qtdEntraMes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
@@ -383,38 +383,17 @@ export default function Financeiro() {
   // Previsão de receita: o que AINDA vai entrar (agendamentos pendentes/confirmados
   // de hoje em diante). Independe do período selecionado — é sempre "daqui pra frente".
   async function loadPrevisao() {
+    // Previsão de RECEITA: atendimentos agendados que ainda vão acontecer neste mês
+    // (de hoje até o fim do mês). Mostrado num card no Resumo.
     const hoje = format(new Date(), 'yyyy-MM-dd')
-    const fimSemana = format(endOfWeek(new Date(), { locale: ptBR }), 'yyyy-MM-dd')
     const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
-    const fimAno = format(endOfYear(new Date()), 'yyyy-MM-dd')
-
     const { data: ags } = await supabase
-      .from('agendamentos').select('data, valor, status')
+      .from('agendamentos').select('valor')
       .eq('salao_id', salaoId)
-      .gte('data', hoje)
+      .gte('data', hoje).lte('data', fimMes)
       .in('status', ['pendente', 'confirmado'])
-
-    if (!ags) return
-    const soma = (arr) => arr.reduce((acc, a) => acc + (a.valor || 0), 0)
-
-    // "Vai sair": despesas futuras (data >= hoje) + contas a pagar em aberto
-    // (pago = false, inclusive vencidas). Respeita quem-vê-o-quê (dona x profissional).
-    let despQ = supabase.from('despesas').select('data, valor, pago')
-      .lte('data', fimMes).or(`data.gte.${hoje},pago.eq.false`)
-    despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', user.id)
-    const { data: desp } = await despQ
-    const somaD = (arr) => (arr || []).reduce((acc, d) => acc + (d.valor || 0), 0)
-
-    setPrevisao({
-      // Fluxo de caixa cumulativo: o que entra/sai de hoje até o fim do período.
-      entraSemana: soma(ags.filter(a => a.data <= fimSemana)),
-      entraMes: soma(ags.filter(a => a.data <= fimMes)),
-      saiSemana: somaD((desp || []).filter(d => d.data <= fimSemana)),
-      saiMes: somaD(desp),
-      // Do "vai entrar" do mês: quanto já está confirmado × ainda aguardando.
-      confirmadoMes: soma(ags.filter(a => a.data <= fimMes && a.status === 'confirmado')),
-      aguardandoMes: soma(ags.filter(a => a.data <= fimMes && a.status === 'pendente')),
-    })
+    const arr = ags || []
+    setPrevisao({ entraMes: arr.reduce((acc, a) => acc + (a.valor || 0), 0), qtdEntraMes: arr.length })
   }
 
   async function loadDespesas() {
@@ -745,6 +724,8 @@ export default function Financeiro() {
   const lucro = recebido - totalDespesasSalao - proLaboreEfetivo
   const margemLucro = recebido > 0 ? (lucro / recebido) * 100 : 0
   const filtrados = filtro === 'todos' ? pagamentos : pagamentos.filter(p => p.status === filtro)
+  // Previsão de receita só faz sentido no MÊS ATUAL (é "daqui pra frente").
+  const ehMesAtual = rangeMode === 'mes' && format(periodoSel, 'yyyy-MM') === format(new Date(), 'yyyy-MM')
   const periodoLabel = (rangeMode === 'custom' && customInicio && customFim)
     ? `${format(new Date((customInicio <= customFim ? customInicio : customFim) + 'T12:00:00'), 'dd/MM/yy')} – ${format(new Date((customInicio <= customFim ? customFim : customInicio) + 'T12:00:00'), 'dd/MM/yy')}`
     : format(periodoSel, "MMMM 'de' yyyy", { locale: ptBR })
@@ -868,7 +849,6 @@ export default function Financeiro() {
           { id: 'resumo',   label: 'Resumo',   icon: DollarSign },
           { id: 'analises', label: 'Análises', icon: BarChart2 },
           { id: 'receitas', label: 'Receitas', icon: TrendingUp },
-          { id: 'previsao', label: 'Previsão', icon: CalendarClock },
           { id: 'despesas', label: 'Despesas', icon: Receipt },
         ].map(t => {
           const Ico = t.icon
@@ -996,6 +976,25 @@ export default function Financeiro() {
               </>
             )}
           </div>
+
+          {/* Previsão de receita — só no mês atual (é "daqui pra frente") */}
+          {ehMesAtual && (
+            <div style={s.dreCard}>
+              <div style={s.dreTitulo}>📅 Previsão de receita — {periodoLabel}</div>
+              <div style={s.dreLinha}>
+                <span>Ainda vai entrar <span style={{ color: 'var(--text3)', fontSize: 11 }}>({previsao.qtdEntraMes} agendado{previsao.qtdEntraMes !== 1 ? 's' : ''})</span></span>
+                <span style={{ ...s.mono, color: 'var(--pink)' }}>{formatBRL(previsao.entraMes)}</span>
+              </div>
+              <div style={s.dreDivider} />
+              <div style={{ ...s.dreLinha, ...s.dreTotal }}>
+                <span>(=) Fechamento previsto</span>
+                <span style={{ ...s.mono, color: 'var(--text)', fontSize: 16 }}>{formatBRL(recebido + pendente + previsao.entraMes)}</span>
+              </div>
+              <div style={s.dreMargem}>
+                Já recebido {formatBRL(recebido)} + a receber {formatBRL(pendente)} + ainda vai entrar {formatBRL(previsao.entraMes)}.
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1103,57 +1102,6 @@ export default function Financeiro() {
               )
             })
           }
-        </div>
-      )}
-
-      {/* ── ABA: Previsão ── */}
-      {!loading && tab === 'previsao' && (
-        <div style={s.tabContent}>
-          <div style={s.prevInfo}>
-            📅 O que ainda vai <strong>entrar e sair</strong> daqui pra frente — pra você saber se a semana e o mês fecham no azul.
-          </div>
-
-          {/* 1) Vai sobrar quanto? (entra − sai = sobra) */}
-          <div style={s.prevSection}>Vai sobrar quanto?</div>
-          <div style={s.prevGrid}>
-            {[
-              { label: 'Esta semana', entra: previsao.entraSemana, sai: previsao.saiSemana },
-              { label: 'Este mês', entra: previsao.entraMes, sai: previsao.saiMes },
-            ].map(({ label, entra, sai }) => {
-              const sobra = entra - sai
-              const neg = sobra < 0
-              return (
-                <div key={label} style={{ ...s.prevCard, ...(neg ? { borderColor: '#FCA5A5', background: '#FEF2F2' } : {}) }}>
-                  <div style={s.prevLabel}>{label}</div>
-                  <div style={s.fluxoLinha}><span>vai entrar</span><span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(entra)}</span></div>
-                  <div style={s.fluxoLinha}><span>vai sair</span><span style={{ ...s.mono, color: '#B91C1C' }}>− {formatBRL(sai)}</span></div>
-                  <div style={s.fluxoSobra}>
-                    <span style={{ fontSize: 12, fontWeight: 700 }}>sobra</span>
-                    <span style={{ ...s.mono, fontWeight: 700, fontSize: 16, color: neg ? '#B91C1C' : 'var(--green)' }}>{formatBRL(sobra)}</span>
-                  </div>
-                  {neg && <div style={{ fontSize: 10.5, color: '#B91C1C', marginTop: 4, fontWeight: 600 }}>⚠️ as contas passam o que entra</div>}
-                </div>
-              )
-            })}
-          </div>
-          <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>
-            <strong>Vai entrar</strong> = atendimentos já agendados. <strong>Vai sair</strong> = despesas a vencer e contas a pagar. (Contas com valor "a preencher" ainda não entram.)
-          </div>
-
-          {/* 2) Do "vai entrar" do mês, quanto já está garantido */}
-          <div style={{ ...s.prevSection, marginTop: 6 }}>Desse "vai entrar" do mês, quanto já está garantido?</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ ...s.prevPipeCard, borderColor: '#4ADE80', background: '#F0FDF4' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>✓ Confirmado</div>
-              <div style={{ ...s.mono, fontSize: 22, fontWeight: 700, color: '#15803D' }}>{formatBRL(previsao.confirmadoMes)}</div>
-              <div style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>a cliente confirmou que vem</div>
-            </div>
-            <div style={{ ...s.prevPipeCard, borderColor: '#FCD34D', background: '#FFFBEB' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 6 }}>⏳ Ainda não confirmou</div>
-              <div style={{ ...s.mono, fontSize: 22, fontWeight: 700, color: '#D97706' }}>{formatBRL(previsao.aguardandoMes)}</div>
-              <div style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>mande um lembrete pra confirmar</div>
-            </div>
-          </div>
         </div>
       )}
 
