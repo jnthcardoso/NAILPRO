@@ -801,7 +801,9 @@ export default function Financeiro() {
   const salaoAPagarArr = despesasSalaoArr.filter(d => d.pago === false)
   const salaoAPagar = salaoAPagarArr.reduce((s, d) => s + (d.valor || 0), 0)
   const salaoPagas = totalDespesasSalao - salaoAPagar
-  const pessoalAPagar = despesasPessoalArr.filter(d => d.pago === false).reduce((s, d) => s + (d.valor || 0), 0)
+  const pessoalAPagarArr = despesasPessoalArr.filter(d => d.pago === false)
+  const pessoalPagasArr = despesasPessoalArr.filter(d => d.pago !== false)
+  const pessoalAPagar = pessoalAPagarArr.reduce((s, d) => s + (d.valor || 0), 0)
   const pessoalPagas = totalDespesasPessoal - pessoalAPagar
   const sobrouPraVoce = proLabore - totalDespesasPessoal
 
@@ -1100,33 +1102,44 @@ export default function Financeiro() {
       {/* ── ABA: Despesas ── */}
       {!loading && tab === 'despesas' && (
         <div style={s.tabContent}>
-          {/* Cards de resumo: separados por bolso (salão × pessoal), com pago + a pagar */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
-              <div style={s.cardLabel}>🏢 Despesas do salão</div>
-              <div style={{ ...s.cardValue, color: '#B91C1C' }}>{formatBRL(totalDespesasSalao)}</div>
-              {temAcesso('contasAPagar') ? (
-                <>
-                  <div style={s.cardSub}>✓ {formatBRL(salaoPagas)} pago</div>
-                  {salaoAPagar > 0 && <div style={{ ...s.cardSub, color: '#B45309', fontWeight: 700 }}>💸 {formatBRL(salaoAPagar)} a pagar</div>}
-                </>
-              ) : (
+          {/* Cards de resumo por bolso. Pro: 4 cards (salão pago/a pagar + pessoal pago/a pagar). Solo: 2 (totais por bolso). */}
+          {temAcesso('contasAPagar') ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
+                <div style={s.cardLabel}>🏢 Salão — pago</div>
+                <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(salaoPagas)}</div>
+                <div style={s.cardSub}>{salaoPagasArr.length} lançamento{salaoPagasArr.length !== 1 ? 's' : ''}</div>
+              </div>
+              <div style={{ ...s.card, borderTop: '3px solid #FCD34D' }}>
+                <div style={s.cardLabel}>🏢 Salão — a pagar</div>
+                <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(salaoAPagar)}</div>
+                <div style={s.cardSub}>{salaoAPagarArr.length} conta{salaoAPagarArr.length !== 1 ? 's' : ''}</div>
+              </div>
+              <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
+                <div style={s.cardLabel}>👤 Pessoal — pago</div>
+                <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(pessoalPagas)}</div>
+                <div style={s.cardSub}>{pessoalPagasArr.length} lançamento{pessoalPagasArr.length !== 1 ? 's' : ''}</div>
+              </div>
+              <div style={{ ...s.card, borderTop: '3px solid #FCD34D' }}>
+                <div style={s.cardLabel}>👤 Pessoal — a pagar</div>
+                <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(pessoalAPagar)}</div>
+                <div style={s.cardSub}>{pessoalAPagarArr.length} conta{pessoalAPagarArr.length !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
+                <div style={s.cardLabel}>🏢 Despesas do salão</div>
+                <div style={{ ...s.cardValue, color: '#B91C1C' }}>{formatBRL(totalDespesasSalao)}</div>
                 <div style={s.cardSub}>{despesasSalaoArr.length} lançamento{despesasSalaoArr.length !== 1 ? 's' : ''}</div>
-              )}
-            </div>
-            <div style={{ ...s.card, borderTop: '3px solid #7C3AED' }}>
-              <div style={s.cardLabel}>👤 Despesas pessoais</div>
-              <div style={{ ...s.cardValue, color: '#7C3AED' }}>{formatBRL(totalDespesasPessoal)}</div>
-              {temAcesso('contasAPagar') ? (
-                <>
-                  <div style={s.cardSub}>✓ {formatBRL(pessoalPagas)} pago</div>
-                  {pessoalAPagar > 0 && <div style={{ ...s.cardSub, color: '#B45309', fontWeight: 700 }}>💸 {formatBRL(pessoalAPagar)} a pagar</div>}
-                </>
-              ) : (
+              </div>
+              <div style={{ ...s.card, borderTop: '3px solid #7C3AED' }}>
+                <div style={s.cardLabel}>👤 Despesas pessoais</div>
+                <div style={{ ...s.cardValue, color: '#7C3AED' }}>{formatBRL(totalDespesasPessoal)}</div>
                 <div style={s.cardSub}>{despesasPessoalArr.length} lançamento{despesasPessoalArr.length !== 1 ? 's' : ''}</div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Cabeçalho: título + 1 filtro (dropdown) + adicionar */}
           <div style={s.colHeader}>
