@@ -1087,41 +1087,52 @@ export default function Financeiro() {
       {/* ── ABA: Despesas ── */}
       {!loading && tab === 'despesas' && (
         <div style={s.tabContent}>
+          {/* Cards de resumo: já pago × a pagar (ou só o total, no Solo) */}
+          {temAcesso('contasAPagar') ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
+                <div style={s.cardLabel}>✓ Já paguei (já saiu)</div>
+                <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(totalDespesasPagas)}</div>
+                <div style={s.cardSub}>{despesas.filter(d => d.pago !== false).length} lançamento{despesas.filter(d => d.pago !== false).length !== 1 ? 's' : ''}</div>
+              </div>
+              <div style={{ ...s.card, borderTop: '3px solid #FCD34D' }}>
+                <div style={s.cardLabel}>💸 A pagar (vai sair)</div>
+                <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(totalAPagar)}</div>
+                <div style={s.cardSub}>{contasAPagar.length} conta{contasAPagar.length !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
+              <div style={s.cardLabel}><Receipt size={11} /> Total de despesas</div>
+              <div style={{ ...s.cardValue, color: '#B91C1C' }}>{formatBRL(totalDespesas)}</div>
+              <div style={s.cardSub}>{despesas.length} lançamento{despesas.length !== 1 ? 's' : ''}</div>
+            </div>
+          )}
+
+          {/* Cabeçalho: título + 1 filtro (dropdown) + adicionar */}
           <div style={s.colHeader}>
             <div style={s.colTitulo}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
               Despesas ({despesasVisiveis.length})
             </div>
-            <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
-              <Plus size={13} /> Despesa
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-            {[
-              { id: 'todas', emoji: '', label: 'Todas' },
-              { id: 'a_pagar', emoji: '💸', label: 'A pagar' },
-              { id: 'recorrentes', emoji: '🔁', label: 'Recorrentes' },
-              { id: 'preencher', emoji: '⚠️', label: 'A preencher' },
-            ].filter(f => f.id !== 'a_pagar' || temAcesso('contasAPagar')).map(f => (
-              <button key={f.id} onClick={() => setFiltroDespesa(f.id)}
-                style={{ ...s.modoTab, ...(filtroDespesa === f.id ? s.modoTabAtivo : {}) }}>
-                {f.emoji && <span className="filtro-emoji">{f.emoji} </span>}{f.label}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={s.filtroSelect}>
+                <option value="todas">Todas</option>
+                {temAcesso('contasAPagar') && <option value="a_pagar">💸 A pagar</option>}
+                <option value="recorrentes">🔁 Recorrentes</option>
+                <option value="preencher">⚠️ A preencher</option>
+              </select>
+              <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
+                <Plus size={13} /> Despesa
               </button>
-            ))}
-          </div>
-
-          {/* Resumo de contas a pagar no período (atalho pro filtro) */}
-          {contasAPagar.length > 0 && filtroDespesa !== 'a_pagar' && (
-            <div style={s.aPagarResumo} onClick={() => setFiltroDespesa('a_pagar')}>
-              💸 {contasAPagar.length} conta{contasAPagar.length > 1 ? 's' : ''} a pagar neste período · <strong>{formatBRL(totalAPagar)}</strong>
             </div>
-          )}
+          </div>
 
           {despesasVisiveis.length === 0
             ? <div style={s.empty}>Nenhuma despesa {filtroDespesa === 'a_pagar' ? 'a pagar' : filtroDespesa === 'recorrentes' ? 'recorrente' : filtroDespesa === 'preencher' ? 'a preencher' : 'registrada'}</div>
             : despesasVisiveis.map(d => {
               const cat = CATEGORIAS.find(c => c.id === d.categoria)
+              const ehAPagar = d.pago === false
               return (
                 <div key={d.id} style={s.finCard}>
                   <div style={{ ...s.catBadge, background: (cat?.cor || '#888') + '22', color: cat?.cor || '#888' }}>
@@ -1130,7 +1141,7 @@ export default function Financeiro() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={s.finNome}>{d.descricao}</div>
                     <div style={s.finSub}>
-                      {cat?.label || d.categoria} · {d.pago === false ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                      {cat?.label || d.categoria} · {ehAPagar ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
                       {d.recorrente && ' · 🔁 mensal'}{d.valor_variavel && ' (valor varia)'}
                     </div>
                   </div>
@@ -1138,9 +1149,13 @@ export default function Financeiro() {
                     {d.valor_a_preencher
                       ? <div style={{ ...s.finValor, color: '#B45309', fontSize: 12 }}>⚠️ a preencher</div>
                       : <div style={{ ...s.finValor, color: '#B91C1C' }}>− {formatBRL(d.valor ?? 0)}</div>}
-                    {d.pago === false && <div style={s.aPagarBadge}>💸 a pagar</div>}
+                    {temAcesso('contasAPagar') && !d.valor_a_preencher && (
+                      ehAPagar
+                        ? <div style={s.aPagarBadge}>💸 a pagar</div>
+                        : <div style={s.pagaBadge}>✓ paga</div>
+                    )}
                     <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
-                      {d.pago === false && !d.valor_a_preencher && (
+                      {ehAPagar && !d.valor_a_preencher && (
                         <button style={s.pagarBtn} onClick={() => marcarDespesaPaga(d)} title="Marcar como paga">
                           <Check size={11} /> Pagar
                         </button>
@@ -1406,6 +1421,8 @@ const s = {
   cobrarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer', textDecoration: 'none' },
   cobradoBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', textDecoration: 'none' },
   aPagarBadge: { fontSize: 10, fontWeight: 700, color: '#B45309', marginTop: 2 },
+  pagaBadge: { fontSize: 10, fontWeight: 700, color: '#15803D', marginTop: 2 },
+  filtroSelect: { fontSize: 12, fontWeight: 600, padding: '6px 10px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit' },
   pagarBtn: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', fontWeight: 700, background: 'var(--green-bg)', color: '#15803D', border: '1px solid #86EFAC', cursor: 'pointer' },
   aPagarResumo: { display: 'flex', alignItems: 'center', gap: 6, background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 13px', marginBottom: 10, fontSize: 12.5, color: '#92400E', cursor: 'pointer', fontWeight: 500 },
   proLaboreEdit: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '0 0 0 6px', verticalAlign: 'middle' },
