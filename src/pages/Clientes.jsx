@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown, Upload, Download } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
@@ -19,6 +19,22 @@ import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
 
 const FILTROS_VALIDOS = ['todas', 'vip', 'sumidas', 'sem_visita', 'aniversariantes', 'arquivadas']
+
+// Funções puras — fora do componente para não serem recriadas a cada render
+const parseUADate = (d) => d ? dataParaDate(d) : null
+const normalizar = (txt) => String(txt).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+const diaAniv = (c) => { const d = dataParaDate(c.data_nascimento); return d ? d.getDate() : 99 }
+const aniversarioHoje = (c) => {
+  const d = dataParaDate(c.data_nascimento); const n = new Date()
+  return !!d && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
+}
+const parabensEnviadoEsteAno = (c) =>
+  !!c.parabens_enviado_em && new Date(c.parabens_enviado_em).getFullYear() === new Date().getFullYear()
+function estaSumida(c) {
+  if (!c.ultimo_atendimento) return false
+  const limite = c.dias_retorno ?? DIAS_RETORNO_PADRAO
+  return differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= limite
+}
 
 export default function Clientes() {
   const { user } = useAuth()
@@ -56,8 +72,8 @@ export default function Clientes() {
 
   const ITENS_POR_PAGINA = 20
 
-  const ativas = clientes.filter(c => !c.arquivada)
-  const arquivadas = clientes.filter(c => c.arquivada)
+  const ativas = useMemo(() => clientes.filter(c => !c.arquivada), [clientes])
+  const arquivadas = useMemo(() => clientes.filter(c => c.arquivada), [clientes])
   const limiteClientes = plano?.limites?.clientes ?? Infinity
   const noLimite = limiteClientes !== Infinity && ativas.length >= limiteClientes
   const perto = limiteClientes !== Infinity && ativas.length >= limiteClientes - 5 && !noLimite
@@ -141,11 +157,7 @@ export default function Clientes() {
     setShowModal(true)
   }
 
-  // ── UTC-safe date parse ──
-  const parseUADate = (d) => d ? dataParaDate(d) : null
-
   // ── Importação de clientes (planilha .xlsx/.csv) ──────────────────────
-  const normalizar = (txt) => String(txt).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
   // Pega o valor da 1ª coluna cujo cabeçalho contém um dos candidatos (já normalizados)
   function valorColuna(row, candidatos) {
     const keys = Object.keys(row)
@@ -247,32 +259,16 @@ export default function Clientes() {
     sucesso(`${aInserir.length} cliente(s) importada(s)!${cortadas ? ` (${cortadas} não couberam no limite do plano)` : ''}`)
   }
 
-  // Cliente "sumida": passou do ciclo de retorno individual (dias_retorno)
-  // ou, na ausência dele, do padrão do salão (diasAlerta).
-  const estaSumida = (c) => {
-    if (!c.ultimo_atendimento) return false
-    const limite = c.dias_retorno ?? diasAlerta
-    return differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) >= limite
-  }
-
   // ── Aniversariantes do mês ──
   const mesAtual = new Date().getMonth()
-  const diaAniv = (c) => { const d = dataParaDate(c.data_nascimento); return d ? d.getDate() : 99 }
   const ehAniversarianteMes = (c) => { const d = dataParaDate(c.data_nascimento); return !!d && d.getMonth() === mesAtual }
-  const aniversarioHoje = (c) => {
-    const d = dataParaDate(c.data_nascimento); const n = new Date()
-    return !!d && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
-  }
-  // "Parabéns já enviado" vale só pro ano corrente (volta a cobrar no próximo aniversário).
-  const parabensEnviadoEsteAno = (c) =>
-    !!c.parabens_enviado_em && new Date(c.parabens_enviado_em).getFullYear() === new Date().getFullYear()
 
-  const sumidas = ativas.filter(estaSumida)
-  const vips = ativas.filter(c => c.total_visitas >= VISITAS_VIP)
-  const semVisita = ativas.filter(c => !c.ultimo_atendimento)
-  const aniversariantes = ativas.filter(ehAniversarianteMes)
+  const sumidas = useMemo(() => ativas.filter(estaSumida), [ativas])
+  const vips = useMemo(() => ativas.filter(c => c.total_visitas >= VISITAS_VIP), [ativas])
+  const semVisita = useMemo(() => ativas.filter(c => !c.ultimo_atendimento), [ativas])
+  const aniversariantes = useMemo(() => ativas.filter(ehAniversarianteMes), [ativas, mesAtual])
 
-  const filtradas = (filtro === 'arquivadas' ? arquivadas : ativas)
+  const filtradas = useMemo(() => (filtro === 'arquivadas' ? arquivadas : ativas)
     .filter(c => {
       if (busca) {
         const bn = normalizar(busca)
@@ -288,7 +284,6 @@ export default function Clientes() {
       return true
     })
     .sort((a, b) => {
-      // Aniversariantes sempre em ordem de data (dia do mês), ignora o seletor.
       if (filtro === 'aniversariantes') return diaAniv(a) - diaAniv(b)
       if (ordenacao === 'gasto') return (b.total_gasto || 0) - (a.total_gasto || 0)
       if (ordenacao === 'visitas') return (b.total_visitas || 0) - (a.total_visitas || 0)
@@ -299,7 +294,7 @@ export default function Clientes() {
         return parseUADate(b.ultimo_atendimento) - parseUADate(a.ultimo_atendimento)
       }
       return a.nome.localeCompare(b.nome)
-    })
+    }), [ativas, arquivadas, filtro, busca, ordenacao, mesAtual])
 
   const filtradaExibidas = filtradas.slice(0, pagina * ITENS_POR_PAGINA)
   const temMais = filtradas.length > pagina * ITENS_POR_PAGINA
