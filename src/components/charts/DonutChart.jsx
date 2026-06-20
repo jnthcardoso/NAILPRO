@@ -35,11 +35,10 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
 
   return (
     <div style={s.wrap}>
+      {/* Donut centralizado */}
       <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <svg width={size} height={size}>
-          {/* Trilha de fundo */}
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-          {/* Fatias */}
           {data.map((d, i) => {
             const frac = d.valor / total
             const dasharray = `${frac * circ} ${circ - frac * circ}`
@@ -48,9 +47,7 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
             return (
               <circle
                 key={i}
-                cx={cx}
-                cy={cy}
-                r={r}
+                cx={cx} cy={cy} r={r}
                 fill="none"
                 stroke={d.cor}
                 strokeWidth={stroke}
@@ -63,14 +60,13 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
             )
           })}
         </svg>
-        {/* Centro */}
         <div style={s.center}>
           <div style={{ ...s.centerLabel, fontSize: labelFont, maxWidth: maxTextW }}>{centerLabel}</div>
           {centerSub && <div style={s.centerSub}>{centerSub}</div>}
         </div>
       </div>
 
-      {/* Legenda */}
+      {/* Legenda abaixo — largura total, sem truncar */}
       <div style={s.legend}>
         {data.map((d, i) => {
           const pct = total ? Math.round((d.valor / total) * 100) : 0
@@ -78,10 +74,8 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
             <div key={i} style={s.legendItem}>
               <span style={{ ...s.legendDot, background: d.cor }} />
               <span style={s.legendLabel}>{d.label}</span>
-              <div style={s.legendRight}>
-                <span style={s.legendValor}>{formatValor(d.valor)}</span>
-                <span style={s.legendPct}>{pct}%</span>
-              </div>
+              <span style={s.legendValor}>{formatValor(d.valor)}</span>
+              <span style={s.legendPct}>{pct}%</span>
             </div>
           )
         })}
@@ -91,16 +85,15 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
 }
 
 const s = {
-  wrap: { display: 'flex', alignItems: 'center', gap: 18, padding: 4 },
+  wrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '4px 0' },
   center: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
   centerLabel: { fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--text)', lineHeight: 1, whiteSpace: 'nowrap', textAlign: 'center' },
   centerSub: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
-  legend: { flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 0 },
+  legend: { width: '100%', display: 'flex', flexDirection: 'column', gap: 6 },
   legendItem: { display: 'flex', alignItems: 'center', gap: 8 },
-  legendDot: { width: 10, height: 10, borderRadius: 3, flexShrink: 0 },
-  legendLabel: { flex: 1, fontSize: 12, color: 'var(--text2)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  legendRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0, flexShrink: 0 },
+  legendDot: { width: 9, height: 9, borderRadius: 2, flexShrink: 0 },
+  legendLabel: { flex: 1, fontSize: 12, color: 'var(--text2)', fontWeight: 500 },
   legendValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' },
-  legendPct: { fontSize: 10, color: 'var(--text3)', fontWeight: 600 },
+  legendPct: { fontSize: 11, color: 'var(--text3)', fontWeight: 600, minWidth: 30, textAlign: 'right' },
   empty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '24px 12px' },
 }
