@@ -32,3 +32,6 @@ Thumbs.db
 # Artes de marketing (geradas localmente — não fazem parte do app)
 marketing/
 scripts/gen-*.cjs
+
+# Backups manuais do banco (contêm dados das clientes — NUNCA commitar)
+backups/
