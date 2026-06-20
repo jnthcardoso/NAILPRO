@@ -48,7 +48,7 @@ const FORMAS_PAGAMENTO = [
   { value: 'boleto', label: 'Boleto' },
 ]
 
-async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
+async function exportarPDFMensal(pagamentos, despesas, periodoLabel, categorias = CATEGORIAS) {
   const { default: jsPDF } = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
   const doc = new jsPDF()
@@ -121,7 +121,7 @@ async function exportarPDFMensal(pagamentos, despesas, periodoLabel) {
       head: [['Data', 'Categoria', 'Descrição', 'Valor']],
       body: despesas.map(d => [
         format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
-        CATEGORIAS.find(c => c.id === d.categoria)?.label || d.categoria,
+        categorias.find(c => c.id === d.categoria)?.label || d.categoria,
         d.descricao,
         `R$ ${formatMoeda(d.valor)}`,
       ]),
@@ -219,7 +219,7 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
 }
 
 // Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
-function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle }) {
+function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle, categorias = CATEGORIAS }) {
   return (
     <>
       <div style={{ ...s.dreLinha, cursor: 'pointer' }} onClick={onToggle}>
@@ -234,7 +234,7 @@ function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggl
           {items.length === 0
             ? <div style={{ ...s.dreSubItem, color: 'var(--text3)' }}>nenhum lançamento</div>
             : items.map(d => {
-              const c = CATEGORIAS.find(x => x.id === d.categoria)
+              const c = categorias.find(x => x.id === d.categoria)
               return (
                 <div key={d.id} style={s.dreSubItem}>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
@@ -264,12 +264,17 @@ export default function Financeiro() {
   const [showModal, setShowModal] = useState(false)
   const [showDespesaModal, setShowDespesaModal] = useState(false)
   const [editandoDespesa, setEditandoDespesa] = useState(null)
+  // Categorias personalizadas criadas pelo salão (somam-se às 14 fixas).
+  const [categoriasCustom, setCategoriasCustom] = useState([])
+  const [showNovaCat, setShowNovaCat] = useState(false)
+  const [novaCat, setNovaCat] = useState({ label: '', icon: '📦', cor: '#8B2655' })
+  const [savingCat, setSavingCat] = useState(false)
   const [agendamentos, setAgendamentos] = useState([])
   // Previsão = receita futura (agendamentos pendentes/confirmados a partir de hoje).
   const [previsao, setPrevisao] = useState({ entraMes: 0, qtdEntraMes: 0 })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
-  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
+  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
   // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
@@ -312,7 +317,13 @@ export default function Financeiro() {
         })
         setProLabore(Number(data.pro_labore) || 0)
       })
+    loadCategorias()
   }, [salaoId])
+
+  async function loadCategorias() {
+    const { data } = await supabase.from('categorias_despesa').select('*').order('label')
+    setCategoriasCustom(data || [])
+  }
 
   // Atalho vindo da Home: ?ver=pendentes abre direto Receitas filtrado em pendentes.
   useEffect(() => {
@@ -542,9 +553,40 @@ export default function Financeiro() {
     sucesso('Pró-labore salvo ✓')
   }
 
+  async function salvarNovaCategoria() {
+    const label = novaCat.label.trim()
+    if (!label) { toastErro('Dê um nome para a categoria'); return }
+    setSavingCat(true)
+    const { data, error } = await supabase.from('categorias_despesa')
+      .insert({ salao_id: salaoId, user_id: user.id, label, icon: novaCat.icon?.trim() || '📦', cor: novaCat.cor || '#525252' })
+      .select().single()
+    setSavingCat(false)
+    if (error) { toastErro(traduzErro(error, 'Não foi possível criar a categoria.')); return }
+    setCategoriasCustom(prev => [...prev, data])
+    setFormDespesa(f => ({ ...f, categoria: data.id }))
+    setShowNovaCat(false)
+    setNovaCat({ label: '', icon: '📦', cor: '#8B2655' })
+    sucesso('Categoria criada ✓')
+  }
+
+  async function excluirCategoria(cat) {
+    const ok = await confirmar({
+      titulo: 'Excluir esta categoria?',
+      mensagem: `${cat.icon} ${cat.label} — despesas já lançadas com ela continuam, mas ficam sem categoria.`,
+      confirmarLabel: 'Sim, excluir',
+      tipo: 'perigo',
+    })
+    if (!ok) return
+    const { error } = await supabase.from('categorias_despesa').delete().eq('id', cat.id).eq('salao_id', salaoId)
+    if (error) { toastErro(traduzErro(error, 'Não foi possível excluir a categoria.')); return }
+    setCategoriasCustom(prev => prev.filter(c => c.id !== cat.id))
+    if (formDespesa.categoria === cat.id) setFormDespesa(f => ({ ...f, categoria: 'produtos' }))
+    sucesso('Categoria excluída')
+  }
+
   function abrirNovaDespesa() {
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
     setShowDespesaModal(true)
   }
 
@@ -569,7 +611,8 @@ export default function Financeiro() {
   function fecharDespesaModal() {
     setShowDespesaModal(false)
     setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: true, tipo: 'salao' })
+    setShowNovaCat(false)
+    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
   }
 
   // Marca uma conta a pagar como PAGA (botão rápido no card). Otimista + banco.
@@ -697,7 +740,7 @@ export default function Financeiro() {
   async function handleExportarPDF() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportando(true)
-    try { await exportarPDFMensal(pagamentos, despesas, periodoLabel) }
+    try { await exportarPDFMensal(pagamentos, despesas, periodoLabel, categoriasTodas) }
     catch (e) { toastErro('Erro ao gerar PDF') }
     setExportando(false)
   }
@@ -771,6 +814,11 @@ export default function Financeiro() {
     label: FORMA_LABEL[forma] || forma, valor, cor: FORMA_COR[forma] || '#888',
   }))
 
+  // Categorias = 14 fixas + as personalizadas do salão. findCat resolve ícone/cor/nome
+  // tanto dos ids fixos ('luz', 'produtos'...) quanto dos uuids das personalizadas.
+  const categoriasTodas = [...CATEGORIAS, ...categoriasCustom.map(c => ({ id: c.id, label: c.label, icon: c.icon, cor: c.cor, custom: true }))]
+  const findCat = (id) => categoriasTodas.find(c => c.id === id)
+
   // Despesas agrupadas por categoria
   const despesasPorCategoria = {}
   despesas.forEach(d => {
@@ -779,19 +827,26 @@ export default function Financeiro() {
   })
   const dadosDespesas = Object.entries(despesasPorCategoria)
     .map(([cat, valor]) => {
-      const c = CATEGORIAS.find(x => x.id === cat)
+      const c = findCat(cat)
       return { label: c?.label || cat, valor, cor: c?.cor || '#888' }
     })
     .sort((a, b) => b.valor - a.valor)
 
-  // Filtro da lista de despesas (todas / a pagar / recorrentes / "a preencher").
+  // Filtro da lista de despesas (todas / a pagar / recorrentes / "a preencher" /
+  // combinações bolso×status acionadas ao clicar nos cards de resumo).
   const despesasVisiveis = despesas.filter(d =>
     filtroDespesa === 'a_pagar' ? d.pago === false
     : filtroDespesa === 'recorrentes' ? d.recorrente
     : filtroDespesa === 'preencher' ? d.valor_a_preencher
     : filtroDespesa === 'salao' ? d.tipo !== 'pessoal'
     : filtroDespesa === 'pessoal' ? d.tipo === 'pessoal'
+    : filtroDespesa === 'salao_pago' ? (d.tipo !== 'pessoal' && d.pago !== false)
+    : filtroDespesa === 'salao_apagar' ? (d.tipo !== 'pessoal' && d.pago === false)
+    : filtroDespesa === 'pessoal_pago' ? (d.tipo === 'pessoal' && d.pago !== false)
+    : filtroDespesa === 'pessoal_apagar' ? (d.tipo === 'pessoal' && d.pago === false)
     : true)
+  // Clicar de novo no card já filtrado volta pra "Todas" (alterna o filtro).
+  const toggleFiltroCard = (f) => setFiltroDespesa(prev => prev === f ? 'todas' : f)
   // Para o DRE do salão: pagas × a pagar SÓ das despesas do salão (sem pessoal).
   const despesasSalaoArr = despesas.filter(d => d.tipo !== 'pessoal')
   const despesasPessoalArr = despesas.filter(d => d.tipo === 'pessoal')
@@ -919,11 +974,13 @@ export default function Financeiro() {
                   label="(−) Despesas do salão" sub="(já pagas)"
                   valor={salaoPagas} cor="#B91C1C" items={salaoPagasArr}
                   aberto={!!dreAberto.pagas} onToggle={() => toggleDre('pagas')}
+                  categorias={categoriasTodas}
                 />
                 <LinhaDespesaExpansivel
                   label="(−) Contas a pagar" sub="(vai sair)"
                   valor={salaoAPagar} cor="#B45309" items={salaoAPagarArr}
                   aberto={!!dreAberto.apagar} onToggle={() => toggleDre('apagar')}
+                  categorias={categoriasTodas}
                 />
               </>
             ) : (
@@ -931,6 +988,7 @@ export default function Financeiro() {
                 label="(−) Despesas do salão"
                 valor={totalDespesasSalao} cor="#B91C1C" items={despesasSalaoArr}
                 aberto={!!dreAberto.salao} onToggle={() => toggleDre('salao')}
+                categorias={categoriasTodas}
               />
             )}
 
@@ -975,6 +1033,7 @@ export default function Financeiro() {
                   label="👤 Gastos pessoais" sub="(seu bolso)"
                   valor={totalDespesasPessoal} cor="#7C3AED" items={despesasPessoalArr}
                   aberto={!!dreAberto.pessoal} onToggle={() => toggleDre('pessoal')}
+                  categorias={categoriasTodas}
                 />
                 {proLabore > 0
                   ? <div style={s.dreMargem}>
@@ -1103,22 +1162,22 @@ export default function Financeiro() {
           {/* Cards de resumo por bolso. Pro: 4 cards (salão pago/a pagar + pessoal pago/a pagar). Solo: 2 (totais por bolso). */}
           {temAcesso('contasAPagar') ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
+              <div style={{ ...s.card, borderTop: '3px solid var(--green)', cursor: 'pointer', ...(filtroDespesa === 'salao_pago' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('salao_pago')} title="Ver só os lançamentos do salão já pagos">
                 <div style={s.cardLabel}>🏢 Salão — pago</div>
                 <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(salaoPagas)}</div>
                 <div style={s.cardSub}>{salaoPagasArr.length} lançamento{salaoPagasArr.length !== 1 ? 's' : ''}</div>
               </div>
-              <div style={{ ...s.card, borderTop: '3px solid #FCD34D' }}>
+              <div style={{ ...s.card, borderTop: '3px solid #FCD34D', cursor: 'pointer', ...(filtroDespesa === 'salao_apagar' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('salao_apagar')} title="Ver só as contas do salão a pagar">
                 <div style={s.cardLabel}>🏢 Salão — a pagar</div>
                 <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(salaoAPagar)}</div>
                 <div style={s.cardSub}>{salaoAPagarArr.length} conta{salaoAPagarArr.length !== 1 ? 's' : ''}</div>
               </div>
-              <div style={{ ...s.card, borderTop: '3px solid var(--green)' }}>
+              <div style={{ ...s.card, borderTop: '3px solid var(--green)', cursor: 'pointer', ...(filtroDespesa === 'pessoal_pago' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('pessoal_pago')} title="Ver só os gastos pessoais já pagos">
                 <div style={s.cardLabel}>👤 Pessoal — pago</div>
                 <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(pessoalPagas)}</div>
                 <div style={s.cardSub}>{pessoalPagasArr.length} lançamento{pessoalPagasArr.length !== 1 ? 's' : ''}</div>
               </div>
-              <div style={{ ...s.card, borderTop: '3px solid #FCD34D' }}>
+              <div style={{ ...s.card, borderTop: '3px solid #FCD34D', cursor: 'pointer', ...(filtroDespesa === 'pessoal_apagar' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('pessoal_apagar')} title="Ver só os gastos pessoais a pagar">
                 <div style={s.cardLabel}>👤 Pessoal — a pagar</div>
                 <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(pessoalAPagar)}</div>
                 <div style={s.cardSub}>{pessoalAPagarArr.length} conta{pessoalAPagarArr.length !== 1 ? 's' : ''}</div>
@@ -1126,12 +1185,12 @@ export default function Financeiro() {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }}>
+              <div style={{ ...s.card, borderTop: '3px solid #B91C1C', cursor: 'pointer', ...(filtroDespesa === 'salao' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('salao')} title="Ver só as despesas do salão">
                 <div style={s.cardLabel}>🏢 Despesas do salão</div>
                 <div style={{ ...s.cardValue, color: '#B91C1C' }}>{formatBRL(totalDespesasSalao)}</div>
                 <div style={s.cardSub}>{despesasSalaoArr.length} lançamento{despesasSalaoArr.length !== 1 ? 's' : ''}</div>
               </div>
-              <div style={{ ...s.card, borderTop: '3px solid #7C3AED' }}>
+              <div style={{ ...s.card, borderTop: '3px solid #7C3AED', cursor: 'pointer', ...(filtroDespesa === 'pessoal' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('pessoal')} title="Ver só as despesas pessoais">
                 <div style={s.cardLabel}>👤 Despesas pessoais</div>
                 <div style={{ ...s.cardValue, color: '#7C3AED' }}>{formatBRL(totalDespesasPessoal)}</div>
                 <div style={s.cardSub}>{despesasPessoalArr.length} lançamento{despesasPessoalArr.length !== 1 ? 's' : ''}</div>
@@ -1151,6 +1210,10 @@ export default function Financeiro() {
                 <option value="salao">🏢 Do salão</option>
                 <option value="pessoal">👤 Pessoal</option>
                 {temAcesso('contasAPagar') && <option value="a_pagar">💸 A pagar</option>}
+                {temAcesso('contasAPagar') && <option value="salao_pago">🏢 Salão — pagas</option>}
+                {temAcesso('contasAPagar') && <option value="salao_apagar">🏢 Salão — a pagar</option>}
+                {temAcesso('contasAPagar') && <option value="pessoal_pago">👤 Pessoal — pagas</option>}
+                {temAcesso('contasAPagar') && <option value="pessoal_apagar">👤 Pessoal — a pagar</option>}
                 <option value="recorrentes">🔁 Recorrentes</option>
                 <option value="preencher">⚠️ A preencher</option>
               </select>
@@ -1161,9 +1224,14 @@ export default function Financeiro() {
           </div>
 
           {despesasVisiveis.length === 0
-            ? <div style={s.empty}>Nenhuma despesa {filtroDespesa === 'a_pagar' ? 'a pagar' : filtroDespesa === 'recorrentes' ? 'recorrente' : filtroDespesa === 'preencher' ? 'a preencher' : 'registrada'}</div>
+            ? <div style={s.empty}>Nenhuma despesa {
+                filtroDespesa === 'a_pagar' || filtroDespesa === 'salao_apagar' || filtroDespesa === 'pessoal_apagar' ? 'a pagar'
+                : filtroDespesa === 'salao_pago' || filtroDespesa === 'pessoal_pago' ? 'paga'
+                : filtroDespesa === 'recorrentes' ? 'recorrente'
+                : filtroDespesa === 'preencher' ? 'a preencher'
+                : 'registrada'}</div>
             : despesasVisiveis.map(d => {
-              const cat = CATEGORIAS.find(c => c.id === d.categoria)
+              const cat = findCat(d.categoria)
               const ehAPagar = d.pago === false
               return (
                 <div key={d.id} style={s.finCard}>
@@ -1280,7 +1348,7 @@ export default function Financeiro() {
 
       {/* Modal Despesa */}
       {showDespesaModal && (
-        <Modal onClose={fecharDespesaModal} variant="sheet" boxStyle={s.modal}>
+        <Modal onClose={fecharDespesaModal} boxStyle={s.modalCentro}>
             <div style={s.modalTitle}>{editandoDespesa ? '✏️ Editar despesa' : '📉 Nova despesa'}</div>
 
             {/* Bolso: do salão (custo do negócio) × pessoal (gasto da dona) */}
@@ -1307,10 +1375,45 @@ export default function Financeiro() {
               <input style={s.input} placeholder="Ex: Conta de luz" value={formDespesa.descricao} onChange={e => setFormDespesa({ ...formDespesa, descricao: e.target.value })} />
             </div>
             <div style={s.field}>
-              <label style={s.label}>Categoria *</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={s.label}>Categoria *</label>
+                <button type="button" onClick={() => setShowNovaCat(v => !v)} style={s.novaCatLink}>
+                  {showNovaCat ? '× Fechar' : '+ Nova categoria'}
+                </button>
+              </div>
               <select style={s.input} value={formDespesa.categoria} onChange={e => setFormDespesa({ ...formDespesa, categoria: e.target.value })}>
-                {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                <optgroup label="Padrão">
+                  {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                </optgroup>
+                {categoriasCustom.length > 0 && (
+                  <optgroup label="Minhas categorias">
+                    {categoriasCustom.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                  </optgroup>
+                )}
               </select>
+
+              {showNovaCat && (
+                <div style={s.novaCatPanel}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input style={{ ...s.input, width: 52, textAlign: 'center', flexShrink: 0, padding: '10px 4px' }} value={novaCat.icon} onChange={e => setNovaCat({ ...novaCat, icon: e.target.value })} placeholder="📦" maxLength={2} title="Emoji da categoria" />
+                    <input style={{ ...s.input, flex: 1, minWidth: 0 }} value={novaCat.label} onChange={e => setNovaCat({ ...novaCat, label: e.target.value })} placeholder="Nome da categoria" />
+                    <input type="color" value={novaCat.cor} onChange={e => setNovaCat({ ...novaCat, cor: e.target.value })} style={{ width: 42, height: 42, border: '1px solid var(--border2)', borderRadius: 8, padding: 2, cursor: 'pointer', flexShrink: 0 }} title="Cor da categoria" />
+                  </div>
+                  <button type="button" style={{ ...s.addBtnSmall, justifyContent: 'center', padding: '8px 12px' }} onClick={salvarNovaCategoria} disabled={savingCat}>
+                    {savingCat ? 'Salvando...' : 'Criar categoria'}
+                  </button>
+                  {categoriasCustom.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2, borderTop: '1px dashed var(--border)', paddingTop: 8 }}>
+                      {categoriasCustom.map(c => (
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--text2)' }}>
+                          <span>{c.icon} {c.label}</span>
+                          <button type="button" onClick={() => excluirCategoria(c)} style={{ ...s.miniIconBtn, color: '#B91C1C' }} title="Excluir categoria"><X size={11} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="form-row-stack" style={s.row}>
               <div style={{ ...s.field, flex: 1 }}>
@@ -1444,6 +1547,7 @@ const s = {
   cardLabel: { fontSize: 10, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 },
   cardValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, lineHeight: 1 },
   cardSub: { fontSize: 10, color: 'var(--text3)', marginTop: 4 },
+  cardAtivo: { borderColor: 'var(--pink)', boxShadow: '0 0 0 2px var(--pink)' },
   /* DRE */
   dreCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', boxShadow: 'var(--shadow-sm)' },
   dreTitulo: { fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 10 },
@@ -1483,12 +1587,15 @@ const s = {
   proLaboreEdit: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '0 0 0 6px', verticalAlign: 'middle' },
   proLaboreBtn: { width: '100%', marginTop: 10, background: 'var(--surface2)', border: '1px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '9px', fontSize: 12.5, color: 'var(--pink)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   proLaboreLink: { background: 'none', border: 'none', color: 'var(--pink)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit', padding: 0 },
+  novaCatLink: { background: 'none', border: 'none', color: 'var(--pink)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', padding: 0 },
+  novaCatPanel: { display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8, padding: '10px 12px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' },
   statusPago: { background: 'var(--green-bg)', color: 'var(--green)' },
   statusPendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   miniIconBtn: { width: 22, height: 22, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   empty: { color: 'var(--text3)', fontSize: 13, textAlign: 'center', padding: '24px 0', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border2)' },
   /* Modal */
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
+  modalCentro: { background: 'var(--surface)', borderRadius: 18, padding: '22px 20px 24px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '92vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: labelBase,
