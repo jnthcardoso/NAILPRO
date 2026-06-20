@@ -78,10 +78,13 @@ Deno.serve(async (req: Request) => {
   const tokenEsperado = Deno.env.get('ASAAS_WEBHOOK_TOKEN') ?? ''
   const APP_URL = Deno.env.get('APP_URL') ?? 'https://lumengestaoempresarial.com.br'
 
-  // Seguranca: se um token foi configurado, exige que bata com o header do Asaas.
+  // Seguranca (fail-closed): SEM token configurado, recusa tudo — em vez de aceitar
+  // tudo. Assim ninguem consegue forjar um "pagamento confirmado" se o segredo
+  // ASAAS_WEBHOOK_TOKEN faltar. IMPORTANTE: so faca deploy desta funcao DEPOIS de
+  // confirmar que o segredo esta setado no Supabase, senao os webhooks reais caem.
   const tokenRecebido = req.headers.get('asaas-access-token') ?? ''
-  if (tokenEsperado && tokenRecebido !== tokenEsperado) {
-    console.warn('Webhook: token invalido')
+  if (!tokenEsperado || tokenRecebido !== tokenEsperado) {
+    console.warn('Webhook: token ausente ou invalido')
     return new Response('unauthorized', { status: 401 })
   }
 

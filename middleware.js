@@ -19,7 +19,13 @@ const IMAGEM_CARD = `${SITE}/logo/lumen-logo-horizontal-1000.png`
 
 // HTML mínimo, SÓ com as tags de pré-visualização (Open Graph). É o que o robô lê
 // pra montar o card. A cliente nunca vê esta página.
-function cardPreview(url) {
+// Escapa caracteres perigosos antes de jogar a URL no HTML (evita refletir input cru).
+function escaparHtml(s) {
+  return String(s).replace(/[<>"&]/g, c => ({ '<': '&lt;', '>': '&gt;', '"': '&quot;', '&': '&amp;' }[c]))
+}
+
+function cardPreview(rawUrl) {
+  const url = escaparHtml(rawUrl)
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
