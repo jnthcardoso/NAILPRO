@@ -4,8 +4,13 @@
  * @param {number} size
  * @param {string} centerLabel - label central (ex: "R$ 1.250")
  * @param {string} centerSub - sub-label central
+ * @param {function} formatValor - formata o valor na legenda (padrão: R$ x.xxx,xx)
  */
-export default function DonutChart({ data = [], size = 160, centerLabel = '', centerSub = '' }) {
+function defaultFormat(v) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export default function DonutChart({ data = [], size = 160, centerLabel = '', centerSub = '', formatValor = defaultFormat }) {
   const total = data.reduce((s, d) => s + d.valor, 0)
   if (total === 0) {
     return <div style={s.empty}>Sem dados ainda</div>
@@ -73,7 +78,10 @@ export default function DonutChart({ data = [], size = 160, centerLabel = '', ce
             <div key={i} style={s.legendItem}>
               <span style={{ ...s.legendDot, background: d.cor }} />
               <span style={s.legendLabel}>{d.label}</span>
-              <span style={s.legendValor}>{pct}%</span>
+              <div style={s.legendRight}>
+                <span style={s.legendValor}>{formatValor(d.valor)}</span>
+                <span style={s.legendPct}>{pct}%</span>
+              </div>
             </div>
           )
         })}
@@ -91,6 +99,8 @@ const s = {
   legendItem: { display: 'flex', alignItems: 'center', gap: 8 },
   legendDot: { width: 10, height: 10, borderRadius: 3, flexShrink: 0 },
   legendLabel: { flex: 1, fontSize: 12, color: 'var(--text2)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  legendValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700, color: 'var(--text)' },
+  legendRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0, flexShrink: 0 },
+  legendValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' },
+  legendPct: { fontSize: 10, color: 'var(--text3)', fontWeight: 600 },
   empty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '24px 12px' },
 }
