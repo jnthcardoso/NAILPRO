@@ -161,8 +161,8 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
     supabase.from('pagamentos')
       .select('data, valor, status, forma, agendamentos(servico, status, clientes(nome))')
       .eq('salao_id', salaoId).eq('status', 'pago')
-      .gte('data', inicio).lte('data', fim),
-    despQ,
+      .gte('data', inicio).lte('data', fim).limit(10000),
+    despQ.limit(2000),
   ])
   // Não conta dinheiro de atendimento cancelado (igual ao resto do Financeiro).
   const pags = (pagsRaw || []).filter(p => p.agendamentos?.status !== 'cancelado')
@@ -571,7 +571,7 @@ export default function Financeiro() {
 
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
-    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome, telefone))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome, telefone))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false }).limit(2000)
     if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
     // Pagamento de atendimento CANCELADO não é receita (some do perfil da cliente
     // pelo mesmo motivo). Avulso (sem agendamento) continua contando.
@@ -581,7 +581,7 @@ export default function Financeiro() {
     const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
     const { data: data6m } = await supabase.from('pagamentos')
       .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
-      .gte('data', inicio6m).lte('data', fim6m)
+      .gte('data', inicio6m).lte('data', fim6m).limit(6000)
     setPagamentos6m((data6m || []).filter(p => p.agendamentos?.status !== 'cancelado'))
   }
 
@@ -610,7 +610,7 @@ export default function Financeiro() {
     // (privadas, gravadas com salao_id NULL e identificadas pelo user_id).
     let q = supabase.from('despesas')
       .select('*')
-      .gte('data', inicio).lte('data', fim).order('data', { ascending: false })
+      .gte('data', inicio).lte('data', fim).order('data', { ascending: false }).limit(500)
     q = gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id)
     const { data, error } = await q
     if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as despesas.')); return }

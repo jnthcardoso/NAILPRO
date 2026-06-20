@@ -128,13 +128,13 @@ export default function Home() {
         .neq('status', 'cancelado'),
       supabase.from('pagamentos')
         .select('valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pendente')
-        .gte('data', inicioMes).lte('data', fimMes),
+        .gte('data', inicioMes).lte('data', fimMes).limit(1000),
       supabase.from('pagamentos')
-        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', fimMes),
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', fimMes).limit(1000),
       supabase.from('pagamentos')
-        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr),
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioStr).lte('data', fimStr).limit(1000),
       supabase.from('pagamentos')
-        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d),
+        .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio90d).limit(2000),
       supabase.from('clientes')
         .select('*', { count: 'exact', head: true }).eq('salao_id', salaoId),
       supabase.from('agendamentos')
@@ -278,7 +278,7 @@ export default function Home() {
 
     // Contas a pagar vencendo até o fim da semana (inclui vencidas) — pago = false.
     // Mesma regra de visibilidade do Financeiro: dona vê o salão; profissional, as dela.
-    let despQ = supabase.from('despesas').select('valor, data').eq('pago', false).lte('data', fimStr)
+    let despQ = supabase.from('despesas').select('valor, data').eq('pago', false).lte('data', fimStr).limit(200)
     despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', user.id)
     const { data: contas } = await despQ
     const totalAPagar = (contas || []).reduce((sum, d) => sum + (d.valor || 0), 0)
