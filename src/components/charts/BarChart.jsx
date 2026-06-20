@@ -47,7 +47,7 @@ export default function BarChart({ data = [], cor = 'var(--pink)', prefixo = '',
  * Gráfico de barras horizontais — top serviços, top clientes, etc.
  * Layout: label ←→ valor / barra proporcional abaixo
  */
-export function HBarChart({ data = [], cor = 'var(--pink)', prefixo = '', formatValor }) {
+export function HBarChart({ data = [], cor = 'var(--pink)', prefixo = '', formatValor, showQtd = false }) {
   if (!data.length) {
     return <div style={s.empty}>Sem dados ainda</div>
   }
@@ -60,20 +60,17 @@ export function HBarChart({ data = [], cor = 'var(--pink)', prefixo = '', format
         const valorFmt = formatValor ? formatValor(d.valor) : `${prefixo}${d.valor.toFixed(0)}`
         return (
           <div key={i} style={s.hrow}>
-            {/* Label + valor na mesma linha */}
             <div style={s.hrowHeader}>
-              <span style={s.hlabel}>{d.label}</span>
+              <div style={s.hlabelWrap}>
+                <span style={s.hlabel}>{d.label}</span>
+                {showQtd && d.qtd != null && (
+                  <span style={s.hqtd}>{d.qtd} atend.</span>
+                )}
+              </div>
               <span style={s.hvalor}>{valorFmt}</span>
             </div>
-            {/* Track + barra proporcional */}
             <div style={s.htrack}>
-              <div
-                style={{
-                  ...s.hbar,
-                  width: `${pct}%`,
-                  background: cor,
-                }}
-              />
+              <div style={{ ...s.hbar, width: `${pct}%`, background: cor }} />
             </div>
           </div>
         )
@@ -94,7 +91,9 @@ const s = {
   hwrap: { display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 2px' },
   hrow: { display: 'flex', flexDirection: 'column', gap: 5 },
   hrowHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
-  hlabel: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  hlabelWrap: { display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' },
+  hlabel: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  hqtd: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', whiteSpace: 'nowrap', flexShrink: 0 },
   htrack: { height: 8, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' },
   hbar: { height: '100%', borderRadius: 4, transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)', minWidth: 4 },
   hvalor: { fontSize: 12, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--pink)', flexShrink: 0 },

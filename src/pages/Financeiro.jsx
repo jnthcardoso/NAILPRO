@@ -1014,6 +1014,22 @@ export default function Financeiro() {
     .map(([nome, v]) => ({ label: nome, valor: v.valor, qtd: v.qtd }))
     .sort((a, b) => b.valor - a.valor).slice(0, 5)
 
+  // KPIs da aba Análises
+  const agIdsVistos = new Set()
+  let totalAtendimentos = 0
+  pagamentos.filter(p => p.status === 'pago').forEach(p => {
+    if (!p.agendamento_id) { totalAtendimentos++; return }
+    if (!agIdsVistos.has(p.agendamento_id)) { agIdsVistos.add(p.agendamento_id); totalAtendimentos++ }
+  })
+  const ticketMedio = totalAtendimentos > 0 ? recebido / totalAtendimentos : 0
+  // Comparação com o mês anterior (só no modo "por mês", usa os dados dos 6m)
+  const mesAnteriorDate = subMonths(periodoSel, 1)
+  const iniAnterior = format(startOfMonth(mesAnteriorDate), 'yyyy-MM-dd')
+  const fimAnterior = format(endOfMonth(mesAnteriorDate), 'yyyy-MM-dd')
+  const recebidoMesAnterior = rangeMode === 'mes'
+    ? pagamentos6m.filter(p => p.data >= iniAnterior && p.data <= fimAnterior).reduce((s, p) => s + (p.valor || 0), 0)
+    : null
+
   // 'sem' = pagamento pago sem forma preenchida (aparece como fatia cinza própria).
   const FORMA_LABEL = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito', sem: 'Sem forma registrada' }
   const FORMA_COR = { pix: '#15803D', dinheiro: '#D4AF37', cartao_debito: '#3B82F6', cartao_credito: '#8B2655', sem: '#9CA3AF' }
@@ -1269,6 +1285,48 @@ export default function Financeiro() {
       {/* ── ABA: Análises ── */}
       {!loading && tab === 'analises' && (
         <div style={s.tabContent}>
+          {/* KPI cards */}
+          <div style={s.kpiGrid}>
+            {[
+              {
+                label: 'Receita recebida',
+                valor: formatBRL(recebido),
+                sub: recebidoMesAnterior !== null
+                  ? (recebido >= recebidoMesAnterior
+                    ? { seta: '▲', cor: '#15803D', txt: `+${formatBRL(recebido - recebidoMesAnterior)} vs mês ant.` }
+                    : { seta: '▼', cor: '#DC2626', txt: `-${formatBRL(recebidoMesAnterior - recebido)} vs mês ant.` })
+                  : null,
+              },
+              {
+                label: 'Atendimentos',
+                valor: totalAtendimentos,
+                sub: null,
+              },
+              {
+                label: 'Ticket médio',
+                valor: ticketMedio > 0 ? formatBRL(ticketMedio) : '—',
+                sub: null,
+              },
+              {
+                label: 'Margem de lucro',
+                valor: recebido > 0 ? `${margemLucro.toFixed(0)}%` : '—',
+                sub: recebido > 0
+                  ? { cor: margemLucro >= 0 ? '#15803D' : '#DC2626', txt: margemLucro >= 0 ? 'positiva' : 'negativa' }
+                  : null,
+              },
+            ].map((k, i) => (
+              <div key={i} style={s.kpiCard}>
+                <div style={s.kpiLabel}>{k.label}</div>
+                <div style={s.kpiValor}>{k.valor}</div>
+                {k.sub && (
+                  <div style={{ ...s.kpiSub, color: k.sub.cor }}>
+                    {k.sub.seta && <span>{k.sub.seta} </span>}{k.sub.txt}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
           <div style={s.graficosGrid}>
             <div style={s.graficoCard}>
               <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
@@ -1293,7 +1351,7 @@ export default function Financeiro() {
 
             <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
               <div style={s.graficoTitulo}>Top serviços por receita</div>
-              <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => formatBRL(v)} />
+              <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => formatBRL(v)} showQtd />
             </div>
           </div>
         </div>
@@ -1797,6 +1855,11 @@ const s = {
   dreSubLista: { display: 'flex', flexDirection: 'column', gap: 5, padding: '2px 2px 9px 20px' },
   dreSubItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text2)' },
   /* Gráficos */
+  kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 12 },
+  kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', boxShadow: 'var(--shadow-xs)' },
+  kpiLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 },
+  kpiValor: { fontSize: 18, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 },
+  kpiSub: { fontSize: 10, fontWeight: 600, marginTop: 4 },
   graficosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 },
   graficoCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 14px 10px', boxShadow: 'var(--shadow-xs)' },
   graficoTitulo: { fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10 },
