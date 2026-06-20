@@ -387,12 +387,15 @@ export default function Financeiro() {
     // (de hoje até o fim do mês). Mostrado num card no Resumo.
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
+    // "Vai entrar" só conta atendimentos SEM pagamento ainda. Se já tem pagamento
+    // (pago → já está em "recebido"; pendente → já está em "a receber"), não conta
+    // de novo — evita dupla contagem na "Previsão de fechamento".
     const { data: ags } = await supabase
-      .from('agendamentos').select('valor')
+      .from('agendamentos').select('valor, pagamentos(status)')
       .eq('salao_id', salaoId)
       .gte('data', hoje).lte('data', fimMes)
       .in('status', ['pendente', 'confirmado'])
-    const arr = ags || []
+    const arr = (ags || []).filter(a => (a.pagamentos || []).length === 0)
     setPrevisao({ entraMes: arr.reduce((acc, a) => acc + (a.valor || 0), 0), qtdEntraMes: arr.length })
   }
 
@@ -711,7 +714,6 @@ export default function Financeiro() {
   const recebido = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
   const pendente = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
   const qtdPagos = pagamentos.filter(p => p.status === 'pago').length
-  const ticketMedio = qtdPagos > 0 ? recebido / qtdPagos : 0
   const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0)
   // Bolso: despesa do salão (custo do negócio) × pessoal (gasto da dona).
   // Pessoal NÃO entra no lucro do salão — vai pro "seu bolso".
@@ -790,10 +792,6 @@ export default function Financeiro() {
     : filtroDespesa === 'salao' ? d.tipo !== 'pessoal'
     : filtroDespesa === 'pessoal' ? d.tipo === 'pessoal'
     : true)
-  // Contas ainda a pagar no período (pago = false).
-  const contasAPagar = despesas.filter(d => d.pago === false)
-  const totalAPagar = contasAPagar.reduce((s, d) => s + (d.valor || 0), 0)
-  const totalDespesasPagas = totalDespesas - totalAPagar
   // Para o DRE do salão: pagas × a pagar SÓ das despesas do salão (sem pessoal).
   const despesasSalaoArr = despesas.filter(d => d.tipo !== 'pessoal')
   const despesasPessoalArr = despesas.filter(d => d.tipo === 'pessoal')
