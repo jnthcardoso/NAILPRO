@@ -1056,7 +1056,7 @@ export default function Financeiro() {
   const dadosDespesas = Object.entries(despesasPorCategoria)
     .map(([cat, valor]) => {
       const c = findCat(cat)
-      return { label: c?.label || cat, valor, cor: c?.cor || '#888' }
+      return { label: c?.label || 'Categoria removida', valor, cor: c?.cor || '#888' }
     })
     .sort((a, b) => b.valor - a.valor)
 
@@ -1516,7 +1516,7 @@ export default function Financeiro() {
                     <div style={s.finNome}>{d.descricao}</div>
                     <div style={s.finSub}>
                       {d.tipo === 'pessoal' && <span style={{ fontWeight: 700, color: '#7C3AED' }}>👤 Pessoal · </span>}
-                      {cat?.label || d.categoria} · {ehAPagar ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+                      {cat?.label || 'Categoria removida'} · {ehAPagar ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
                       {d.recorrente && ' · 🔁 mensal'}{d.valor_variavel && ' (valor varia)'}
                     </div>
                   </div>
