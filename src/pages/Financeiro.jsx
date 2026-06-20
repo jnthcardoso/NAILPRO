@@ -218,6 +218,196 @@ async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
   doc.save(`lumen-relatorio-anual-${ano}.pdf`)
 }
 
+const FORMA_LABEL_PDF = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito', boleto: 'Boleto' }
+const FILTRO_DESPESA_LABEL = { todas: 'Todas', salao: 'Do salão', pessoal: 'Pessoal', a_pagar: 'A pagar', salao_pago: 'Salão — pagas', salao_apagar: 'Salão — a pagar', pessoal_pago: 'Pessoal — pagas', pessoal_apagar: 'Pessoal — a pagar', recorrentes: 'Recorrentes', preencher: 'A preencher' }
+
+async function exportarPDFResumo({ periodoLabel, recebido, pendente, qtdPagos, totalDespesasSalao, salaoPagas, salaoAPagar, totalDespesasPessoal, proLabore, mostraProLabore, lucro, margemLucro, despesasSalaoArr, salaoPagasArr, salaoAPagarArr, despesasPessoalArr, categorias }) {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+  const doc = new jsPDF()
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
+  doc.text('Lumen — DRE / Resumo Financeiro', 14, 18)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
+  doc.text(periodoLabel, 14, 27)
+
+  // KPIs
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10)
+  doc.text('INDICADORES DO PERÍODO', 14, 38)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Receita recebida: R$ ${formatMoeda(recebido)} (${qtdPagos} pagamentos)`, 14, 45)
+  doc.text(`A receber: R$ ${formatMoeda(pendente)}`, 14, 51)
+  doc.text(`Despesas do salão: R$ ${formatMoeda(totalDespesasSalao)}`, 14, 57)
+  if (totalDespesasPessoal > 0) doc.text(`Gastos pessoais: R$ ${formatMoeda(totalDespesasPessoal)}`, 14, 63)
+
+  // DRE
+  const dreY = totalDespesasPessoal > 0 ? 74 : 68
+  doc.setFont('helvetica', 'bold')
+  doc.text('DRE — DEMONSTRATIVO DE RESULTADO', 14, dreY)
+  const dreLinhas = [
+    ['(+) Receitas recebidas', `R$ ${formatMoeda(recebido)}`],
+    salaoAPagar > 0
+      ? ['(−) Despesas do salão — pagas', `R$ ${formatMoeda(salaoPagas)}`]
+      : ['(−) Despesas do salão', `R$ ${formatMoeda(totalDespesasSalao)}`],
+  ]
+  if (salaoAPagar > 0) dreLinhas.push(['(−) Contas a pagar (vai sair)', `R$ ${formatMoeda(salaoAPagar)}`])
+  if (mostraProLabore && proLabore > 0) dreLinhas.push(['(−) Pró-labore (seu salário)', `R$ ${formatMoeda(proLabore)}`])
+  dreLinhas.push(['(=) Lucro líquido', `R$ ${formatMoeda(lucro)}`])
+  dreLinhas.push(['Margem de lucro', `${margemLucro.toFixed(1)}%`])
+
+  autoTable(doc, {
+    startY: dreY + 4,
+    body: dreLinhas,
+    styles: { fontSize: 10, cellPadding: 3 },
+    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+    didParseCell: (data) => {
+      if (data.row.index === dreLinhas.length - 2) { data.cell.styles.fontStyle = 'bold'; data.cell.styles.fillColor = lucro >= 0 ? [220, 252, 231] : [254, 226, 226] }
+    },
+  })
+
+  // Tabela de despesas do salão
+  const allDespSalao = salaoAPagar > 0 ? [...salaoPagasArr, ...salaoAPagarArr] : despesasSalaoArr
+  if (allDespSalao.length) {
+    const yDesp = doc.lastAutoTable.finalY + 10
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
+    doc.text('DESPESAS DO SALÃO', 14, yDesp)
+    autoTable(doc, {
+      startY: yDesp + 4,
+      head: [['Data', 'Categoria', 'Descrição', 'Valor', 'Status']],
+      body: allDespSalao.map(d => [
+        format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
+        categorias.find(c => c.id === d.categoria)?.label || d.categoria,
+        d.descricao,
+        `R$ ${formatMoeda(d.valor)}`,
+        d.pago === false ? 'A pagar' : 'Paga',
+      ]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [139, 38, 85] },
+    })
+  }
+
+  doc.save(`lumen-resumo-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
+}
+
+async function exportarPDFReceitas(filtrados, periodoLabel, filtro) {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+  const doc = new jsPDF()
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
+  doc.text('Lumen — Receitas', 14, 18)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
+  doc.text(`${periodoLabel}${filtro !== 'todos' ? ` · Filtro: ${filtro === 'pago' ? 'Pagos' : 'Pendentes'}` : ''}`, 14, 27)
+
+  const totalPago = filtrados.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
+  const totalPendente = filtrados.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
+  doc.setFontSize(10)
+  doc.text(`Total recebido: R$ ${formatMoeda(totalPago)}  |  A receber: R$ ${formatMoeda(totalPendente)}`, 14, 35)
+
+  autoTable(doc, {
+    startY: 40,
+    head: [['Data', 'Cliente', 'Serviço', 'Forma', 'Valor', 'Status']],
+    body: filtrados.map(p => [
+      format(new Date(p.data + 'T12:00:00'), 'dd/MM/yyyy'),
+      p.agendamentos?.clientes?.nome || '—',
+      p.agendamentos?.servico || '—',
+      FORMA_LABEL_PDF[p.forma] || p.forma || '—',
+      `R$ ${formatMoeda(p.valor)}`,
+      p.status === 'pago' ? 'Pago' : 'Pendente',
+    ]),
+    foot: [['', '', '', 'TOTAL RECEBIDO', `R$ ${formatMoeda(totalPago)}`, totalPendente > 0 ? `+ R$ ${formatMoeda(totalPendente)} pend.` : '']],
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [21, 128, 61] },
+    footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+  })
+
+  doc.save(`lumen-receitas-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
+}
+
+async function exportarPDFDespesas(despesasVisiveis, periodoLabel, filtroDespesa, categorias) {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+  const doc = new jsPDF()
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
+  doc.text('Lumen — Despesas', 14, 18)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
+  const filtroLabel = FILTRO_DESPESA_LABEL[filtroDespesa] || 'Todas'
+  doc.text(`${periodoLabel} · Filtro: ${filtroLabel}`, 14, 27)
+
+  const total = despesasVisiveis.reduce((s, d) => s + (d.valor || 0), 0)
+  doc.setFontSize(10)
+  doc.text(`Total: R$ ${formatMoeda(total)} (${despesasVisiveis.length} lançamentos)`, 14, 35)
+
+  autoTable(doc, {
+    startY: 40,
+    head: [['Data', 'Categoria', 'Descrição', 'Bolso', 'Valor', 'Status']],
+    body: despesasVisiveis.map(d => [
+      format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
+      categorias.find(c => c.id === d.categoria)?.label || d.categoria,
+      d.descricao,
+      d.tipo === 'pessoal' ? 'Pessoal' : 'Salão',
+      `R$ ${formatMoeda(d.valor)}`,
+      d.pago === false ? 'A pagar' : 'Paga',
+    ]),
+    foot: [['', '', '', '', `R$ ${formatMoeda(total)}`, '']],
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [185, 28, 28] },
+    footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+  })
+
+  doc.save(`lumen-despesas-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
+}
+
+async function exportarPDFAnalises({ periodoLabel, recebido, totalDespesasSalao, lucro, topServicos, dadosFormas, dadosDespesas }) {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+  const doc = new jsPDF()
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
+  doc.text('Lumen — Análises', 14, 18)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
+  doc.text(periodoLabel, 14, 27)
+  doc.setFontSize(10)
+  doc.text(`Receita: R$ ${formatMoeda(recebido)}  |  Despesas: R$ ${formatMoeda(totalDespesasSalao)}  |  Lucro: R$ ${formatMoeda(lucro)}`, 14, 35)
+
+  if (topServicos.length) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
+    doc.text('TOP SERVIÇOS POR RECEITA', 14, 45)
+    autoTable(doc, {
+      startY: 49,
+      head: [['Serviço', 'Atendimentos', 'Receita']],
+      body: topServicos.map(s => [s.label, s.qtd, `R$ ${formatMoeda(s.valor)}`]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [139, 38, 85] },
+    })
+  }
+
+  if (dadosFormas.length) {
+    const y2 = (doc.lastAutoTable?.finalY || 49) + 10
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
+    doc.text('FORMAS DE PAGAMENTO', 14, y2)
+    autoTable(doc, {
+      startY: y2 + 4,
+      head: [['Forma', 'Valor']],
+      body: dadosFormas.map(f => [f.label, `R$ ${formatMoeda(f.valor)}`]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [21, 128, 61] },
+    })
+  }
+
+  if (dadosDespesas.length) {
+    const y3 = (doc.lastAutoTable?.finalY || 49) + 10
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
+    doc.text('DESPESAS POR CATEGORIA', 14, y3)
+    autoTable(doc, {
+      startY: y3 + 4,
+      head: [['Categoria', 'Valor']],
+      body: dadosDespesas.map(d => [d.label, `R$ ${formatMoeda(d.valor)}`]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [185, 28, 28] },
+    })
+  }
+
+  doc.save(`lumen-analises-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
+}
+
 // Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
 function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle, categorias = CATEGORIAS }) {
   return (
@@ -747,11 +937,16 @@ export default function Financeiro() {
     loadPagamentos()
   }
 
+  // PDF contextual: exporta o conteúdo da aba ativa respeitando o filtro vigente.
   async function handleExportarPDF() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportando(true)
-    try { await exportarPDFMensal(pagamentos, despesas, periodoLabel, categoriasTodas) }
-    catch (e) { toastErro('Erro ao gerar PDF') }
+    try {
+      if (tab === 'resumo')   await exportarPDFResumo({ periodoLabel, recebido, pendente, qtdPagos, totalDespesasSalao, salaoPagas, salaoAPagar, totalDespesasPessoal, proLabore: proLaboreEfetivo, mostraProLabore, lucro, margemLucro, despesasSalaoArr, salaoPagasArr, salaoAPagarArr, despesasPessoalArr, categorias: categoriasTodas })
+      if (tab === 'receitas') await exportarPDFReceitas(filtrados, periodoLabel, filtro)
+      if (tab === 'despesas') await exportarPDFDespesas(despesasVisiveis, periodoLabel, filtroDespesa, categoriasTodas)
+      if (tab === 'analises') await exportarPDFAnalises({ periodoLabel, recebido, totalDespesasSalao, lucro, topServicos, dadosFormas, dadosDespesas })
+    } catch (e) { toastErro('Erro ao gerar PDF') }
     setExportando(false)
   }
 
@@ -762,6 +957,13 @@ export default function Financeiro() {
     catch (e) { toastErro('Erro ao gerar PDF anual') }
     setExportandoAnual(false)
   }
+
+  const labelBtnPDF = {
+    resumo:   'PDF do Resumo',
+    receitas: 'PDF de Receitas',
+    despesas: 'PDF de Despesas',
+    analises: 'PDF de Análises',
+  }[tab] || 'PDF'
 
   // ─── Calculos ───
   const recebido = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
@@ -898,13 +1100,18 @@ export default function Financeiro() {
             </div>
           </div>
         )}
-        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title="PDF do período">
-          <FileDown size={14} />
-          {exportando ? '...' : 'PDF'}
+      </div>
+
+      {/* Linha de exportação */}
+      <div style={s.exportRow}>
+        <span style={s.exportLabel}>Exportar:</span>
+        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title={labelBtnPDF}>
+          <FileDown size={13} />
+          {exportando ? '...' : labelBtnPDF}
           {!temAcesso('exportPDF') && <ProBadge />}
         </button>
-        <button style={s.exportBtnAnual} onClick={handleExportarAnual} disabled={exportandoAnual} title="PDF anual">
-          <Calendar size={14} />
+        <button style={s.exportBtnAnual} onClick={handleExportarAnual} disabled={exportandoAnual} title="Relatório anual completo">
+          <Calendar size={13} />
           {exportandoAnual ? '...' : `Ano ${refDate.getFullYear()}`}
           {!temAcesso('exportPDF') && <ProBadge />}
         </button>
@@ -1567,6 +1774,8 @@ const s = {
   periodoNav: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', boxShadow: 'var(--shadow-xs)', flexWrap: 'wrap' },
   periodoLabel: { flex: 1, fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize', textAlign: 'center', minWidth: 140 },
   navBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: 4 },
+  exportRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-xs)', flexWrap: 'wrap' },
+  exportLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginRight: 2 },
   exportBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--pink-light)', color: 'var(--pink)', border: '1px solid var(--pink-mid)', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   exportBtnAnual: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--gold, #D4AF37)', color: '#5C4A0F', border: '1px solid #B7791F', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 10px' },
