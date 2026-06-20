@@ -1397,7 +1397,6 @@ export default function Financeiro() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input style={{ ...s.input, width: 52, textAlign: 'center', flexShrink: 0, padding: '10px 4px' }} value={novaCat.icon} onChange={e => setNovaCat({ ...novaCat, icon: e.target.value })} placeholder="📦" maxLength={2} title="Emoji da categoria" />
                     <input style={{ ...s.input, flex: 1, minWidth: 0 }} value={novaCat.label} onChange={e => setNovaCat({ ...novaCat, label: e.target.value })} placeholder="Nome da categoria" />
-                    <input type="color" value={novaCat.cor} onChange={e => setNovaCat({ ...novaCat, cor: e.target.value })} style={{ width: 42, height: 42, border: '1px solid var(--border2)', borderRadius: 8, padding: 2, cursor: 'pointer', flexShrink: 0 }} title="Cor da categoria" />
                   </div>
                   <button type="button" style={{ ...s.addBtnSmall, justifyContent: 'center', padding: '8px 12px' }} onClick={salvarNovaCategoria} disabled={savingCat}>
                     {savingCat ? 'Salvando...' : 'Criar categoria'}
