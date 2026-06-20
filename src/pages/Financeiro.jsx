@@ -277,6 +277,10 @@ export default function Financeiro() {
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
+  // Confirmar pagamento de despesa a pagar (modal de confirmação).
+  const [despesaParaPagar, setDespesaParaPagar] = useState(null)
+  const [formPagarDespesa, setFormPagarDespesa] = useState({ forma_pagamento: 'pix' })
+  const [savingPagarDespesa, setSavingPagarDespesa] = useState(false)
   // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
   const [pagSelecionado, setPagSelecionado] = useState(null)
   const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
@@ -615,21 +619,27 @@ export default function Financeiro() {
     setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
   }
 
-  // Marca uma conta a pagar como PAGA (botão rápido no card). Otimista + banco.
-  async function marcarDespesaPaga(despesa) {
-    setDespesas(prev => prev.map(d => d.id === despesa.id ? { ...d, pago: true } : d))
-    const q = supabase.from('despesas').update({ pago: true }).eq('id', despesa.id)
+  // Abre modal de confirmação de pagamento da despesa.
+  function abrirConfirmarPagarDespesa(despesa) {
+    setFormPagarDespesa({ forma_pagamento: despesa.forma_pagamento || 'pix' })
+    setDespesaParaPagar(despesa)
+  }
+
+  // Confirma o pagamento após revisão no modal.
+  async function confirmarPagarDespesa() {
+    if (!despesaParaPagar) return
+    setSavingPagarDespesa(true)
+    const q = supabase.from('despesas').update({ pago: true, forma_pagamento: formPagarDespesa.forma_pagamento }).eq('id', despesaParaPagar.id)
     const { error } = await (gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id))
-    if (error) {
-      setDespesas(prev => prev.map(d => d.id === despesa.id ? { ...d, pago: false } : d))
-      toastErro(traduzErro(error, 'Não foi possível marcar como paga.'))
-      return
-    }
+    setSavingPagarDespesa(false)
+    if (error) { toastErro(traduzErro(error, 'Não foi possível marcar como paga.')); return }
+    const despesaPaga = despesaParaPagar
+    setDespesaParaPagar(null)
+    loadDespesas()
     sucesso('Conta marcada como paga ✓', {
       acaoLabel: 'Desfazer',
       acao: async () => {
-        setDespesas(prev => prev.map(d => d.id === despesa.id ? { ...d, pago: false } : d))
-        const uq = supabase.from('despesas').update({ pago: false }).eq('id', despesa.id)
+        const uq = supabase.from('despesas').update({ pago: false }).eq('id', despesaPaga.id)
         await (gerenciaTudo ? uq.eq('salao_id', salaoId) : uq.eq('user_id', user.id))
         loadDespesas()
       },
@@ -1257,7 +1267,7 @@ export default function Financeiro() {
                     )}
                     <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
                       {ehAPagar && !d.valor_a_preencher && (
-                        <button style={s.pagarBtn} onClick={() => marcarDespesaPaga(d)} title="Marcar como paga">
+                        <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)} title="Confirmar pagamento">
                           <Check size={11} /> Pagar
                         </button>
                       )}
@@ -1489,6 +1499,27 @@ export default function Financeiro() {
             </div>
             <button style={s.btnPrimary} onClick={salvarDespesa} disabled={savingDespesa}>{savingDespesa ? 'Salvando...' : editandoDespesa ? 'Salvar alterações' : 'Registrar despesa'}</button>
             <button style={s.btnSecondary} onClick={fecharDespesaModal}>Cancelar</button>
+        </Modal>
+      )}
+
+      {/* Modal: confirmar pagamento de despesa a pagar */}
+      {despesaParaPagar && (
+        <Modal onClose={() => setDespesaParaPagar(null)} boxStyle={s.modalCentro}>
+          <div style={s.modalTitle}>💸 Confirmar pagamento</div>
+          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text)' }}>{despesaParaPagar.descricao}</div>
+            <div style={{ color: '#B91C1C', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, marginTop: 2 }}>− {formatBRL(despesaParaPagar.valor)}</div>
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>Forma de pagamento</label>
+            <select style={s.input} value={formPagarDespesa.forma_pagamento} onChange={e => setFormPagarDespesa({ ...formPagarDespesa, forma_pagamento: e.target.value })}>
+              {FORMAS_PAGAMENTO.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+          </div>
+          <button style={s.btnPrimary} onClick={confirmarPagarDespesa} disabled={savingPagarDespesa}>
+            {savingPagarDespesa ? 'Salvando...' : '✓ Confirmar pagamento'}
+          </button>
+          <button style={s.btnSecondary} onClick={() => setDespesaParaPagar(null)}>Cancelar</button>
         </Modal>
       )}
 
