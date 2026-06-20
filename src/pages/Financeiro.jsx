@@ -22,6 +22,8 @@ import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
 import { useToast } from '../contexts/ToastContext'
 import { traduzErro } from '../lib/erros'
+import { exportarPDFResumo, exportarPDFReceitas, exportarPDFDespesas, exportarPDFAnalises, exportarPDFAnual } from '../lib/pdfExporter'
+import { comTimeout } from '../lib/queryUtils'
 
 const CATEGORIAS = [
   { id: 'aluguel', label: 'Aluguel', cor: '#B91C1C', icon: '🏠' },
@@ -48,365 +50,8 @@ const FORMAS_PAGAMENTO = [
   { value: 'boleto', label: 'Boleto' },
 ]
 
-async function exportarPDFMensal(pagamentos, despesas, periodoLabel, categorias = CATEGORIAS) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-  const doc = new jsPDF()
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text('Lumen — Relatório Financeiro', 14, 18)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
-  doc.text(periodoLabel, 14, 27)
 
-  const recebido = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
-  const pendente = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
-  const qtd = pagamentos.filter(p => p.status === 'pago').length
-  const ticket = qtd > 0 ? recebido / qtd : 0
-  const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0)
-  const lucro = recebido - totalDespesas
 
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.text('RESUMO DO PERÍODO', 14, 38)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Receita recebida: R$ ${formatMoeda(recebido)}`, 14, 45)
-  doc.text(`A receber: R$ ${formatMoeda(pendente)}`, 14, 51)
-  doc.text(`Total de despesas: R$ ${formatMoeda(totalDespesas)}`, 14, 57)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(lucro >= 0 ? 21 : 185, lucro >= 0 ? 128 : 28, lucro >= 0 ? 61 : 28)
-  doc.text(`LUCRO LÍQUIDO: R$ ${formatMoeda(lucro)}`, 14, 64)
-  doc.setTextColor(0, 0, 0)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Ticket médio: R$ ${formatMoeda(ticket)} (${qtd} atendimentos)`, 14, 71)
-
-  const totalPago = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
-  const totalPendente = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
-
-  if (pagamentos.length) {
-    autoTable(doc, {
-      startY: 78,
-      head: [['Data', 'Cliente', 'Serviço', 'Forma', 'Valor', 'Status']],
-      body: pagamentos.map(p => [
-        format(new Date(p.data + 'T12:00:00'), 'dd/MM/yyyy'),
-        p.agendamentos?.clientes?.nome || '—',
-        p.agendamentos?.servico || '—',
-        ({ pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito' }[p.forma]) || p.forma,
-        `R$ ${formatMoeda(p.valor)}`,
-        p.status === 'pago' ? 'Pago' : 'Pendente',
-      ]),
-      foot: [[
-        '', '', '', 'TOTAL RECEBIDO',
-        `R$ ${formatMoeda(totalPago)}`,
-        totalPendente > 0 ? `+ R$ ${formatMoeda(totalPendente)} pend.` : '',
-      ]],
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [139, 38, 85] },
-      footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-      didDrawPage: (data) => {
-        doc.setFontSize(11)
-        doc.setFont('helvetica', 'bold')
-        if (data.pageNumber === 1) doc.text('RECEITAS', 14, 76)
-      },
-    })
-  }
-
-  if (despesas.length) {
-    const finalY = doc.lastAutoTable?.finalY || 90
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.text('DESPESAS', 14, finalY + 12)
-    autoTable(doc, {
-      startY: finalY + 16,
-      head: [['Data', 'Categoria', 'Descrição', 'Valor']],
-      body: despesas.map(d => [
-        format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
-        categorias.find(c => c.id === d.categoria)?.label || d.categoria,
-        d.descricao,
-        `R$ ${formatMoeda(d.valor)}`,
-      ]),
-      foot: [['', '', 'TOTAL DESPESAS', `R$ ${formatMoeda(totalDespesas)}`]],
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [185, 28, 28] },
-      footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-    })
-
-    const finalYDespesas = doc.lastAutoTable?.finalY || 90
-    const margemFinal = recebido > 0 ? ((lucro / recebido) * 100).toFixed(1) : '0.0'
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(lucro >= 0 ? 21 : 185, lucro >= 0 ? 128 : 28, lucro >= 0 ? 61 : 28)
-    doc.text(`LUCRO LÍQUIDO DO PERÍODO: R$ ${formatMoeda(lucro)} (margem ${margemFinal}%)`, 14, finalYDespesas + 12)
-    doc.setTextColor(0, 0, 0)
-  }
-
-  doc.save(`lumen-financeiro-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
-}
-
-async function exportarPDFAnual(salaoId, ano, { gerenciaTudo, userId }) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-
-  // Buscar todos os dados do ano
-  const inicio = `${ano}-01-01`
-  const fim = `${ano}-12-31`
-
-  // Despesas: dona/recepção por salão; profissional por user_id (despesas dela
-  // são privadas, gravadas com salao_id NULL). Mesma lógica do loadDespesas —
-  // sem isso, o anual da manicure mostraria despesas = 0 (lucro inflado).
-  let despQ = supabase.from('despesas').select('*').gte('data', inicio).lte('data', fim)
-  despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', userId)
-
-  const [{ data: pagsRaw }, { data: desps }] = await Promise.all([
-    supabase.from('pagamentos')
-      .select('data, valor, status, forma, agendamentos(servico, status, clientes(nome))')
-      .eq('salao_id', salaoId).eq('status', 'pago')
-      .gte('data', inicio).lte('data', fim).limit(10000),
-    despQ.limit(2000),
-  ])
-  // Não conta dinheiro de atendimento cancelado (igual ao resto do Financeiro).
-  const pags = (pagsRaw || []).filter(p => p.agendamentos?.status !== 'cancelado')
-
-  const doc = new jsPDF()
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.text(`Lumen — Relatório Anual ${ano}`, 14, 18)
-
-  // Tabela mensal
-  const meses = eachMonthOfInterval({ start: new Date(ano, 0, 1), end: new Date(ano, 11, 31) })
-  const linhasMeses = meses.map(m => {
-    const ini = format(startOfMonth(m), 'yyyy-MM-dd')
-    const fimM = format(endOfMonth(m), 'yyyy-MM-dd')
-    const receita = (pags || []).filter(p => p.data >= ini && p.data <= fimM).reduce((s, p) => s + p.valor, 0)
-    const despesa = (desps || []).filter(d => d.data >= ini && d.data <= fimM).reduce((s, d) => s + d.valor, 0)
-    const lucro = receita - despesa
-    return [
-      format(m, 'MMMM', { locale: ptBR }),
-      `R$ ${formatMoeda(receita)}`,
-      `R$ ${formatMoeda(despesa)}`,
-      `R$ ${formatMoeda(lucro)}`,
-      receita > 0 ? `${((lucro / receita) * 100).toFixed(1)}%` : '—',
-    ]
-  })
-
-  const totalReceita = (pags || []).reduce((s, p) => s + p.valor, 0)
-  const totalDespesa = (desps || []).reduce((s, d) => s + d.valor, 0)
-  const totalLucro = totalReceita - totalDespesa
-
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Período: Janeiro a Dezembro de ${ano}`, 14, 27)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(12)
-  doc.text(`RECEITA TOTAL: R$ ${formatMoeda(totalReceita)}`, 14, 38)
-  doc.text(`DESPESA TOTAL: R$ ${formatMoeda(totalDespesa)}`, 14, 45)
-  doc.setTextColor(totalLucro >= 0 ? 21 : 185, totalLucro >= 0 ? 128 : 28, totalLucro >= 0 ? 61 : 28)
-  doc.text(`LUCRO LÍQUIDO: R$ ${formatMoeda(totalLucro)}`, 14, 52)
-  doc.setTextColor(0, 0, 0)
-
-  autoTable(doc, {
-    startY: 60,
-    head: [['Mês', 'Receita', 'Despesas', 'Lucro', 'Margem']],
-    body: linhasMeses,
-    foot: [['TOTAL ANUAL', `R$ ${formatMoeda(totalReceita)}`, `R$ ${formatMoeda(totalDespesa)}`, `R$ ${formatMoeda(totalLucro)}`, totalReceita > 0 ? `${((totalLucro / totalReceita) * 100).toFixed(1)}%` : '—']],
-    styles: { fontSize: 10, cellPadding: 4 },
-    headStyles: { fillColor: [139, 38, 85], fontSize: 10 },
-    footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [251, 246, 248] },
-  })
-
-  doc.save(`lumen-relatorio-anual-${ano}.pdf`)
-}
-
-const FORMA_LABEL_PDF = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito', boleto: 'Boleto' }
-const FILTRO_DESPESA_LABEL = { todas: 'Todas', salao: 'Do salão', pessoal: 'Pessoal', a_pagar: 'A pagar', salao_pago: 'Salão — pagas', salao_apagar: 'Salão — a pagar', pessoal_pago: 'Pessoal — pagas', pessoal_apagar: 'Pessoal — a pagar', recorrentes: 'Recorrentes', preencher: 'A preencher' }
-
-async function exportarPDFResumo({ periodoLabel, recebido, pendente, qtdPagos, totalDespesasSalao, salaoPagas, salaoAPagar, totalDespesasPessoal, proLabore, mostraProLabore, lucro, margemLucro, despesasSalaoArr, salaoPagasArr, salaoAPagarArr, despesasPessoalArr, categorias }) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-  const doc = new jsPDF()
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
-  doc.text('Lumen — DRE / Resumo Financeiro', 14, 18)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
-  doc.text(periodoLabel, 14, 27)
-
-  // KPIs
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10)
-  doc.text('INDICADORES DO PERÍODO', 14, 38)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Receita recebida: R$ ${formatMoeda(recebido)} (${qtdPagos} pagamentos)`, 14, 45)
-  doc.text(`A receber: R$ ${formatMoeda(pendente)}`, 14, 51)
-  doc.text(`Despesas do salão: R$ ${formatMoeda(totalDespesasSalao)}`, 14, 57)
-  if (totalDespesasPessoal > 0) doc.text(`Gastos pessoais: R$ ${formatMoeda(totalDespesasPessoal)}`, 14, 63)
-
-  // DRE
-  const dreY = totalDespesasPessoal > 0 ? 74 : 68
-  doc.setFont('helvetica', 'bold')
-  doc.text('DRE — DEMONSTRATIVO DE RESULTADO', 14, dreY)
-  const dreLinhas = [
-    ['(+) Receitas recebidas', `R$ ${formatMoeda(recebido)}`],
-    salaoAPagar > 0
-      ? ['(−) Despesas do salão — pagas', `R$ ${formatMoeda(salaoPagas)}`]
-      : ['(−) Despesas do salão', `R$ ${formatMoeda(totalDespesasSalao)}`],
-  ]
-  if (salaoAPagar > 0) dreLinhas.push(['(−) Contas a pagar (vai sair)', `R$ ${formatMoeda(salaoAPagar)}`])
-  if (mostraProLabore && proLabore > 0) dreLinhas.push(['(−) Pró-labore (seu salário)', `R$ ${formatMoeda(proLabore)}`])
-  dreLinhas.push(['(=) Lucro líquido', `R$ ${formatMoeda(lucro)}`])
-  dreLinhas.push(['Margem de lucro', `${margemLucro.toFixed(1)}%`])
-
-  autoTable(doc, {
-    startY: dreY + 4,
-    body: dreLinhas,
-    styles: { fontSize: 10, cellPadding: 3 },
-    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
-    didParseCell: (data) => {
-      if (data.row.index === dreLinhas.length - 2) { data.cell.styles.fontStyle = 'bold'; data.cell.styles.fillColor = lucro >= 0 ? [220, 252, 231] : [254, 226, 226] }
-    },
-  })
-
-  // Tabela de despesas do salão
-  const allDespSalao = salaoAPagar > 0 ? [...salaoPagasArr, ...salaoAPagarArr] : despesasSalaoArr
-  if (allDespSalao.length) {
-    const yDesp = doc.lastAutoTable.finalY + 10
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
-    doc.text('DESPESAS DO SALÃO', 14, yDesp)
-    autoTable(doc, {
-      startY: yDesp + 4,
-      head: [['Data', 'Categoria', 'Descrição', 'Valor', 'Status']],
-      body: allDespSalao.map(d => [
-        format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
-        categorias.find(c => c.id === d.categoria)?.label || d.categoria,
-        d.descricao,
-        `R$ ${formatMoeda(d.valor)}`,
-        d.pago === false ? 'A pagar' : 'Paga',
-      ]),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [139, 38, 85] },
-    })
-  }
-
-  doc.save(`lumen-resumo-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
-}
-
-async function exportarPDFReceitas(filtrados, periodoLabel, filtro) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-  const doc = new jsPDF()
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
-  doc.text('Lumen — Receitas', 14, 18)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
-  doc.text(`${periodoLabel}${filtro !== 'todos' ? ` · Filtro: ${filtro === 'pago' ? 'Pagos' : 'Pendentes'}` : ''}`, 14, 27)
-
-  const totalPago = filtrados.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
-  const totalPendente = filtrados.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
-  doc.setFontSize(10)
-  doc.text(`Total recebido: R$ ${formatMoeda(totalPago)}  |  A receber: R$ ${formatMoeda(totalPendente)}`, 14, 35)
-
-  autoTable(doc, {
-    startY: 40,
-    head: [['Data', 'Cliente', 'Serviço', 'Forma', 'Valor', 'Status']],
-    body: filtrados.map(p => [
-      format(new Date(p.data + 'T12:00:00'), 'dd/MM/yyyy'),
-      p.agendamentos?.clientes?.nome || '—',
-      p.agendamentos?.servico || '—',
-      FORMA_LABEL_PDF[p.forma] || p.forma || '—',
-      `R$ ${formatMoeda(p.valor)}`,
-      p.status === 'pago' ? 'Pago' : 'Pendente',
-    ]),
-    foot: [['', '', '', 'TOTAL RECEBIDO', `R$ ${formatMoeda(totalPago)}`, totalPendente > 0 ? `+ R$ ${formatMoeda(totalPendente)} pend.` : '']],
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [21, 128, 61] },
-    footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-  })
-
-  doc.save(`lumen-receitas-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
-}
-
-async function exportarPDFDespesas(despesasVisiveis, periodoLabel, filtroDespesa, categorias) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-  const doc = new jsPDF()
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
-  doc.text('Lumen — Despesas', 14, 18)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
-  const filtroLabel = FILTRO_DESPESA_LABEL[filtroDespesa] || 'Todas'
-  doc.text(`${periodoLabel} · Filtro: ${filtroLabel}`, 14, 27)
-
-  const total = despesasVisiveis.reduce((s, d) => s + (d.valor || 0), 0)
-  doc.setFontSize(10)
-  doc.text(`Total: R$ ${formatMoeda(total)} (${despesasVisiveis.length} lançamentos)`, 14, 35)
-
-  autoTable(doc, {
-    startY: 40,
-    head: [['Data', 'Categoria', 'Descrição', 'Bolso', 'Valor', 'Status']],
-    body: despesasVisiveis.map(d => [
-      format(new Date(d.data + 'T12:00:00'), 'dd/MM/yyyy'),
-      categorias.find(c => c.id === d.categoria)?.label || d.categoria,
-      d.descricao,
-      d.tipo === 'pessoal' ? 'Pessoal' : 'Salão',
-      `R$ ${formatMoeda(d.valor)}`,
-      d.pago === false ? 'A pagar' : 'Paga',
-    ]),
-    foot: [['', '', '', '', `R$ ${formatMoeda(total)}`, '']],
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [185, 28, 28] },
-    footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-  })
-
-  doc.save(`lumen-despesas-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
-}
-
-async function exportarPDFAnalises({ periodoLabel, recebido, totalDespesasSalao, lucro, topServicos, dadosFormas, dadosDespesas }) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-  const doc = new jsPDF()
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
-  doc.text('Lumen — Análises', 14, 18)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
-  doc.text(periodoLabel, 14, 27)
-  doc.setFontSize(10)
-  doc.text(`Receita: R$ ${formatMoeda(recebido)}  |  Despesas: R$ ${formatMoeda(totalDespesasSalao)}  |  Lucro: R$ ${formatMoeda(lucro)}`, 14, 35)
-
-  if (topServicos.length) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
-    doc.text('TOP SERVIÇOS POR RECEITA', 14, 45)
-    autoTable(doc, {
-      startY: 49,
-      head: [['Serviço', 'Atendimentos', 'Receita']],
-      body: topServicos.map(s => [s.label, s.qtd, `R$ ${formatMoeda(s.valor)}`]),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [139, 38, 85] },
-    })
-  }
-
-  if (dadosFormas.length) {
-    const y2 = (doc.lastAutoTable?.finalY || 49) + 10
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
-    doc.text('FORMAS DE PAGAMENTO', 14, y2)
-    autoTable(doc, {
-      startY: y2 + 4,
-      head: [['Forma', 'Valor']],
-      body: dadosFormas.map(f => [f.label, `R$ ${formatMoeda(f.valor)}`]),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [21, 128, 61] },
-    })
-  }
-
-  if (dadosDespesas.length) {
-    const y3 = (doc.lastAutoTable?.finalY || 49) + 10
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
-    doc.text('DESPESAS POR CATEGORIA', 14, y3)
-    autoTable(doc, {
-      startY: y3 + 4,
-      head: [['Categoria', 'Valor']],
-      body: dadosDespesas.map(d => [d.label, `R$ ${formatMoeda(d.valor)}`]),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [185, 28, 28] },
-    })
-  }
-
-  doc.save(`lumen-analises-${periodoLabel.replace(/[^\w]/g, '-').toLowerCase()}.pdf`)
-}
 
 // Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
 function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle, categorias = CATEGORIAS }) {
@@ -571,18 +216,26 @@ export default function Financeiro() {
 
   async function loadPagamentos() {
     const { inicio, fim } = getRange()
-    const { data, error } = await supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome, telefone))').eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).order('data', { ascending: false }).limit(2000)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
-    // Pagamento de atendimento CANCELADO não é receita (some do perfil da cliente
-    // pelo mesmo motivo). Avulso (sem agendamento) continua contando.
-    setPagamentos((data || []).filter(p => p.agendamentos?.status !== 'cancelado'))
+    try {
+      const { data, error } = await comTimeout(
+        supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome, telefone))')
+          .eq('salao_id', salaoId).gte('data', inicio).lte('data', fim)
+          .order('data', { ascending: false }).limit(2000)
+      )
+      if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
+      // Pagamento de atendimento CANCELADO não é receita (some do perfil da cliente
+      // pelo mesmo motivo). Avulso (sem agendamento) continua contando.
+      setPagamentos((data || []).filter(p => p.agendamentos?.status !== 'cancelado'))
 
-    const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
-    const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
-    const { data: data6m } = await supabase.from('pagamentos')
-      .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
-      .gte('data', inicio6m).lte('data', fim6m).limit(6000)
-    setPagamentos6m((data6m || []).filter(p => p.agendamentos?.status !== 'cancelado'))
+      const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
+      const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
+      const { data: data6m } = await supabase.from('pagamentos')
+        .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
+        .gte('data', inicio6m).lte('data', fim6m).limit(6000)
+      setPagamentos6m((data6m || []).filter(p => p.agendamentos?.status !== 'cancelado'))
+    } catch (err) {
+      toastErro(err.message || 'Não foi possível carregar os pagamentos.')
+    }
   }
 
   // Previsão de receita: o que AINDA vai entrar (agendamentos pendentes/confirmados
@@ -612,9 +265,13 @@ export default function Financeiro() {
       .select('*')
       .gte('data', inicio).lte('data', fim).order('data', { ascending: false }).limit(500)
     q = gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id)
-    const { data, error } = await q
-    if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as despesas.')); return }
-    setDespesas(data || [])
+    try {
+      const { data, error } = await comTimeout(q)
+      if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as despesas.')); return }
+      setDespesas(data || [])
+    } catch (err) {
+      toastErro(err.message || 'Não foi possível carregar as despesas.')
+    }
   }
 
   async function loadAgendamentos() {
@@ -953,8 +610,22 @@ export default function Financeiro() {
   async function handleExportarAnual() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportandoAnual(true)
-    try { await exportarPDFAnual(salaoId, refDate.getFullYear(), { gerenciaTudo, userId: user.id }) }
-    catch (e) { toastErro('Erro ao gerar PDF anual') }
+    try {
+      const ano = refDate.getFullYear()
+      const inicio = `${ano}-01-01`
+      const fim = `${ano}-12-31`
+      let despQ = supabase.from('despesas').select('*').gte('data', inicio).lte('data', fim)
+      despQ = gerenciaTudo ? despQ.eq('salao_id', salaoId) : despQ.eq('user_id', user.id)
+      const [{ data: pagsRaw }, { data: desps }] = await Promise.all([
+        supabase.from('pagamentos')
+          .select('data, valor, status, forma, agendamentos(servico, status, clientes(nome))')
+          .eq('salao_id', salaoId).eq('status', 'pago')
+          .gte('data', inicio).lte('data', fim).limit(10000),
+        despQ.limit(2000),
+      ])
+      const pags = (pagsRaw || []).filter(p => p.agendamentos?.status !== 'cancelado')
+      await exportarPDFAnual(pags, desps || [], ano)
+    } catch (e) { toastErro('Erro ao gerar PDF anual') }
     setExportandoAnual(false)
   }
 
