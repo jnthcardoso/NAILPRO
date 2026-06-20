@@ -16,10 +16,10 @@ export default function NovoAgendamentoModal({
 
       <div style={s.field}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <label style={s.label}>Cliente</label>
+          <label htmlFor="ag-cliente" style={s.label}>Cliente</label>
           <button style={s.linkBtn} onClick={() => setShowNovaCliente(true)}><UserPlus size={13} /> Nova cliente</button>
         </div>
-        <select style={s.input} value={form.cliente_id} onChange={e => setForm({ ...form, cliente_id: e.target.value })}>
+        <select id="ag-cliente" style={s.input} value={form.cliente_id} onChange={e => setForm({ ...form, cliente_id: e.target.value })}>
           <option value="">Selecionar cliente</option>
           {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
         </select>
@@ -28,8 +28,8 @@ export default function NovoAgendamentoModal({
       {showNovaCliente && (
         <div style={s.miniForm}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pink)', marginBottom: 8 }}>Nova cliente rápida</div>
-          <input style={s.input} placeholder="Nome *" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} />
-          <input style={{ ...s.input, marginTop: 8 }} placeholder="(51) 99999-9999" value={formatTelefone(formCliente.telefone)} onChange={e => setFormCliente({ ...formCliente, telefone: unformatTelefone(e.target.value) })} inputMode="numeric" />
+          <input style={s.input} id="ag-nova-nome" placeholder="Nome *" aria-label="Nome da nova cliente" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} />
+          <input style={{ ...s.input, marginTop: 8 }} id="ag-nova-tel" placeholder="(51) 99999-9999" aria-label="Telefone da nova cliente" value={formatTelefone(formCliente.telefone)} onChange={e => setFormCliente({ ...formCliente, telefone: unformatTelefone(e.target.value) })} inputMode="numeric" />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button style={{ ...s.btnPrimary, flex: 1, padding: '9px' }} onClick={salvarNovaCliente} disabled={savingCliente}>{savingCliente ? 'Salvando...' : 'Salvar'}</button>
             <button style={{ ...s.btnSecondary, flex: 1, padding: '9px' }} onClick={() => setShowNovaCliente(false)}>Cancelar</button>
@@ -38,8 +38,8 @@ export default function NovoAgendamentoModal({
       )}
 
       <div style={s.field}>
-        <label style={s.label}>Serviço</label>
-        <input style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
+        <label htmlFor="ag-servico" style={s.label}>Serviço</label>
+        <input id="ag-servico" style={s.input} placeholder="Ex: Gel francês, Manutenção..." value={form.servico} onChange={e => setForm({ ...form, servico: e.target.value })} />
         {servicosPadrao.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
             {servicosPadrao.map(sv => (
@@ -52,22 +52,22 @@ export default function NovoAgendamentoModal({
       </div>
       <div style={s.row}>
         <div style={{ ...s.field, flex: 1 }}>
-          <label style={s.label}>Data</label>
-          <input style={s.input} type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} />
+          <label htmlFor="ag-data" style={s.label}>Data</label>
+          <input id="ag-data" style={s.input} type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} />
         </div>
         <div style={{ ...s.field, flex: 1 }}>
-          <label style={s.label}>Horário</label>
-          <input style={s.input} type="time" value={form.horario} onChange={e => setForm({ ...form, horario: e.target.value })} />
+          <label htmlFor="ag-horario" style={s.label}>Horário</label>
+          <input id="ag-horario" style={s.input} type="time" value={form.horario} onChange={e => setForm({ ...form, horario: e.target.value })} />
         </div>
       </div>
       <div style={s.row}>
         <div style={{ ...s.field, flex: 1, minWidth: 0 }}>
-          <label style={s.label}>Valor (R$)</label>
-          <input style={{ ...s.input, width: '100%', fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
+          <label htmlFor="ag-valor" style={s.label}>Valor (R$)</label>
+          <input id="ag-valor" style={{ ...s.input, width: '100%', fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
         </div>
         <div style={{ ...s.field, flex: 1, minWidth: 0 }}>
-          <label style={s.label}>Status</label>
-          <select style={{ ...s.input, width: '100%' }} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+          <label htmlFor="ag-status" style={s.label}>Status</label>
+          <select id="ag-status" style={{ ...s.input, width: '100%' }} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
             <option value="pendente">Aguardando</option>
             <option value="confirmado">Confirmada</option>
           </select>
@@ -75,16 +75,16 @@ export default function NovoAgendamentoModal({
       </div>
       {gerenciaTudo && profissionais.length > 1 && (
         <div style={s.field}>
-          <label style={s.label}>Profissional</label>
-          <select style={s.input} value={form.profissional_id} onChange={e => setForm({ ...form, profissional_id: e.target.value })}>
+          <label htmlFor="ag-prof" style={s.label}>Profissional</label>
+          <select id="ag-prof" style={s.input} value={form.profissional_id} onChange={e => setForm({ ...form, profissional_id: e.target.value })}>
             <option value="">Selecionar profissional</option>
             {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}{p.papel === 'dona' ? ' (dona)' : p.papel === 'recepcionista' ? ' (recepção)' : ''}</option>)}
           </select>
         </div>
       )}
       <div style={s.field}>
-        <label style={s.label}>Observações</label>
-        <input style={s.input} placeholder="Opcional..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
+        <label htmlFor="ag-obs" style={s.label}>Observações</label>
+        <input id="ag-obs" style={s.input} placeholder="Opcional..." value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
       </div>
       <button style={s.btnPrimary} onClick={onSalvar} disabled={saving}>{saving ? 'Salvando...' : 'Salvar agendamento'}</button>
       <button style={s.btnSecondary} onClick={onCancelar}>Cancelar</button>

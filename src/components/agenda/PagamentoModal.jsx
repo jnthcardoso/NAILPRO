@@ -40,8 +40,9 @@ export default function PagamentoModal({
 
       {/* Forma 1 */}
       <div style={s.field}>
-        <label style={s.label}>{formPag.modo === 'duplo' ? '1ª forma — Valor (R$)' : 'Valor (R$)'}</label>
+        <label htmlFor="pag-valor1" style={s.label}>{formPag.modo === 'duplo' ? '1ª forma — Valor (R$)' : 'Valor (R$)'}</label>
         <input
+          id="pag-valor1"
           style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
           type="number" placeholder="0,00"
           value={formPag.valor}
@@ -65,8 +66,9 @@ export default function PagamentoModal({
         <>
           <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 12px' }} />
           <div style={s.field}>
-            <label style={s.label}>2ª forma — Valor (R$)</label>
+            <label htmlFor="pag-valor2" style={s.label}>2ª forma — Valor (R$)</label>
             <input
+              id="pag-valor2"
               style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
               type="number" placeholder="0,00"
               value={formPag.valor2}
@@ -96,7 +98,7 @@ export default function PagamentoModal({
       )}
 
       <div style={s.field}>
-        <label style={s.label}>Status</label>
+        <label id="pag-status-label" style={s.label}>Status</label>
         <div style={s.statusGrid}>
           <button style={{ ...s.statusBtn2, ...(formPag.status === 'pago' ? s.statusPagoActive : {}) }}
             onClick={() => setFormPag({ ...formPag, status: 'pago' })}>✓ Pago</button>

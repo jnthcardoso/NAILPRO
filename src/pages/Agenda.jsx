@@ -711,9 +711,9 @@ export default function Agenda() {
 
       {!buscaAtiva && (
         <div style={s.nav}>
-          <button style={s.navBtn} onClick={() => navegar(-1)}><ChevronLeft size={18} /></button>
+          <button style={s.navBtn} onClick={() => navegar(-1)} aria-label="Período anterior"><ChevronLeft size={18} /></button>
           <div style={s.navLabel}>{labelNavegacao()}</div>
-          <button style={s.navBtn} onClick={() => navegar(1)}><ChevronRight size={18} /></button>
+          <button style={s.navBtn} onClick={() => navegar(1)} aria-label="Próximo período"><ChevronRight size={18} /></button>
         </div>
       )}
       {gerenciaTudo && profissionais.length > 1 && (
