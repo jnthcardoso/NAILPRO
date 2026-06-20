@@ -1422,7 +1422,7 @@ export default function Financeiro() {
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
               Despesas ({despesasVisiveis.length})
             </div>
-            <select className="fin-despesas-filtro" value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={s.filtroSelect}>
+            <select className="fin-despesas-filtro" value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={{ ...s.filtroSelect, marginLeft: 'auto' }}>
                 <option value="todas">Todas</option>
                 <option value="salao">🏢 Do salão</option>
                 <option value="pessoal">👤 Pessoal</option>

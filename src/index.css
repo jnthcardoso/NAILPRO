@@ -134,6 +134,7 @@ html, body, #root {
     width: 100% !important;
     flex: 1 1 100% !important;
     box-sizing: border-box !important;
+    margin-left: 0 !important;
   }
   .fin-despesas-header .fin-despesas-addbtn {
     order: 2 !important;
