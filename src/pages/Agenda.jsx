@@ -164,11 +164,12 @@ export default function Agenda() {
   async function loadBloqueios(inicio) {
     // Traz os recorrentes (todos) + os de data única a partir do início visível.
     // O recorte por dia/profissional é feito ao expandir (expandirBloqueios).
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('agenda_bloqueios')
       .select('*, profissional:salao_membros(id, nome)')
       .eq('salao_id', salaoId)
       .or(`recorrencia.eq.semanal,data.gte.${inicio}`)
+    if (error) { erro(traduzErro(error, 'Não foi possível carregar os bloqueios da agenda.')); return }
     setBloqueios(data || [])
   }
 

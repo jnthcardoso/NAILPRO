@@ -63,7 +63,8 @@ export default function Metas() {
 
   // ── Metas ─────────────────────────────────────────────
   async function loadMetas() {
-    const { data } = await supabase.from('metas').select('*').eq('salao_id', salaoId).order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('metas').select('*').eq('salao_id', salaoId).order('created_at', { ascending: false })
+    if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as metas.')); return }
     setMetas(data || [])
     if (!data?.length) { setProgressos({}); return }
     // 1 só consulta: busca todos os pagamentos pagos no intervalo que cobre todas as metas
@@ -79,9 +80,10 @@ export default function Metas() {
     if (maxFim > hojeStr) maxFim = hojeStr
     const pros = {}
     if (minIni && maxFim && minIni <= maxFim) {
-      const { data: pags } = await supabase.from('pagamentos')
+      const { data: pags, error: pagsErr } = await supabase.from('pagamentos')
         .select('valor, data').eq('salao_id', salaoId).eq('status', 'pago')
-        .gte('data', minIni).lte('data', maxFim)
+        .gte('data', minIni).lte('data', maxFim).limit(5000)
+      if (pagsErr) { toastErro(traduzErro(pagsErr, 'Não foi possível calcular o progresso das metas.')); return }
       data.forEach(meta => {
         const { inicio, fim } = periodoMeta(meta)
         const fimReal = fim > hojeStr ? hojeStr : fim
