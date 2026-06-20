@@ -122,6 +122,24 @@ html, body, #root {
   .admin-stats { grid-template-columns: repeat(2, 1fr) !important; }
   .admin-stats > div:nth-child(5) { grid-column: 1 / -1 !important; }
 
+  /* Despesas: cabeçalho quebra em 2 linhas no celular.
+     Linha 1: título "Despesas (N)" (order 1) + botão "+ Despesa" (order 2).
+     Linha 2: filtro select largura total (order 3). Desktop inalterado. */
+  .fin-despesas-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .fin-despesas-header .fin-despesas-filtro {
+    order: 3 !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+  }
+  .fin-despesas-header .fin-despesas-addbtn {
+    order: 2 !important;
+    margin-left: auto !important;
+  }
+
   /* Admin: no card de usuário, a coluna da direita (status/plano/renovação)
      deixa de disputar a largura e vira uma linha de rodapé full-width
      (status · plano · renovação lado a lado). O conteúdo principal ganha

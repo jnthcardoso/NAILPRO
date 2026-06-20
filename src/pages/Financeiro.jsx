@@ -1415,14 +1415,14 @@ export default function Financeiro() {
             </div>
           )}
 
-          {/* Cabeçalho: título + 1 filtro (dropdown) + adicionar */}
-          <div style={s.colHeader}>
+          {/* Cabeçalho: título + filtro + adicionar.
+              Desktop: numa linha só. Mobile: título+botão na 1ª linha, filtro embaixo. */}
+          <div style={s.colHeader} className="fin-despesas-header">
             <div style={s.colTitulo}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
               Despesas ({despesasVisiveis.length})
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <select value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={s.filtroSelect}>
+            <select className="fin-despesas-filtro" value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={s.filtroSelect}>
                 <option value="todas">Todas</option>
                 <option value="salao">🏢 Do salão</option>
                 <option value="pessoal">👤 Pessoal</option>
@@ -1433,11 +1433,10 @@ export default function Financeiro() {
                 {temAcesso('contasAPagar') && <option value="pessoal_apagar">👤 Pessoal — a pagar</option>}
                 <option value="recorrentes">🔁 Recorrentes</option>
                 <option value="preencher">⚠️ A preencher</option>
-              </select>
-              <button style={s.addBtnSmall} onClick={abrirNovaDespesa}>
-                <Plus size={13} /> Despesa
-              </button>
-            </div>
+            </select>
+            <button className="fin-despesas-addbtn" style={s.addBtnSmall} onClick={abrirNovaDespesa}>
+              <Plus size={13} /> Despesa
+            </button>
           </div>
 
           {despesasVisiveis.length === 0
