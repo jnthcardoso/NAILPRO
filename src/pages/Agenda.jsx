@@ -55,6 +55,7 @@ export default function Agenda() {
   const [agDetalhe, setAgDetalhe] = useState(null)
   const [diaSelecionadoMes, setDiaSelecionadoMes] = useState(null)
   const [busca, setBusca] = useState('')
+  const [buscaAberta, setBuscaAberta] = useState(false)
   const [resultados, setResultados] = useState([])
   const [buscando, setBuscando] = useState(false)
   // ── Bloqueios de horário ──
@@ -688,34 +689,48 @@ export default function Agenda() {
 
   return (
     <div style={s.page}>
-      <div style={s.viewTabs}>
-        {VIEWS.map(v => (
-          <button key={v} style={{ ...s.viewTab, ...(view === v ? s.viewTabActive : {}) }} onClick={() => setView(v)}>{v}</button>
-        ))}
-      </div>
-
-      <div style={s.buscaWrap}>
-        <Search size={16} color="var(--text3)" style={{ flexShrink: 0 }} />
-        <input
-          style={s.buscaInput}
-          placeholder="Buscar por cliente ou serviço..."
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-        />
-        {busca && (
-          <button style={s.buscaClear} onClick={() => setBusca('')} aria-label="Limpar busca">
-            <X size={15} />
-          </button>
+      {/* Linha 1: visões + navegação da semana + buscar (campo abre ao tocar) */}
+      <div style={s.barraTopo}>
+        <div style={{ ...s.viewTabs, marginBottom: 0, flex: '1 1 180px' }}>
+          {VIEWS.map(v => (
+            <button key={v} style={{ ...s.viewTab, ...(view === v ? s.viewTabActive : {}) }} onClick={() => setView(v)}>{v}</button>
+          ))}
+        </div>
+        {!buscaAtiva && (
+          <div style={{ ...s.nav, marginBottom: 0, flex: '1 1 auto' }}>
+            <button style={s.navBtn} onClick={() => navegar(-1)} aria-label="Período anterior"><ChevronLeft size={18} /></button>
+            <div style={s.navLabel}>{labelNavegacao()}</div>
+            <button style={s.navBtn} onClick={() => navegar(1)} aria-label="Próximo período"><ChevronRight size={18} /></button>
+          </div>
         )}
+        <button
+          style={{ ...s.toolBtn, ...((buscaAberta || buscaAtiva) ? s.toolBtnAtivo : {}) }}
+          onClick={() => setBuscaAberta(v => { const aberta = !v; if (!aberta) setBusca(''); return aberta })}
+          aria-expanded={buscaAberta || buscaAtiva}
+        >
+          <Search size={15} /> Buscar
+        </button>
       </div>
 
-      {!buscaAtiva && (
-        <div style={s.nav}>
-          <button style={s.navBtn} onClick={() => navegar(-1)} aria-label="Período anterior"><ChevronLeft size={18} /></button>
-          <div style={s.navLabel}>{labelNavegacao()}</div>
-          <button style={s.navBtn} onClick={() => navegar(1)} aria-label="Próximo período"><ChevronRight size={18} /></button>
+      {/* Campo de busca: só ocupa espaço quando aberto */}
+      {(buscaAberta || buscaAtiva) && (
+        <div style={s.buscaWrap}>
+          <Search size={16} color="var(--text3)" style={{ flexShrink: 0 }} />
+          <input
+            style={s.buscaInput}
+            placeholder="Buscar por cliente ou serviço..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+            autoFocus
+          />
+          {busca && (
+            <button style={s.buscaClear} onClick={() => setBusca('')} aria-label="Limpar busca">
+              <X size={15} />
+            </button>
+          )}
         </div>
       )}
+
       {gerenciaTudo && profissionais.length > 1 && (
         <div style={s.profFiltro}>
           <button style={{ ...s.profChip, ...(filtroProf === '' ? s.profChipAtivo : {}) }} onClick={() => setFiltroProf('')}>Todas</button>
@@ -726,27 +741,25 @@ export default function Agenda() {
           ))}
         </div>
       )}
-      {!buscaAtiva && (
-        <div style={s.profFiltro}>
-          {[
-            { id: 'todos', label: 'Todos' },
-            { id: 'pago', label: '✓ Pagos' },
-            { id: 'receber', label: '⏳ A receber' },
-          ].map(f => (
-            <button key={f.id} style={{ ...s.profChip, ...(filtroPag === f.id ? s.profChipAtivo : {}) }} onClick={() => setFiltroPag(f.id)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-      )}
 
+      {/* Linha 2: filtros de pagamento + bloquear horário */}
       {!buscaAtiva && (
-        <button
-          onClick={abrirBloqueio}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start', background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 4 }}
-        >
-          <Lock size={13} /> Bloquear horário
-        </button>
+        <div style={s.barraFiltros}>
+          <div style={s.pillsScroll}>
+            {[
+              { id: 'todos', label: 'Todos' },
+              { id: 'pago', label: '✓ Pagos' },
+              { id: 'receber', label: '⏳ A receber' },
+            ].map(f => (
+              <button key={f.id} style={{ ...s.profChip, ...(filtroPag === f.id ? s.profChipAtivo : {}) }} onClick={() => setFiltroPag(f.id)}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <button style={s.toolBtn} onClick={abrirBloqueio}>
+            <Lock size={13} /> Bloquear horário
+          </button>
+        </div>
       )}
 
       {loadingAgenda && !buscaAtiva ? <CardSkeleton count={4} /> : buscaAtiva ? (

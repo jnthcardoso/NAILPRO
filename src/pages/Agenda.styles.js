@@ -21,6 +21,12 @@ export const s = {
   profChipAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
   navBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: 4 },
   navLabel: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' },
+  /* Barra compacta de controles (visões + navegação + ações na mesma faixa) */
+  barraTopo: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
+  barraFiltros: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 },
+  pillsScroll: { display: 'flex', gap: 6, overflowX: 'auto', flex: 1, minWidth: 0, paddingBottom: 2 },
+  toolBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  toolBtnAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
   weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 },
   weekDay: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 2px', borderRadius: 9, cursor: 'pointer', background: 'var(--surface2)', border: '1px solid var(--border)' },
   weekDayHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
