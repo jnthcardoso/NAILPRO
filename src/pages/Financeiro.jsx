@@ -105,6 +105,8 @@ export default function Financeiro() {
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
+  // Layout 2 faixas só no computador; no celular mantém as faixas empilhadas.
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 769)
   // Config de cobrança (chave Pix + modelo da mensagem) — usada no botão "Cobrar".
   const [cobranca, setCobranca] = useState({ chavePix: '', template: MSG_COBRANCA_PADRAO, nomeSalao: '' })
   // Pró-labore ("meu salário"): valor mensal que a dona tira pra ela.
@@ -116,6 +118,13 @@ export default function Financeiro() {
   const [dreAberto, setDreAberto] = useState({})
   const toggleDre = (k) => setDreAberto(p => ({ ...p, [k]: !p[k] }))
   const [searchParams] = useSearchParams()
+
+  // Alterna entre layout celular e computador ao redimensionar a janela.
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 769)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // Config de cobrança (chave Pix + modelo) — carrega uma vez por salão.
   useEffect(() => {
@@ -735,69 +744,86 @@ export default function Financeiro() {
   const pessoalPagas = totalDespesasPessoal - pessoalAPagar
   const sobrouPraVoce = proLabore - totalDespesasPessoal
 
+  // Blocos da barra do topo — definidos uma vez e reaproveitados nos dois layouts
+  // (computador = 2 faixas / celular = 4 faixas empilhadas, sem mudança).
+  const modoTabsInner = (
+    <>
+      <button style={{ ...s.modoTab, ...(rangeMode === 'mes' ? s.modoTabAtivo : {}) }} onClick={() => setRangeMode('mes')}>Por mês</button>
+      <button style={{ ...s.modoTab, ...(rangeMode === 'custom' ? s.modoTabAtivo : {}) }} onClick={() => setRangeMode('custom')}>Período personalizado</button>
+    </>
+  )
+  const periodoNavInner = rangeMode === 'mes' ? (
+    <>
+      <button style={s.navBtn} onClick={() => setPeriodoSel(subMonths(periodoSel, 1))}><ChevronLeft size={18} /></button>
+      <div style={s.periodoLabel}>{periodoLabel}</div>
+      <button style={s.navBtn} onClick={() => setPeriodoSel(addMonths(periodoSel, 1))}><ChevronRight size={18} /></button>
+    </>
+  ) : (
+    <div className="fin-range-inputs">
+      <div style={s.rangeField}>
+        <label style={s.rangeLabel}>De</label>
+        <input style={s.rangeInput} type="date" value={customInicio} onChange={e => setCustomInicio(e.target.value)} />
+      </div>
+      <div style={s.rangeField}>
+        <label style={s.rangeLabel}>Até</label>
+        <input style={s.rangeInput} type="date" value={customFim} onChange={e => setCustomFim(e.target.value)} />
+      </div>
+    </div>
+  )
+  const exportInner = (
+    <>
+      <span style={s.exportLabel}>Exportar:</span>
+      <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title={labelBtnPDF}>
+        <FileDown size={13} />
+        {exportando ? '...' : labelBtnPDF}
+        {!temAcesso('exportPDF') && <ProBadge />}
+      </button>
+      <button style={s.exportBtnAnual} onClick={handleExportarAnual} disabled={exportandoAnual} title="Relatório anual completo">
+        <Calendar size={13} />
+        {exportandoAnual ? '...' : `Ano ${refDate.getFullYear()}`}
+        {!temAcesso('exportPDF') && <ProBadge />}
+      </button>
+    </>
+  )
+  const tabsInner = [
+    { id: 'resumo',   label: 'Resumo',   icon: DollarSign },
+    { id: 'analises', label: 'Análises', icon: BarChart2 },
+    { id: 'receitas', label: 'Receitas', icon: TrendingUp },
+    { id: 'despesas', label: 'Despesas', icon: Receipt },
+  ].map(t => {
+    const Ico = t.icon
+    const ativo = tab === t.id
+    return (
+      <button key={t.id} onClick={() => setTab(t.id)} style={{ ...tabs.btn, ...(ativo ? tabs.btnAtivo : {}) }}>
+        <Ico size={15} />
+        <span>{t.label}</span>
+      </button>
+    )
+  })
+
   return (
     <div style={s.page}>
-      {/* Modo de período */}
-      <div style={s.modoTabs}>
-        <button style={{ ...s.modoTab, ...(rangeMode === 'mes' ? s.modoTabAtivo : {}) }} onClick={() => setRangeMode('mes')}>Por mês</button>
-        <button style={{ ...s.modoTab, ...(rangeMode === 'custom' ? s.modoTabAtivo : {}) }} onClick={() => setRangeMode('custom')}>Período personalizado</button>
-      </div>
-
-      {/* Navegação de período */}
-      <div style={s.periodoNav}>
-        {rangeMode === 'mes' ? (
-          <>
-            <button style={s.navBtn} onClick={() => setPeriodoSel(subMonths(periodoSel, 1))}><ChevronLeft size={18} /></button>
-            <div style={s.periodoLabel}>{periodoLabel}</div>
-            <button style={s.navBtn} onClick={() => setPeriodoSel(addMonths(periodoSel, 1))}><ChevronRight size={18} /></button>
-          </>
-        ) : (
-          <div className="fin-range-inputs">
-            <div style={s.rangeField}>
-              <label style={s.rangeLabel}>De</label>
-              <input style={s.rangeInput} type="date" value={customInicio} onChange={e => setCustomInicio(e.target.value)} />
-            </div>
-            <div style={s.rangeField}>
-              <label style={s.rangeLabel}>Até</label>
-              <input style={s.rangeInput} type="date" value={customFim} onChange={e => setCustomFim(e.target.value)} />
-            </div>
+      {isDesktop ? (
+        /* Computador: 2 faixas — [modo | navegação (mesma largura)] / [abas | exportar] */
+        <>
+          <div style={s.topoGridDesktop}>
+            <div style={{ ...s.modoTabs, marginBottom: 0 }}>{modoTabsInner}</div>
+            <div style={{ ...s.periodoNav, marginBottom: 0 }}>{periodoNavInner}</div>
           </div>
-        )}
-      </div>
-
-      {/* Linha de exportação */}
-      <div style={s.exportRow}>
-        <span style={s.exportLabel}>Exportar:</span>
-        <button style={s.exportBtn} onClick={handleExportarPDF} disabled={exportando} title={labelBtnPDF}>
-          <FileDown size={13} />
-          {exportando ? '...' : labelBtnPDF}
-          {!temAcesso('exportPDF') && <ProBadge />}
-        </button>
-        <button style={s.exportBtnAnual} onClick={handleExportarAnual} disabled={exportandoAnual} title="Relatório anual completo">
-          <Calendar size={13} />
-          {exportandoAnual ? '...' : `Ano ${refDate.getFullYear()}`}
-          {!temAcesso('exportPDF') && <ProBadge />}
-        </button>
-      </div>
-
-      {/* ── Tabs ── */}
-      <div className="fin-tabs" style={tabs.bar}>
-        {[
-          { id: 'resumo',   label: 'Resumo',   icon: DollarSign },
-          { id: 'analises', label: 'Análises', icon: BarChart2 },
-          { id: 'receitas', label: 'Receitas', icon: TrendingUp },
-          { id: 'despesas', label: 'Despesas', icon: Receipt },
-        ].map(t => {
-          const Ico = t.icon
-          const ativo = tab === t.id
-          return (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ ...tabs.btn, ...(ativo ? tabs.btnAtivo : {}) }}>
-              <Ico size={15} />
-              <span>{t.label}</span>
-            </button>
-          )
-        })}
-      </div>
+          <div style={s.tabsExportDesktop}>
+            <div className="fin-tabs" style={{ ...tabs.bar, marginBottom: 0, position: 'static', flex: 1 }}>{tabsInner}</div>
+            <div style={{ ...s.exportRow, marginBottom: 0, flexShrink: 0 }}>{exportInner}</div>
+          </div>
+        </>
+      ) : (
+        /* Celular: 4 faixas empilhadas (mantido como está) */
+        <>
+          <div style={s.modoTabs}>{modoTabsInner}</div>
+          <div style={s.periodoNav}>{periodoNavInner}</div>
+          <div style={s.exportRow}>{exportInner}</div>
+          <div className="fin-tabs" style={tabs.bar}>{tabsInner}</div>
+        </>
+      )}
 
       {loading && <div style={s.tabContent}><CardSkeleton count={4} /></div>}
 

@@ -17,6 +17,9 @@ export const s = {
   modoTabs: { display: 'flex', gap: 6, marginBottom: 10 },
   modoTab: { flex: 1, padding: '7px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   modoTabAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', fontWeight: 700 },
+  /* Computador: linha 1 com modo+navegação de mesma largura; linha 2 abas+exportar. */
+  topoGridDesktop: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 },
+  tabsExportDesktop: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)' },
   rangeField: { display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 },
   rangeLabel: { fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' },
   rangeInput: { border: '1px solid var(--border2)', borderRadius: 8, padding: '6px 8px', fontSize: 13, background: 'var(--surface)', color: 'var(--text)', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box', minWidth: 0 },
