@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -17,6 +17,43 @@ import {
 import { ptBR } from 'date-fns/locale'
 
 const DIAS_UTEIS_PADRAO = [1, 2, 3, 4, 5]
+
+// Textos das explicações dos indicadores (abrem no ⓘ ao lado de cada título).
+const INFO_INDICADORES = {
+  ativas: {
+    titulo: 'Ativas vs. sumidas',
+    oque: 'Quantas das suas clientes ainda estão voltando (ativas) e quantas pararam de aparecer (sumidas).',
+    como: 'Olhamos a última visita de cada cliente. Voltou dentro do ciclo de retorno dela (individual ou o padrão do salão) → ativa. Passou do prazo → sumida. Quem nunca foi atendida fica de fora. Taxa = ativas ÷ (ativas + sumidas).',
+    fazer: 'Muitas sumidas é dinheiro andando na rua — use "Oportunidades da semana" na tela inicial pra chamar de volta.',
+  },
+  novas: {
+    titulo: 'Novas clientes',
+    oque: 'Quantas clientes novas entraram, mês a mês, nos últimos 6 meses.',
+    como: 'Contamos quantas clientes foram cadastradas em cada mês.',
+    fazer: 'Veja se sua divulgação e o link de agendamento estão trazendo gente nova; meses em queda pedem reforço.',
+    nota: 'Esse não muda com o seletor de período — é sempre os últimos 6 meses.',
+  },
+  cancelamentos: {
+    titulo: 'Cancelamentos',
+    oque: 'Dos horários que aconteceram ou foram cancelados, quantos % foram cancelados.',
+    como: 'Cancelados ÷ (realizados + cancelados) no período.',
+    fazer: 'Acima de uns 15%, vale reforçar o lembrete e a confirmação por link.',
+    nota: 'Só conta o que você marca como "cancelado" na agenda.',
+  },
+  ocupacao: {
+    titulo: 'Ocupação da agenda',
+    oque: 'O quanto da sua agenda disponível foi realmente usada no período.',
+    como: 'Sua jornada (início até o fim) ÷ duração padrão do atendimento = vagas por dia. Multiplicamos pelos seus dias de trabalho no período. "Usados" são os atendimentos realizados. Ocupação = usados ÷ vagas.',
+    fazer: 'Abaixo de 60%, tem espaço — hora de puxar cliente. Acima de 85%, quase lotada — pense em preço ou equipe.',
+    aviso: 'É uma estimativa: usa uma duração só e não desconta folgas nem bloqueios.',
+  },
+  profissional: {
+    titulo: 'Atendimentos por profissional',
+    oque: 'Quanto cada profissional faturou e quantos atendimentos fez no período.',
+    como: 'Somamos o dinheiro recebido (pagamentos pagos) e contamos os atendimentos realizados de cada uma. Sem profissional definido aparece como "Não atribuído".',
+    fazer: 'Enxergar quem puxa o faturamento — base pra escala e pra comissão no futuro.',
+  },
+}
 
 // 'HH:MM:SS' → minutos desde a meia-noite
 function horaParaMin(h) {
@@ -51,6 +88,7 @@ export default function Metas() {
   const [cancelamento, setCancelamento] = useState(null)
   const [ocupacao, setOcupacao] = useState(null)
   const [porProfissional, setPorProfissional] = useState([])
+  const [infoAberto, setInfoAberto] = useState(null)    // qual explicação está aberta
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
 
   useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
@@ -346,6 +384,13 @@ export default function Metas() {
   const maxProf = porProfissional.length > 0 ? Math.max(porProfissional[0].valor, 1) : 1
   const labelPeriodoKpi = kpiMeses === '1' ? 'Último mês' : `Últimos ${kpiMeses} meses`
 
+  // Botãozinho ⓘ ao lado do título de cada indicador
+  const infoBtn = (chave) => (
+    <button style={s.infoBtn} onClick={() => setInfoAberto(chave)} aria-label="O que é isso?" title="O que é isso?">
+      <Info size={13} />
+    </button>
+  )
+
   // ── Navegação de mês ──────────────────────────────────
   function mesAnterior() {
     setMesFiltro(prev => format(subMonths(new Date(prev + '-02'), 1), 'yyyy-MM'))
@@ -522,7 +567,7 @@ export default function Metas() {
               <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
               {/* Clientes ativas vs. sumidas */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Ativas vs. sumidas</div>
+                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Ativas vs. sumidas {infoBtn('ativas')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Baseado no ciclo de retorno de cada cliente</div>
 
                 {atividade === null ? (
@@ -565,7 +610,7 @@ export default function Metas() {
 
               {/* Novas clientes por mês */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><Users size={15} color="var(--pink)" /> Novas clientes</div>
+                <div style={s.kpiCardTitle}><Users size={15} color="var(--pink)" /> Novas clientes {infoBtn('novas')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Últimos 6 meses</div>
                 {novasClientes.every(m => m.qtd === 0) ? (
                   <div style={s.kpiEmpty}>Sem dados suficientes</div>
@@ -600,7 +645,7 @@ export default function Metas() {
               <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
               {/* Cancelamentos */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><Ban size={15} color="var(--pink)" /> Cancelamentos</div>
+                <div style={s.kpiCardTitle}><Ban size={15} color="var(--pink)" /> Cancelamentos {infoBtn('cancelamentos')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
                 {cancelamento === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
@@ -639,7 +684,7 @@ export default function Metas() {
 
               {/* 5. Ocupação da agenda */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><Gauge size={15} color="var(--pink)" /> Ocupação da agenda</div>
+                <div style={s.kpiCardTitle}><Gauge size={15} color="var(--pink)" /> Ocupação da agenda {infoBtn('ocupacao')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi} · estimativa</div>
                 {ocupacao === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
@@ -691,7 +736,7 @@ export default function Metas() {
                 </div>
                 <div style={s.kpiGrid}>
                 <div style={s.kpiCard}>
-                  <div style={s.kpiCardTitle}><Award size={15} color="var(--pink)" /> Atendimentos por profissional</div>
+                  <div style={s.kpiCardTitle}><Award size={15} color="var(--pink)" /> Atendimentos por profissional {infoBtn('profissional')}</div>
                   <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
                   {porProfissional.length === 0 ? (
                     <div style={s.kpiEmpty}>Sem atendimentos no período</div>
@@ -718,6 +763,32 @@ export default function Metas() {
             </>
           )}
         </>
+      )}
+
+      {/* ── Modal de explicação do indicador ───────────── */}
+      {infoAberto && INFO_INDICADORES[infoAberto] && (
+        <Modal onClose={() => setInfoAberto(null)} variant="sheet" boxStyle={s.modal}>
+          <div style={s.infoTitulo}>{INFO_INDICADORES[infoAberto].titulo}</div>
+          <div style={s.infoBloco}>
+            <div style={s.infoLabel}>O que é</div>
+            <div style={s.infoTexto}>{INFO_INDICADORES[infoAberto].oque}</div>
+          </div>
+          <div style={s.infoBloco}>
+            <div style={s.infoLabel}>Como calculamos</div>
+            <div style={s.infoTexto}>{INFO_INDICADORES[infoAberto].como}</div>
+          </div>
+          <div style={s.infoBloco}>
+            <div style={s.infoLabel}>O que fazer</div>
+            <div style={s.infoTexto}>{INFO_INDICADORES[infoAberto].fazer}</div>
+          </div>
+          {INFO_INDICADORES[infoAberto].aviso && (
+            <div style={s.infoAviso}><Info size={14} style={{ flexShrink: 0, marginTop: 1 }} /><span>{INFO_INDICADORES[infoAberto].aviso}</span></div>
+          )}
+          {INFO_INDICADORES[infoAberto].nota && (
+            <div style={s.infoNota}>{INFO_INDICADORES[infoAberto].nota}</div>
+          )}
+          <button style={s.btnPrimary} onClick={() => setInfoAberto(null)}>Entendi</button>
+        </Modal>
       )}
 
       {/* ── Modal de meta ──────────────────────────────── */}
@@ -798,6 +869,14 @@ const s = {
   kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', boxShadow: 'var(--shadow-sm)' },
   kpiCardTitle: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
   kpiEmpty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' },
+  infoBtn: { marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, padding: 0 },
+  // Modal de explicação
+  infoTitulo: { fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 2 },
+  infoBloco: { display: 'flex', flexDirection: 'column', gap: 3 },
+  infoLabel: { fontSize: 11, fontWeight: 700, color: 'var(--pink)', textTransform: 'uppercase', letterSpacing: '0.4px' },
+  infoTexto: { fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 },
+  infoAviso: { display: 'flex', gap: 7, fontSize: 12, color: '#92400E', background: '#FEF3C7', borderRadius: 8, padding: '10px 12px', lineHeight: 1.5 },
+  infoNota: { fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 },
   loading: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '40px 0' },
   skeletonTitle: { height: 16, borderRadius: 6, background: 'var(--border)', width: '60%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
   skeletonLine: { height: 12, borderRadius: 6, background: 'var(--border)', width: '80%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
