@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, RefreshCw } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, RefreshCw, Ban, UserCheck, Gauge, Award } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -18,11 +18,18 @@ import { ptBR } from 'date-fns/locale'
 
 const DIAS_UTEIS_PADRAO = [1, 2, 3, 4, 5]
 
+// 'HH:MM:SS' → minutos desde a meia-noite
+function horaParaMin(h) {
+  if (!h) return 0
+  const [hh, mm] = h.split(':')
+  return parseInt(hh) * 60 + (parseInt(mm) || 0)
+}
+
 export default function Metas() {
   const { user } = useAuth()
   const { salaoId } = useSalao()
   const { confirmar, sucesso, erro: toastErro } = useToast()
-  const { temAcesso } = useAssinatura()
+  const { temAcesso, plano } = useAssinatura()
   const navigate = useNavigate()
   const [tab, setTab] = useState('metas')
 
@@ -38,27 +45,33 @@ export default function Metas() {
 
   // ── KPIs ─────────────────────────────────────────────
   const [kpiMeses, setKpiMeses] = useState('3')
-  const [retencaoDias, setRetencaoDias] = useState(45)
+  const [cfg, setCfg] = useState(null)
   const [faturServico, setFaturServico] = useState([])
-  const [taxaRetencao, setTaxaRetencao] = useState(null)
+  const [atividade, setAtividade] = useState(null)
   const [novasClientes, setNovasClientes] = useState([])
+  const [cancelamento, setCancelamento] = useState(null)
+  const [ocupacao, setOcupacao] = useState(null)
+  const [porProfissional, setPorProfissional] = useState([])
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
   const [loadingFatur, setLoadingFatur] = useState(false) // carga isolada do faturamento
 
   useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
   // Carga inicial: carrega TODOS os KPIs quando entra na tab
   useEffect(() => { if (salaoId && tab === 'kpis') loadKpis() }, [salaoId, tab])
-  // kpiMeses → só recarrega faturamento
-  useEffect(() => { if (salaoId && tab === 'kpis') loadFaturamento() }, [kpiMeses])
-  // retencaoDias → só recarrega retenção
-  useEffect(() => { if (salaoId && tab === 'kpis') loadRetencaoKpi() }, [retencaoDias])
+  // kpiMeses → recarrega os KPIs que dependem do período selecionado
+  useEffect(() => {
+    if (salaoId && tab === 'kpis') { loadFaturamento(); loadCancelamento(); loadOcupacao(); loadPorProfissional() }
+  }, [kpiMeses])
 
 
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
-      .select('dias_semana').eq('salao_id', salaoId).maybeSingle()
+      .select('dias_semana, dias_retorno_alerta, horario_inicio, horario_fim, duracao_atendimento')
+      .eq('salao_id', salaoId).maybeSingle()
     if (data?.dias_semana?.length) setDiasFuncionamento(data.dias_semana)
+    setCfg(data || null)
+    return data
   }
 
   // ── Metas ─────────────────────────────────────────────
@@ -232,37 +245,101 @@ export default function Metas() {
     setLoadingFatur(false)
   }
 
-  // 2. Taxa de retenção (depende de retencaoDias)
-  async function loadRetencaoKpi(diasParam) {
-    const dias = diasParam ?? retencaoDias
+  // 2. Clientes ativas vs. sumidas (substitui a antiga "taxa de retenção").
+  // Ativa = último atendimento dentro do ciclo de retorno da cliente
+  // (clientes.dias_retorno, ou o padrão do salão em configuracoes.dias_retorno_alerta).
+  // Clientes nunca atendidas não entram na base.
+  async function loadAtividade(cfgParam) {
+    const cicloPadrao = (cfgParam ?? cfg)?.dias_retorno_alerta || 30
+    const { data: cls } = await supabase
+      .from('clientes')
+      .select('ultimo_atendimento, dias_retorno')
+      .eq('salao_id', salaoId)
+      .eq('arquivada', false)
+    if (!cls) return
     const hoje = new Date()
-    const { data: agsRet } = await supabase
+    let ativas = 0, sumidas = 0
+    cls.forEach(c => {
+      if (!c.ultimo_atendimento) return // nunca atendida — fora da base
+      const ciclo = c.dias_retorno || cicloPadrao
+      const dias = differenceInDays(hoje, parseISO(c.ultimo_atendimento))
+      if (dias <= ciclo) ativas++; else sumidas++
+    })
+    const base = ativas + sumidas
+    setAtividade({ ativas, sumidas, taxa: base > 0 ? Math.round((ativas / base) * 100) : 0 })
+  }
+
+  // 4. Taxa de cancelamento (depende de kpiMeses)
+  async function loadCancelamento(mesesParam) {
+    const m = mesesParam ?? kpiMeses
+    const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
+    const { data } = await supabase
       .from('agendamentos')
-      .select('cliente_id, data')
+      .select('status')
+      .eq('salao_id', salaoId)
+      .in('status', ['realizado', 'cancelado'])
+      .gte('data', inicio)
+    if (!data) return
+    let realizados = 0, cancelados = 0
+    data.forEach(a => { if (a.status === 'cancelado') cancelados++; else realizados++ })
+    const total = realizados + cancelados
+    setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total })
+  }
+
+  // 5. Ocupação da agenda (depende de kpiMeses + config). Estimativa:
+  // vagas = dias úteis trabalhados × (jornada ÷ duração média do atendimento).
+  async function loadOcupacao(mesesParam, cfgParam) {
+    const m = mesesParam ?? kpiMeses
+    const c = cfgParam ?? cfg
+    const inicioDate = subMonths(new Date(), parseInt(m))
+    const hoje = new Date()
+    const inicio = format(inicioDate, 'yyyy-MM-dd')
+    const hojeStr = format(hoje, 'yyyy-MM-dd')
+    const dur = c?.duracao_atendimento || 60
+    const jornada = horaParaMin(c?.horario_fim || '18:00:00') - horaParaMin(c?.horario_inicio || '09:00:00')
+    const slotsDia = Math.max(0, Math.floor(jornada / dur))
+    const diasSemana = c?.dias_semana?.length ? c.dias_semana : diasFuncionamento
+    const dias = eachDayOfInterval({ start: inicioDate, end: hoje })
+      .filter(d => diasSemana.includes(getDay(d))).length
+    const vagas = slotsDia * dias
+    const { count } = await supabase
+      .from('agendamentos')
+      .select('id', { count: 'exact', head: true })
       .eq('salao_id', salaoId)
       .eq('status', 'realizado')
-      .order('data')
-    if (agsRet) {
-      const byClient = {}
-      agsRet.forEach(a => {
-        if (!byClient[a.cliente_id]) byClient[a.cliente_id] = []
-        byClient[a.cliente_id].push(a.data)
-      })
-      let analisados = 0, retornaram = 0
-      Object.values(byClient).forEach(visitas => {
-        const primeiraVisita = parseISO(visitas[0])
-        if (differenceInDays(hoje, primeiraVisita) < dias) return
-        analisados++
-        for (let i = 0; i < visitas.length - 1; i++) {
-          const diff = differenceInDays(parseISO(visitas[i + 1]), parseISO(visitas[i]))
-          if (diff <= dias) { retornaram++; break }
-        }
-      })
-      setTaxaRetencao({
-        taxa: analisados > 0 ? Math.round((retornaram / analisados) * 100) : 0,
-        retornaram, analisados,
-      })
-    }
+      .gte('data', inicio)
+      .lte('data', hojeStr)
+    const usadas = count || 0
+    setOcupacao({ taxa: vagas > 0 ? Math.round((usadas / vagas) * 100) : 0, usadas, vagas })
+  }
+
+  // 6. Desempenho por profissional (só plano Salão; depende de kpiMeses)
+  async function loadPorProfissional(mesesParam) {
+    if (plano?.id !== 'salao') { setPorProfissional([]); return }
+    const m = mesesParam ?? kpiMeses
+    const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
+    const [{ data: ags }, { data: membros }] = await Promise.all([
+      supabase.from('agendamentos')
+        .select('profissional_id, pagamentos(valor, status)')
+        .eq('salao_id', salaoId).eq('status', 'realizado').gte('data', inicio),
+      supabase.from('salao_membros').select('id, nome').eq('salao_id', salaoId),
+    ])
+    if (!ags) return
+    const nomePorId = {}
+    ;(membros || []).forEach(mb => { nomePorId[mb.id] = mb.nome || 'Sem nome' })
+    const grouped = {}
+    ags.forEach(a => {
+      const pag = a.pagamentos?.find(p => p.status === 'pago')
+      const val = pag?.valor || 0
+      const key = a.profissional_id || '__sem__'
+      if (!grouped[key]) grouped[key] = { valor: 0, qtd: 0 }
+      grouped[key].valor += val
+      grouped[key].qtd += 1
+    })
+    const lista = Object.entries(grouped)
+      .map(([id, v]) => ({ nome: id === '__sem__' ? 'Não atribuído' : (nomePorId[id] || 'Profissional'), ...v }))
+      .sort((a, b) => b.valor - a.valor)
+    setPorProfissional(lista)
   }
 
   // 3. Novas clientes por mês (estático — sempre últimos 6 meses)
@@ -290,12 +367,18 @@ export default function Metas() {
   // Carga completa (entrada na tab)
   async function loadKpis() {
     setLoadingKpi(true)
-    await Promise.all([loadFaturamento(), loadRetencaoKpi(), loadNovasKpi()])
+    const cfgData = await loadConfig()
+    await Promise.all([
+      loadFaturamento(), loadAtividade(cfgData), loadNovasKpi(),
+      loadCancelamento(), loadOcupacao(undefined, cfgData), loadPorProfissional(),
+    ])
     setLoadingKpi(false)
   }
 
   const maxFatur = faturServico.length > 0 ? faturServico[0].valor : 1
   const maxNovas = novasClientes.length > 0 ? Math.max(...novasClientes.map(m => m.qtd), 1) : 1
+  const maxProf = porProfissional.length > 0 ? Math.max(porProfissional[0].valor, 1) : 1
+  const labelPeriodoKpi = kpiMeses === '1' ? 'Último mês' : `Últimos ${kpiMeses} meses`
 
   // ── Navegação de mês ──────────────────────────────────
   function mesAnterior() {
@@ -482,58 +565,46 @@ export default function Metas() {
                 }
               </div>
 
-              {/* 2 e 3 (retenção + novas clientes) são KPIs avançados: Pro/Salão. */}
+              {/* KPIs avançados: Pro/Salão. */}
               {temAcesso('relatoriosAvancados') ? (
               <>
-              {/* 2. Taxa de retenção */}
+              {/* 2. Clientes ativas vs. sumidas */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><RefreshCw size={15} color="var(--pink)" /> Taxa de retenção</div>
+                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Clientes ativas vs. sumidas</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Baseado no ciclo de retorno de cada cliente</div>
 
-                {/* Configuração do período */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500, whiteSpace: 'nowrap' }}>Retorno esperado em até</span>
-                  <select
-                    style={{ ...s.miniSelect }}
-                    value={retencaoDias}
-                    onChange={e => setRetencaoDias(parseInt(e.target.value))}
-                  >
-                    {[14, 21, 30, 45, 60, 90].map(d => (
-                      <option key={d} value={d}>{d} dias</option>
-                    ))}
-                  </select>
-                </div>
-
-                {taxaRetencao === null ? (
+                {atividade === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
+                ) : (atividade.ativas + atividade.sumidas === 0) ? (
+                  <div style={s.kpiEmpty}>Sem clientes atendidas ainda</div>
                 ) : (
                   <>
-                    {/* Indicador principal */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
                       <div style={{
                         width: 80, height: 80, borderRadius: '50%',
-                        background: `conic-gradient(${taxaRetencao.taxa >= 70 ? 'var(--green)' : taxaRetencao.taxa >= 40 ? '#D97706' : 'var(--pink)'} ${taxaRetencao.taxa * 3.6}deg, var(--border) 0deg)`,
+                        background: `conic-gradient(${atividade.taxa >= 70 ? 'var(--green)' : atividade.taxa >= 40 ? '#D97706' : 'var(--pink)'} ${atividade.taxa * 3.6}deg, var(--border) 0deg)`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                         boxShadow: 'inset 0 0 0 12px var(--surface)'
                       }}>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{taxaRetencao.taxa}%</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{atividade.taxa}%</span>
                       </div>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                          {taxaRetencao.taxa >= 70 ? '😍 Excelente retenção!' : taxaRetencao.taxa >= 40 ? '😊 Retenção boa' : '⚠️ Retenção baixa'}
+                          {atividade.taxa >= 70 ? '😍 Base saudável' : atividade.taxa >= 40 ? '😊 Dá pra melhorar' : '⚠️ Muita gente sumida'}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
-                          {taxaRetencao.retornaram} de {taxaRetencao.analisados} clientes voltaram dentro de {retencaoDias} dias
+                          {atividade.ativas} ativas · {atividade.sumidas} sumidas
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
-                          {taxaRetencao.analisados - taxaRetencao.retornaram} não retornaram no prazo
+                          Sumida = passou do ciclo de retorno sem voltar
                         </div>
                       </div>
                     </div>
                     <div style={{ height: 8, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
                       <div style={{
                         height: '100%', borderRadius: 4,
-                        background: taxaRetencao.taxa >= 70 ? 'var(--green)' : taxaRetencao.taxa >= 40 ? '#D97706' : 'var(--pink)',
-                        width: `${taxaRetencao.taxa}%`, transition: 'width 0.5s ease'
+                        background: atividade.taxa >= 70 ? 'var(--green)' : atividade.taxa >= 40 ? '#D97706' : 'var(--pink)',
+                        width: `${atividade.taxa}%`, transition: 'width 0.5s ease'
                       }} />
                     </div>
                   </>
@@ -566,6 +637,113 @@ export default function Metas() {
                   </span>
                 </div>
               </div>
+
+              {/* 4. Taxa de cancelamento */}
+              <div style={s.kpiCard}>
+                <div style={s.kpiCardTitle}><Ban size={15} color="var(--pink)" /> Taxa de cancelamento</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
+                {cancelamento === null ? (
+                  <div style={s.kpiEmpty}>Calculando...</div>
+                ) : cancelamento.total === 0 ? (
+                  <div style={s.kpiEmpty}>Sem atendimentos no período</div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+                      <div style={{
+                        width: 80, height: 80, borderRadius: '50%',
+                        background: `conic-gradient(${cancelamento.taxa <= 10 ? 'var(--green)' : cancelamento.taxa <= 20 ? '#D97706' : 'var(--pink)'} ${cancelamento.taxa * 3.6}deg, var(--border) 0deg)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        boxShadow: 'inset 0 0 0 12px var(--surface)'
+                      }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{cancelamento.taxa}%</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                          {cancelamento.taxa <= 10 ? '😍 Quase ninguém cancela' : cancelamento.taxa <= 20 ? '🙂 Cancelamento sob controle' : '⚠️ Muito cancelamento'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                          {cancelamento.cancelados} de {cancelamento.total} horários foram cancelados
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: 4,
+                        background: cancelamento.taxa <= 10 ? 'var(--green)' : cancelamento.taxa <= 20 ? '#D97706' : 'var(--pink)',
+                        width: `${Math.min(100, cancelamento.taxa)}%`, transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 5. Ocupação da agenda */}
+              <div style={s.kpiCard}>
+                <div style={s.kpiCardTitle}><Gauge size={15} color="var(--pink)" /> Ocupação da agenda</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi} · estimativa</div>
+                {ocupacao === null ? (
+                  <div style={s.kpiEmpty}>Calculando...</div>
+                ) : ocupacao.vagas === 0 ? (
+                  <div style={s.kpiEmpty}>Configure horário e dias de trabalho</div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+                      <div style={{
+                        width: 80, height: 80, borderRadius: '50%',
+                        background: `conic-gradient(${ocupacao.taxa >= 85 ? '#D97706' : ocupacao.taxa >= 60 ? 'var(--green)' : 'var(--pink)'} ${Math.min(100, ocupacao.taxa) * 3.6}deg, var(--border) 0deg)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        boxShadow: 'inset 0 0 0 12px var(--surface)'
+                      }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{ocupacao.taxa}%</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                          {ocupacao.taxa >= 85 ? '🔥 Quase lotada' : ocupacao.taxa >= 60 ? '😊 Boa ocupação' : '📉 Agenda com espaço'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                          {ocupacao.usadas} de {ocupacao.vagas} horários usados
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+                          {ocupacao.taxa >= 85 ? 'Pra crescer, pense em preço ou equipe' : ocupacao.taxa < 60 ? 'Hora de puxar cliente sumida' : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: 4,
+                        background: ocupacao.taxa >= 85 ? '#D97706' : ocupacao.taxa >= 60 ? 'var(--green)' : 'var(--pink)',
+                        width: `${Math.min(100, ocupacao.taxa)}%`, transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 6. Desempenho por profissional (só plano Salão) */}
+              {plano?.id === 'salao' && (
+                <div style={s.kpiCard}>
+                  <div style={s.kpiCardTitle}><Award size={15} color="var(--pink)" /> Desempenho por profissional</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
+                  {porProfissional.length === 0 ? (
+                    <div style={s.kpiEmpty}>Sem atendimentos no período</div>
+                  ) : porProfissional.map((p, i) => (
+                    <div key={i} style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{p.nome}</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--pink)', fontWeight: 600 }}>
+                            {formatBRL(p.valor)}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text3)', minWidth: 56, textAlign: 'right' }}>{p.qtd} atend.</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 3, background: 'var(--pink)', width: `${(p.valor / maxProf) * 100}%`, transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               </>
               ) : (
                 <div style={{ ...s.kpiCard, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 10, minHeight: 180 }}>
@@ -574,7 +752,7 @@ export default function Metas() {
                     KPIs avançados <ProBadge />
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text3)', maxWidth: 240, lineHeight: 1.5 }}>
-                    Taxa de retenção e novas clientes por mês fazem parte do plano Pro.
+                    Clientes ativas, novas clientes, cancelamento e ocupação da agenda fazem parte do plano Pro.
                   </div>
                   <button
                     onClick={() => navigate('/planos')}
