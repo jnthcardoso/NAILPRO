@@ -27,6 +27,10 @@ export const s = {
   pillsScroll: { display: 'flex', gap: 6, overflowX: 'auto', flex: 1, minWidth: 0, paddingBottom: 2 },
   toolBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   toolBtnAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
+  /* Grade 2x2 do computador: [visões | busca] / [data | filtros+bloquear].
+     Coluna esquerda fixa -> card da data alinha com Dia/Semana/Mês. */
+  gridTopoDesktop: { display: 'grid', gridTemplateColumns: '300px 1fr', gap: 10, marginBottom: 14, alignItems: 'stretch' },
+  filtrosCelDesktop: { display: 'flex', alignItems: 'center', gap: 8 },
   weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 },
   weekDay: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 2px', borderRadius: 9, cursor: 'pointer', background: 'var(--surface2)', border: '1px solid var(--border)' },
   weekDayHoje: { background: 'var(--pink-light)', border: '1px solid var(--pink-mid)' },
