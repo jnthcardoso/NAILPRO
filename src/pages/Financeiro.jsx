@@ -12,9 +12,12 @@ import { useAssinatura } from '../contexts/AssinaturaContext'
 import { formatBRL, formatMoeda, linkWhatsApp, validarTelefone } from '../lib/formatters'
 import { MSG_COBRANCA_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
-import Modal from '../components/common/Modal'
 import { CardSkeleton } from '../components/common/Skeleton'
 import PagamentoModal from '../components/agenda/PagamentoModal'
+import RegistrarPagamentoModal from '../components/financeiro/RegistrarPagamentoModal'
+import ProLaboreModal from '../components/financeiro/ProLaboreModal'
+import DespesaModal from '../components/financeiro/DespesaModal'
+import ConfirmarPagarDespesaModal from '../components/financeiro/ConfirmarPagarDespesaModal'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
@@ -1201,234 +1204,40 @@ export default function Financeiro() {
         descricao="Gere relatórios financeiros profissionais (mensal e anual) em PDF. Disponível no plano Pro."
       />
 
-      {/* Modal Pagamento */}
+      {/* Modal: registrar pagamento avulso */}
       {showModal && (
-        <Modal onClose={() => setShowModal(false)} variant="sheet" boxStyle={s.modal}>
-            <div style={s.modalTitle}>💰 Registrar pagamento</div>
-            <div style={s.field}>
-              <label style={s.label}>Atendimento (opcional)</label>
-              <select style={s.input} value={form.agendamento_id} onChange={e => setForm({ ...form, agendamento_id: e.target.value })}>
-                <option value="">Selecionar atendimento</option>
-                {agendamentos.map(a => (
-                  <option key={a.id} value={a.id}>{a.clientes?.nome} — {a.servico} ({format(new Date(a.data + 'T12:00:00'), 'dd/MM')})</option>
-                ))}
-              </select>
-            </div>
-            <div style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Valor (R$) *</label>
-                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Forma</label>
-                <select style={s.input} value={form.forma} onChange={e => setForm({ ...form, forma: e.target.value })}>
-                  <option value="pix">Pix</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="cartao_debito">Débito</option>
-                  <option value="cartao_credito">Crédito</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-row-stack" style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Status</label>
-                <select style={s.input} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                  <option value="pago">Pago</option>
-                  <option value="pendente">Pendente</option>
-                </select>
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Data</label>
-                <input style={s.input} type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} />
-              </div>
-            </div>
-            <button style={s.btnPrimary} onClick={salvarPagamento} disabled={saving}>{saving ? 'Salvando...' : 'Registrar'}</button>
-            <button style={s.btnSecondary} onClick={() => setShowModal(false)}>Cancelar</button>
-        </Modal>
+        <RegistrarPagamentoModal
+          form={form} setForm={setForm} agendamentos={agendamentos}
+          saving={saving} onSalvar={salvarPagamento} onClose={() => setShowModal(false)}
+        />
       )}
 
-      {/* Modal Pró-labore (seu salário) */}
+      {/* Modal: pró-labore (seu salário) */}
       {showProLabore && (
-        <Modal onClose={() => setShowProLabore(false)} variant="sheet" boxStyle={s.modal}>
-            <div style={s.modalTitle}>💜 Seu salário (pró-labore)</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 4 }}>
-              Quanto você tira pra você por mês? Entra no DRE como "(−) Seu salário" e mostra quanto <strong>sobra pra reinvestir</strong> no negócio.
-            </div>
-            <div style={s.field}>
-              <label style={s.label}>Valor por mês (R$)</label>
-              <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder="0,00" value={proLaboreInput} onChange={e => setProLaboreInput(e.target.value)} />
-              <div style={{ fontSize: 11, color: 'var(--text3)' }}>Deixe em 0 para não mostrar essa linha.</div>
-            </div>
-            <button style={s.btnPrimary} onClick={salvarProLabore} disabled={savingProLabore}>{savingProLabore ? 'Salvando...' : 'Salvar'}</button>
-            <button style={s.btnSecondary} onClick={() => setShowProLabore(false)}>Cancelar</button>
-        </Modal>
+        <ProLaboreModal
+          proLaboreInput={proLaboreInput} setProLaboreInput={setProLaboreInput}
+          savingProLabore={savingProLabore} onSalvar={salvarProLabore} onClose={() => setShowProLabore(false)}
+        />
       )}
 
-      {/* Modal Despesa */}
+      {/* Modal: nova/editar despesa */}
       {showDespesaModal && (
-        <Modal onClose={fecharDespesaModal} boxStyle={s.modalCentro}>
-            <div style={s.modalTitle}>{editandoDespesa ? '✏️ Editar despesa' : '📉 Nova despesa'}</div>
-
-            {/* Bolso: do salão (custo do negócio) × pessoal (gasto da dona) */}
-            <div style={s.field}>
-              <label style={s.label}>De quem é esse gasto?</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {[{ id: 'salao', label: '🏢 Do salão' }, { id: 'pessoal', label: '👤 Pessoal' }].map(o => {
-                  const ativo = (formDespesa.tipo || 'salao') === o.id
-                  return (
-                    <button key={o.id} type="button" onClick={() => setFormDespesa({ ...formDespesa, tipo: o.id })}
-                      style={{ flex: 1, padding: '9px 12px', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid ' + (ativo ? 'var(--pink)' : 'var(--border2)'), background: ativo ? 'var(--pink)' : 'var(--surface)', color: ativo ? 'white' : 'var(--text3)' }}>
-                      {o.label}
-                    </button>
-                  )
-                })}
-              </div>
-              {(formDespesa.tipo || 'salao') === 'pessoal' && (
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Gasto seu (não conta no lucro do salão — vai pro "seu bolso").</div>
-              )}
-            </div>
-
-            <div style={s.field}>
-              <label style={s.label}>Descrição *</label>
-              <input style={s.input} placeholder="Ex: Conta de luz" value={formDespesa.descricao} onChange={e => setFormDespesa({ ...formDespesa, descricao: e.target.value })} />
-            </div>
-            <div style={s.field}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={s.label}>Categoria *</label>
-                <button type="button" onClick={() => setShowNovaCat(v => !v)} style={s.novaCatLink}>
-                  {showNovaCat ? '× Fechar' : '+ Nova categoria'}
-                </button>
-              </div>
-              <select style={s.input} value={formDespesa.categoria} onChange={e => setFormDespesa({ ...formDespesa, categoria: e.target.value })}>
-                <optgroup label="Padrão">
-                  {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-                </optgroup>
-                {categoriasCustom.length > 0 && (
-                  <optgroup label="Minhas categorias">
-                    {categoriasCustom.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-                  </optgroup>
-                )}
-              </select>
-
-              {showNovaCat && (
-                <div style={s.novaCatPanel}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input style={{ ...s.input, width: 52, textAlign: 'center', flexShrink: 0, padding: '10px 4px' }} value={novaCat.icon} onChange={e => setNovaCat({ ...novaCat, icon: e.target.value })} placeholder="📦" maxLength={2} title="Emoji da categoria" />
-                    <input style={{ ...s.input, flex: 1, minWidth: 0 }} value={novaCat.label} onChange={e => setNovaCat({ ...novaCat, label: e.target.value })} placeholder="Nome da categoria" />
-                  </div>
-                  <button type="button" style={{ ...s.addBtnSmall, justifyContent: 'center', padding: '8px 12px' }} onClick={salvarNovaCategoria} disabled={savingCat}>
-                    {savingCat ? 'Salvando...' : 'Criar categoria'}
-                  </button>
-                  {categoriasCustom.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2, borderTop: '1px dashed var(--border)', paddingTop: 8 }}>
-                      {categoriasCustom.map(c => (
-                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--text2)' }}>
-                          <span>{c.icon} {c.label}</span>
-                          <button type="button" onClick={() => excluirCategoria(c)} style={{ ...s.miniIconBtn, color: '#B91C1C' }} title="Excluir categoria"><X size={11} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="form-row-stack" style={s.row}>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Valor (R$){formDespesa.recorrente && formDespesa.valor_variavel ? '' : ' *'}</label>
-                <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder={formDespesa.recorrente && formDespesa.valor_variavel ? 'pode deixar em branco' : '0,00'} value={formDespesa.valor} onChange={e => setFormDespesa({ ...formDespesa, valor: e.target.value })} />
-              </div>
-              <div style={{ ...s.field, flex: 1 }}>
-                <label style={s.label}>Data *</label>
-                <input style={s.input} type="date" value={formDespesa.data} onChange={e => setFormDespesa({ ...formDespesa, data: e.target.value })} />
-              </div>
-            </div>
-            <div style={s.field}>
-              <label style={s.label}>Forma de pagamento</label>
-              <select style={s.input} value={formDespesa.forma_pagamento} onChange={e => setFormDespesa({ ...formDespesa, forma_pagamento: e.target.value })}>
-                {FORMAS_PAGAMENTO.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-              </select>
-            </div>
-
-            {/* Já paga × conta a pagar (Pro/Salão) — vencimento = data acima */}
-            {temAcesso('contasAPagar') && (
-              <>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={formDespesa.pago} onChange={e => setFormDespesa({ ...formDespesa, pago: e.target.checked })} />
-                  ✅ Já paguei essa conta
-                </label>
-                {!formDespesa.pago && (
-                  <div style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px' }}>
-                    💸 Vai entrar em <strong>Contas a pagar</strong> com vencimento em {formDespesa.data ? format(new Date(formDespesa.data + 'T12:00:00'), 'dd/MM') : 'na data acima'}.
-                    {formDespesa.recorrente && !editandoDespesa && ' Os próximos meses também já nascem a pagar.'}
-                  </div>
-                )}
-              </>
-            )}
-
-            {editandoDespesa ? (
-              formDespesa.recorrente && (
-                <div style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px' }}>
-                  🔁 Faz parte de uma despesa recorrente{formDespesa.valor_variavel ? ' (valor varia todo mês)' : ''}. Editar aqui altera só este mês.
-                </div>
-              )
-            ) : (
-              <>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={formDespesa.recorrente} onChange={e => {
-                    const checked = e.target.checked
-                    setFormDespesa(f => ({
-                      ...f,
-                      recorrente: checked,
-                      valor_variavel: checked ? f.valor_variavel : false,
-                      recorrente_ate: checked && !f.recorrente_ate
-                        ? format(addMonths(new Date((f.data || format(new Date(), 'yyyy-MM-dd')) + 'T12:00:00'), 12), 'yyyy-MM-dd')
-                        : f.recorrente_ate,
-                    }))
-                  }} />
-                  🔁 Despesa mensal recorrente
-                </label>
-                {formDespesa.recorrente && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 12px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={formDespesa.valor_variavel} onChange={e => setFormDespesa({ ...formDespesa, valor_variavel: e.target.checked })} />
-                      💧 O valor muda todo mês (futuros entram em branco pra preencher)
-                    </label>
-                    <div style={s.field}>
-                      <label style={s.label}>Repetir até *</label>
-                      <input style={s.input} type="date" value={formDespesa.recorrente_ate} onChange={e => setFormDespesa({ ...formDespesa, recorrente_ate: e.target.value })} />
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-            <div style={s.field}>
-              <label style={s.label}>Observações</label>
-              <input style={s.input} placeholder="Opcional..." value={formDespesa.observacoes} onChange={e => setFormDespesa({ ...formDespesa, observacoes: e.target.value })} />
-            </div>
-            <button style={s.btnPrimary} onClick={salvarDespesa} disabled={savingDespesa}>{savingDespesa ? 'Salvando...' : editandoDespesa ? 'Salvar alterações' : 'Registrar despesa'}</button>
-            <button style={s.btnSecondary} onClick={fecharDespesaModal}>Cancelar</button>
-        </Modal>
+        <DespesaModal
+          editandoDespesa={editandoDespesa} formDespesa={formDespesa} setFormDespesa={setFormDespesa}
+          showNovaCat={showNovaCat} setShowNovaCat={setShowNovaCat}
+          categoriasCustom={categoriasCustom} novaCat={novaCat} setNovaCat={setNovaCat}
+          salvarNovaCategoria={salvarNovaCategoria} savingCat={savingCat} excluirCategoria={excluirCategoria}
+          temAcesso={temAcesso} savingDespesa={savingDespesa}
+          onSalvar={salvarDespesa} onClose={fecharDespesaModal}
+        />
       )}
 
       {/* Modal: confirmar pagamento de despesa a pagar */}
       {despesaParaPagar && (
-        <Modal onClose={() => setDespesaParaPagar(null)} boxStyle={s.modalCentro}>
-          <div style={s.modalTitle}>💸 Confirmar pagamento</div>
-          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13 }}>
-            <div style={{ fontWeight: 700, color: 'var(--text)' }}>{despesaParaPagar.descricao}</div>
-            <div style={{ color: '#B91C1C', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, marginTop: 2 }}>− {formatBRL(despesaParaPagar.valor)}</div>
-          </div>
-          <div style={s.field}>
-            <label style={s.label}>Forma de pagamento</label>
-            <select style={s.input} value={formPagarDespesa.forma_pagamento} onChange={e => setFormPagarDespesa({ ...formPagarDespesa, forma_pagamento: e.target.value })}>
-              {FORMAS_PAGAMENTO.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </select>
-          </div>
-          <button style={s.btnPrimary} onClick={confirmarPagarDespesa} disabled={savingPagarDespesa}>
-            {savingPagarDespesa ? 'Salvando...' : '✓ Confirmar pagamento'}
-          </button>
-          <button style={s.btnSecondary} onClick={() => setDespesaParaPagar(null)}>Cancelar</button>
-        </Modal>
+        <ConfirmarPagarDespesaModal
+          despesa={despesaParaPagar} formPagarDespesa={formPagarDespesa} setFormPagarDespesa={setFormPagarDespesa}
+          savingPagarDespesa={savingPagarDespesa} onConfirmar={confirmarPagarDespesa} onClose={() => setDespesaParaPagar(null)}
+        />
       )}
 
       {/* Modal: confirmar pagamento pendente como pago — mesmo modal da agenda (1 ou 2 formas) */}
