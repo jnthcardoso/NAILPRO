@@ -81,7 +81,7 @@ export default function Metas() {
   const [saving, setSaving] = useState(false)
 
   // ── KPIs ─────────────────────────────────────────────
-  const [kpiMeses, setKpiMeses] = useState('3')
+  const [kpiMeses, setKpiMeses] = useState('1')
   const [cfg, setCfg] = useState(null)
   const [atividade, setAtividade] = useState(null)
   const [novasClientes, setNovasClientes] = useState([])
