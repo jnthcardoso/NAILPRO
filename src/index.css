@@ -179,6 +179,12 @@ a { text-decoration: none; color: inherit; }
   .form-row-stack { flex-direction: column; }
 }
 
+/* Na Agenda, o botao "Bloquear horario" desce pra linha inteira no celular
+   (no computador fica inline a direita dos filtros). */
+@media (max-width: 768px) {
+  .agenda-acao-mobile-full { width: 100%; justify-content: center; }
+}
+
 /* Filtros de Receitas ocupam a largura toda (igual aos de Despesas), no
    computador e no celular. */
 .fin-filtros-receita > button { flex: 1; padding-top: 7px; padding-bottom: 7px; font-size: 12px; }

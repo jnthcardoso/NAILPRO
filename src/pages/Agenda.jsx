@@ -756,7 +756,7 @@ export default function Agenda() {
               </button>
             ))}
           </div>
-          <button style={s.toolBtn} onClick={abrirBloqueio}>
+          <button className="agenda-acao-mobile-full" style={s.toolBtn} onClick={abrirBloqueio}>
             <Lock size={13} /> Bloquear horário
           </button>
         </div>

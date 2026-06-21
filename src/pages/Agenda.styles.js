@@ -23,7 +23,7 @@ export const s = {
   navLabel: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' },
   /* Barra compacta de controles (visões + navegação + ações na mesma faixa) */
   barraTopo: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
-  barraFiltros: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 },
+  barraFiltros: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' },
   pillsScroll: { display: 'flex', gap: 6, overflowX: 'auto', flex: 1, minWidth: 0, paddingBottom: 2 },
   toolBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   toolBtnAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
