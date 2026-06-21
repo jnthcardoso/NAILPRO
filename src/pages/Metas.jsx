@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, RefreshCw, Ban, UserCheck, Gauge, Award } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -46,21 +46,19 @@ export default function Metas() {
   // ── KPIs ─────────────────────────────────────────────
   const [kpiMeses, setKpiMeses] = useState('3')
   const [cfg, setCfg] = useState(null)
-  const [faturServico, setFaturServico] = useState([])
   const [atividade, setAtividade] = useState(null)
   const [novasClientes, setNovasClientes] = useState([])
   const [cancelamento, setCancelamento] = useState(null)
   const [ocupacao, setOcupacao] = useState(null)
   const [porProfissional, setPorProfissional] = useState([])
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
-  const [loadingFatur, setLoadingFatur] = useState(false) // carga isolada do faturamento
 
   useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
-  // Carga inicial: carrega TODOS os KPIs quando entra na tab
+  // Carga inicial: carrega TODOS os indicadores quando entra na tab
   useEffect(() => { if (salaoId && tab === 'kpis') loadKpis() }, [salaoId, tab])
-  // kpiMeses → recarrega os KPIs que dependem do período selecionado
+  // kpiMeses → recarrega os indicadores que dependem do período selecionado
   useEffect(() => {
-    if (salaoId && tab === 'kpis') { loadFaturamento(); loadCancelamento(); loadOcupacao(); loadPorProfissional() }
+    if (salaoId && tab === 'kpis') { loadCancelamento(); loadOcupacao(); loadPorProfissional() }
   }, [kpiMeses])
 
 
@@ -214,38 +212,7 @@ export default function Metas() {
 
   // ── KPIs — funções isoladas ───────────────────────────
 
-  // 1. Faturamento por serviço (depende de kpiMeses)
-  async function loadFaturamento(mesesParam) {
-    const m = mesesParam ?? kpiMeses
-    setLoadingFatur(true)
-    const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
-    const { data: agsServ } = await supabase
-      .from('agendamentos')
-      .select('servico, valor, pagamentos(valor, status)')
-      .eq('salao_id', salaoId)
-      .eq('status', 'realizado')
-      .gte('data', inicio)
-    if (agsServ) {
-      const grouped = {}
-      agsServ.forEach(a => {
-        // Faturamento = dinheiro efetivamente recebido (pagamento "pago"),
-        // mesma definição do "Realizado" das metas e do Financeiro.
-        const pag = a.pagamentos?.find(p => p.status === 'pago')
-        if (!pag) return
-        const val = pag.valor || 0
-        if (val > 0) grouped[a.servico] = (grouped[a.servico] || 0) + val
-      })
-      const sorted = Object.entries(grouped)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
-        .map(([nome, valor]) => ({ nome, valor }))
-      const totalFatur = sorted.reduce((s, x) => s + x.valor, 0)
-      setFaturServico(sorted.map(x => ({ ...x, pct: totalFatur > 0 ? Math.round((x.valor / totalFatur) * 100) : 0 })))
-    }
-    setLoadingFatur(false)
-  }
-
-  // 2. Clientes ativas vs. sumidas (substitui a antiga "taxa de retenção").
+  // 1. Clientes ativas vs. sumidas (substitui a antiga "taxa de retenção").
   // Ativa = último atendimento dentro do ciclo de retorno da cliente
   // (clientes.dias_retorno, ou o padrão do salão em configuracoes.dias_retorno_alerta).
   // Clientes nunca atendidas não entram na base.
@@ -369,13 +336,12 @@ export default function Metas() {
     setLoadingKpi(true)
     const cfgData = await loadConfig()
     await Promise.all([
-      loadFaturamento(), loadAtividade(cfgData), loadNovasKpi(),
+      loadAtividade(cfgData), loadNovasKpi(),
       loadCancelamento(), loadOcupacao(undefined, cfgData), loadPorProfissional(),
     ])
     setLoadingKpi(false)
   }
 
-  const maxFatur = faturServico.length > 0 ? faturServico[0].valor : 1
   const maxNovas = novasClientes.length > 0 ? Math.max(...novasClientes.map(m => m.qtd), 1) : 1
   const maxProf = porProfissional.length > 0 ? Math.max(porProfissional[0].valor, 1) : 1
   const labelPeriodoKpi = kpiMeses === '1' ? 'Último mês' : `Últimos ${kpiMeses} meses`
@@ -406,7 +372,7 @@ export default function Metas() {
           <Target size={14} /> Metas
         </button>
         <button style={{ ...tabs.btn, ...(tab === 'kpis' ? tabs.btnAtivo : {}) }} onClick={() => setTab('kpis')}>
-          <BarChart2 size={14} /> KPIs
+          <BarChart2 size={14} /> Indicadores
         </button>
       </div>
 
@@ -497,10 +463,26 @@ export default function Metas() {
         </>
       )}
 
-      {/* ── TAB: KPIs ──────────────────────────────────── */}
+      {/* ── TAB: INDICADORES ───────────────────────────── */}
       {tab === 'kpis' && (
         <>
-          {loadingKpi ? (
+          {!temAcesso('relatoriosAvancados') ? (
+            <div style={s.kpiGrid}>
+              <div style={{ ...s.kpiCard, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 10, minHeight: 180 }}>
+                <BarChart2 size={26} color="var(--text3)" />
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  Indicadores <ProBadge />
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', maxWidth: 260, lineHeight: 1.5 }}>
+                  Clientes ativas, novas clientes, cancelamento e ocupação da agenda fazem parte do plano Pro.
+                </div>
+                <button
+                  onClick={() => navigate('/planos')}
+                  style={{ marginTop: 4, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >Conhecer o Pro</button>
+              </div>
+            </div>
+          ) : loadingKpi ? (
             <div style={s.kpiGrid}>
               {[1, 2, 3].map(i => (
                 <div key={i} style={{ ...s.kpiCard, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -516,61 +498,31 @@ export default function Metas() {
               ))}
             </div>
           ) : (
-            <div style={s.kpiGrid}>
-              {/* 1. Faturamento por serviço */}
-              <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><BarChart2 size={15} color="var(--pink)" /> Faturamento por serviço</div>
-                {/* Seletor de período — local ao card de faturamento */}
-                <div style={s.faturControle}>
-                  <div style={s.segmented}>
-                    {[['1', '1m'], ['3', '3m'], ['6', '6m'], ['12', '12m']].map(([v, l]) => (
-                      <button
-                        key={v}
-                        style={{ ...s.segBtn, ...(kpiMeses === v ? s.segBtnAtivo : {}) }}
-                        onClick={() => setKpiMeses(v)}
-                      >{l}</button>
-                    ))}
-                  </div>
-                  <button style={s.reloadBtnSm} onClick={() => loadFaturamento()} title="Atualizar" disabled={loadingFatur}>
-                    <RefreshCw size={12} style={{ animation: loadingFatur ? 'spin 1s linear infinite' : 'none' }} />
-                  </button>
+            <>
+              {/* Seletor de período — controla os indicadores do período */}
+              <div style={s.periodoTopo}>
+                <span style={s.periodoLabel}>Período</span>
+                <div style={s.segmented}>
+                  {[['1', '1m'], ['3', '3m'], ['6', '6m'], ['12', '12m']].map(([v, l]) => (
+                    <button
+                      key={v}
+                      style={{ ...s.segBtn, ...(kpiMeses === v ? s.segBtnAtivo : {}) }}
+                      onClick={() => setKpiMeses(v)}
+                    >{l}</button>
+                  ))}
                 </div>
-                {loadingFatur ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                    {[1, 2, 3].map(j => (
-                      <div key={j} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ ...s.skeletonLine, width: `${70 + j * 5}%` }} />
-                        <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', width: `${85 - j * 10}%` }} />
-                      </div>
-                    ))}
-                  </div>
-                ) : faturServico.length === 0
-                  ? <div style={s.kpiEmpty}>Sem dados no período selecionado</div>
-                  : faturServico.map((item, i) => (
-                    <div key={i} style={{ marginBottom: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{item.nome}</span>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--pink)', fontWeight: 600 }}>
-                            {formatBRL(item.valor)}
-                          </span>
-                          <span style={{ fontSize: 10, color: 'var(--text3)', minWidth: 28, textAlign: 'right' }}>{item.pct}%</span>
-                        </div>
-                      </div>
-                      <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: 3, background: 'var(--pink)', width: `${(item.valor / maxFatur) * 100}%`, transition: 'width 0.4s ease' }} />
-                      </div>
-                    </div>
-                  ))
-                }
               </div>
 
-              {/* KPIs avançados: Pro/Salão. */}
-              {temAcesso('relatoriosAvancados') ? (
-              <>
-              {/* 2. Clientes ativas vs. sumidas */}
+              {/* ── Seção: Suas clientes ── */}
+              <div style={s.secHead}>
+                <span style={s.secHeadIcon}><Users size={14} /></span>
+                <span style={s.secHeadTitle}>Suas clientes</span>
+                <span style={s.secHeadLine} />
+              </div>
+              <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
+              {/* Clientes ativas vs. sumidas */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Clientes ativas vs. sumidas</div>
+                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Ativas vs. sumidas</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Baseado no ciclo de retorno de cada cliente</div>
 
                 {atividade === null ? (
@@ -611,9 +563,9 @@ export default function Metas() {
                 )}
               </div>
 
-              {/* 3. Novas clientes por mês */}
+              {/* Novas clientes por mês */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><Users size={15} color="var(--pink)" /> Novas clientes por mês</div>
+                <div style={s.kpiCardTitle}><Users size={15} color="var(--pink)" /> Novas clientes</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Últimos 6 meses</div>
                 {novasClientes.every(m => m.qtd === 0) ? (
                   <div style={s.kpiEmpty}>Sem dados suficientes</div>
@@ -637,10 +589,18 @@ export default function Metas() {
                   </span>
                 </div>
               </div>
+              </div>
 
-              {/* 4. Taxa de cancelamento */}
+              {/* ── Seção: Sua agenda ── */}
+              <div style={s.secHead}>
+                <span style={s.secHeadIcon}><Calendar size={14} /></span>
+                <span style={s.secHeadTitle}>Sua agenda</span>
+                <span style={s.secHeadLine} />
+              </div>
+              <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
+              {/* Cancelamentos */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><Ban size={15} color="var(--pink)" /> Taxa de cancelamento</div>
+                <div style={s.kpiCardTitle}><Ban size={15} color="var(--pink)" /> Cancelamentos</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
                 {cancelamento === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
@@ -718,11 +678,20 @@ export default function Metas() {
                   </>
                 )}
               </div>
+              </div>
 
-              {/* 6. Desempenho por profissional (só plano Salão) */}
+              {/* ── Seção: Sua equipe (só plano Salão) ── */}
               {plano?.id === 'salao' && (
+                <>
+                <div style={s.secHead}>
+                  <span style={s.secHeadIcon}><Award size={14} /></span>
+                  <span style={s.secHeadTitle}>Sua equipe</span>
+                  <span style={s.secHeadChip}>plano Salão</span>
+                  <span style={s.secHeadLine} />
+                </div>
+                <div style={s.kpiGrid}>
                 <div style={s.kpiCard}>
-                  <div style={s.kpiCardTitle}><Award size={15} color="var(--pink)" /> Desempenho por profissional</div>
+                  <div style={s.kpiCardTitle}><Award size={15} color="var(--pink)" /> Atendimentos por profissional</div>
                   <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
                   {porProfissional.length === 0 ? (
                     <div style={s.kpiEmpty}>Sem atendimentos no período</div>
@@ -743,24 +712,10 @@ export default function Metas() {
                     </div>
                   ))}
                 </div>
-              )}
-              </>
-              ) : (
-                <div style={{ ...s.kpiCard, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 10, minHeight: 180 }}>
-                  <RefreshCw size={26} color="var(--text3)" />
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    KPIs avançados <ProBadge />
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)', maxWidth: 240, lineHeight: 1.5 }}>
-                    Clientes ativas, novas clientes, cancelamento e ocupação da agenda fazem parte do plano Pro.
-                  </div>
-                  <button
-                    onClick={() => navigate('/planos')}
-                    style={{ marginTop: 4, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 16px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-                  >Conhecer o Pro</button>
                 </div>
+                </>
               )}
-            </div>
+            </>
           )}
         </>
       )}
@@ -828,17 +783,21 @@ const s = {
   barFill: { height: '100%', borderRadius: 4, transition: 'width 0.5s ease', position: 'relative', zIndex: 2 },
   barProjFill: { position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 4, background: 'repeating-linear-gradient(45deg, rgba(217,119,6,0.3) 0px, rgba(217,119,6,0.3) 4px, transparent 4px, transparent 8px)', zIndex: 1 },
   projecaoInsight: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 8, border: '1px solid', fontSize: 11, fontWeight: 600, lineHeight: 1.4 },
-  // KPIs
-  faturControle: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, marginTop: 4 },
+  // Indicadores
+  periodoTopo: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', boxShadow: 'var(--shadow-xs)' },
+  periodoLabel: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' },
+  secHead: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 12px' },
+  secHeadIcon: { width: 26, height: 26, borderRadius: '50%', background: 'var(--pink-light)', color: 'var(--pink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  secHeadTitle: { fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' },
+  secHeadChip: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', whiteSpace: 'nowrap' },
+  secHeadLine: { flex: 1, height: 1, background: 'var(--border)' },
   segmented: { display: 'flex', gap: 3, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, flex: 1 },
   segBtn: { flex: 1, padding: '5px 6px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
   segBtnAtivo: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
-  reloadBtnSm: { width: 28, height: 28, borderRadius: 7, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'opacity 0.15s' },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, alignItems: 'start' },
   kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', boxShadow: 'var(--shadow-sm)' },
   kpiCardTitle: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
   kpiEmpty: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' },
-  miniSelect: { padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--pink)', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
   loading: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '40px 0' },
   skeletonTitle: { height: 16, borderRadius: 6, background: 'var(--border)', width: '60%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
   skeletonLine: { height: 12, borderRadius: 6, background: 'var(--border)', width: '80%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
