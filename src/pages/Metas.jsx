@@ -728,7 +728,7 @@ export default function Metas() {
               <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
               {/* Clientes ativas vs. sumidas */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Ativas vs. retorno pendente {infoBtn('ativas')}</div>
+                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Clientes com Retorno Pendente {infoBtn('ativas')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Baseado no ciclo de retorno de cada cliente</div>
 
                 {atividade === null ? (
