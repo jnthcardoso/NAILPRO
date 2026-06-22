@@ -452,7 +452,8 @@ export default function Metas() {
               <div key={i} style={s.drillItem}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={s.drillNome}>{c.nome}</div>
-                  <div style={s.drillMeta}>Último atendimento em {format(new Date(c.ultimo + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })} · sem voltar há {c.dias} dias</div>
+                  <div style={s.drillMeta}>Último atendimento em {format(new Date(c.ultimo + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })}</div>
+                  <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>Sem voltar há {c.dias} dias</div>
                 </div>
                 {c.telefone
                   ? <a style={s.waBtn} href={linkWhatsApp(c.telefone, msgRetorno(c.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>
@@ -460,7 +461,7 @@ export default function Metas() {
               </div>
             ))}
           </div>
-          <button style={s.btnSecondary} onClick={() => { setDrill(null); navigate('/app/clientes') }}>Ver todas em Clientes</button>
+          <button style={s.btnSecondary} onClick={() => { setDrill(null); navigate('/app/clientes?filtro=sumidas') }}>Ver todas em Clientes</button>
         </>
       )
     }
@@ -728,7 +729,7 @@ export default function Metas() {
               <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
               {/* Clientes ativas vs. sumidas */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Clientes com Retorno Pendente {infoBtn('ativas')}</div>
+                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Clientes com retorno pendente {infoBtn('ativas')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Baseado no ciclo de retorno de cada cliente</div>
 
                 {atividade === null ? (
