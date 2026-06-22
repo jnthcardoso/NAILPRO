@@ -23,10 +23,10 @@ const DIAS_UTEIS_PADRAO = [1, 2, 3, 4, 5]
 // Textos das explicações dos indicadores (abrem no ⓘ ao lado de cada título).
 const INFO_INDICADORES = {
   ativas: {
-    titulo: 'Ativas vs. sumidas',
-    oque: 'Quantas das suas clientes ainda estão voltando (ativas) e quantas pararam de aparecer (sumidas).',
-    como: 'Olhamos a última visita de cada cliente. Voltou dentro do ciclo de retorno dela (individual ou o padrão do salão) → ativa. Passou do prazo → sumida. Quem nunca foi atendida fica de fora. Taxa = ativas ÷ (ativas + sumidas).',
-    fazer: 'Muitas sumidas é dinheiro andando na rua — use "Oportunidades da semana" na tela inicial pra chamar de volta.',
+    titulo: 'Ativas vs. retorno pendente',
+    oque: 'Quantas das suas clientes ainda estão voltando (ativas) e quantas estão com o retorno pendente (passaram do prazo de voltar).',
+    como: 'Olhamos a última visita de cada cliente. Voltou dentro do ciclo de retorno dela (individual ou o padrão do salão) → ativa. Passou do prazo → retorno pendente. Quem nunca foi atendida fica de fora. Taxa = ativas ÷ (ativas + pendentes).',
+    fazer: 'Muita gente com retorno pendente é dinheiro andando na rua — toque no número pra ver quem e chamar de volta no WhatsApp.',
   },
   novas: {
     titulo: 'Novas clientes',
@@ -445,14 +445,14 @@ export default function Metas() {
       const lista = atividade?.sumidasLista || []
       return (
         <>
-          <div style={s.infoTitulo}>Clientes sumidas</div>
-          <div style={s.drillSub}>{lista.length} passaram do ciclo · de quem sumiu há mais tempo</div>
+          <div style={s.infoTitulo}>Clientes com retorno pendente</div>
+          <div style={s.drillSub}>{lista.length} passaram do ciclo · de quem está há mais tempo sem voltar</div>
           <div style={s.drillLista}>
             {lista.map((c, i) => (
               <div key={i} style={s.drillItem}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={s.drillNome}>{c.nome}</div>
-                  <div style={s.drillMeta}>Último atendimento em {format(new Date(c.ultimo + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })} · sumida há {c.dias} dias</div>
+                  <div style={s.drillMeta}>Último atendimento em {format(new Date(c.ultimo + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })} · sem voltar há {c.dias} dias</div>
                 </div>
                 {c.telefone
                   ? <a style={s.waBtn} href={linkWhatsApp(c.telefone, msgRetorno(c.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>
@@ -728,7 +728,7 @@ export default function Metas() {
               <div style={{ ...s.kpiGrid, marginBottom: 22 }}>
               {/* Clientes ativas vs. sumidas */}
               <div style={s.kpiCard}>
-                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Ativas vs. sumidas {infoBtn('ativas')}</div>
+                <div style={s.kpiCardTitle}><UserCheck size={15} color="var(--pink)" /> Ativas vs. retorno pendente {infoBtn('ativas')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Baseado no ciclo de retorno de cada cliente</div>
 
                 {atividade === null ? (
@@ -748,16 +748,16 @@ export default function Metas() {
                       </div>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                          {atividade.taxa >= 70 ? '😍 Base saudável' : atividade.taxa >= 40 ? '😊 Dá pra melhorar' : '⚠️ Muita gente sumida'}
+                          {atividade.taxa >= 70 ? '😍 Base saudável' : atividade.taxa >= 40 ? '😊 Dá pra melhorar' : '⚠️ Muito retorno pendente'}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
                           {atividade.ativas} ativas ·{' '}
                           {atividade.sumidas > 0
-                            ? <button style={s.verLink} onClick={() => setDrill({ tipo: 'sumidas' })}>{atividade.sumidas} sumidas ›</button>
-                            : <>0 sumidas</>}
+                            ? <button style={s.verLink} onClick={() => setDrill({ tipo: 'sumidas' })}>{atividade.sumidas} com retorno pendente ›</button>
+                            : <>0 com retorno pendente</>}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
-                          Sumida = passou do ciclo de retorno sem voltar
+                          Retorno pendente = passou do ciclo de retorno sem voltar
                         </div>
                       </div>
                     </div>

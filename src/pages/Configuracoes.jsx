@@ -666,13 +666,16 @@ export default function Configuracoes() {
         </div>
 
         <div style={s.field}>
-          <label style={s.label}>👋 Mensagem de retorno (cliente sumindo)</label>
+          <label style={s.label}>👋 Mensagem de retorno (cliente com retorno pendente)</label>
           <textarea
             style={{ ...s.input, minHeight: 88, resize: 'vertical', fontFamily: 'inherit' }}
             value={form.msg_retorno}
             onChange={e => setForm({ ...form, msg_retorno: e.target.value })}
             placeholder={MSG_RETORNO_PADRAO}
           />
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+            Usada no botão "Chamar" dos Indicadores e nas Oportunidades da tela inicial. Variáveis: {'{nome}'}.
+          </div>
         </div>
       </div>
 
