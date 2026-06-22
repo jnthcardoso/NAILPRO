@@ -25,13 +25,14 @@ export default function ClienteDetalhe() {
   const [cliente, setCliente] = useState(null)
   const [config, setConfig] = useState({ msg_retorno: MSG_RETORNO_PADRAO, msg_cobranca: MSG_COBRANCA_PADRAO, chave_pix: '', nome_salao: '' })
   const [historico, setHistorico] = useState([])
+  const [histLimite, setHistLimite] = useState(10)
   const [arquivando, setArquivando] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
   const [erros, setErros] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
 
-  useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico(); loadConfig() } }, [user, id, salaoId])
+  useEffect(() => { if (user && id && salaoId) { setHistLimite(10); loadCliente(); loadHistorico(); loadConfig() } }, [user, id, salaoId])
 
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
@@ -166,6 +167,10 @@ export default function ClienteDetalhe() {
   // ── Aniversário (#9) ──
   const nascDate = cliente.data_nascimento ? new Date(cliente.data_nascimento + 'T12:00:00') : null
 
+  // ── Timeline paginada (#8): resumo usa o histórico todo; só a exibição limita ──
+  const historicoVisivel = historico.slice(0, histLimite)
+  const temMaisHistorico = historico.length > histLimite
+
   return (
     <div style={s.page}>
       <div style={s.topBar}>
@@ -295,7 +300,7 @@ export default function ClienteDetalhe() {
         ? <div style={s.empty}>Nenhum atendimento registrado</div>
         : (
           <div style={s.timeline}>
-            {historico.map((h, i) => {
+            {historicoVisivel.map((h, i) => {
               const st = HIST_STATUS[h.status] || HIST_STATUS.pendente
               const pagamentos = h.pagamentos || []
               const pagos = pagamentos.filter(p => p.status === 'pago')
@@ -306,7 +311,7 @@ export default function ClienteDetalhe() {
               const valorExibido = pagos.length ? valorPago : (h.valor ?? 0)
               const formasPagas = [...new Set(pagos.map(p => FORMA_LABEL[p.forma] || p.forma).filter(Boolean))].join(' + ')
               const cancelado = h.status === 'cancelado'
-              const ultimo = i === historico.length - 1
+              const ultimo = i === historicoVisivel.length - 1
               return (
                 <div key={h.id} style={s.tlRow}>
                   <div style={s.tlGutter}>
@@ -341,6 +346,12 @@ export default function ClienteDetalhe() {
           </div>
         )
       }
+
+      {temMaisHistorico && (
+        <button style={s.verMaisHist} onClick={() => setHistLimite(l => l + 10)}>
+          Ver mais atendimentos ({historico.length - histLimite} restantes)
+        </button>
+      )}
 
       {/* Arquivar / Reativar */}
       <div style={s.arquivarArea}>
@@ -497,6 +508,7 @@ const s = {
   badgePago: { background: 'var(--green-bg)', color: 'var(--green)' },
   badgePendente: { background: 'var(--amber-bg)', color: 'var(--amber)' },
   empty: { color: 'var(--text3)', fontSize: 14, textAlign: 'center', padding: '24px 0' },
+  verMaisHist: { width: '100%', padding: '11px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginTop: 4, fontFamily: 'inherit' },
   arquivarArea: { marginTop: 24, paddingTop: 16, borderTop: '1px dashed var(--border2)', display: 'flex', flexDirection: 'column', gap: 10 },
   arquivadaAviso: { fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 12px', textAlign: 'center' },
   arquivarBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
