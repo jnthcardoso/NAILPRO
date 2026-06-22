@@ -13,7 +13,7 @@ import { CardSkeleton } from '../components/common/Skeleton'
 import EmptyState from '../components/common/EmptyState'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, linkWhatsApp, dataParaDate, formatBRL } from '../lib/formatters'
-import { MSG_ANIVERSARIO_PADRAO, aplicarVariaveis } from '../lib/mensagens'
+import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { traduzErro } from '../lib/erros'
 import { differenceInDays, format } from 'date-fns'
 import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
@@ -55,7 +55,7 @@ export default function Clientes() {
     return FILTROS_VALIDOS.includes(p) ? p : 'todas'
   })
   // Mensagem de aniversário (editável em Configurações) p/ pré-preencher o WhatsApp
-  const [configMsg, setConfigMsg] = useState({ msg_aniversario: MSG_ANIVERSARIO_PADRAO, nome_salao: '' })
+  const [configMsg, setConfigMsg] = useState({ msg_aniversario: MSG_ANIVERSARIO_PADRAO, msg_retorno: MSG_RETORNO_PADRAO, nome_salao: '' })
   // Cards que abriram o WhatsApp e aguardam a confirmação "Já enviei" do parabéns
   const [aguardandoParabens, setAguardandoParabens] = useState(() => new Set())
   const [ordenacao, setOrdenacao] = useState('nome')
@@ -98,8 +98,12 @@ export default function Clientes() {
 
   async function loadConfigMsg() {
     const { data } = await supabase.from('configuracoes')
-      .select('msg_aniversario, nome_salao').eq('salao_id', salaoId).maybeSingle()
-    if (data) setConfigMsg({ msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO, nome_salao: data.nome_salao || '' })
+      .select('msg_aniversario, msg_retorno, nome_salao').eq('salao_id', salaoId).maybeSingle()
+    if (data) setConfigMsg({
+      msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
+      msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
+      nome_salao: data.nome_salao || '',
+    })
   }
 
   async function salvarCliente() {
@@ -303,10 +307,16 @@ export default function Clientes() {
     return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   }
 
-  function handleWhatsApp(e, telefone) {
+  function handleWhatsApp(e, c) {
     e.stopPropagation()
-    const tel = (telefone || '').replace(/\D/g, '')
-    if (tel) window.open(linkWhatsApp(tel), '_blank')
+    const tel = (c.telefone || '').replace(/\D/g, '')
+    if (!tel) return
+    // Cliente com retorno pendente já abre o WhatsApp com a mensagem de retorno
+    // pronta (mesma editável em Configurações). As demais abrem o chat normal.
+    const msg = estaSumida(c)
+      ? aplicarVariaveis(configMsg.msg_retorno || MSG_RETORNO_PADRAO, { nome: c.nome, salao: configMsg.nome_salao })
+      : ''
+    window.open(linkWhatsApp(tel, msg), '_blank')
   }
 
   // WhatsApp já com a mensagem de aniversário pronta (usada na aba Aniversários).
@@ -481,8 +491,8 @@ export default function Clientes() {
               ) : (
                 <button
                   style={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? s.waBtnEnviado : s.waBtn}
-                  onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c.telefone)}
-                  title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns no WhatsApp') : 'Abrir WhatsApp'}
+                  onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c)}
+                  title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns no WhatsApp') : (sumida ? 'Chamar de volta no WhatsApp' : 'Abrir WhatsApp')}
                 >
                   <MessageCircle size={15} />
                 </button>

@@ -5,9 +5,11 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatTelefone, unformatTelefone, validarEmail, validarTelefone, validarNome, formatBRL, linkWhatsApp } from '../lib/formatters'
+import { useAssinatura } from '../contexts/AssinaturaContext'
+import { MSG_RETORNO_PADRAO, MSG_COBRANCA_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { DIAS_RETORNO_PADRAO, VISITAS_VIP } from '../lib/constants'
@@ -19,7 +21,9 @@ export default function ClienteDetalhe() {
   const { salaoId, gerenciaTudo } = useSalao()
   const navigate = useNavigate()
   const { confirmar, sucesso, erro } = useToast()
+  const { temAcesso } = useAssinatura()
   const [cliente, setCliente] = useState(null)
+  const [config, setConfig] = useState({ msg_retorno: MSG_RETORNO_PADRAO, msg_cobranca: MSG_COBRANCA_PADRAO, chave_pix: '', nome_salao: '' })
   const [historico, setHistorico] = useState([])
   const [arquivando, setArquivando] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
@@ -27,7 +31,18 @@ export default function ClienteDetalhe() {
   const [erros, setErros] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
 
-  useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico() } }, [user, id, salaoId])
+  useEffect(() => { if (user && id && salaoId) { loadCliente(); loadHistorico(); loadConfig() } }, [user, id, salaoId])
+
+  async function loadConfig() {
+    const { data } = await supabase.from('configuracoes')
+      .select('msg_retorno, msg_cobranca, chave_pix, nome_salao').eq('salao_id', salaoId).maybeSingle()
+    if (data) setConfig({
+      msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
+      msg_cobranca: data.msg_cobranca || MSG_COBRANCA_PADRAO,
+      chave_pix: data.chave_pix || '',
+      nome_salao: data.nome_salao || '',
+    })
+  }
 
   async function loadCliente() {
     const { data, error } = await supabase.from('clientes').select('*').eq('id', id).eq('salao_id', salaoId).maybeSingle()
@@ -130,6 +145,27 @@ export default function ClienteDetalhe() {
 
   if (!cliente) return <div style={{ padding: 24, color: 'var(--text3)' }}>Carregando...</div>
 
+  // ── Status de retorno (#3) ──
+  const cicloRetorno = cliente.dias_retorno ?? DIAS_RETORNO_PADRAO
+  const diasSemVoltar = cliente.ultimo_atendimento
+    ? differenceInDays(new Date(), new Date(cliente.ultimo_atendimento + 'T12:00:00'))
+    : null
+  const retornoPendente = diasSemVoltar != null && diasSemVoltar >= cicloRetorno
+  const msgRetorno = aplicarVariaveis(config.msg_retorno || MSG_RETORNO_PADRAO, { nome: cliente.nome, salao: config.nome_salao })
+
+  // ── A receber desta cliente (#4): pagamentos pendentes (exceto cancelados) ──
+  const aReceber = historico
+    .filter(h => h.status !== 'cancelado')
+    .flatMap(h => (h.pagamentos || []).filter(p => p.status === 'pendente').map(p => ({ valor: p.valor || 0, servico: h.servico })))
+  const totalAReceber = aReceber.reduce((s, p) => s + p.valor, 0)
+  const servicoCobranca = aReceber.length === 1 ? aReceber[0].servico : ''
+  const msgCobranca = aplicarVariaveis(config.msg_cobranca || MSG_COBRANCA_PADRAO, {
+    nome: cliente.nome, salao: config.nome_salao, servico: servicoCobranca, valor: formatBRL(totalAReceber), pix: config.chave_pix,
+  })
+
+  // ── Aniversário (#9) ──
+  const nascDate = cliente.data_nascimento ? new Date(cliente.data_nascimento + 'T12:00:00') : null
+
   return (
     <div style={s.page}>
       <div style={s.topBar}>
@@ -146,7 +182,7 @@ export default function ClienteDetalhe() {
           <span style={s.vipBadge}>✦ VIP</span>
         )}
         {cliente.telefone && (
-          <a href={linkWhatsApp(cliente.telefone)} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
+          <a href={linkWhatsApp(cliente.telefone, retornoPendente ? msgRetorno : '')} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
             <Phone size={14} /> {formatTelefone(cliente.telefone)}
           </a>
         )}
@@ -154,6 +190,14 @@ export default function ClienteDetalhe() {
           <a href={`mailto:${cliente.email}`} style={s.emailLink}>
             <Mail size={13} /> {cliente.email}
           </a>
+        )}
+        {nascDate && (
+          <div style={s.emailLink}>🎂 Aniversário em {format(nascDate, 'dd/MM')}</div>
+        )}
+        {cliente.ultimo_atendimento && (
+          <span style={retornoPendente ? s.statusPend : s.statusEmDia}>
+            {retornoPendente ? `⚠️ Retorno pendente há ${diasSemVoltar} dias` : '✓ Retorno em dia'}
+          </span>
         )}
       </div>
 
@@ -204,6 +248,22 @@ export default function ClienteDetalhe() {
           {cliente.dias_retorno ?? DIAS_RETORNO_PADRAO}<span style={s.retornoUnidade}> dias</span>
         </div>
       </div>
+
+      {/* A receber desta cliente (#4) */}
+      {totalAReceber > 0 && (
+        <div style={s.aReceberCard}>
+          <div style={{ flex: 1 }}>
+            <div style={s.obsTitle}>A receber desta cliente</div>
+            <div style={s.aReceberValor}>
+              {formatBRL(totalAReceber)}
+              <span style={s.aReceberQtd}> · {aReceber.length} pendente{aReceber.length > 1 ? 's' : ''}</span>
+            </div>
+          </div>
+          {cliente.telefone && temAcesso('cobrancaWhatsapp') && (
+            <a href={linkWhatsApp(cliente.telefone, msgCobranca)} target="_blank" rel="noreferrer" style={s.cobrarBtn}>Cobrar</a>
+          )}
+        </div>
+      )}
 
       {/* Resumo do histórico */}
       {historico.length > 0 && !gerenciaTudo && (
@@ -386,6 +446,12 @@ const s = {
   vipBadge: { fontSize: 12, padding: '3px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   wppBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC', borderRadius: 'var(--radius-pill)', padding: '7px 15px', fontSize: 13, fontWeight: 600 },
   emailLink: { display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text3)', fontSize: 12.5, fontWeight: 500, textDecoration: 'none', marginTop: 2 },
+  statusPend: { fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', marginTop: 4 },
+  statusEmDia: { fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--green-bg)', color: 'var(--green)', marginTop: 4 },
+  aReceberCard: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--amber-bg)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, border: '1px solid #FCD34D' },
+  aReceberValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 17, fontWeight: 700, color: '#92400E', marginTop: 3 },
+  aReceberQtd: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, fontWeight: 600, color: '#B45309' },
+  cobrarBtn: { flexShrink: 0, background: 'var(--green, #15803D)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '9px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', textDecoration: 'none', fontFamily: 'inherit' },
   statsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 },
   statCard: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' },
   statValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 500, color: 'var(--text)' },
