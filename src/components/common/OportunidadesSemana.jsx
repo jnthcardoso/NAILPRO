@@ -189,17 +189,22 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
         )}
 
         {sumidas.length > 0 && (
-          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5' }}>
+          <div
+            style={{ ...s.insight, background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', borderColor: '#FCA5A5', cursor: 'pointer' }}
+            onClick={() => navigate('/app/metas?tab=indicadores')}
+            role="button"
+            aria-label="Ver clientes sumidas nos indicadores"
+          >
             <UserX size={18} color="#B91C1C" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...s.insightTitle, color: '#7F1D1D' }}>
                 {sumidas.length} cliente{sumidas.length > 1 ? 's' : ''} pra trazer de volta
               </div>
-              <div style={{ ...s.insightSub, color: '#991B1B' }}>
+              <div style={{ ...s.insightSub, color: '#991B1B', marginBottom: 0 }}>
                 {ticket > 0 ? `Potencial de ~${formatBRL(sumidas.length * ticket)} se voltarem` : 'Já passaram do tempo de retorno'}
               </div>
-              <Pessoas clientes={sumidas} montarMsg={msgRetorno} tipo="retorno" />
             </div>
+            <ChevronRight size={18} color="#B91C1C" style={{ flexShrink: 0, alignSelf: 'center' }} />
           </div>
         )}
 

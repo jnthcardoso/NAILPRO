@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
@@ -70,7 +70,8 @@ export default function Metas() {
   const { confirmar, sucesso, erro: toastErro } = useToast()
   const { temAcesso, plano } = useAssinatura()
   const navigate = useNavigate()
-  const [tab, setTab] = useState('metas')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(searchParams.get('tab') === 'indicadores' ? 'kpis' : 'metas')
 
   // ── Metas ───────────────────────────────────────────
   const [metas, setMetas] = useState([])
@@ -274,7 +275,7 @@ export default function Metas() {
       const ciclo = c.dias_retorno || cicloPadrao
       const dias = differenceInDays(hoje, parseISO(c.ultimo_atendimento))
       if (dias <= ciclo) ativas++
-      else sumidasLista.push({ id: c.id, nome: c.nome, telefone: c.telefone, dias })
+      else sumidasLista.push({ id: c.id, nome: c.nome, telefone: c.telefone, ultimo: c.ultimo_atendimento, dias })
     })
     sumidasLista.sort((a, b) => b.dias - a.dias) // quem sumiu há mais tempo primeiro
     const sumidas = sumidasLista.length
@@ -451,7 +452,7 @@ export default function Metas() {
               <div key={i} style={s.drillItem}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={s.drillNome}>{c.nome}</div>
-                  <div style={s.drillMeta}>sumiu há {c.dias} dias</div>
+                  <div style={s.drillMeta}>Último atendimento em {format(new Date(c.ultimo + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })} · sumida há {c.dias} dias</div>
                 </div>
                 {c.telefone
                   ? <a style={s.waBtn} href={linkWhatsApp(c.telefone, msgRetorno(c.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>

@@ -12,10 +12,23 @@ export default function AtualizacaoPWA() {
 
   if (!needRefresh) return null
 
+  // Aplica a nova versão e recarrega. O `updateServiceWorker(true)` troca o
+  // service worker, mas o reload automático dele depende do evento
+  // `controllerchange` — que no desktop às vezes não dispara (botão "não fazia
+  // nada"). Então a gente mesmo escuta o controllerchange e, se ele não vier,
+  // força o reload por timeout. O guard evita recarregar duas vezes.
+  const atualizar = () => {
+    let recarregou = false
+    const recarregar = () => { if (!recarregou) { recarregou = true; window.location.reload() } }
+    navigator.serviceWorker?.addEventListener('controllerchange', recarregar)
+    updateServiceWorker(true)
+    setTimeout(recarregar, 1500)
+  }
+
   return (
     <div style={s.wrap} role="status">
       <span style={s.txt}>✨ Nova versão disponível</span>
-      <button style={s.btn} onClick={() => updateServiceWorker(true)}>Atualizar</button>
+      <button style={s.btn} onClick={atualizar}>Atualizar</button>
       <button style={s.close} onClick={() => setNeedRefresh(false)} aria-label="Atualizar depois">×</button>
     </div>
   )
