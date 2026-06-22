@@ -12,6 +12,9 @@ export const MSG_RETORNO_PADRAO =
 export const MSG_COBRANCA_PADRAO =
   'Oi {nome}! 💅 Passando pra lembrar do seu atendimento ({servico}) no valor de {valor}. Pode pagar pelo Pix: {pix}. 💜 Qualquer dúvida me chama!'
 
+export const MSG_SINAL_PADRAO =
+  'Oi {nome}! 💅 Pra confirmar e garantir seu horário, peço um sinal antecipado pelo Pix: {pix}. Assim sua vaga fica reservada 💜'
+
 // Troca as variáveis do template pelos dados reais da cliente/salão.
 // pix/servico/valor são opcionais — usados na mensagem de cobrança. Quando a
 // chave Pix está vazia, removemos a linha/trecho do Pix pra não sobrar um buraco.

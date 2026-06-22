@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info, MessageCircle, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -9,7 +9,9 @@ import { useNavigate } from 'react-router-dom'
 import { ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
-import { formatBRL } from '../lib/formatters'
+import { formatBRL, linkWhatsApp } from '../lib/formatters'
+import { MSG_RETORNO_PADRAO, MSG_SINAL_PADRAO, aplicarVariaveis } from '../lib/mensagens'
+import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 import { traduzErro } from '../lib/erros'
 import {
   format, endOfMonth, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
@@ -88,7 +90,9 @@ export default function Metas() {
   const [cancelamento, setCancelamento] = useState(null)
   const [ocupacao, setOcupacao] = useState(null)
   const [porProfissional, setPorProfissional] = useState([])
+  const [novasListaPorMes, setNovasListaPorMes] = useState({})
   const [infoAberto, setInfoAberto] = useState(null)    // qual explicação está aberta
+  const [drill, setDrill] = useState(null)              // lista detalhada aberta (quem)
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
 
   useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
@@ -103,7 +107,7 @@ export default function Metas() {
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
-      .select('dias_semana, dias_retorno_alerta, horario_inicio, horario_fim, duracao_atendimento')
+      .select('dias_semana, dias_retorno_alerta, horario_inicio, horario_fim, duracao_atendimento, nome_salao, msg_retorno, msg_sinal, chave_pix')
       .eq('salao_id', salaoId).maybeSingle()
     if (data?.dias_semana?.length) setDiasFuncionamento(data.dias_semana)
     setCfg(data || null)
@@ -255,40 +259,55 @@ export default function Metas() {
   // (clientes.dias_retorno, ou o padrão do salão em configuracoes.dias_retorno_alerta).
   // Clientes nunca atendidas não entram na base.
   async function loadAtividade(cfgParam) {
-    const cicloPadrao = (cfgParam ?? cfg)?.dias_retorno_alerta || 30
+    const cicloPadrao = (cfgParam ?? cfg)?.dias_retorno_alerta || DIAS_RETORNO_PADRAO
     const { data: cls } = await supabase
       .from('clientes')
-      .select('ultimo_atendimento, dias_retorno')
+      .select('id, nome, telefone, ultimo_atendimento, dias_retorno')
       .eq('salao_id', salaoId)
       .eq('arquivada', false)
     if (!cls) return
     const hoje = new Date()
-    let ativas = 0, sumidas = 0
+    let ativas = 0
+    const sumidasLista = []
     cls.forEach(c => {
       if (!c.ultimo_atendimento) return // nunca atendida — fora da base
       const ciclo = c.dias_retorno || cicloPadrao
       const dias = differenceInDays(hoje, parseISO(c.ultimo_atendimento))
-      if (dias <= ciclo) ativas++; else sumidas++
+      if (dias <= ciclo) ativas++
+      else sumidasLista.push({ id: c.id, nome: c.nome, telefone: c.telefone, dias })
     })
+    sumidasLista.sort((a, b) => b.dias - a.dias) // quem sumiu há mais tempo primeiro
+    const sumidas = sumidasLista.length
     const base = ativas + sumidas
-    setAtividade({ ativas, sumidas, taxa: base > 0 ? Math.round((ativas / base) * 100) : 0 })
+    setAtividade({ ativas, sumidas, taxa: base > 0 ? Math.round((ativas / base) * 100) : 0, sumidasLista })
   }
 
-  // 4. Taxa de cancelamento (depende de kpiMeses)
+  // 4. Taxa de cancelamento (depende de kpiMeses). Guarda também a lista de quem
+  // cancelou, agrupada por cliente, pra evidenciar reincidência (2+ cancelamentos).
   async function loadCancelamento(mesesParam) {
     const m = mesesParam ?? kpiMeses
     const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
     const { data } = await supabase
       .from('agendamentos')
-      .select('status')
+      .select('status, data, clientes(id, nome, telefone)')
       .eq('salao_id', salaoId)
       .in('status', ['realizado', 'cancelado'])
       .gte('data', inicio)
     if (!data) return
     let realizados = 0, cancelados = 0
-    data.forEach(a => { if (a.status === 'cancelado') cancelados++; else realizados++ })
+    const porCliente = {}
+    data.forEach(a => {
+      if (a.status !== 'cancelado') { realizados++; return }
+      cancelados++
+      const cli = a.clientes
+      const key = cli?.id || `s/cad:${a.data}`
+      if (!porCliente[key]) porCliente[key] = { nome: cli?.nome || 'Sem cadastro', telefone: cli?.telefone, qtd: 0, ultima: a.data }
+      porCliente[key].qtd += 1
+      if (a.data > porCliente[key].ultima) porCliente[key].ultima = a.data
+    })
+    const lista = Object.values(porCliente).sort((a, b) => (b.qtd - a.qtd) || (a.ultima < b.ultima ? 1 : -1))
     const total = realizados + cancelados
-    setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total })
+    setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total, lista })
   }
 
   // 5. Ocupação da agenda (depende de kpiMeses + config). Estimativa:
@@ -304,18 +323,32 @@ export default function Metas() {
     const jornada = horaParaMin(c?.horario_fim || '18:00:00') - horaParaMin(c?.horario_inicio || '09:00:00')
     const slotsDia = Math.max(0, Math.floor(jornada / dur))
     const diasSemana = c?.dias_semana?.length ? c.dias_semana : diasFuncionamento
-    const dias = eachDayOfInterval({ start: inicioDate, end: hoje })
-      .filter(d => diasSemana.includes(getDay(d))).length
-    const vagas = slotsDia * dias
-    const { count } = await supabase
+    // Quantos de cada dia-da-semana há no período (só dias trabalhados)
+    const contagemPorDow = {}
+    eachDayOfInterval({ start: inicioDate, end: hoje }).forEach(d => {
+      const dow = getDay(d)
+      if (diasSemana.includes(dow)) contagemPorDow[dow] = (contagemPorDow[dow] || 0) + 1
+    })
+    const { data: ags } = await supabase
       .from('agendamentos')
-      .select('id', { count: 'exact', head: true })
+      .select('data')
       .eq('salao_id', salaoId)
       .eq('status', 'realizado')
       .gte('data', inicio)
       .lte('data', hojeStr)
-    const usadas = count || 0
-    setOcupacao({ taxa: vagas > 0 ? Math.round((usadas / vagas) * 100) : 0, usadas, vagas })
+    const usadasPorDow = {}
+    ;(ags || []).forEach(a => { const dow = getDay(parseISO(a.data)); usadasPorDow[dow] = (usadasPorDow[dow] || 0) + 1 })
+    const NOMES_DOW = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+    let vagas = 0, usadas = 0
+    const porDia = []
+    Object.keys(contagemPorDow).map(Number).forEach(dow => {
+      const v = slotsDia * contagemPorDow[dow]
+      const u = usadasPorDow[dow] || 0
+      vagas += v; usadas += u
+      porDia.push({ dow, label: NOMES_DOW[dow], vagas: v, usadas: u, livres: Math.max(0, v - u), taxa: v > 0 ? Math.round((u / v) * 100) : 0 })
+    })
+    porDia.sort((a, b) => a.taxa - b.taxa) // dia mais vazio primeiro
+    setOcupacao({ taxa: vagas > 0 ? Math.round((usadas / vagas) * 100) : 0, usadas, vagas, porDia })
   }
 
   // 6. Desempenho por profissional (só plano Salão; depende de kpiMeses)
@@ -325,7 +358,7 @@ export default function Metas() {
     const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
     const [{ data: ags }, { data: membros }] = await Promise.all([
       supabase.from('agendamentos')
-        .select('profissional_id, pagamentos(valor, status)')
+        .select('profissional_id, data, servico, pagamentos(valor, status), clientes(nome)')
         .eq('salao_id', salaoId).eq('status', 'realizado').gte('data', inicio),
       supabase.from('salao_membros').select('id, nome').eq('salao_id', salaoId),
     ])
@@ -337,35 +370,43 @@ export default function Metas() {
       const pag = a.pagamentos?.find(p => p.status === 'pago')
       const val = pag?.valor || 0
       const key = a.profissional_id || '__sem__'
-      if (!grouped[key]) grouped[key] = { valor: 0, qtd: 0 }
+      if (!grouped[key]) grouped[key] = { valor: 0, qtd: 0, atendimentos: [] }
       grouped[key].valor += val
       grouped[key].qtd += 1
+      grouped[key].atendimentos.push({ nome: a.clientes?.nome || 'Cliente', data: a.data, servico: a.servico, valor: val })
     })
     const lista = Object.entries(grouped)
-      .map(([id, v]) => ({ nome: id === '__sem__' ? 'Não atribuído' : (nomePorId[id] || 'Profissional'), ...v }))
+      .map(([id, v]) => ({ id, nome: id === '__sem__' ? 'Não atribuído' : (nomePorId[id] || 'Profissional'), ...v }))
       .sort((a, b) => b.valor - a.valor)
+    lista.forEach(p => p.atendimentos.sort((a, b) => (a.data < b.data ? 1 : -1)))
     setPorProfissional(lista)
   }
 
-  // 3. Novas clientes por mês (estático — sempre últimos 6 meses)
+  // 3. Novas clientes por mês (estático — sempre últimos 6 meses).
+  // Guarda também a lista de quem entrou em cada mês (pra abrir ao clicar na barra).
   async function loadNovasKpi() {
     const { data: cls } = await supabase
       .from('clientes')
-      .select('created_at')
+      .select('id, nome, created_at')
       .eq('salao_id', salaoId)
     if (cls) {
       const byMonth = {}
+      const listaPorMes = {}
       cls.forEach(c => {
         const mes = format(new Date(c.created_at), 'yyyy-MM')
         byMonth[mes] = (byMonth[mes] || 0) + 1
+        if (!listaPorMes[mes]) listaPorMes[mes] = []
+        listaPorMes[mes].push({ id: c.id, nome: c.nome })
       })
       const months = []
       for (let i = 5; i >= 0; i--) {
         const d = subMonths(new Date(), i)
         const key = format(d, 'yyyy-MM')
-        months.push({ label: format(d, 'MMM/yy', { locale: ptBR }), qtd: byMonth[key] || 0 })
+        months.push({ key, label: format(d, 'MMM/yy', { locale: ptBR }), qtd: byMonth[key] || 0 })
       }
+      Object.values(listaPorMes).forEach(l => l.sort((a, b) => (a.nome || '').localeCompare(b.nome || '')))
       setNovasClientes(months)
+      setNovasListaPorMes(listaPorMes)
     }
   }
 
@@ -390,6 +431,125 @@ export default function Metas() {
       <Info size={13} />
     </button>
   )
+
+  // Mensagens prontas pra ação no WhatsApp (reaproveitam os textos das Configurações)
+  const msgRetorno = (nome) => aplicarVariaveis(cfg?.msg_retorno || MSG_RETORNO_PADRAO, { nome, salao: cfg?.nome_salao || '' })
+  const msgSinal = (nome) => aplicarVariaveis(cfg?.msg_sinal || MSG_SINAL_PADRAO, { nome, salao: cfg?.nome_salao || '', pix: cfg?.chave_pix || '' })
+  const ddMM = (d) => format(new Date(d + 'T12:00:00'), 'dd/MM', { locale: ptBR })
+
+  // Conteúdo do pop-up "quem" — varia conforme o indicador clicado.
+  function renderDrill() {
+    if (!drill) return null
+    if (drill.tipo === 'sumidas') {
+      const lista = atividade?.sumidasLista || []
+      return (
+        <>
+          <div style={s.infoTitulo}>Clientes sumidas</div>
+          <div style={s.drillSub}>{lista.length} passaram do ciclo · de quem sumiu há mais tempo</div>
+          <div style={s.drillLista}>
+            {lista.map((c, i) => (
+              <div key={i} style={s.drillItem}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={s.drillNome}>{c.nome}</div>
+                  <div style={s.drillMeta}>sumiu há {c.dias} dias</div>
+                </div>
+                {c.telefone
+                  ? <a style={s.waBtn} href={linkWhatsApp(c.telefone, msgRetorno(c.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>
+                  : <span style={s.semTel}>sem telefone</span>}
+              </div>
+            ))}
+          </div>
+          <button style={s.btnSecondary} onClick={() => { setDrill(null); navigate('/app/clientes') }}>Ver todas em Clientes</button>
+        </>
+      )
+    }
+    if (drill.tipo === 'cancel') {
+      const lista = cancelamento?.lista || []
+      return (
+        <>
+          <div style={s.infoTitulo}>Cancelamentos</div>
+          <div style={s.drillSub}>{lista.length} cliente(s) · quem cancela toda hora aparece em cima</div>
+          <div style={s.drillLista}>
+            {lista.map((c, i) => (
+              <div key={i} style={s.drillItem}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={s.drillNome}>{c.nome}{c.qtd >= 2 && <span style={s.tagReinc}>cancelou {c.qtd}×</span>}</div>
+                  <div style={s.drillMeta}>última em {ddMM(c.ultima)}</div>
+                </div>
+                {c.qtd >= 2 && c.telefone &&
+                  <a style={s.waBtnAmber} href={linkWhatsApp(c.telefone, msgSinal(c.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Pedir sinal</a>}
+              </div>
+            ))}
+          </div>
+        </>
+      )
+    }
+    if (drill.tipo === 'ocupacao') {
+      const dias = ocupacao?.porDia || []
+      return (
+        <>
+          <div style={s.infoTitulo}>Horários mais vazios</div>
+          <div style={s.drillSub}>{labelPeriodoKpi} · do dia mais vazio pro mais cheio</div>
+          <div style={s.drillLista}>
+            {dias.map((d, i) => {
+              const cor = d.taxa >= 85 ? '#D97706' : d.taxa >= 60 ? 'var(--green)' : 'var(--pink)'
+              const bg = d.taxa >= 85 ? '#FEF3C7' : d.taxa >= 60 ? 'var(--green-bg)' : 'var(--pink-light)'
+              return (
+                <div key={i} style={s.drillItem}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={s.drillNome}>{d.label}</div>
+                    <div style={s.drillMeta}>{d.livres} de {d.vagas} vagas livres</div>
+                  </div>
+                  <span style={{ ...s.taxaPill, background: bg, color: cor }}>{d.taxa}% cheia</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )
+    }
+    if (drill.tipo === 'novas') {
+      const lista = novasListaPorMes[drill.mes] || []
+      return (
+        <>
+          <div style={s.infoTitulo}>Novas clientes</div>
+          <div style={s.drillSub}>{drill.label} · {lista.length} cliente(s)</div>
+          <div style={s.drillLista}>
+            {lista.length === 0
+              ? <div style={s.kpiEmpty}>Nenhuma cliente nova nesse mês</div>
+              : lista.map(c => (
+                <button key={c.id} style={s.drillItemBtn} onClick={() => { setDrill(null); navigate(`/app/clientes/${c.id}`) }}>
+                  <span style={s.drillNome}>{c.nome}</span>
+                  <ChevronRight size={15} color="var(--text3)" />
+                </button>
+              ))}
+          </div>
+        </>
+      )
+    }
+    if (drill.tipo === 'prof') {
+      const prof = porProfissional.find(p => p.id === drill.profId)
+      const ats = prof?.atendimentos || []
+      return (
+        <>
+          <div style={s.infoTitulo}>{prof?.nome || 'Profissional'}</div>
+          <div style={s.drillSub}>{labelPeriodoKpi} · {ats.length} atendimentos · {formatBRL(prof?.valor || 0)}</div>
+          <div style={s.drillLista}>
+            {ats.map((a, i) => (
+              <div key={i} style={s.drillItem}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={s.drillNome}>{a.nome}</div>
+                  <div style={s.drillMeta}>{ddMM(a.data)}{a.servico ? ` · ${a.servico}` : ''}</div>
+                </div>
+                <span style={s.drillValor}>{formatBRL(a.valor)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )
+    }
+    return null
+  }
 
   // ── Navegação de mês ──────────────────────────────────
   function mesAnterior() {
@@ -590,7 +750,10 @@ export default function Metas() {
                           {atividade.taxa >= 70 ? '😍 Base saudável' : atividade.taxa >= 40 ? '😊 Dá pra melhorar' : '⚠️ Muita gente sumida'}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
-                          {atividade.ativas} ativas · {atividade.sumidas} sumidas
+                          {atividade.ativas} ativas ·{' '}
+                          {atividade.sumidas > 0
+                            ? <button style={s.verLink} onClick={() => setDrill({ tipo: 'sumidas' })}>{atividade.sumidas} sumidas ›</button>
+                            : <>0 sumidas</>}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
                           Sumida = passou do ciclo de retorno sem voltar
@@ -617,13 +780,17 @@ export default function Metas() {
                 ) : (
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 80 }}>
                     {novasClientes.map((m, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <button
+                        key={i} type="button"
+                        onClick={() => { if (m.qtd > 0) setDrill({ tipo: 'novas', mes: m.key, label: m.label }) }}
+                        style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0, fontFamily: 'inherit', cursor: m.qtd > 0 ? 'pointer' : 'default' }}
+                      >
                         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: m.qtd > 0 ? 'var(--pink)' : 'var(--text3)' }}>
                           {m.qtd > 0 ? m.qtd : '—'}
                         </span>
                         <div style={{ width: '100%', borderRadius: '3px 3px 0 0', background: m.qtd > 0 ? 'var(--pink)' : 'var(--border)', height: `${Math.max(4, (m.qtd / maxNovas) * 52)}px`, transition: 'height 0.4s ease', opacity: i === novasClientes.length - 1 ? 1 : 0.6 + (i * 0.08) }} />
                         <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{m.label}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -678,6 +845,9 @@ export default function Metas() {
                         width: `${Math.min(100, cancelamento.taxa)}%`, transition: 'width 0.5s ease'
                       }} />
                     </div>
+                    {cancelamento.cancelados > 0 && (
+                      <button style={s.verAcao} onClick={() => setDrill({ tipo: 'cancel' })}>Ver quem cancelou <ChevronRight size={13} /></button>
+                    )}
                   </>
                 )}
               </div>
@@ -720,6 +890,9 @@ export default function Metas() {
                         width: `${Math.min(100, ocupacao.taxa)}%`, transition: 'width 0.5s ease'
                       }} />
                     </div>
+                    {ocupacao.porDia?.length > 0 && (
+                      <button style={s.verAcao} onClick={() => setDrill({ tipo: 'ocupacao' })}>Ver horários mais vazios <ChevronRight size={13} /></button>
+                    )}
                   </>
                 )}
               </div>
@@ -741,9 +914,12 @@ export default function Metas() {
                   {porProfissional.length === 0 ? (
                     <div style={s.kpiEmpty}>Sem atendimentos no período</div>
                   ) : porProfissional.map((p, i) => (
-                    <div key={i} style={{ marginBottom: 10 }}>
+                    <button
+                      key={i} type="button" onClick={() => setDrill({ tipo: 'prof', profId: p.id })}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, marginBottom: 10, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{p.nome}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>{p.nome} <ChevronRight size={12} color="var(--text3)" /></span>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--pink)', fontWeight: 600 }}>
                             {formatBRL(p.valor)}
@@ -754,7 +930,7 @@ export default function Metas() {
                       <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
                         <div style={{ height: '100%', borderRadius: 3, background: 'var(--pink)', width: `${(p.valor / maxProf) * 100}%`, transition: 'width 0.4s ease' }} />
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
                 </div>
@@ -763,6 +939,14 @@ export default function Metas() {
             </>
           )}
         </>
+      )}
+
+      {/* ── Pop-up "quem" (drill-down de cada indicador) ─ */}
+      {drill && (
+        <Modal onClose={() => setDrill(null)} variant="sheet" boxStyle={s.modalDrill}>
+          {renderDrill()}
+          <button style={s.btnPrimary} onClick={() => setDrill(null)}>Fechar</button>
+        </Modal>
       )}
 
       {/* ── Modal de explicação do indicador ───────────── */}
@@ -877,6 +1061,22 @@ const s = {
   infoTexto: { fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 },
   infoAviso: { display: 'flex', gap: 7, fontSize: 12, color: '#92400E', background: '#FEF3C7', borderRadius: 8, padding: '10px 12px', lineHeight: 1.5 },
   infoNota: { fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 },
+  // Drill-down "quem"
+  verLink: { background: 'none', border: 'none', padding: 0, color: 'var(--pink)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' },
+  verAcao: { marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 3, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit' },
+  modalDrill: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 32px', width: '100%', maxWidth: 520, maxHeight: '82vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 },
+  drillSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2, marginBottom: 6 },
+  drillLista: { display: 'flex', flexDirection: 'column' },
+  drillItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid var(--border)' },
+  drillItemBtn: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 0', borderTop: '1px solid var(--border)', background: 'none', border: 'none', borderTopWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' },
+  drillNome: { fontSize: 14, fontWeight: 600, color: 'var(--text)' },
+  drillMeta: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
+  drillValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: 'var(--pink)', flexShrink: 0 },
+  waBtn: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--green)', color: 'white', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0, fontFamily: 'inherit' },
+  waBtnAmber: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#D97706', color: 'white', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0, fontFamily: 'inherit' },
+  semTel: { fontSize: 11, color: 'var(--text3)', flexShrink: 0 },
+  tagReinc: { marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#92400E', background: '#FEF3C7', borderRadius: 'var(--radius-pill)', padding: '1px 7px' },
+  taxaPill: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 'var(--radius-pill)', flexShrink: 0 },
   loading: { textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '40px 0' },
   skeletonTitle: { height: 16, borderRadius: 6, background: 'var(--border)', width: '60%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
   skeletonLine: { height: 12, borderRadius: 6, background: 'var(--border)', width: '80%', animation: 'np-pulse-soft 1.5s ease-in-out infinite' },
