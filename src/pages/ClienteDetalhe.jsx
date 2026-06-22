@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw, Pencil, Mail } from 'lucide-react'
+import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw, Pencil, Mail, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -129,6 +129,25 @@ export default function ClienteDetalhe() {
       sucesso('Cliente reativada')
       setCliente({ ...cliente, arquivada: false })
     }
+  }
+
+  // Exclui de vez (só clientes arquivadas e SEM histórico — preserva os
+  // registros financeiros; quem tem atendimento continua arquivada).
+  async function excluirCliente() {
+    if (historico.length > 0) {
+      erro(`Esta cliente tem ${historico.length} atendimento(s) no histórico — não dá pra excluir de vez. Ela continua arquivada.`)
+      return
+    }
+    const ok = await confirmar({
+      titulo: 'Excluir esta cliente para sempre?',
+      mensagem: `${cliente.nome} será removida definitivamente. Esta ação não pode ser desfeita.`,
+      confirmarLabel: 'Sim, excluir', cancelarLabel: 'Cancelar', tipo: 'perigo',
+    })
+    if (!ok) return
+    const { error } = await supabase.from('clientes').delete().eq('id', id).eq('salao_id', salaoId)
+    if (error) { erro(traduzErro(error, 'Não foi possível excluir a cliente.')); return }
+    sucesso('Cliente excluída')
+    navigate('/app/clientes')
   }
 
   // Resumo do histórico
@@ -366,6 +385,11 @@ export default function ClienteDetalhe() {
           {cliente.arquivada ? <RotateCcw size={15} /> : <Archive size={15} />}
           {arquivando ? 'Salvando...' : cliente.arquivada ? 'Reativar cliente' : 'Arquivar cliente'}
         </button>
+        {cliente.arquivada && (
+          <button style={s.excluirBtn} onClick={excluirCliente} disabled={arquivando}>
+            <Trash2 size={15} /> Excluir definitivamente
+          </button>
+        )}
       </div>
 
       {/* ── Modal de edição ───────────────────── */}
@@ -513,4 +537,5 @@ const s = {
   arquivadaAviso: { fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '9px 12px', textAlign: 'center' },
   arquivarBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   reativarBtn: { background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #86EFAC' },
+  excluirBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'transparent', color: 'var(--red)', border: '1px solid #FCA5A5', borderRadius: 'var(--radius-sm)', padding: '11px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
 }
