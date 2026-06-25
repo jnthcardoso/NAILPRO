@@ -274,7 +274,9 @@ export default function Metas() {
       if (!c.ultimo_atendimento) return // nunca atendida — fora da base
       const ciclo = c.dias_retorno || cicloPadrao
       const dias = differenceInDays(hoje, parseISO(c.ultimo_atendimento))
-      if (dias <= ciclo) ativas++
+      // Pendente quando ATINGE o ciclo (>=), igual à Home (Oportunidades) e à
+      // lista de Clientes (estaSumida). "Chegou o dia de voltar = já é retorno".
+      if (dias < ciclo) ativas++
       else sumidasLista.push({ id: c.id, nome: c.nome, telefone: c.telefone, ultimo: c.ultimo_atendimento, dias })
     })
     sumidasLista.sort((a, b) => b.dias - a.dias) // quem sumiu há mais tempo primeiro
