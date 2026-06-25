@@ -319,15 +319,22 @@ export default function Metas() {
 
     // Cruzamento preciso: retorno pendente (último atendimento) + horário futuro
     const ids = cancellers.map(x => x.id).filter(Boolean)
-    const clientesById = {}, comFuturo = new Set()
+    const clientesById = {}, proximo = {}
     if (ids.length) {
       const [{ data: cls }, { data: fut }] = await Promise.all([
         supabase.from('clientes').select('id, ultimo_atendimento, dias_retorno').in('id', ids),
-        supabase.from('agendamentos').select('cliente_id').eq('salao_id', salaoId)
+        supabase.from('agendamentos').select('cliente_id, data, horario').eq('salao_id', salaoId)
           .in('status', ['pendente', 'confirmado']).gte('data', hojeStr).in('cliente_id', ids),
       ])
       ;(cls || []).forEach(cl => { clientesById[cl.id] = cl })
-      ;(fut || []).forEach(f => { if (f.cliente_id) comFuturo.add(f.cliente_id) })
+      // guarda o PRÓXIMO horário (mais cedo) de cada cliente
+      ;(fut || []).forEach(f => {
+        if (!f.cliente_id) return
+        const cur = proximo[f.cliente_id]
+        if (!cur || f.data < cur.data || (f.data === cur.data && (f.horario || '') < (cur.horario || ''))) {
+          proximo[f.cliente_id] = { data: f.data, horario: f.horario }
+        }
+      })
     }
 
     const sumiram = [], ok = []
@@ -337,9 +344,10 @@ export default function Metas() {
       const ciclo = cl?.dias_retorno || cicloPadrao
       const dias = ua ? differenceInDays(hoje, parseISO(ua)) : null
       const pendente = dias != null && dias >= ciclo
-      const temFuturo = x.id ? comFuturo.has(x.id) : false
-      if (pendente && !temFuturo) sumiram.push({ ...x, dias })
-      else ok.push({ ...x, motivo: temFuturo ? 'tem horário marcado' : (ua ? 'voltou depois' : 'sem retorno pendente') })
+      const fut = x.id ? proximo[x.id] : null
+      if (pendente && !fut) sumiram.push({ ...x, dias })
+      else if (fut) ok.push({ ...x, tipo: 'reagendou', futData: fut.data, futHora: fut.horario })
+      else ok.push({ ...x, tipo: 'voltou', ultimo: ua })
     })
     sumiram.sort((a, b) => b.dias - a.dias)
     ok.sort((a, b) => (b.qtd - a.qtd) || (a.ultima < b.ultima ? 1 : -1))
@@ -508,9 +516,13 @@ export default function Metas() {
       return (
         <>
           <div style={s.infoTitulo}>Cancelamentos</div>
-          <div style={s.drillSub}>
-            {tem === 0 ? 'Sem cancelamentos no período' : `Das ${tem} que cancelaram, ${sumiram.length} sumiram (não voltaram)`}
-          </div>
+          {tem === 0 ? (
+            <div style={s.drillSub}>Sem cancelamentos no período</div>
+          ) : sumiram.length === 0 ? (
+            <div style={s.okBanner}>🎉 Nenhuma perda — todas reagendaram ou voltaram</div>
+          ) : (
+            <div style={s.drillSub}>Das {tem} que cancelaram, {sumiram.length} sumiram (não voltaram)</div>
+          )}
 
           {sumiram.length > 0 && (
             <>
@@ -518,8 +530,8 @@ export default function Metas() {
               <div style={s.drillLista}>
                 {sumiram.map((cl, i) => (
                   <div key={i} style={s.drillItem}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={s.drillNome}>{cl.nome}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
+                    <div onClick={() => { if (cl.id) { setDrill(null); navigate(`/app/clientes/${cl.id}`) } }} style={{ flex: 1, minWidth: 0, cursor: cl.id ? 'pointer' : 'default' }}>
+                      <div style={s.drillNome}>{cl.nome}{cl.id && <ChevronRight size={12} color="var(--text3)" />}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
                       <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)}</div>
                       <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>Sem voltar há {cl.dias} dias</div>
                     </div>
@@ -532,13 +544,17 @@ export default function Metas() {
 
           {ok.length > 0 && (
             <>
-              <div style={{ ...s.grupoTitulo, marginTop: 16 }}>✅ Cancelaram, mas estão ok ({ok.length})</div>
+              <div style={{ ...s.grupoTitulo, marginTop: sumiram.length ? 16 : 4 }}>✅ Cancelaram, mas reagendaram ({ok.length})</div>
               <div style={s.drillLista}>
                 {ok.map((cl, i) => (
                   <div key={i} style={s.drillItem}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={s.drillNome}>{cl.nome}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
-                      <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)} · {cl.motivo}</div>
+                    <div onClick={() => { if (cl.id) { setDrill(null); navigate(`/app/clientes/${cl.id}`) } }} style={{ flex: 1, minWidth: 0, cursor: cl.id ? 'pointer' : 'default' }}>
+                      <div style={s.drillNome}>{cl.nome}{cl.id && <ChevronRight size={12} color="var(--text3)" />}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
+                      <div style={s.drillMeta}>
+                        {cl.tipo === 'reagendou'
+                          ? `reagendou: ${ddMM(cl.futData)}${cl.futHora ? ' às ' + cl.futHora.slice(0, 5) : ''}`
+                          : cl.ultimo ? `voltou em ${ddMM(cl.ultimo)}` : 'sem retorno pendente'}
+                      </div>
                     </div>
                     {cl.qtd >= 2 && cl.telefone && <a style={s.waBtnAmber} href={linkWhatsApp(cl.telefone, msgSinal(cl.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Pedir sinal</a>}
                   </div>
@@ -1132,6 +1148,7 @@ const s = {
   modalDrill: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 32px', width: '100%', maxWidth: 520, maxHeight: '82vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 },
   drillSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2, marginBottom: 6 },
   grupoTitulo: { fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginTop: 8, marginBottom: 2 },
+  okBanner: { fontSize: 13, fontWeight: 600, color: 'var(--green)', background: 'var(--green-bg)', borderRadius: 8, padding: '10px 12px', marginTop: 2, marginBottom: 8 },
   drillLista: { display: 'flex', flexDirection: 'column' },
   drillItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid var(--border)' },
   drillItemBtn: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 0', borderTop: '1px solid var(--border)', background: 'none', border: 'none', borderTopWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' },
