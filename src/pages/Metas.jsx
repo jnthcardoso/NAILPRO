@@ -84,7 +84,8 @@ export default function Metas() {
   const [saving, setSaving] = useState(false)
 
   // ── KPIs ─────────────────────────────────────────────
-  const [kpiMeses, setKpiMeses] = useState('1')
+  // Indicadores de agenda/equipe são sempre do mês (sem seletor de período).
+  const kpiMeses = '1'
   const [cfg, setCfg] = useState(null)
   const [atividade, setAtividade] = useState(null)
   const [novasClientes, setNovasClientes] = useState([])
@@ -99,10 +100,6 @@ export default function Metas() {
   useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
   // Carga inicial: carrega TODOS os indicadores quando entra na tab
   useEffect(() => { if (salaoId && tab === 'kpis') loadKpis() }, [salaoId, tab])
-  // kpiMeses → recarrega os indicadores que dependem do período selecionado
-  useEffect(() => {
-    if (salaoId && tab === 'kpis') { loadCancelamento(); loadOcupacao(); loadPorProfissional() }
-  }, [kpiMeses])
 
 
   // ── Config ────────────────────────────────────────────
@@ -785,20 +782,6 @@ export default function Metas() {
             </div>
           ) : (
             <>
-              {/* Seletor de período — controla os indicadores do período */}
-              <div style={s.periodoTopo}>
-                <span style={s.periodoLabel}>Período</span>
-                <div style={s.segmented}>
-                  {[['1', '1m'], ['3', '3m'], ['6', '6m'], ['12', '12m']].map(([v, l]) => (
-                    <button
-                      key={v}
-                      style={{ ...s.segBtn, ...(kpiMeses === v ? s.segBtnAtivo : {}) }}
-                      onClick={() => setKpiMeses(v)}
-                    >{l}</button>
-                  ))}
-                </div>
-              </div>
-
               {/* ── Seção: Suas clientes ── */}
               <div style={s.secHead}>
                 <span style={s.secHeadIcon}><Users size={14} /></span>
@@ -1120,16 +1103,11 @@ const s = {
   barProjFill: { position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 4, background: 'repeating-linear-gradient(45deg, rgba(217,119,6,0.3) 0px, rgba(217,119,6,0.3) 4px, transparent 4px, transparent 8px)', zIndex: 1 },
   projecaoInsight: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 8, border: '1px solid', fontSize: 11, fontWeight: 600, lineHeight: 1.4 },
   // Indicadores
-  periodoTopo: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', boxShadow: 'var(--shadow-xs)' },
-  periodoLabel: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' },
   secHead: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 12px' },
   secHeadIcon: { width: 26, height: 26, borderRadius: '50%', background: 'var(--pink-light)', color: 'var(--pink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   secHeadTitle: { fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' },
   secHeadChip: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', whiteSpace: 'nowrap' },
   secHeadLine: { flex: 1, height: 1, background: 'var(--border)' },
-  segmented: { display: 'flex', gap: 3, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, flex: 1 },
-  segBtn: { flex: 1, padding: '5px 6px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
-  segBtnAtivo: { background: 'var(--pink)', color: 'white', boxShadow: 'var(--shadow-pink)' },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, alignItems: 'stretch' },
   kpiCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '15px', boxShadow: 'var(--shadow-sm)' },
   kpiCardTitle: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
