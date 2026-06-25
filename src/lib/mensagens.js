@@ -9,6 +9,9 @@ export const MSG_ANIVERSARIO_PADRAO =
 export const MSG_RETORNO_PADRAO =
   'Oi {nome}! 💅 Senti sua falta por aqui! Que tal agendar um horário pra deixar suas unhas em dia? Tenho novidades pra te mostrar 😊'
 
+export const MSG_REAGENDAR_PADRAO =
+  'Oi {nome}! 💅 Vi que não deu certo seu horário. Bora remarcar? Me diz um dia que fica bom pra você que eu encaixo 😊'
+
 export const MSG_COBRANCA_PADRAO =
   'Oi {nome}! 💅 Passando pra lembrar do seu atendimento ({servico}) no valor de {valor}. Pode pagar pelo Pix: {pix}. 💜 Qualquer dúvida me chama!'
 

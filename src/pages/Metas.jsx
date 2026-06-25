@@ -10,7 +10,7 @@ import { ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/ui'
 import { formatBRL, linkWhatsApp } from '../lib/formatters'
-import { MSG_RETORNO_PADRAO, MSG_SINAL_PADRAO, aplicarVariaveis } from '../lib/mensagens'
+import { MSG_RETORNO_PADRAO, MSG_REAGENDAR_PADRAO, MSG_SINAL_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 import { traduzErro } from '../lib/erros'
 import {
@@ -105,7 +105,7 @@ export default function Metas() {
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
     const { data } = await supabase.from('configuracoes')
-      .select('dias_semana, dias_retorno_alerta, horario_inicio, horario_fim, duracao_atendimento, nome_salao, msg_retorno, msg_sinal, chave_pix')
+      .select('dias_semana, dias_retorno_alerta, horario_inicio, horario_fim, duracao_atendimento, nome_salao, msg_retorno, msg_reagendar, msg_sinal, chave_pix')
       .eq('salao_id', salaoId).maybeSingle()
     if (data?.dias_semana?.length) setDiasFuncionamento(data.dias_semana)
     setCfg(data || null)
@@ -478,6 +478,7 @@ export default function Metas() {
 
   // Mensagens prontas pra ação no WhatsApp (reaproveitam os textos das Configurações)
   const msgRetorno = (nome) => aplicarVariaveis(cfg?.msg_retorno || MSG_RETORNO_PADRAO, { nome, salao: cfg?.nome_salao || '' })
+  const msgReagendar = (nome) => aplicarVariaveis(cfg?.msg_reagendar || MSG_REAGENDAR_PADRAO, { nome, salao: cfg?.nome_salao || '' })
   const msgSinal = (nome) => aplicarVariaveis(cfg?.msg_sinal || MSG_SINAL_PADRAO, { nome, salao: cfg?.nome_salao || '', pix: cfg?.chave_pix || '' })
   const ddMM = (d) => format(new Date(d + 'T12:00:00'), 'dd/MM', { locale: ptBR })
 
@@ -534,7 +535,7 @@ export default function Metas() {
                       <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)}</div>
                       <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>{cl.nunca ? 'não remarcou' : `Sem voltar há ${cl.dias} dias`}</div>
                     </div>
-                    {cl.telefone && <a style={s.waBtn} href={linkWhatsApp(cl.telefone, msgRetorno(cl.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>}
+                    {cl.telefone && <a style={s.waBtn} href={linkWhatsApp(cl.telefone, msgReagendar(cl.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>}
                   </div>
                 ))}
               </div>

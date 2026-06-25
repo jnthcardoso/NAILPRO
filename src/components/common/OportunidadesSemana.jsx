@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Cake, UserX, CalendarClock, MessageCircle, Link2, ChevronRight } from 'lucide-react'
+import { Sparkles, Cake, UserX, CalendarClock, CalendarX, MessageCircle, Link2, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useSalao } from '../../contexts/SalaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { linkWhatsApp, formatBRL } from '../../lib/formatters'
 import { DIAS_RETORNO_PADRAO } from '../../lib/constants'
-import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, aplicarVariaveis } from '../../lib/mensagens'
+import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, MSG_REAGENDAR_PADRAO, aplicarVariaveis } from '../../lib/mensagens'
 import { format, addDays, differenceInDays, getDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -48,8 +48,9 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
       const hojeStr = format(hoje, 'yyyy-MM-dd')
       const fim7Str = format(addDays(hoje, 6), 'yyyy-MM-dd')
       const inicio90 = format(addDays(hoje, -90), 'yyyy-MM-dd')
+      const inicio30 = format(addDays(hoje, -30), 'yyyy-MM-dd')
 
-      const [{ data: clientes }, { data: pagos }, { data: ags }, { data: config }, { data: contatos }] = await Promise.all([
+      const [{ data: clientes }, { data: pagos }, { data: ags }, { data: config }, { data: contatos }, { data: cancelados30 }, { data: futuros }] = await Promise.all([
         supabase.from('clientes')
           .select('id, nome, telefone, ultimo_atendimento, data_nascimento, dias_retorno, arquivada')
           .eq('salao_id', salaoId),
@@ -58,10 +59,15 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
         supabase.from('agendamentos')
           .select('data').eq('salao_id', salaoId).gte('data', hojeStr).lte('data', fim7Str).neq('status', 'cancelado'),
         supabase.from('configuracoes')
-          .select('slug, agenda_publica_ativa, nome_salao, dias_semana, msg_aniversario, msg_retorno')
+          .select('slug, agenda_publica_ativa, nome_salao, dias_semana, msg_aniversario, msg_retorno, msg_reagendar')
           .eq('salao_id', salaoId).maybeSingle(),
         supabase.from('oportunidade_contatos')
           .select('cliente_id, tipo, contatado_em').eq('salao_id', salaoId),
+        // cancelamentos recentes (30 dias) e horários futuros — pro insight de reagendar
+        supabase.from('agendamentos')
+          .select('cliente_id, data').eq('salao_id', salaoId).eq('status', 'cancelado').gte('data', inicio30),
+        supabase.from('agendamentos')
+          .select('cliente_id').eq('salao_id', salaoId).in('status', ['pendente', 'confirmado']).gte('data', hojeStr),
       ])
 
       // Só clientes acionáveis (com telefone) — alinha a contagem com a ação possível.
@@ -92,6 +98,27 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
       const diasLivres = [...Array(7)].map((_, i) => addDays(hoje, i))
         .filter(d => diasTrabalho.includes(getDay(d)) && !ocupados.has(format(d, 'yyyy-MM-dd')))
 
+      // 4) Cancelaram (últimos 30 dias) e não remarcaram: sem horário futuro e sem
+      //    ter voltado depois do cancelamento. Sinal mais fresco que "sumida".
+      const lastCancel = {}
+      ;(cancelados30 || []).forEach(a => {
+        if (!a.cliente_id) return
+        if (!lastCancel[a.cliente_id] || a.data > lastCancel[a.cliente_id]) lastCancel[a.cliente_id] = a.data
+      })
+      const comFuturo = new Set((futuros || []).map(f => f.cliente_id).filter(Boolean))
+      const byId = {}
+      ;(clientes || []).forEach(c => { byId[c.id] = c })
+      const cancelouNaoRemarcou = Object.keys(lastCancel).map(id => {
+        const c = byId[id]
+        if (!c || c.arquivada || !c.telefone) return null
+        if (comFuturo.has(id)) return null // remarcou
+        if (c.ultimo_atendimento && c.ultimo_atendimento > lastCancel[id]) return null // voltou depois
+        return c
+      }).filter(Boolean)
+      // Dedup: prioridade ao cancelamento (sinal mais claro) — tira do "sumidas".
+      const cancelIds = new Set(cancelouNaoRemarcou.map(c => c.id))
+      const sumidasDedup = sumidas.filter(c => !cancelIds.has(c.id))
+
       if (ativo) {
         setDados({
           ticket,
@@ -100,7 +127,8 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
           nomeSalao: config?.nome_salao || '',
           tplAniversario: config?.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
           tplRetorno: config?.msg_retorno || MSG_RETORNO_PADRAO,
-          aniversariantes, sumidas, diasLivres,
+          tplReagendar: config?.msg_reagendar || MSG_REAGENDAR_PADRAO,
+          aniversariantes, sumidas: sumidasDedup, diasLivres, cancelouNaoRemarcou,
         })
         // Mescla os contatos do banco por cima do que veio do localStorage.
         setContatados(prev => {
@@ -114,7 +142,7 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   }, [salaoId, isProfissional])
 
   if (!dados) return null
-  const { ticket, slug, agendaPublicaAtiva, nomeSalao, tplAniversario, tplRetorno } = dados
+  const { ticket, slug, agendaPublicaAtiva, nomeSalao, tplAniversario, tplRetorno, tplReagendar } = dados
 
   // Esconde quem já foi contatada recentemente (banco + aparelho) — não repete o aviso.
   const foiContatada = (tipo, clienteId, dias) => {
@@ -123,9 +151,10 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   }
   const aniversariantes = dados.aniversariantes.filter(c => !foiContatada('aniv', c.id, JANELA_ANIV))
   const sumidas = dados.sumidas.filter(c => !foiContatada('retorno', c.id, JANELA_SUMIDA))
+  const cancelouNaoRemarcou = (dados.cancelouNaoRemarcou || []).filter(c => !foiContatada('retorno', c.id, JANELA_SUMIDA))
   const diasLivres = dados.diasLivres
 
-  const temAlgo = aniversariantes.length || sumidas.length || diasLivres.length
+  const temAlgo = aniversariantes.length || sumidas.length || cancelouNaoRemarcou.length || diasLivres.length
   if (!temAlgo) return null
 
   const linkPublico = `${window.location.origin}/agendar/${slug}`
@@ -149,6 +178,7 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   }
   const msgAniversario = (nome) => aplicarVariaveis(tplAniversario, { nome, salao: nomeSalao })
   const msgRetorno = (nome) => aplicarVariaveis(tplRetorno, { nome, salao: nomeSalao })
+  const msgReagendar = (nome) => aplicarVariaveis(tplReagendar, { nome, salao: nomeSalao })
 
   // Pílulas de WhatsApp (uma por cliente) reaproveitadas pelos dois modos.
   const Pessoas = ({ clientes, montarMsg, tipo }) => (
@@ -172,7 +202,7 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
   // ── Modo "insights": cards compactos que entram na lista de Insights da Home ──
   // (já retornou null acima quando não há nada — nunca sobra cabeçalho órfão)
   if (variant === 'insights') {
-    if (!aniversariantes.length && !sumidas.length) return null
+    if (!aniversariantes.length && !sumidas.length && !cancelouNaoRemarcou.length) return null
     const rows = (
       <>
         {aniversariantes.length > 0 && (
@@ -184,6 +214,19 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
               </div>
               <div style={{ ...s.insightSub, color: '#86198F' }}>Toque no nome pra mandar um carinho no WhatsApp</div>
               <Pessoas clientes={aniversariantes} montarMsg={msgAniversario} tipo="aniv" />
+            </div>
+          </div>
+        )}
+
+        {cancelouNaoRemarcou.length > 0 && (
+          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', borderColor: '#FDBA74' }}>
+            <CalendarX size={18} color="#C2410C" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...s.insightTitle, color: '#7C2D12' }}>
+                {cancelouNaoRemarcou.length} cancelaram e não remarcaram
+              </div>
+              <div style={{ ...s.insightSub, color: '#9A3412' }}>Toque no nome pra chamar pra remarcar no WhatsApp</div>
+              <Pessoas clientes={cancelouNaoRemarcou} montarMsg={msgReagendar} tipo="retorno" />
             </div>
           </div>
         )}
@@ -238,7 +281,18 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
           />
         )}
 
-        {/* 2) Clientes sumindo */}
+        {/* 2) Cancelaram e não remarcaram (sinal mais fresco que sumida) */}
+        {cancelouNaoRemarcou.length > 0 && (
+          <Card
+            icon={<CalendarX size={16} />} cor="#C2410C" bg="#FFEDD5"
+            titulo={`${cancelouNaoRemarcou.length} cancelaram e não remarcaram`}
+            sub="Cancelaram nos últimos 30 dias e não voltaram a marcar. Chame pra remarcar antes que esfrie."
+            clientes={cancelouNaoRemarcou} montarMsg={msgReagendar}
+            onContatar={(id) => contatar('retorno', id)}
+          />
+        )}
+
+        {/* 3) Clientes sumindo */}
         {sumidas.length > 0 && (
           <Card
             icon={<UserX size={16} />} cor="#B91C1C" bg="#FEE2E2"

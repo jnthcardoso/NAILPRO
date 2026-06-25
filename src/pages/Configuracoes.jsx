@@ -5,7 +5,7 @@ import { exportarTodosDados } from '../lib/exportarDados'
 import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify, formatCPF, validarCPF, validarTelefone, validarEmail } from '../lib/formatters'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
-import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, MSG_COBRANCA_PADRAO, MSG_SINAL_PADRAO } from '../lib/mensagens'
+import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, MSG_REAGENDAR_PADRAO, MSG_COBRANCA_PADRAO, MSG_SINAL_PADRAO } from '../lib/mensagens'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
@@ -62,6 +62,7 @@ export default function Configuracoes() {
     mensagem_lembrete: MSG_LEMBRETE_PADRAO,
     msg_aniversario: MSG_ANIVERSARIO_PADRAO,
     msg_retorno: MSG_RETORNO_PADRAO,
+    msg_reagendar: MSG_REAGENDAR_PADRAO,
     msg_cobranca: MSG_COBRANCA_PADRAO,
     msg_sinal: MSG_SINAL_PADRAO,
     chave_pix: '',
@@ -137,6 +138,7 @@ export default function Configuracoes() {
         mensagem_lembrete: data.mensagem_lembrete || MSG_LEMBRETE_PADRAO,
         msg_aniversario: data.msg_aniversario || MSG_ANIVERSARIO_PADRAO,
         msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
+        msg_reagendar: data.msg_reagendar || MSG_REAGENDAR_PADRAO,
         msg_cobranca: data.msg_cobranca || MSG_COBRANCA_PADRAO,
         msg_sinal: data.msg_sinal || MSG_SINAL_PADRAO,
         chave_pix: data.chave_pix || '',
@@ -675,6 +677,19 @@ export default function Configuracoes() {
           />
           <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
             Usada no botão "Chamar" dos Indicadores e nas Oportunidades da tela inicial. Variáveis: {'{nome}'}.
+          </div>
+        </div>
+
+        <div style={s.field}>
+          <label style={s.label}>📅 Mensagem de reagendar (cancelou e não remarcou)</label>
+          <textarea
+            style={{ ...s.input, minHeight: 88, resize: 'vertical', fontFamily: 'inherit' }}
+            value={form.msg_reagendar}
+            onChange={e => setForm({ ...form, msg_reagendar: e.target.value })}
+            placeholder={MSG_REAGENDAR_PADRAO}
+          />
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+            Usada quando a cliente cancelou e não remarcou (tela inicial e Indicadores). Variáveis: {'{nome}'}.
           </div>
         </div>
       </div>
