@@ -341,12 +341,14 @@ export default function Metas() {
       const ciclo = cl?.dias_retorno || cicloPadrao
       const dias = ua ? differenceInDays(hoje, parseISO(ua)) : null
       const pendente = dias != null && dias >= ciclo
+      const voltouRecente = !!ua && !pendente
       const fut = x.id ? proximo[x.id] : null
-      if (pendente && !fut) sumiram.push({ ...x, dias })
-      else if (fut) ok.push({ ...x, tipo: 'reagendou', futData: fut.data, futHora: fut.horario })
-      else ok.push({ ...x, tipo: 'voltou', ultimo: ua })
+      // Perda = sem horário futuro E (passou do ciclo OU nunca foi atendida).
+      if (fut) ok.push({ ...x, tipo: 'reagendou', futData: fut.data, futHora: fut.horario })
+      else if (voltouRecente) ok.push({ ...x, tipo: 'voltou', ultimo: ua })
+      else sumiram.push({ ...x, dias, nunca: !ua })
     })
-    sumiram.sort((a, b) => b.dias - a.dias)
+    sumiram.sort((a, b) => (b.dias ?? -1) - (a.dias ?? -1))
     ok.sort((a, b) => (b.qtd - a.qtd) || (a.ultima < b.ultima ? 1 : -1))
 
     setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total, sumiram, ok })
@@ -518,19 +520,19 @@ export default function Metas() {
           ) : sumiram.length === 0 ? (
             <div style={s.okBanner}>🎉 Nenhuma perda — todas reagendaram ou voltaram</div>
           ) : (
-            <div style={s.drillSub}>Das {tem} que cancelaram, {sumiram.length} sumiram (não voltaram)</div>
+            <div style={s.drillSub}>Das {tem} que cancelaram, {sumiram.length} não voltaram</div>
           )}
 
           {sumiram.length > 0 && (
             <>
-              <div style={s.grupoTitulo}>⚠️ Cancelaram e sumiram ({sumiram.length})</div>
+              <div style={s.grupoTitulo}>⚠️ Cancelaram e não voltaram ({sumiram.length})</div>
               <div style={s.drillLista}>
                 {sumiram.map((cl, i) => (
                   <div key={i} style={s.drillItem}>
                     <div onClick={() => { if (cl.id) { setDrill(null); navigate(`/app/clientes/${cl.id}`) } }} style={{ flex: 1, minWidth: 0, cursor: cl.id ? 'pointer' : 'default' }}>
                       <div style={s.drillNome}>{cl.nome}{cl.id && <ChevronRight size={12} color="var(--text3)" />}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
                       <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)}</div>
-                      <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>Sem voltar há {cl.dias} dias</div>
+                      <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>{cl.nunca ? 'não remarcou' : `Sem voltar há ${cl.dias} dias`}</div>
                     </div>
                     {cl.telefone && <a style={s.waBtn} href={linkWhatsApp(cl.telefone, msgRetorno(cl.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>}
                   </div>
