@@ -285,14 +285,20 @@ export default function Metas() {
     setAtividade({ ativas, sumidas, taxa: base > 0 ? Math.round((ativas / base) * 100) : 0, sumidasLista })
   }
 
-  // 4. Taxa de cancelamento (depende de kpiMeses). Guarda também a lista de quem
-  // cancelou, agrupada por cliente, pra evidenciar reincidência (2+ cancelamentos).
-  async function loadCancelamento(mesesParam) {
+  // 4. Taxa de cancelamento (depende de kpiMeses + config). Além do número,
+  // separa quem cancelou em dois grupos: "cancelou e sumiu" (passou do ciclo de
+  // retorno E sem horário futuro marcado = perda real) vs "cancelou, mas está ok"
+  // (voltou depois ou tem horário marcado).
+  async function loadCancelamento(mesesParam, cfgParam) {
     const m = mesesParam ?? kpiMeses
-    const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
+    const c = cfgParam ?? cfg
+    const cicloPadrao = c?.dias_retorno_alerta || DIAS_RETORNO_PADRAO
+    const hoje = new Date()
+    const hojeStr = format(hoje, 'yyyy-MM-dd')
+    const inicio = format(subMonths(hoje, parseInt(m)), 'yyyy-MM-dd')
     const { data } = await supabase
       .from('agendamentos')
-      .select('status, data, clientes(id, nome, telefone)')
+      .select('status, data, servico, clientes(id, nome, telefone)')
       .eq('salao_id', salaoId)
       .in('status', ['realizado', 'cancelado'])
       .gte('data', inicio)
@@ -304,13 +310,41 @@ export default function Metas() {
       cancelados++
       const cli = a.clientes
       const key = cli?.id || `s/cad:${a.data}`
-      if (!porCliente[key]) porCliente[key] = { nome: cli?.nome || 'Sem cadastro', telefone: cli?.telefone, qtd: 0, ultima: a.data }
+      if (!porCliente[key]) porCliente[key] = { id: cli?.id || null, nome: cli?.nome || 'Sem cadastro', telefone: cli?.telefone, qtd: 0, ultima: a.data }
       porCliente[key].qtd += 1
       if (a.data > porCliente[key].ultima) porCliente[key].ultima = a.data
     })
-    const lista = Object.values(porCliente).sort((a, b) => (b.qtd - a.qtd) || (a.ultima < b.ultima ? 1 : -1))
+    const cancellers = Object.values(porCliente)
     const total = realizados + cancelados
-    setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total, lista })
+
+    // Cruzamento preciso: retorno pendente (último atendimento) + horário futuro
+    const ids = cancellers.map(x => x.id).filter(Boolean)
+    const clientesById = {}, comFuturo = new Set()
+    if (ids.length) {
+      const [{ data: cls }, { data: fut }] = await Promise.all([
+        supabase.from('clientes').select('id, ultimo_atendimento, dias_retorno').in('id', ids),
+        supabase.from('agendamentos').select('cliente_id').eq('salao_id', salaoId)
+          .in('status', ['pendente', 'confirmado']).gte('data', hojeStr).in('cliente_id', ids),
+      ])
+      ;(cls || []).forEach(cl => { clientesById[cl.id] = cl })
+      ;(fut || []).forEach(f => { if (f.cliente_id) comFuturo.add(f.cliente_id) })
+    }
+
+    const sumiram = [], ok = []
+    cancellers.forEach(x => {
+      const cl = x.id ? clientesById[x.id] : null
+      const ua = cl?.ultimo_atendimento
+      const ciclo = cl?.dias_retorno || cicloPadrao
+      const dias = ua ? differenceInDays(hoje, parseISO(ua)) : null
+      const pendente = dias != null && dias >= ciclo
+      const temFuturo = x.id ? comFuturo.has(x.id) : false
+      if (pendente && !temFuturo) sumiram.push({ ...x, dias })
+      else ok.push({ ...x, motivo: temFuturo ? 'tem horário marcado' : (ua ? 'voltou depois' : 'sem retorno pendente') })
+    })
+    sumiram.sort((a, b) => b.dias - a.dias)
+    ok.sort((a, b) => (b.qtd - a.qtd) || (a.ultima < b.ultima ? 1 : -1))
+
+    setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total, sumiram, ok })
   }
 
   // 5. Ocupação da agenda (depende de kpiMeses + config). Estimativa:
@@ -419,7 +453,7 @@ export default function Metas() {
     const cfgData = await loadConfig()
     await Promise.all([
       loadAtividade(cfgData), loadNovasKpi(),
-      loadCancelamento(), loadOcupacao(undefined, cfgData), loadPorProfissional(),
+      loadCancelamento(undefined, cfgData), loadOcupacao(undefined, cfgData), loadPorProfissional(),
     ])
     setLoadingKpi(false)
   }
@@ -468,23 +502,50 @@ export default function Metas() {
       )
     }
     if (drill.tipo === 'cancel') {
-      const lista = cancelamento?.lista || []
+      const sumiram = cancelamento?.sumiram || []
+      const ok = cancelamento?.ok || []
+      const tem = sumiram.length + ok.length
       return (
         <>
           <div style={s.infoTitulo}>Cancelamentos</div>
-          <div style={s.drillSub}>{lista.length} cliente(s) · quem cancela toda hora aparece em cima</div>
-          <div style={s.drillLista}>
-            {lista.map((c, i) => (
-              <div key={i} style={s.drillItem}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={s.drillNome}>{c.nome}{c.qtd >= 2 && <span style={s.tagReinc}>cancelou {c.qtd}×</span>}</div>
-                  <div style={s.drillMeta}>última em {ddMM(c.ultima)}</div>
-                </div>
-                {c.qtd >= 2 && c.telefone &&
-                  <a style={s.waBtnAmber} href={linkWhatsApp(c.telefone, msgSinal(c.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Pedir sinal</a>}
-              </div>
-            ))}
+          <div style={s.drillSub}>
+            {tem === 0 ? 'Sem cancelamentos no período' : `Das ${tem} que cancelaram, ${sumiram.length} sumiram (não voltaram)`}
           </div>
+
+          {sumiram.length > 0 && (
+            <>
+              <div style={s.grupoTitulo}>⚠️ Cancelaram e sumiram ({sumiram.length})</div>
+              <div style={s.drillLista}>
+                {sumiram.map((cl, i) => (
+                  <div key={i} style={s.drillItem}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.drillNome}>{cl.nome}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
+                      <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)}</div>
+                      <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>Sem voltar há {cl.dias} dias</div>
+                    </div>
+                    {cl.telefone && <a style={s.waBtn} href={linkWhatsApp(cl.telefone, msgRetorno(cl.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Chamar</a>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {ok.length > 0 && (
+            <>
+              <div style={{ ...s.grupoTitulo, marginTop: 16 }}>✅ Cancelaram, mas estão ok ({ok.length})</div>
+              <div style={s.drillLista}>
+                {ok.map((cl, i) => (
+                  <div key={i} style={s.drillItem}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.drillNome}>{cl.nome}{cl.qtd >= 2 && <span style={s.tagReinc}>cancelou {cl.qtd}×</span>}</div>
+                      <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)} · {cl.motivo}</div>
+                    </div>
+                    {cl.qtd >= 2 && cl.telefone && <a style={s.waBtnAmber} href={linkWhatsApp(cl.telefone, msgSinal(cl.nome))} target="_blank" rel="noreferrer"><MessageCircle size={13} /> Pedir sinal</a>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </>
       )
     }
@@ -1070,6 +1131,7 @@ const s = {
   verAcao: { marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 3, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit' },
   modalDrill: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 32px', width: '100%', maxWidth: 520, maxHeight: '82vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 },
   drillSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2, marginBottom: 6 },
+  grupoTitulo: { fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginTop: 8, marginBottom: 2 },
   drillLista: { display: 'flex', flexDirection: 'column' },
   drillItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid var(--border)' },
   drillItemBtn: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 0', borderTop: '1px solid var(--border)', background: 'none', border: 'none', borderTopWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' },
