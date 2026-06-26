@@ -70,8 +70,8 @@ export default function AppLayout() {
   const naoVistos = alertas.filter(a => !avisosVistos.includes(assinaturaAviso(a))).length
   // "Equipe" só faz sentido no plano Salão (logins de equipe). Solo/Pro não veem.
   const mostraEquipe = podeGerenciarEquipe && podeUsuariosAdicionais
-  const navItems = isDev ? DEV_NAV : isProfissional ? navItemsProfissional : navItemsCompleto
   const isDev = user?.email === EMAIL_DEV
+  const navItems = isDev ? DEV_NAV : isProfissional ? navItemsProfissional : navItemsCompleto
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
 
