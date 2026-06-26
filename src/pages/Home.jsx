@@ -20,11 +20,15 @@ import Skeleton from '../components/common/Skeleton'
 import OportunidadesSemana from '../components/common/OportunidadesSemana'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
 import BarChart from '../components/charts/BarChart'
+import FounderDash from './FounderDash'
 
+const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
 const DIAS_SEMANA_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Home() {
   const { user } = useAuth()
+
+  if (user?.email === EMAIL_DEV) return <FounderDash />
   const { salaoId, isProfissional, membroId, gerenciaTudo } = useSalao()
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
