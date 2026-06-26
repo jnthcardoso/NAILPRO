@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3 } from 'lucide-react'
+import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3, Phone } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { format, differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -256,19 +256,28 @@ export default function Admin() {
     const notaExiste = !!notas[u.user_id]
     const editandoEsta = notaEditando === u.user_id
 
+    const iniciais = (u.nome || u.email || '?').trim()[0].toUpperCase()
+
     return (
       <div style={s.userCard}>
         <div className="admin-user-main" style={s.userMain}>
+
+          {/* Avatar */}
+          <div style={s.userAvatar}>{iniciais}</div>
+
           <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Nome + coroa + nota */}
             <div style={s.userNome}>
               {u.nome || u.email?.split('@')[0]}
               {['pro', 'salao'].includes(u.assinatura_plano) && u.assinatura_status === 'active' && (
-                <Crown size={13} color="var(--gold, #D4AF37)" style={{ marginLeft: 6 }} />
+                <Crown size={12} color="var(--gold, #D4AF37)" style={{ marginLeft: 5 }} />
               )}
               {notaExiste && (
-                <StickyNote size={11} color="#D4AF37" style={{ marginLeft: 5 }} title="Tem nota interna" />
+                <StickyNote size={10} color="#D4AF37" style={{ marginLeft: 4 }} title="Tem nota interna" />
               )}
             </div>
+
+            {/* Email + cortesia */}
             <div style={s.userEmail}>
               {u.email}
               {u.cortesia && (
@@ -277,18 +286,37 @@ export default function Admin() {
                 </span>
               )}
             </div>
-            {u.nome_salao && <div style={s.userSalao}>🏪 {u.nome_salao}</div>}
-            <div style={s.userMeta}>
-              📅 {format(new Date(u.user_created_at), "dd/MM/yyyy", { locale: ptBR })}
-              {' · '}⏱ {diasCadastro}d desde cadastro
-              {u.whatsapp && <> · 📱 {u.whatsapp}</>}
-              {' · '}👥 {u.total_clientes} clientes
+
+            {/* Salão */}
+            {u.nome_salao && (
+              <div style={s.userSalao}>{u.nome_salao}</div>
+            )}
+
+            {/* Chips: data, dias, clientes, WhatsApp */}
+            <div style={s.userChips}>
+              <span style={s.chip}><Calendar size={9} /> {format(new Date(u.user_created_at), "dd/MM/yy", { locale: ptBR })}</span>
+              <span style={s.chip}><Clock size={9} /> {diasCadastro}d</span>
+              <span style={s.chip}><Users size={9} /> {u.total_clientes} clientes</span>
+              {u.whatsapp && (
+                <a
+                  href={`https://api.whatsapp.com/send?phone=55${u.whatsapp.replace(/\D/g, '')}`}
+                  target="_blank" rel="noreferrer"
+                  style={{ ...s.chip, ...s.chipWa }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Phone size={9} /> {u.whatsapp}
+                </a>
+              )}
             </div>
+
+            {/* Acesso */}
             <div style={s.userAcesso}>
               <span title="Último login na plataforma"><LogIn size={10} style={{ verticalAlign: -1 }} /> {quando(u.ultimo_acesso) || 'nunca acessou'}</span>
-              {' · '}
-              <span title="Última ação nos dados (agendamento, pagamento, cliente...)"><Activity size={10} style={{ verticalAlign: -1 }} /> ativo {quando(u.ultima_atividade) || '—'}</span>
+              <span style={{ color: 'var(--border2)' }}>·</span>
+              <span title="Última ação nos dados"><Activity size={10} style={{ verticalAlign: -1 }} /> ativo {quando(u.ultima_atividade) || '—'}</span>
             </div>
+
+            {/* Indicação */}
             {u.indicado_por && (
               <div style={s.indicadoTag} title="Quem indicou esta conta (programa de indicação)">
                 🎁 Indicada por: <strong>{u.indicado_por}</strong>
@@ -296,6 +324,7 @@ export default function Admin() {
             )}
           </div>
 
+          {/* Direita: status + plano + dias + menu */}
           <div className="admin-user-right" style={s.userRight}>
             <span style={{ ...s.statusBadge, background: st.bg, color: st.color }}>{st.label}</span>
             <div style={s.planoTexto}>
@@ -318,11 +347,11 @@ export default function Admin() {
                 </div>
               )
             )}
+            <button style={s.menuBtn} onClick={() => setAcaoUserId(aberto ? null : u.user_id)}>
+              <MoreVertical size={16} />
+            </button>
           </div>
 
-          <button style={s.menuBtn} onClick={() => setAcaoUserId(aberto ? null : u.user_id)}>
-            <MoreVertical size={16} />
-          </button>
         </div>
 
         {/* Nota interna (exibição) */}
@@ -417,16 +446,16 @@ export default function Admin() {
     <div style={s.page}>
 
       {/* Header */}
-      <div style={s.header}>
+      <div style={s.headerBand}>
         <div style={s.headerLeft}>
-          <div style={s.iconBox}><Shield size={22} color="white" /></div>
+          <div style={s.iconBox}><Shield size={20} color="white" /></div>
           <div>
             <h1 style={s.title}>Admin</h1>
             <p style={s.sub}>Gerenciamento de assinaturas</p>
           </div>
         </div>
         <button style={s.refreshBtn} onClick={load} title="Atualizar">
-          <RefreshCw size={16} />
+          <RefreshCw size={15} />
         </button>
       </div>
 
@@ -446,7 +475,7 @@ export default function Admin() {
           <div style={s.statLabel}>Em trial</div>
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid var(--gold, #D4AF37)' }}>
-          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)' }}>
+          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)', fontSize: 16 }}>
             {formatBRL(stats.mrrCentavos / 100)}
           </div>
           <div style={s.statLabel}>MRR</div>
@@ -599,13 +628,13 @@ export default function Admin() {
 
 const s = {
   page: { padding: 20, paddingBottom: 80 },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
+  headerBand: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', borderRadius: 14, padding: '14px 16px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' },
   headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
-  iconBox: { width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #1F2937 0%, #4B5563 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  title: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0 },
-  sub: { fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' },
-  refreshBtn: { width: 36, height: 36, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text2)' },
-  stats: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 },
+  iconBox: { width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  title: { fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 18, fontWeight: 800, color: '#FFFFFF', margin: 0 },
+  sub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' },
+  refreshBtn: { width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' },
+  stats: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 },
   statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' },
   statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
   statLabel: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
@@ -627,12 +656,15 @@ const s = {
   /* Cards */
   userCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 14, marginBottom: 8, boxShadow: 'var(--shadow-xs)' },
   userMain: { display: 'flex', alignItems: 'flex-start', gap: 10 },
+  userAvatar: { width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg, var(--pink) 0%, #C2410C 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, flexShrink: 0 },
   userNome: { fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 },
-  userEmail: { fontSize: 12, color: 'var(--text2)', marginTop: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5 },
+  userEmail: { fontSize: 11, color: 'var(--text3)', marginTop: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5 },
   cortesiaTag: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, color: '#6D28D9', background: '#F5F3FF', border: '1px solid #C4B5FD', borderRadius: 'var(--radius-pill)', padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  userSalao: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
-  userMeta: { fontSize: 10, color: 'var(--text3)', marginTop: 4, lineHeight: 1.6 },
-  userAcesso: { fontSize: 10, color: 'var(--text2)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', fontWeight: 600 },
+  userSalao: { fontSize: 11, color: 'var(--text2)', marginTop: 3, fontWeight: 600 },
+  userChips: { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 7 },
+  chip: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: 'var(--text3)', background: 'var(--surface2, rgba(0,0,0,0.04))', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '2px 7px', textDecoration: 'none' },
+  chipWa: { color: '#15803D', background: '#F0FDF4', borderColor: '#86EFAC' },
+  userAcesso: { fontSize: 10, color: 'var(--text3)', marginTop: 5, display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' },
   indicadoTag: { display: 'inline-block', marginTop: 5, fontSize: 11, color: '#6D28D9', background: '#F5F3FF', border: '1px solid #C4B5FD', borderRadius: 'var(--radius-pill)', padding: '2px 9px' },
   /* Feed de atividade */
   ativModal: { background: 'var(--surface)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 460, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' },
@@ -645,10 +677,10 @@ const s = {
   ativDesc: { fontSize: 13, color: 'var(--text)', fontWeight: 500, lineHeight: 1.35 },
   ativQuando: { fontSize: 10.5, color: 'var(--text3)', marginTop: 2 },
   ativVazio: { textAlign: 'center', padding: '32px 0', color: 'var(--text3)', fontSize: 13 },
-  userRight: { textAlign: 'right', flexShrink: 0 },
+  userRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 },
   statusBadge: { fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 'var(--radius-pill)', whiteSpace: 'nowrap' },
-  planoTexto: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, marginTop: 4, color: 'var(--text2)' },
-  menuBtn: { background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text3)', flexShrink: 0 },
+  planoTexto: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: 'var(--text2)' },
+  menuBtn: { background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text3)', marginTop: 4 },
   /* Ações */
   acoes: { marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border)' },
   acoesGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 },
