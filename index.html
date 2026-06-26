@@ -63,6 +63,41 @@
 
     <title>lumen. | iluminando a gestão, impulsionando o seu talento</title>
 
+    <!-- CSS crítico inline: variáveis + reset + base — garante first paint sem bloquear -->
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --pink: #8B2655; --pink-rgb: 139,38,85; --pink-dark: #5E1839;
+        --pink-bright: #C73B6F; --pink-light: #FAF6F6; --pink-mid: #D9A0B8;
+        --rose: #B34678; --whatsapp: #25D366; --gold: #E6C260;
+        --brand-dark-bg: #170D14; --green: #15803D; --green-bg: #DCFCE7;
+        --amber: #92400E; --amber-bg: #FEF3C7; --red: #B91C1C; --red-bg: #FEE2E2;
+        --purple: #5B21B6; --purple-bg: #EDE9FE; --bg: #FAF6F6;
+        --surface: #FFFFFF; --surface2: #F5EDF2; --border: #EAD5E2;
+        --border2: #D8B5C8; --text: #180712; --text2: #4A2438; --text3: #8B6070;
+        --font: 'Plus Jakarta Sans', sans-serif;
+        --font-display: 'Cormorant Garamond', serif;
+        --font-mono: 'JetBrains Mono', monospace;
+        --radius: 14px; --radius-sm: 10px; --radius-pill: 100px;
+        --nav-height: 64px; --sidebar-width: 244px;
+        --shadow-xs: 0 1px 3px rgba(24,7,18,0.05);
+        --shadow-sm: 0 2px 8px rgba(24,7,18,0.07), 0 1px 3px rgba(24,7,18,0.04);
+        --shadow-md: 0 4px 16px rgba(24,7,18,0.09), 0 2px 6px rgba(24,7,18,0.05);
+        --shadow-pink: 0 4px 18px rgba(139,38,85,0.22);
+        --shadow-gold: 0 4px 18px rgba(230,194,96,0.18);
+        --transition: all 0.22s cubic-bezier(0.16,1,0.3,1);
+      }
+      html, body, #root {
+        height: 100%; width: 100%; max-width: 100%;
+        overflow-x: hidden; font-family: var(--font);
+        background: var(--bg); color: var(--text);
+        -webkit-font-smoothing: antialiased;
+      }
+      button { font-family: var(--font); cursor: pointer; border: none; }
+      input, select, textarea { font-family: var(--font); }
+      a { text-decoration: none; color: inherit; }
+    </style>
+
     <!-- ═══════════════════════════════════════════════════
          SCHEMA.ORG — Dados estruturados para o Google
          SoftwareApplication + FAQPage + Organization
