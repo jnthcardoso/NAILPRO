@@ -1,8 +1,12 @@
-# Lumen — Gestão para Nail Designers e Salões de Beleza
+# Lumen
 
-Lumen é um SaaS de gestão voltado para nail designers autônomas e salões de beleza no Brasil.
+> App de gestão para nail designers e salões de beleza no Brasil. Agenda online, controle financeiro, lembretes no WhatsApp e gestão de equipe — tudo num só lugar.
 
-## O que o Lumen oferece
+## Produto
+
+Lumen é um SaaS voltado para nail designers autônomas e salões de beleza que precisam organizar agenda, finanças e clientes sem complicação.
+
+## Funcionalidades
 
 - Agenda online com link próprio para a cliente marcar sozinha
 - Controle financeiro com DRE, fluxo de caixa e contas a pagar
@@ -20,10 +24,10 @@ Lumen é um SaaS de gestão voltado para nail designers autônomas e salões de 
 - **Pro** — para profissionais que querem agenda online e recursos avançados
 - **Salão** — para salões com múltiplos profissionais
 
-## Público-alvo
+## Páginas principais
 
-Nail designers, manicures, proprietárias de estúdios de unhas e salões de beleza no Brasil.
-
-## URL
-
-https://lumengestaoempresarial.com.br/
+- [Página inicial](https://lumengestaoempresarial.com.br/)
+- [Planos e preços](https://lumengestaoempresarial.com.br/planos)
+- [Entrar / Cadastrar](https://lumengestaoempresarial.com.br/login)
+- [Termos de uso](https://lumengestaoempresarial.com.br/termos)
+- [Política de privacidade](https://lumengestaoempresarial.com.br/privacidade)
