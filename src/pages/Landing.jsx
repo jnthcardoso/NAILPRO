@@ -199,6 +199,7 @@ export default function Landing() {
         )}
       </header>
 
+      <main>
       {/* Hero */}
       <section id="inicio" style={s.hero}>
         <div className="hero-inner">
@@ -381,6 +382,8 @@ export default function Landing() {
           <button style={{ ...s.ctaGhost, color: BERRY, borderColor: BERRY, background: 'transparent' }} onClick={() => scrollTo('planos')}>Ver planos</button>
         </div>
       </section>
+
+      </main>
 
       {/* Footer / Contato */}
       <footer id="contato" style={s.footer}>
