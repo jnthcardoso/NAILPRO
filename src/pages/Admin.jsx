@@ -464,7 +464,6 @@ export default function Admin() {
         <div style={s.statCard}>
           <div style={s.statValor}>{stats.total}</div>
           <div style={s.statLabel}>Total</div>
-          <div style={s.statSubPlaceholder} />
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid #15803D' }}>
           <div style={{ ...s.statValor, color: '#15803D' }}>{stats.ativas}</div>
@@ -474,14 +473,12 @@ export default function Admin() {
         <div style={{ ...s.statCard, borderTop: '3px solid #1E40AF' }}>
           <div style={{ ...s.statValor, color: '#1E40AF' }}>{stats.trial}</div>
           <div style={s.statLabel}>Em trial</div>
-          <div style={s.statSubPlaceholder} />
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid var(--gold, #D4AF37)' }}>
-          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)', fontSize: 14 }}>
+          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)' }}>
             {formatBRL(stats.mrrCentavos / 100)}
           </div>
           <div style={s.statLabel}>MRR</div>
-          <div style={s.statSubPlaceholder} />
         </div>
         <div
           style={{ ...s.statCard, borderTop: '3px solid #C2410C', cursor: stats.aRenovar > 0 ? 'pointer' : 'default' }}
@@ -490,7 +487,6 @@ export default function Admin() {
         >
           <div style={{ ...s.statValor, color: stats.aRenovar > 0 ? '#C2410C' : 'var(--text3)' }}>{stats.aRenovar}</div>
           <div style={s.statLabel}>A renovar</div>
-          <div style={s.statSubPlaceholder} />
         </div>
       </div>
 
@@ -615,8 +611,8 @@ const s = {
   sub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' },
   refreshBtn: { width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' },
   stats: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 },
-  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 76 },
-  statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
+  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' },
+  statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, lineHeight: 1 },
   statLabel: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
   statSub: { fontSize: 9, color: '#6D28D9', marginTop: 3, fontWeight: 700 },
   statSubPlaceholder: { height: 12, marginTop: 3 },
