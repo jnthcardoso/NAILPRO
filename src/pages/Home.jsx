@@ -62,6 +62,9 @@ export default function Home() {
   const [lembretesPendentes, setLembretesPendentes] = useState(0)
   const [contasAPagar, setContasAPagar] = useState({ qtd: 0, total: 0, vencidas: 0 })
   const [pedidosPublicos, setPedidosPublicos] = useState(0)
+  const [modalPedidos, setModalPedidos] = useState(false)
+  const [pedidosList, setPedidosList] = useState([])
+  const [loadingPedidos, setLoadingPedidos] = useState(false)
   const [receita7Dias, setReceita7Dias] = useState([])
   const [diaTop, setDiaTop] = useState(null) // { dia: 4 (qui), valor: 1200 }
   const [diasFuncionamento, setDiasFuncionamento] = useState([1, 2, 3, 4, 5]) // dias úteis do salão (p/ a meta bater com o módulo Metas)
@@ -301,6 +304,32 @@ export default function Home() {
 
   }
 
+  async function loadPedidos() {
+    setLoadingPedidos(true)
+    const hoje = format(new Date(), 'yyyy-MM-dd')
+    let q = supabase.from('agendamentos')
+      .select('*, clientes(nome, telefone)')
+      .eq('salao_id', salaoId)
+      .eq('origem', 'publica').eq('status', 'pendente').gte('data', hoje)
+      .order('data').order('horario')
+    if (isProfissional && membroId) q = q.eq('profissional_id', membroId)
+    const { data } = await q
+    setPedidosList(data || [])
+    setLoadingPedidos(false)
+  }
+
+  async function confirmarPedido(id) {
+    await supabase.from('agendamentos').update({ status: 'confirmado' }).eq('id', id)
+    setPedidosList(l => l.filter(a => a.id !== id))
+    setPedidosPublicos(n => Math.max(0, n - 1))
+  }
+
+  async function recusarPedido(id) {
+    await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id)
+    setPedidosList(l => l.filter(a => a.id !== id))
+    setPedidosPublicos(n => Math.max(0, n - 1))
+  }
+
   async function loadAgendamentosData() {
     const { data } = await supabase.from('agendamentos')
       .select('*, clientes(nome)').eq('salao_id', salaoId).eq('data', dataFiltro)
@@ -386,7 +415,7 @@ export default function Home() {
 
       {/* Chip de pedidos do link público aguardando confirmação */}
       {!loading && pedidosPublicos > 0 && (
-        <div style={s.pedidoChip} onClick={() => navigate('/app/agenda')}>
+        <div style={s.pedidoChip} onClick={() => { setModalPedidos(true); loadPedidos() }}>
           <div style={s.pedidoChipIcon}><Calendar size={16} color="white" /></div>
           <div style={{ flex: 1 }}>
             <div style={s.pedidoChipTitle}>
@@ -697,6 +726,58 @@ export default function Home() {
       )}
       {/* ════ Fim do grid 3 colunas ════ */}
 
+      {/* Modal de pedidos do link público */}
+      {modalPedidos && (
+        <div style={s.modalOverlay} onClick={() => setModalPedidos(false)}>
+          <div style={s.modalBox} onClick={e => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <div style={s.modalTitle}>
+                <Calendar size={18} color="var(--pink)" />
+                Pedidos pelo link
+              </div>
+              <button style={s.modalClose} onClick={() => setModalPedidos(false)}>×</button>
+            </div>
+
+            {loadingPedidos ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
+                Carregando...
+              </div>
+            ) : pedidosList.length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
+                Nenhum pedido pendente
+              </div>
+            ) : (
+              <div style={s.modalList}>
+                {pedidosList.map(ped => (
+                  <div key={ped.id} style={s.pedidoItem}>
+                    <div style={s.pedidoInfo}>
+                      <div style={s.pedidoNome}>{ped.clientes?.nome || 'Cliente'}</div>
+                      <div style={s.pedidoDetalhe}>
+                        {format(new Date(ped.data + 'T12:00:00'), "EEE, dd/MM", { locale: ptBR })}
+                        {' às '}{ped.horario?.slice(0, 5)}
+                        {' · '}{ped.servico}
+                        {ped.valor > 0 && ` · ${formatBRL(ped.valor)}`}
+                      </div>
+                      {ped.clientes?.telefone && (
+                        <div style={s.pedidoTel}>{ped.clientes.telefone}</div>
+                      )}
+                    </div>
+                    <div style={s.pedidoBtns}>
+                      <button style={s.btnConfirmar} onClick={() => confirmarPedido(ped.id)}>
+                        ✓ Confirmar
+                      </button>
+                      <button style={s.btnRecusar} onClick={() => recusarPedido(ped.id)}>
+                        Recusar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <button className="fab-btn" onClick={() => navigate('/app/agenda')} aria-label="Novo agendamento">
         <Plus size={22} color="white" />
       </button>
@@ -820,6 +901,22 @@ const s = {
   contaChipIcon: { width: 34, height: 34, borderRadius: '50%', background: '#B91C1C', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   contaChipTitle: { fontSize: 13, fontWeight: 700, color: '#7F1D1D' },
   contaChipSub: { fontSize: 11, color: '#991B1B', marginTop: 1 },
+
+  /* ─── Modal pedidos do link público ─── */
+  modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  modalBox: { background: 'var(--surface)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 -4px 32px rgba(0,0,0,0.18)' },
+  modalHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: '1px solid var(--border)', flexShrink: 0 },
+  modalTitle: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: 'var(--text)' },
+  modalClose: { background: 'transparent', border: 'none', fontSize: 24, color: 'var(--text3)', cursor: 'pointer', lineHeight: 1, padding: '0 2px', fontFamily: 'inherit' },
+  modalList: { overflowY: 'auto', flex: 1 },
+  pedidoItem: { padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 },
+  pedidoInfo: {},
+  pedidoNome: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
+  pedidoDetalhe: { fontSize: 12, color: 'var(--text2)', marginTop: 3, textTransform: 'capitalize' },
+  pedidoTel: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
+  pedidoBtns: { display: 'flex', gap: 8 },
+  btnConfirmar: { flex: 1, background: '#15803D', color: 'white', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  btnRecusar: { flex: 1, background: 'transparent', color: 'var(--text2)', border: '1px solid var(--border2)', borderRadius: 8, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
 
   /* ─── Welcome (conta nova) ─── */
   welcomeCard: { background: 'linear-gradient(135deg, var(--pink-light) 0%, #FFF0F5 100%)', border: '1px solid var(--pink-mid)', borderRadius: 'var(--radius-sm)', padding: '16px', marginBottom: 18, boxShadow: 'var(--shadow-sm)' },
