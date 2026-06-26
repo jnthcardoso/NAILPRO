@@ -11,8 +11,10 @@ import { useAvisos } from '../../hooks/useAvisos'
 const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
 
 const DEV_NAV = [
-  { to: '/app/dev/pipeline', icon: Filter,         label: 'Pipeline' },
-  { to: '/app/dev/alertas',  icon: Bell,           label: 'Alertas'  },
+  { to: '/app',              icon: Home,           label: 'Início',   exact: true, primary: true },
+  { to: '/app/admin',        icon: Shield,         label: 'Admin',                primary: true },
+  { to: '/app/dev/pipeline', icon: Filter,         label: 'Pipeline',             primary: true },
+  { to: '/app/dev/alertas',  icon: Bell,           label: 'Alertas',              primary: true },
   { to: '/app/dev/feed',     icon: Rss,            label: 'Feed'     },
   { to: '/app/dev/crm',      icon: MessageCircle,  label: 'CRM'      },
 ]
@@ -68,7 +70,7 @@ export default function AppLayout() {
   const naoVistos = alertas.filter(a => !avisosVistos.includes(assinaturaAviso(a))).length
   // "Equipe" só faz sentido no plano Salão (logins de equipe). Solo/Pro não veem.
   const mostraEquipe = podeGerenciarEquipe && podeUsuariosAdicionais
-  const navItems = isProfissional ? navItemsProfissional : navItemsCompleto
+  const navItems = isDev ? DEV_NAV : isProfissional ? navItemsProfissional : navItemsCompleto
   const isDev = user?.email === EMAIL_DEV
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
@@ -105,13 +107,14 @@ export default function AppLayout() {
 
   // Barra inferior: itens fixos + tudo que sobra vai pro menu "Mais"
   const primaryItems = navItems.filter(i => i.primary)
-  const maisItems = [
-    ...navItems.filter(i => !i.primary),
-    ...(isAdmin ? [{ to: '/app/admin', icon: Shield, label: 'Admin' }] : []),
-    ...(mostraEquipe ? [{ to: '/app/equipe', icon: UsersRound, label: 'Equipe' }] : []),
-    ...(gerenciaTudo ? [{ to: '/app/configuracoes', icon: Settings, label: 'Configurações' }] : []),
-    ...(isDev ? DEV_NAV : []),
-  ]
+  const maisItems = isDev
+    ? DEV_NAV.filter(i => !i.primary)
+    : [
+        ...navItems.filter(i => !i.primary),
+        ...(isAdmin ? [{ to: '/app/admin', icon: Shield, label: 'Admin' }] : []),
+        ...(mostraEquipe ? [{ to: '/app/equipe', icon: UsersRound, label: 'Equipe' }] : []),
+        ...(gerenciaTudo ? [{ to: '/app/configuracoes', icon: Settings, label: 'Configurações' }] : []),
+      ]
   const maisAtivo = maisItems.some(i => isActive(i.to, i.exact))
 
   return (
@@ -181,7 +184,7 @@ export default function AppLayout() {
         <div style={{ flex: 1 }} />
         
         <div style={{ padding: isSidebarCollapsed ? '0 12px 12px' : '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {isAdmin && (
+          {isAdmin && !isDev && (
             <NavLink
               to="/app/admin"
               style={{
@@ -194,28 +197,6 @@ export default function AppLayout() {
               <Shield size={19} strokeWidth={isActive('/app/admin') ? 2.5 : 1.8} />
               {!isSidebarCollapsed && <span>Admin</span>}
             </NavLink>
-          )}
-          {isDev && (
-            <>
-              {!isSidebarCollapsed && (
-                <div style={sb.devDivider}>DEV</div>
-              )}
-              {DEV_NAV.map(({ to, icon: Icon, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  style={{
-                    ...sb.navItem,
-                    ...(isActive(to) ? sb.navItemActive : {}),
-                    ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
-                  }}
-                  title={isSidebarCollapsed ? label : undefined}
-                >
-                  <Icon size={19} strokeWidth={isActive(to) ? 2.5 : 1.8} />
-                  {!isSidebarCollapsed && <span>{label}</span>}
-                </NavLink>
-              ))}
-            </>
           )}
           {mostraEquipe && (
             <NavLink

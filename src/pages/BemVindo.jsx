@@ -198,7 +198,11 @@ export default function BemVindo() {
               <button style={s.btnGhost} onClick={() => setStep(1)}>
                 <ChevronLeft size={16} /> Voltar
               </button>
-              <button style={s.btnPrimary} onClick={() => setStep(3)}>
+              <button
+                style={{ ...s.btnPrimary, opacity: form.whatsapp.replace(/\D/g,'').length >= 10 ? 1 : 0.5 }}
+                onClick={() => form.whatsapp.replace(/\D/g,'').length >= 10 && setStep(3)}
+                disabled={form.whatsapp.replace(/\D/g,'').length < 10}
+              >
                 Continuar <ChevronRight size={16} />
               </button>
             </div>
