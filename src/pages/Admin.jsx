@@ -477,7 +477,7 @@ export default function Admin() {
           <div style={s.statSubPlaceholder} />
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid var(--gold, #D4AF37)' }}>
-          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)', fontSize: 17 }}>
+          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)', fontSize: 14 }}>
             {formatBRL(stats.mrrCentavos / 100)}
           </div>
           <div style={s.statLabel}>MRR</div>
@@ -494,7 +494,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Abas + Filtros na mesma linha */}
+      {/* Abas + barra de busca na mesma linha */}
       <div style={s.abasRow}>
         <button style={{ ...s.aba, ...(aba === 'assinaturas' ? s.abaAtiva : {}) }} onClick={() => setAba('assinaturas')}>
           <Shield size={13} /> Assinaturas
@@ -504,12 +504,26 @@ export default function Admin() {
           {stats.inativos > 0 && <span style={s.abaBadge}>{stats.inativos}</span>}
         </button>
         {aba === 'assinaturas' && (
-          <>
-            <div style={s.abasDivisor} />
+          <div style={s.searchBar}>
+            <Search size={14} color="var(--text3)" />
+            <input
+              style={s.searchInput}
+              placeholder="Buscar por email, nome ou salão..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── ABA: Assinaturas ── */}
+      {aba === 'assinaturas' && (
+        <>
+          <div style={s.filtros}>
             {[
               { id: 'todos', label: 'Todos' },
               { id: 'active', label: 'Ativas' },
-              { id: 'renovar', label: `🔔 ${stats.aRenovar > 0 ? stats.aRenovar : ''}` },
+              { id: 'renovar', label: `🔔 A renovar${stats.aRenovar > 0 ? ` (${stats.aRenovar})` : ''}` },
               { id: 'pending', label: 'Aguardando' },
               { id: 'trialing', label: 'Trial' },
               { id: 'canceled', label: 'Canceladas' },
@@ -519,21 +533,6 @@ export default function Admin() {
                 {f.label}
               </button>
             ))}
-          </>
-        )}
-      </div>
-
-      {/* ── ABA: Assinaturas ── */}
-      {aba === 'assinaturas' && (
-        <>
-          <div style={s.searchBar}>
-            <Search size={16} color="var(--text3)" />
-            <input
-              style={s.searchInput}
-              placeholder="Buscar por email, nome ou salão..."
-              value={busca}
-              onChange={e => setBusca(e.target.value)}
-            />
           </div>
 
           <div style={s.listaTitulo}>
@@ -616,22 +615,23 @@ const s = {
   sub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' },
   refreshBtn: { width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' },
   stats: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 },
-  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 8px 8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' },
-  statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1, marginTop: 2 },
+  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 76 },
+  statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
   statLabel: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
-  statSub: { fontSize: 9, color: '#6D28D9', marginTop: 2, fontWeight: 700, minHeight: 13 },
-  statSubPlaceholder: { minHeight: 13, marginTop: 2 },
+  statSub: { fontSize: 9, color: '#6D28D9', marginTop: 3, fontWeight: 700 },
+  statSubPlaceholder: { height: 12, marginTop: 3 },
   /* Abas + filtros */
   abasRow: { display: 'flex', alignItems: 'center', gap: 5, marginBottom: 14, flexWrap: 'wrap' },
   abasDivisor: { width: 1, height: 18, background: 'var(--border2)', margin: '0 3px', flexShrink: 0 },
   aba: { display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', position: 'relative' },
   abaAtiva: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)' },
   abaBadge: { background: '#FEE2E2', color: '#B91C1C', borderRadius: '999px', fontSize: 10, fontWeight: 700, padding: '1px 6px', marginLeft: 2 },
-  filtroMini: { padding: '5px 9px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  filtros: { display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' },
+  filtroMini: { padding: '5px 10px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   /* Info inativos */
   inativoInfo: { display: 'flex', alignItems: 'flex-start', gap: 7, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', marginBottom: 12, fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 },
   /* Busca e filtros */
-  searchBar: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', marginBottom: 10, boxShadow: 'var(--shadow-xs)' },
+  searchBar: { flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '7px 13px', boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   filtroBtnActive: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)' },
   listaTitulo: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 },
