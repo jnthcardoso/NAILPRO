@@ -172,7 +172,7 @@ export default function Landing() {
           </div>
 
           {/* Hamburger — mobile */}
-          <button style={s.hamburger} className="lp-hamburger" onClick={() => setMenuAberto(v => !v)}>
+          <button style={s.hamburger} className="lp-hamburger" onClick={() => setMenuAberto(v => !v)} aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuAberto}>
             {menuAberto ? <X size={22} color="white" /> : <Menu size={22} color="white" />}
           </button>
         </div>
