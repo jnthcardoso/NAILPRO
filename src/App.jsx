@@ -20,6 +20,10 @@ const Lembretes = lazy(() => import('./pages/Lembretes'))
 const Planos = lazy(() => import('./pages/Planos'))
 const MinhasConfiguracoes = lazy(() => import('./pages/MinhasConfiguracoes'))
 const Admin = lazy(() => import('./pages/Admin'))
+const DevPipeline = lazy(() => import('./pages/DevPipeline'))
+const DevAlertas = lazy(() => import('./pages/DevAlertas'))
+const DevFeed = lazy(() => import('./pages/DevFeed'))
+const DevCRM = lazy(() => import('./pages/DevCRM'))
 const Equipe = lazy(() => import('./pages/Equipe'))
 const Avisos = lazy(() => import('./pages/Avisos'))
 const Termos = lazy(() => import('./pages/Termos'))
@@ -157,6 +161,10 @@ export default function App() {
               <Route path="minhas-configuracoes" element={<RequireProfissional><MinhasConfiguracoes /></RequireProfissional>} />
               <Route path="equipe" element={<Equipe />} />
               <Route path="admin" element={<Admin />} />
+              <Route path="dev/pipeline" element={<DevPipeline />} />
+              <Route path="dev/alertas" element={<DevAlertas />} />
+              <Route path="dev/feed" element={<DevFeed />} />
+              <Route path="dev/crm" element={<DevCRM />} />
               <Route path="avisos" element={<Avisos />} />
             </Route>
           </Routes>

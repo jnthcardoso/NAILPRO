@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X, Filter, Rss, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin, useAssinatura } from '../../contexts/AssinaturaContext'
 import { useSalao } from '../../contexts/SalaoContext'
 import { LumenLogo, LumenFlameIcon } from '../common/Brand'
 import { useAvisos } from '../../hooks/useAvisos'
+
+const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
+
+const DEV_NAV = [
+  { to: '/app/dev/pipeline', icon: Filter,         label: 'Pipeline' },
+  { to: '/app/dev/alertas',  icon: Bell,           label: 'Alertas'  },
+  { to: '/app/dev/feed',     icon: Rss,            label: 'Feed'     },
+  { to: '/app/dev/crm',      icon: MessageCircle,  label: 'CRM'      },
+]
 
 const AVISOS_VISTOS_KEY = 'avisos_vistos'
 function lerAvisosVistos() {
@@ -60,6 +69,7 @@ export default function AppLayout() {
   // "Equipe" só faz sentido no plano Salão (logins de equipe). Solo/Pro não veem.
   const mostraEquipe = podeGerenciarEquipe && podeUsuariosAdicionais
   const navItems = isProfissional ? navItemsProfissional : navItemsCompleto
+  const isDev = user?.email === EMAIL_DEV
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
   const avatarUrl = user?.user_metadata?.avatar_url
 
@@ -100,6 +110,7 @@ export default function AppLayout() {
     ...(isAdmin ? [{ to: '/app/admin', icon: Shield, label: 'Admin' }] : []),
     ...(mostraEquipe ? [{ to: '/app/equipe', icon: UsersRound, label: 'Equipe' }] : []),
     ...(gerenciaTudo ? [{ to: '/app/configuracoes', icon: Settings, label: 'Configurações' }] : []),
+    ...(isDev ? DEV_NAV : []),
   ]
   const maisAtivo = maisItems.some(i => isActive(i.to, i.exact))
 
@@ -183,6 +194,28 @@ export default function AppLayout() {
               <Shield size={19} strokeWidth={isActive('/app/admin') ? 2.5 : 1.8} />
               {!isSidebarCollapsed && <span>Admin</span>}
             </NavLink>
+          )}
+          {isDev && (
+            <>
+              {!isSidebarCollapsed && (
+                <div style={sb.devDivider}>DEV</div>
+              )}
+              {DEV_NAV.map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  style={{
+                    ...sb.navItem,
+                    ...(isActive(to) ? sb.navItemActive : {}),
+                    ...(isSidebarCollapsed ? { justifyContent: 'center', padding: '9px 0' } : {})
+                  }}
+                  title={isSidebarCollapsed ? label : undefined}
+                >
+                  <Icon size={19} strokeWidth={isActive(to) ? 2.5 : 1.8} />
+                  {!isSidebarCollapsed && <span>{label}</span>}
+                </NavLink>
+              ))}
+            </>
           )}
           {mostraEquipe && (
             <NavLink
@@ -372,6 +405,7 @@ const sb = {
   navBadge: { marginLeft: 'auto', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   navBadgeCollapsed: { position: 'absolute', top: 2, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 8, background: '#EF4444', color: 'white', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   sairBtn: { background: 'transparent', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left', color: 'rgba(255, 100, 100, 0.75)' },
+  devDivider: { fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', padding: '8px 14px 2px', textTransform: 'uppercase' },
   // Sem `display` aqui de propósito: quem controla é o CSS (.sidebar-toggle-float),
   // que esconde no celular (display:none) e mostra no desktop (display:flex).
   // Se puser display:flex inline, ele vence o CSS e o botão vaza pro celular.

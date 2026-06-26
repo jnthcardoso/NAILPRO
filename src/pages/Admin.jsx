@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3, Filter, Bell, Rss, MessageCircle } from 'lucide-react'
+import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { format, differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -9,10 +9,6 @@ import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { formatBRL } from '../lib/formatters'
 import AdminRelatorios from './AdminRelatorios'
-import AdminPipeline from './admin/AdminPipeline'
-import AdminAlertas from './admin/AdminAlertas'
-import AdminFeed from './admin/AdminFeed'
-import AdminCRM from './admin/AdminCRM'
 
 // Relatórios são exclusivos da conta de desenvolvedor (mesmo outros admins não veem).
 const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
@@ -491,38 +487,6 @@ export default function Admin() {
             <BarChart3 size={13} /> Relatórios
           </button>
         )}
-        {isDev && (
-          <button
-            style={{ ...s.aba, ...(aba === 'pipeline' ? s.abaAtiva : {}) }}
-            onClick={() => setAba('pipeline')}
-          >
-            <Filter size={13} /> Pipeline
-          </button>
-        )}
-        {isDev && (
-          <button
-            style={{ ...s.aba, ...(aba === 'alertas' ? s.abaAtiva : {}) }}
-            onClick={() => setAba('alertas')}
-          >
-            <Bell size={13} /> Alertas
-          </button>
-        )}
-        {isDev && (
-          <button
-            style={{ ...s.aba, ...(aba === 'feed' ? s.abaAtiva : {}) }}
-            onClick={() => setAba('feed')}
-          >
-            <Rss size={13} /> Feed
-          </button>
-        )}
-        {isDev && (
-          <button
-            style={{ ...s.aba, ...(aba === 'crm' ? s.abaAtiva : {}) }}
-            onClick={() => setAba('crm')}
-          >
-            <MessageCircle size={13} /> CRM
-          </button>
-        )}
       </div>
 
       {/* ── ABA: Assinaturas ── */}
@@ -592,24 +556,6 @@ export default function Admin() {
       {/* ── ABA: Relatórios (exclusiva da conta dev) ── */}
       {aba === 'relatorios' && isDev && <AdminRelatorios />}
 
-      {/* ── ABA: Pipeline (exclusiva da conta dev) ── */}
-      {aba === 'pipeline' && isDev && <AdminPipeline usuarios={usuarios} />}
-
-      {/* ── ABA: Alertas (exclusiva da conta dev) ── */}
-      {aba === 'alertas' && isDev && (
-        <AdminAlertas
-          usuarios={usuarios}
-          onEstenderTrial={estenderTrial}
-          onVerAtividade={verAtividade}
-          onAtivar={ativar}
-        />
-      )}
-
-      {/* ── ABA: Feed (exclusiva da conta dev) ── */}
-      {aba === 'feed' && isDev && <AdminFeed />}
-
-      {/* ── ABA: CRM (exclusiva da conta dev) ── */}
-      {aba === 'crm' && isDev && <AdminCRM usuarios={usuarios} />}
 
       {/* ── Modal: feed de atividade ── */}
       {atividadeUser && (
