@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X, Filter, Rss, MessageCircle } from 'lucide-react'
+import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X, Filter, Rss, MessageCircle, BarChart3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIsAdmin, useAssinatura } from '../../contexts/AssinaturaContext'
@@ -11,12 +11,13 @@ import { useAvisos } from '../../hooks/useAvisos'
 const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
 
 const DEV_NAV = [
-  { to: '/app',              icon: Home,           label: 'Início',   exact: true, primary: true },
-  { to: '/app/admin',        icon: Shield,         label: 'Admin',                primary: true },
-  { to: '/app/dev/pipeline', icon: Filter,         label: 'Pipeline',             primary: true },
-  { to: '/app/dev/alertas',  icon: Bell,           label: 'Alertas',              primary: true },
-  { to: '/app/dev/feed',     icon: Rss,            label: 'Feed'     },
-  { to: '/app/dev/crm',      icon: MessageCircle,  label: 'CRM'      },
+  { to: '/app',                   icon: Home,          label: 'Início',    exact: true, primary: true },
+  { to: '/app/admin',             icon: Shield,        label: 'Admin',                  primary: true },
+  { to: '/app/dev/pipeline',      icon: Filter,        label: 'Pipeline',               primary: true },
+  { to: '/app/dev/alertas',       icon: Bell,          label: 'Alertas',                primary: true },
+  { to: '/app/dev/feed',          icon: Rss,           label: 'Feed'      },
+  { to: '/app/dev/crm',           icon: MessageCircle, label: 'CRM'       },
+  { to: '/app/dev/relatorios',    icon: BarChart3,     label: 'Relatórios'},
 ]
 
 const AVISOS_VISTOS_KEY = 'avisos_vistos'

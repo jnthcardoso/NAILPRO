@@ -464,21 +464,24 @@ export default function Admin() {
         <div style={s.statCard}>
           <div style={s.statValor}>{stats.total}</div>
           <div style={s.statLabel}>Total</div>
+          <div style={s.statSubPlaceholder} />
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid #15803D' }}>
           <div style={{ ...s.statValor, color: '#15803D' }}>{stats.ativas}</div>
           <div style={s.statLabel}>Ativas</div>
-          {stats.cortesia > 0 && <div style={s.statSub}>+{stats.cortesia} cortesia</div>}
+          <div style={s.statSub}>{stats.cortesia > 0 ? `+${stats.cortesia} cortesia` : ' '}</div>
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid #1E40AF' }}>
           <div style={{ ...s.statValor, color: '#1E40AF' }}>{stats.trial}</div>
           <div style={s.statLabel}>Em trial</div>
+          <div style={s.statSubPlaceholder} />
         </div>
         <div style={{ ...s.statCard, borderTop: '3px solid var(--gold, #D4AF37)' }}>
-          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)', fontSize: 16 }}>
+          <div style={{ ...s.statValor, color: 'var(--gold, #D4AF37)', fontSize: 17 }}>
             {formatBRL(stats.mrrCentavos / 100)}
           </div>
           <div style={s.statLabel}>MRR</div>
+          <div style={s.statSubPlaceholder} />
         </div>
         <div
           style={{ ...s.statCard, borderTop: '3px solid #C2410C', cursor: stats.aRenovar > 0 ? 'pointer' : 'default' }}
@@ -487,34 +490,36 @@ export default function Admin() {
         >
           <div style={{ ...s.statValor, color: stats.aRenovar > 0 ? '#C2410C' : 'var(--text3)' }}>{stats.aRenovar}</div>
           <div style={s.statLabel}>A renovar</div>
+          <div style={s.statSubPlaceholder} />
         </div>
       </div>
 
-      {/* Abas */}
-      <div style={s.abas}>
-        <button
-          style={{ ...s.aba, ...(aba === 'assinaturas' ? s.abaAtiva : {}) }}
-          onClick={() => setAba('assinaturas')}
-        >
+      {/* Abas + Filtros na mesma linha */}
+      <div style={s.abasRow}>
+        <button style={{ ...s.aba, ...(aba === 'assinaturas' ? s.abaAtiva : {}) }} onClick={() => setAba('assinaturas')}>
           <Shield size={13} /> Assinaturas
         </button>
-        <button
-          style={{ ...s.aba, ...(aba === 'inativos' ? s.abaAtiva : {}) }}
-          onClick={() => setAba('inativos')}
-        >
-          <UserX size={13} />
-          Inativos
-          {stats.inativos > 0 && (
-            <span style={s.abaBadge}>{stats.inativos}</span>
-          )}
+        <button style={{ ...s.aba, ...(aba === 'inativos' ? s.abaAtiva : {}) }} onClick={() => setAba('inativos')}>
+          <UserX size={13} /> Inativos
+          {stats.inativos > 0 && <span style={s.abaBadge}>{stats.inativos}</span>}
         </button>
-        {isDev && (
-          <button
-            style={{ ...s.aba, ...(aba === 'relatorios' ? s.abaAtiva : {}) }}
-            onClick={() => setAba('relatorios')}
-          >
-            <BarChart3 size={13} /> Relatórios
-          </button>
+        {aba === 'assinaturas' && (
+          <>
+            <div style={s.abasDivisor} />
+            {[
+              { id: 'todos', label: 'Todos' },
+              { id: 'active', label: 'Ativas' },
+              { id: 'renovar', label: `🔔 ${stats.aRenovar > 0 ? stats.aRenovar : ''}` },
+              { id: 'pending', label: 'Aguardando' },
+              { id: 'trialing', label: 'Trial' },
+              { id: 'canceled', label: 'Canceladas' },
+              { id: 'expired', label: 'Expiradas' },
+            ].map(f => (
+              <button key={f.id} style={{ ...s.filtroMini, ...(filtro === f.id ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f.id)}>
+                {f.label}
+              </button>
+            ))}
+          </>
         )}
       </div>
 
@@ -529,26 +534,6 @@ export default function Admin() {
               value={busca}
               onChange={e => setBusca(e.target.value)}
             />
-          </div>
-
-          <div style={s.filtros}>
-            {[
-              { id: 'todos', label: 'Todos' },
-              { id: 'active', label: 'Ativas' },
-              { id: 'renovar', label: `🔔 A renovar${stats.aRenovar > 0 ? ` (${stats.aRenovar})` : ''}` },
-              { id: 'pending', label: 'Aguardando' },
-              { id: 'trialing', label: 'Trial' },
-              { id: 'canceled', label: 'Canceladas' },
-              { id: 'expired', label: 'Expiradas' },
-            ].map(f => (
-              <button
-                key={f.id}
-                style={{ ...s.filtroBtn, ...(filtro === f.id ? s.filtroBtnActive : {}) }}
-                onClick={() => setFiltro(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
           </div>
 
           <div style={s.listaTitulo}>
@@ -581,10 +566,6 @@ export default function Admin() {
           )}
         </>
       )}
-
-      {/* ── ABA: Relatórios (exclusiva da conta dev) ── */}
-      {aba === 'relatorios' && isDev && <AdminRelatorios />}
-
 
       {/* ── Modal: feed de atividade ── */}
       {atividadeUser && (
@@ -635,22 +616,23 @@ const s = {
   sub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' },
   refreshBtn: { width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' },
   stats: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 },
-  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' },
-  statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
+  statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 8px 8px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' },
+  statValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1, marginTop: 2 },
   statLabel: { fontSize: 10, color: 'var(--text3)', marginTop: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
-  statSub: { fontSize: 9, color: '#6D28D9', marginTop: 2, fontWeight: 700 },
-  /* Abas */
-  abas: { display: 'flex', gap: 6, marginBottom: 14 },
-  aba: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 16px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', position: 'relative' },
+  statSub: { fontSize: 9, color: '#6D28D9', marginTop: 2, fontWeight: 700, minHeight: 13 },
+  statSubPlaceholder: { minHeight: 13, marginTop: 2 },
+  /* Abas + filtros */
+  abasRow: { display: 'flex', alignItems: 'center', gap: 5, marginBottom: 14, flexWrap: 'wrap' },
+  abasDivisor: { width: 1, height: 18, background: 'var(--border2)', margin: '0 3px', flexShrink: 0 },
+  aba: { display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', position: 'relative' },
   abaAtiva: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)' },
   abaBadge: { background: '#FEE2E2', color: '#B91C1C', borderRadius: '999px', fontSize: 10, fontWeight: 700, padding: '1px 6px', marginLeft: 2 },
+  filtroMini: { padding: '5px 9px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   /* Info inativos */
   inativoInfo: { display: 'flex', alignItems: 'flex-start', gap: 7, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', marginBottom: 12, fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 },
   /* Busca e filtros */
   searchBar: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', marginBottom: 10, boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
-  filtros: { display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' },
-  filtroBtn: { padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   filtroBtnActive: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)' },
   listaTitulo: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 },
   /* Cards */
