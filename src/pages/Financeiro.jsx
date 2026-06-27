@@ -3,8 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
   TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
-  BarChart2, ListOrdered, CalendarClock, MessageCircle, Check,
-  ArrowUpRight, ArrowDownRight
+  BarChart2, ListOrdered, CalendarClock, MessageCircle, Check
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -73,7 +72,6 @@ export default function Financeiro() {
   const [pagamentos, setPagamentos] = useState([])
   const [despesas, setDespesas] = useState([])
   const [pagamentos6m, setPagamentos6m] = useState([])
-  const [despesas6m, setDespesas6m] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showDespesaModal, setShowDespesaModal] = useState(false)
   const [editandoDespesa, setEditandoDespesa] = useState(null)
@@ -256,15 +254,6 @@ export default function Financeiro() {
       const { data, error } = await comTimeout(q)
       if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as despesas.')); return }
       setDespesas(data || [])
-
-      // 6 meses de despesas (só os campos usados na comparação com o mês anterior).
-      const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
-      const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
-      let q6 = supabase.from('despesas').select('data, valor, tipo')
-        .gte('data', inicio6m).lte('data', fim6m).limit(3000)
-      q6 = gerenciaTudo ? q6.eq('salao_id', salaoId) : q6.eq('user_id', user.id)
-      const { data: data6m } = await q6
-      setDespesas6m(data6m || [])
     } catch (err) {
       toastErro(err.message || 'Não foi possível carregar as despesas.')
     }
@@ -689,41 +678,13 @@ export default function Financeiro() {
     if (!agIdsVistos.has(p.agendamento_id)) { agIdsVistos.add(p.agendamento_id); totalAtendimentos++ }
   })
   const ticketMedio = totalAtendimentos > 0 ? recebido / totalAtendimentos : 0
-  // Comparação com o mês anterior (só no modo "por mês", usa os dados dos 6m).
-  // Comparação JUSTA: se o mês selecionado é o atual (ainda correndo), compara só
-  // os MESMOS DIAS do mês passado (1 até hoje) — senão um mês pela metade pareceria
-  // sempre pior que um mês inteiro. Mês fechado compara o mês todo.
+  // Comparação com o mês anterior (só no modo "por mês", usa os dados dos 6m)
   const mesAnteriorDate = subMonths(periodoSel, 1)
   const iniAnterior = format(startOfMonth(mesAnteriorDate), 'yyyy-MM-dd')
   const fimAnterior = format(endOfMonth(mesAnteriorDate), 'yyyy-MM-dd')
-  const diaCorte = ehMesAtual ? new Date().getDate() : 31
-  const dentroCorte = (dataStr) => Number(dataStr.slice(8, 10)) <= diaCorte
   const recebidoMesAnterior = rangeMode === 'mes'
-    ? pagamentos6m.filter(p => p.data >= iniAnterior && p.data <= fimAnterior && dentroCorte(p.data)).reduce((s, p) => s + (p.valor || 0), 0)
+    ? pagamentos6m.filter(p => p.data >= iniAnterior && p.data <= fimAnterior).reduce((s, p) => s + (p.valor || 0), 0)
     : null
-  const despesasSalaoMesAnterior = rangeMode === 'mes'
-    ? despesas6m.filter(d => d.data >= iniAnterior && d.data <= fimAnterior && d.tipo !== 'pessoal' && dentroCorte(d.data)).reduce((s, d) => s + (d.valor || 0), 0)
-    : null
-  const lucroMesAnterior = rangeMode === 'mes'
-    ? recebidoMesAnterior - despesasSalaoMesAnterior - proLaboreEfetivo
-    : null
-
-  // Chip de variação % vs mês anterior. maiorEhBom: subir é bom (receita/lucro)
-  // ou ruim (despesa). Não mostra se não há base de comparação (mês passado zerado).
-  function chipVariacao(atual, anterior, maiorEhBom = true) {
-    if (anterior == null || anterior <= 0) return null
-    const pct = Math.round(((atual - anterior) / anterior) * 100)
-    const titulo = ehMesAtual ? 'comparado aos mesmos dias do mês passado' : 'comparado ao mês anterior'
-    if (pct === 0) return <div style={{ ...s.cardVar, color: 'var(--text3)' }} title={titulo}>igual ao mês passado</div>
-    const subiu = pct > 0
-    const cor = (subiu === maiorEhBom) ? 'var(--green)' : '#B91C1C'
-    const Icon = subiu ? ArrowUpRight : ArrowDownRight
-    return (
-      <div style={{ ...s.cardVar, color: cor }} title={titulo}>
-        <Icon size={11} /> {Math.abs(pct)}% vs mês passado
-      </div>
-    )
-  }
 
   // 'sem' = pagamento pago sem forma preenchida (aparece como fatia cinza própria).
   const FORMA_LABEL = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_debito: 'Débito', cartao_credito: 'Crédito', sem: 'Sem forma registrada' }
@@ -875,13 +836,11 @@ export default function Financeiro() {
               <div style={s.cardLabel} className="fin-card-label"><DollarSign size={11} /> Recebido</div>
               <div style={{ ...s.cardValue, color: 'var(--green)' }} className="fin-card-value">{formatBRL(recebido)}</div>
               <div style={s.cardSub} className="fin-card-sub">{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
-              {chipVariacao(recebido, recebidoMesAnterior, true)}
             </div>
             <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }} className="fin-resumo-card">
               <div style={s.cardLabel} className="fin-card-label"><Receipt size={11} /> Despesas do salão</div>
               <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">{formatBRL(totalDespesasSalao)}</div>
               <div style={s.cardSub} className="fin-card-sub">{despesas.filter(d => d.tipo !== 'pessoal').length} lançamento{despesas.filter(d => d.tipo !== 'pessoal').length !== 1 ? 's' : ''}</div>
-              {chipVariacao(totalDespesasSalao, despesasSalaoMesAnterior, false)}
             </div>
             <div
               style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}`, cursor: 'pointer' }}
@@ -897,7 +856,6 @@ export default function Financeiro() {
               <div style={s.cardLabel} className="fin-card-label">{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
               <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }} className="fin-card-value">{formatBRL(lucro)}</div>
               <div style={s.cardSub} className="fin-card-sub">{margemLucro.toFixed(0)}% de margem</div>
-              {chipVariacao(lucro, lucroMesAnterior, true)}
             </div>
             {/* Previsão de receita do mês — só no mês atual */}
             {ehMesAtual && (
