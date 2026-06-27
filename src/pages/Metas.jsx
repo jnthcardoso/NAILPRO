@@ -101,8 +101,6 @@ export default function Metas() {
   const [infoAberto, setInfoAberto] = useState(null)    // qual explicação está aberta
   const [drill, setDrill] = useState(null)              // lista detalhada aberta (quem)
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
-  const [kpiBasico, setKpiBasico] = useState(null)      // KPIs gratuitos do Solo
-  const [loadingBasico, setLoadingBasico] = useState(false)
   const [recap, setRecap] = useState(null)              // recap "Meu mês"
   const [loadingRecap, setLoadingRecap] = useState(false)
 
@@ -113,7 +111,6 @@ export default function Metas() {
   }, [salaoId, tab, mesFiltro])
   useEffect(() => {
     if (!salaoId || tab !== 'kpis') return
-    loadKpiBasico()
     if (temAcesso('relatoriosAvancados')) loadKpis()
   }, [salaoId, tab])
 
@@ -467,25 +464,6 @@ export default function Metas() {
     }
   }
 
-  // KPIs básicos — disponíveis para todos os planos (Solo inclusive)
-  async function loadKpiBasico() {
-    setLoadingBasico(true)
-    const hoje = format(new Date(), 'yyyy-MM-dd')
-    const inicioMes = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')
-    const [{ count: atend }, { count: novas }, { data: pags }] = await Promise.all([
-      supabase.from('agendamentos').select('id', { count: 'exact', head: true })
-        .eq('salao_id', salaoId).eq('status', 'realizado').gte('data', inicioMes).lte('data', hoje),
-      supabase.from('clientes').select('id', { count: 'exact', head: true })
-        .eq('salao_id', salaoId).eq('arquivada', false).gte('created_at', inicioMes + 'T00:00:00'),
-      supabase.from('pagamentos').select('valor')
-        .eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', hoje),
-    ])
-    const receita = (pags || []).reduce((s, p) => s + (p.valor || 0), 0)
-    const ticket = pags?.length ? receita / pags.length : 0
-    setKpiBasico({ atendimentos: atend || 0, novas: novas || 0, ticket, receita })
-    setLoadingBasico(false)
-  }
-
   // Recap "Meu mês" — usa o mês selecionado no seletor.
   async function loadRecap() {
     setLoadingRecap(true)
@@ -800,48 +778,6 @@ export default function Metas() {
       {/* ── TAB: INDICADORES ───────────────────────────── */}
       {tab === 'kpis' && (
         <>
-          {/* ── KPIs básicos (todos os planos) ── */}
-          <div style={s.secHead}>
-            <span style={s.secHeadIcon}><BarChart2 size={14} /></span>
-            <span style={s.secHeadTitle}>Este mês</span>
-            <span style={s.secHeadLine} />
-          </div>
-          <div style={{ ...s.kpiGrid, marginBottom: 24 }}>
-            <div style={s.kpiCard}>
-              <div style={s.kpiCardTitle}><Calendar size={15} color="var(--pink)" /> Atendimentos realizados</div>
-              {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
-                <>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--pink)', lineHeight: 1, margin: '12px 0 4px' }}>
-                    {kpiBasico?.atendimentos ?? '—'}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>no mês atual</div>
-                </>
-              )}
-            </div>
-            <div style={s.kpiCard}>
-              <div style={s.kpiCardTitle}><Users size={15} color="#1E40AF" /> Clientes novas</div>
-              {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
-                <>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: '#1E40AF', lineHeight: 1, margin: '12px 0 4px' }}>
-                    {kpiBasico?.novas ?? '—'}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>no mês atual</div>
-                </>
-              )}
-            </div>
-            <div style={s.kpiCard}>
-              <div style={s.kpiCardTitle}><DollarSign size={15} color="#15803D" /> Ticket médio</div>
-              {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
-                <>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: '#15803D', lineHeight: 1, margin: '12px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {kpiBasico ? formatBRL(kpiBasico.ticket) : '—'}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{kpiBasico?.atendimentos ? `${kpiBasico.atendimentos} atendimentos` : 'sem atendimentos este mês'}</div>
-                </>
-              )}
-            </div>
-          </div>
-
           {!temAcesso('relatoriosAvancados') ? (
             <>
               {/* ── Teaser Pro ── */}
