@@ -14,7 +14,7 @@ import { MSG_RETORNO_PADRAO, MSG_REAGENDAR_PADRAO, MSG_SINAL_PADRAO, aplicarVari
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
 import { traduzErro } from '../lib/erros'
 import {
-  format, endOfMonth, subMonths, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
+  format, endOfMonth, startOfMonth, subMonths, subDays, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -84,8 +84,10 @@ export default function Metas() {
   const [saving, setSaving] = useState(false)
 
   // ── KPIs ─────────────────────────────────────────────
-  // Indicadores de agenda/equipe são sempre do mês (sem seletor de período).
-  const kpiMeses = '1'
+  // Períodos dos indicadores de agenda/equipe (sem seletor):
+  // - Cancelamentos: janela móvel de 45 dias (não "some" quem cancelou no fim do mês).
+  // - Ocupação e por profissional: mês-calendário (1º do mês até hoje).
+  const DIAS_CANCELAMENTO = 45
   const [cfg, setCfg] = useState(null)
   const [atividade, setAtividade] = useState(null)
   const [novasClientes, setNovasClientes] = useState([])
@@ -287,17 +289,16 @@ export default function Metas() {
     setAtividade({ ativas, sumidas, taxa: base > 0 ? Math.round((ativas / base) * 100) : 0, sumidasLista })
   }
 
-  // 4. Taxa de cancelamento (depende de kpiMeses + config). Além do número,
+  // 4. Taxa de cancelamento (últimos 45 dias — janela móvel — + config). Além do número,
   // separa quem cancelou em dois grupos: "cancelou e sumiu" (passou do ciclo de
   // retorno E sem horário futuro marcado = perda real) vs "cancelou, mas está ok"
   // (voltou depois ou tem horário marcado).
-  async function loadCancelamento(mesesParam, cfgParam) {
-    const m = mesesParam ?? kpiMeses
+  async function loadCancelamento(cfgParam) {
     const c = cfgParam ?? cfg
     const cicloPadrao = c?.dias_retorno_alerta || DIAS_RETORNO_PADRAO
     const hoje = new Date()
     const hojeStr = format(hoje, 'yyyy-MM-dd')
-    const inicio = format(subMonths(hoje, parseInt(m)), 'yyyy-MM-dd')
+    const inicio = format(subDays(hoje, DIAS_CANCELAMENTO), 'yyyy-MM-dd')
     const { data } = await supabase
       .from('agendamentos')
       .select('status, data, servico, clientes(id, nome, telefone)')
@@ -359,12 +360,11 @@ export default function Metas() {
     setCancelamento({ taxa: total > 0 ? Math.round((cancelados / total) * 100) : 0, cancelados, total, sumiram, ok })
   }
 
-  // 5. Ocupação da agenda (depende de kpiMeses + config). Estimativa:
+  // 5. Ocupação da agenda (mês-calendário atual + config). Estimativa:
   // vagas = dias úteis trabalhados × (jornada ÷ duração média do atendimento).
-  async function loadOcupacao(mesesParam, cfgParam) {
-    const m = mesesParam ?? kpiMeses
+  async function loadOcupacao(cfgParam) {
     const c = cfgParam ?? cfg
-    const inicioDate = subMonths(new Date(), parseInt(m))
+    const inicioDate = startOfMonth(new Date())
     const hoje = new Date()
     const inicio = format(inicioDate, 'yyyy-MM-dd')
     const hojeStr = format(hoje, 'yyyy-MM-dd')
@@ -400,11 +400,10 @@ export default function Metas() {
     setOcupacao({ taxa: vagas > 0 ? Math.round((usadas / vagas) * 100) : 0, usadas, vagas, porDia })
   }
 
-  // 6. Desempenho por profissional (só plano Salão; depende de kpiMeses)
-  async function loadPorProfissional(mesesParam) {
+  // 6. Desempenho por profissional (só plano Salão; mês-calendário atual)
+  async function loadPorProfissional() {
     if (plano?.id !== 'salao') { setPorProfissional([]); return }
-    const m = mesesParam ?? kpiMeses
-    const inicio = format(subMonths(new Date(), parseInt(m)), 'yyyy-MM-dd')
+    const inicio = format(startOfMonth(new Date()), 'yyyy-MM-dd')
     const [{ data: ags }, { data: membros }] = await Promise.all([
       supabase.from('agendamentos')
         .select('profissional_id, data, servico, pagamentos(valor, status), clientes(nome)')
@@ -484,14 +483,15 @@ export default function Metas() {
     const cfgData = await loadConfig()
     await Promise.all([
       loadAtividade(cfgData), loadNovasKpi(),
-      loadCancelamento(undefined, cfgData), loadOcupacao(undefined, cfgData), loadPorProfissional(),
+      loadCancelamento(cfgData), loadOcupacao(cfgData), loadPorProfissional(),
     ])
     setLoadingKpi(false)
   }
 
   const maxNovas = novasClientes.length > 0 ? Math.max(...novasClientes.map(m => m.qtd), 1) : 1
   const maxProf = porProfissional.length > 0 ? Math.max(porProfissional[0].valor, 1) : 1
-  const labelPeriodoKpi = kpiMeses === '1' ? 'Último mês' : `Últimos ${kpiMeses} meses`
+  const labelCancelamento = `Últimos ${DIAS_CANCELAMENTO} dias`
+  const labelMesAtual = 'Este mês'
 
   // Botãozinho ⓘ ao lado do título de cada indicador
   const infoBtn = (chave) => (
@@ -594,7 +594,7 @@ export default function Metas() {
       return (
         <>
           <div style={s.infoTitulo}>Horários mais vazios</div>
-          <div style={s.drillSub}>{labelPeriodoKpi} · do dia mais vazio pro mais cheio</div>
+          <div style={s.drillSub}>{labelMesAtual} · do dia mais vazio pro mais cheio</div>
           <div style={s.drillLista}>
             {dias.map((d, i) => {
               const cor = d.taxa >= 85 ? '#D97706' : d.taxa >= 60 ? 'var(--green)' : 'var(--pink)'
@@ -638,7 +638,7 @@ export default function Metas() {
       return (
         <>
           <div style={s.infoTitulo}>{prof?.nome || 'Profissional'}</div>
-          <div style={s.drillSub}>{labelPeriodoKpi} · {ats.length} atendimentos · {formatBRL(prof?.valor || 0)}</div>
+          <div style={s.drillSub}>{labelMesAtual} · {ats.length} atendimentos · {formatBRL(prof?.valor || 0)}</div>
           <div style={s.drillLista}>
             {ats.map((a, i) => (
               <div key={i} style={s.drillItem}>
@@ -954,7 +954,7 @@ export default function Metas() {
               {/* Cancelamentos */}
               <div style={s.kpiCard}>
                 <div style={s.kpiCardTitle}><Ban size={15} color="var(--pink)" /> Cancelamentos {infoBtn('cancelamentos')}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelCancelamento}</div>
                 {cancelamento === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
                 ) : cancelamento.total === 0 ? (
@@ -996,7 +996,7 @@ export default function Metas() {
               {/* 5. Ocupação da agenda */}
               <div style={s.kpiCard}>
                 <div style={s.kpiCardTitle}><Gauge size={15} color="var(--pink)" /> Ocupação da agenda {infoBtn('ocupacao')}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi} · estimativa</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelMesAtual} · estimativa</div>
                 {ocupacao === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
                 ) : ocupacao.vagas === 0 ? (
@@ -1051,7 +1051,7 @@ export default function Metas() {
                 <div style={s.kpiGrid}>
                 <div style={s.kpiCard}>
                   <div style={s.kpiCardTitle}><Award size={15} color="var(--pink)" /> Atendimentos por profissional {infoBtn('profissional')}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelPeriodoKpi}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelMesAtual}</div>
                   {porProfissional.length === 0 ? (
                     <div style={s.kpiEmpty}>Sem atendimentos no período</div>
                   ) : porProfissional.map((p, i) => (
