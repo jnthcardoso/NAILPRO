@@ -464,12 +464,11 @@ export default function Metas() {
     setLoadingBasico(true)
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const inicioMes = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')
-    const ha30 = format(subMonths(new Date(), 1), 'yyyy-MM-dd')
     const [{ count: atend }, { count: novas }, { data: pags }] = await Promise.all([
       supabase.from('agendamentos').select('id', { count: 'exact', head: true })
         .eq('salao_id', salaoId).eq('status', 'realizado').gte('data', inicioMes).lte('data', hoje),
       supabase.from('clientes').select('id', { count: 'exact', head: true })
-        .eq('salao_id', salaoId).eq('arquivada', false).gte('created_at', ha30 + 'T00:00:00'),
+        .eq('salao_id', salaoId).eq('arquivada', false).gte('created_at', inicioMes + 'T00:00:00'),
       supabase.from('pagamentos').select('valor')
         .eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicioMes).lte('data', hoje),
     ])
@@ -802,7 +801,7 @@ export default function Metas() {
                   <div style={{ fontSize: 36, fontWeight: 800, color: '#1E40AF', lineHeight: 1, margin: '12px 0 4px' }}>
                     {kpiBasico?.novas ?? '—'}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>nos últimos 30 dias</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>no mês atual</div>
                 </>
               )}
             </div>
