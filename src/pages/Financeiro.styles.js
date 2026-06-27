@@ -38,6 +38,7 @@ export const s = {
   cardLabel: { fontSize: 10, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 },
   cardValue: { fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, lineHeight: 1 },
   cardSub: { fontSize: 10, color: 'var(--text3)', marginTop: 4 },
+  cardVar: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, marginTop: 4 },
   cardAtivo: { boxShadow: '0 0 0 2px var(--pink)' },
   /* DRE */
   dreCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', boxShadow: 'var(--shadow-sm)' },
