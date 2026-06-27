@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info, MessageCircle, ChevronRight, Sparkles, CalendarCheck } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info, MessageCircle, ChevronRight, Sparkles, CalendarCheck, Banknote } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -1171,9 +1171,9 @@ export default function Metas() {
                   <div style={{ fontSize: 12, color: 'var(--text3)' }}>entraram no mês</div>
                 </div>
                 <div style={s.kpiCard}>
-                  <div style={s.kpiCardTitle}><MessageCircle size={15} color="#15803D" /> Cobranças enviadas</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1, margin: '10px 0 4px' }}>{recap.cobrancasQtd}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{recap.cobrancasValor > 0 ? `${formatBRL(recap.cobrancasValor)} já pagos` : 'WhatsApp + Pix'}</div>
+                  <div style={s.kpiCardTitle}><Banknote size={15} color="#15803D" /> Recebido de pendências</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#15803D', lineHeight: 1, margin: '10px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>{formatBRL(recap.pendenciasPagasValor)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{recap.pendenciasPagasQtd > 0 ? `de ${recap.pendenciasPagasQtd} pagamento${recap.pendenciasPagasQtd !== 1 ? 's' : ''} que estavam pendentes` : 'nenhuma pendência quitada no mês'}</div>
                 </div>
                 <div style={s.kpiCard}>
                   <div style={s.kpiCardTitle}><CalendarCheck size={15} color="#1E40AF" /> Faltas evitadas</div>

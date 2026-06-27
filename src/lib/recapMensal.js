@@ -20,8 +20,8 @@ export async function carregarRecap(supabase, { salaoId, gerenciaTudo = false, m
       .eq('salao_id', salaoId).eq('status', 'pago').gte('data', inicio).lte('data', fim),
     supabase.from('clientes').select('id', { count: 'exact', head: true })
       .eq('salao_id', salaoId).eq('arquivada', false).gte('created_at', inicioTs).lte('created_at', fimTs),
-    supabase.from('pagamentos').select('valor, status')
-      .eq('salao_id', salaoId).gte('cobranca_enviada_em', inicioTs).lte('cobranca_enviada_em', fimTs),
+    supabase.from('pagamentos').select('valor, agendamentos(status)')
+      .eq('salao_id', salaoId).eq('status', 'pago').gte('pago_em', inicioTs).lte('pago_em', fimTs),
     supabase.from('agendamentos').select('id', { count: 'exact', head: true })
       .eq('salao_id', salaoId).gte('confirmado_link_em', inicioTs).lte('confirmado_link_em', fimTs),
     supabase.from('agendamentos').select('cliente_id, data')
@@ -46,10 +46,12 @@ export async function carregarRecap(supabase, { salaoId, gerenciaTudo = false, m
 
   const novas = novasRes.count || 0
 
-  // Cobranças (WhatsApp + Pix) enviadas no mês; valor = o que dessas já foi pago.
-  const cobrs = cobrRes.data || []
-  const cobrancasQtd = cobrs.length
-  const cobrancasValor = cobrs.filter(c => c.status === 'pago').reduce((s, c) => s + (c.valor || 0), 0)
+  // Recebido de pendências: pagamentos que estavam pendentes e foram quitados no
+  // mês (pago_em no período), com ou sem o WhatsApp de cobrança. É o dinheiro que
+  // a aba de pendentes do Lumen ajudou a recuperar. Exclui atendimento cancelado.
+  const pendPagas = (cobrRes.data || []).filter(p => p.agendamentos?.status !== 'cancelado')
+  const pendenciasPagasValor = pendPagas.reduce((s, p) => s + (p.valor || 0), 0)
+  const pendenciasPagasQtd = pendPagas.length
 
   const confirmacoesLink = confRes.count || 0
 
@@ -92,7 +94,7 @@ export async function carregarRecap(supabase, { salaoId, gerenciaTudo = false, m
   return {
     receita, lucro, atendimentos, novas,
     recuperadasQtd, recuperadasValor,
-    cobrancasQtd, cobrancasValor,
+    pendenciasPagasValor, pendenciasPagasQtd,
     confirmacoesLink,
     temAlgumDado: receita > 0 || atendimentos > 0 || novas > 0,
   }
