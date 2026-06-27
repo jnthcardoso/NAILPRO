@@ -777,50 +777,50 @@ export default function Metas() {
       {/* ── TAB: INDICADORES ───────────────────────────── */}
       {tab === 'kpis' && (
         <>
+          {/* ── KPIs básicos (todos os planos) ── */}
+          <div style={s.secHead}>
+            <span style={s.secHeadIcon}><BarChart2 size={14} /></span>
+            <span style={s.secHeadTitle}>Este mês</span>
+            <span style={s.secHeadLine} />
+          </div>
+          <div style={{ ...s.kpiGrid, marginBottom: 24 }}>
+            <div style={s.kpiCard}>
+              <div style={s.kpiCardTitle}><Calendar size={15} color="var(--pink)" /> Atendimentos realizados</div>
+              {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
+                <>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--pink)', lineHeight: 1, margin: '12px 0 4px' }}>
+                    {kpiBasico?.atendimentos ?? '—'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>no mês atual</div>
+                </>
+              )}
+            </div>
+            <div style={s.kpiCard}>
+              <div style={s.kpiCardTitle}><Users size={15} color="#1E40AF" /> Clientes novas</div>
+              {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
+                <>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: '#1E40AF', lineHeight: 1, margin: '12px 0 4px' }}>
+                    {kpiBasico?.novas ?? '—'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>nos últimos 30 dias</div>
+                </>
+              )}
+            </div>
+            <div style={s.kpiCard}>
+              <div style={s.kpiCardTitle}><DollarSign size={15} color="#15803D" /> Ticket médio</div>
+              {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
+                <>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#15803D', lineHeight: 1, margin: '12px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {kpiBasico ? formatBRL(kpiBasico.ticket) : '—'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{kpiBasico?.atendimentos ? `${kpiBasico.atendimentos} atendimentos` : 'sem atendimentos este mês'}</div>
+                </>
+              )}
+            </div>
+          </div>
+
           {!temAcesso('relatoriosAvancados') ? (
             <>
-              {/* ── KPIs básicos (grátis) ── */}
-              <div style={s.secHead}>
-                <span style={s.secHeadIcon}><BarChart2 size={14} /></span>
-                <span style={s.secHeadTitle}>Este mês</span>
-                <span style={s.secHeadLine} />
-              </div>
-              <div style={{ ...s.kpiGrid, marginBottom: 24 }}>
-                <div style={s.kpiCard}>
-                  <div style={s.kpiCardTitle}><Calendar size={15} color="var(--pink)" /> Atendimentos realizados</div>
-                  {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
-                    <>
-                      <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--pink)', lineHeight: 1, margin: '12px 0 4px' }}>
-                        {kpiBasico?.atendimentos ?? '—'}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text3)' }}>no mês atual</div>
-                    </>
-                  )}
-                </div>
-                <div style={s.kpiCard}>
-                  <div style={s.kpiCardTitle}><Users size={15} color="#1E40AF" /> Clientes novas</div>
-                  {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
-                    <>
-                      <div style={{ fontSize: 36, fontWeight: 800, color: '#1E40AF', lineHeight: 1, margin: '12px 0 4px' }}>
-                        {kpiBasico?.novas ?? '—'}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text3)' }}>nos últimos 30 dias</div>
-                    </>
-                  )}
-                </div>
-                <div style={s.kpiCard}>
-                  <div style={s.kpiCardTitle}><DollarSign size={15} color="#15803D" /> Ticket médio</div>
-                  {loadingBasico ? <div style={s.kpiEmpty}>Calculando…</div> : (
-                    <>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: '#15803D', lineHeight: 1, margin: '12px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>
-                        {kpiBasico ? formatBRL(kpiBasico.ticket) : '—'}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text3)' }}>{kpiBasico?.atendimentos ? `${kpiBasico.atendimentos} atendimentos` : 'sem atendimentos este mês'}</div>
-                    </>
-                  )}
-                </div>
-              </div>
-
               {/* ── Teaser Pro ── */}
               <div style={s.secHead}>
                 <span style={s.secHeadIcon}><Zap size={14} /></span>
