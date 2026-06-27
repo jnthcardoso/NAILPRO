@@ -30,7 +30,8 @@ export function ViewSemana({ agendamentosBase, dataSel, onSelect }) {
   return (
     <div style={s.weekColunas}>
       {dias.map(dia => {
-        const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd') && a.status !== 'cancelado')
+        const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
+        const countDia = agsDia.filter(a => a.status !== 'cancelado').length
         const hoje = isToday(dia)
         return (
           <div key={dia.toISOString()} style={s.weekColuna}>
@@ -41,9 +42,9 @@ export function ViewSemana({ agendamentosBase, dataSel, onSelect }) {
               <span style={{ ...s.weekColunaNum, ...(hoje ? { color: 'var(--pink)', fontWeight: 700 } : {}) }}>
                 {format(dia, 'd')}
               </span>
-              {agsDia.length > 0 && (
+              {countDia > 0 && (
                 <span style={{ fontSize: 9, fontWeight: 700, color: hoje ? 'var(--pink)' : 'var(--text3)' }}>
-                  {agsDia.length}
+                  {countDia}
                 </span>
               )}
             </div>
@@ -82,7 +83,7 @@ export function ViewMes({ agendamentosBase, dataSel, diaSelecionadoMes, setDiaSe
       {semanas.map((semana, si) => (
         <div key={si} style={{ ...s.calRow, gap: isMobile ? 1 : 1 }}>
           {semana.map(dia => {
-            const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd') && a.status !== 'cancelado')
+            const agsDia = agendamentosBase.filter(a => a.data === format(dia, 'yyyy-MM-dd'))
             const hoje = isToday(dia)
             const doMes = isSameMonth(dia, dataSel)
             const datStr = format(dia, 'yyyy-MM-dd')
