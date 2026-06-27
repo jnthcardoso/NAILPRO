@@ -22,8 +22,8 @@ export async function carregarRecap(supabase, { salaoId, gerenciaTudo = false, m
       .eq('salao_id', salaoId).eq('arquivada', false).gte('created_at', inicioTs).lte('created_at', fimTs),
     supabase.from('pagamentos').select('valor, agendamentos(status)')
       .eq('salao_id', salaoId).eq('status', 'pago').gte('pago_em', inicioTs).lte('pago_em', fimTs),
-    supabase.from('agendamentos').select('id', { count: 'exact', head: true })
-      .eq('salao_id', salaoId).gte('confirmado_link_em', inicioTs).lte('confirmado_link_em', fimTs),
+    supabase.from('agendamentos').select('status, cliente_id')
+      .eq('salao_id', salaoId).gte('data', inicio).lte('data', fim).not('confirmado_link_em', 'is', null),
     supabase.from('agendamentos').select('cliente_id, data')
       .eq('salao_id', salaoId).eq('status', 'realizado').gte('data', janelaRecup).lte('data', fim),
     gerenciaTudo
@@ -53,7 +53,12 @@ export async function carregarRecap(supabase, { salaoId, gerenciaTudo = false, m
   const pendenciasPagasValor = pendPagas.reduce((s, p) => s + (p.valor || 0), 0)
   const pendenciasPagasQtd = pendPagas.length
 
-  const confirmacoesLink = confRes.count || 0
+  // Faltas evitadas: agendamentos com data no mês, confirmados pelo link e NÃO
+  // cancelados (a confirmação só "vale" se o atendimento não foi cancelado depois).
+  // Conta pela data do atendimento, não pela data da confirmação.
+  const confs = (confRes.data || []).filter(a => a.status !== 'cancelado')
+  const confirmacoesLink = confs.length
+  const clientesConfirmadasLink = new Set(confs.map(a => a.cliente_id).filter(Boolean)).size
 
   // Atendimentos realizados no mês.
   const realiz = realizRes.data || []
@@ -95,7 +100,7 @@ export async function carregarRecap(supabase, { salaoId, gerenciaTudo = false, m
     receita, lucro, atendimentos, novas,
     recuperadasQtd, recuperadasValor,
     pendenciasPagasValor, pendenciasPagasQtd,
-    confirmacoesLink,
+    confirmacoesLink, clientesConfirmadasLink,
     temAlgumDado: receita > 0 || atendimentos > 0 || novas > 0,
   }
 }

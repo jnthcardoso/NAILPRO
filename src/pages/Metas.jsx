@@ -1178,7 +1178,8 @@ export default function Metas() {
                 <div style={s.kpiCard}>
                   <div style={s.kpiCardTitle}><CalendarCheck size={15} color="#1E40AF" /> Faltas evitadas</div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1, margin: '10px 0 4px' }}>{recap.confirmacoesLink}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>confirmadas pelo link</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>atendimentos confirmados pelo link</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>{recap.clientesConfirmadasLink} cliente{recap.clientesConfirmadasLink !== 1 ? 's' : ''} confirmada{recap.clientesConfirmadasLink !== 1 ? 's' : ''} pelo link</div>
                 </div>
               </div>
 
