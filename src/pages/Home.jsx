@@ -19,6 +19,7 @@ import TrialBanner from '../components/common/TrialBanner'
 import Skeleton from '../components/common/Skeleton'
 import OportunidadesSemana from '../components/common/OportunidadesSemana'
 import { notificarUmaVezPorDia } from '../lib/notificacoes'
+import { carregarRecap } from '../lib/recapMensal'
 import BarChart from '../components/charts/BarChart'
 import FounderDash from './FounderDash'
 
@@ -70,9 +71,29 @@ export default function Home() {
   const [diasFuncionamento, setDiasFuncionamento] = useState([1, 2, 3, 4, 5]) // dias úteis do salão (p/ a meta bater com o módulo Metas)
   const [loading, setLoading] = useState(true)
   const [erroDashboard, setErroDashboard] = useState(false)
+  const [recapHome, setRecapHome] = useState(null) // recap do mês passado (início do mês)
 
   useEffect(() => { if (salaoId) loadDashboard() }, [salaoId])
   useEffect(() => { if (salaoId) loadAgendamentosData() }, [salaoId, dataFiltro])
+
+  // Card "Seu resultado com o Lumen": aparece nos primeiros 7 dias do mês,
+  // mostrando o recap do mês que fechou. Dispensável (guarda no localStorage).
+  useEffect(() => {
+    if (!salaoId || !gerenciaTudo) return
+    const hoje = new Date()
+    if (hoje.getDate() > 7) return
+    const mesRecap = subMonths(hoje, 1)
+    const chave = `recap_visto_${salaoId}_${format(mesRecap, 'yyyy-MM')}`
+    if (localStorage.getItem(chave)) return
+    carregarRecap(supabase, { salaoId, gerenciaTudo, mesDate: mesRecap })
+      .then(r => { if (r?.temAlgumDado) setRecapHome({ ...r, mesLabel: format(mesRecap, 'MMMM', { locale: ptBR }), chave }) })
+      .catch(() => {})
+  }, [salaoId, gerenciaTudo])
+
+  function dispensarRecap() {
+    if (recapHome?.chave) localStorage.setItem(recapHome.chave, '1')
+    setRecapHome(null)
+  }
 
   async function loadDashboard() {
     setErroDashboard(false)
@@ -394,6 +415,51 @@ export default function Home() {
       </div>
 
       <TrialBanner />
+
+      {/* Card "Seu resultado com o Lumen" — recap do mês passado, início do mês */}
+      {recapHome && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--pink)', borderRadius: 14, marginBottom: 16, overflow: 'hidden' }}>
+          <div style={{ background: 'linear-gradient(135deg, #FBEAF0, var(--surface))', padding: '12px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--pink)', fontWeight: 700 }}>
+                <Sparkles size={15} /> Seu resultado com o Lumen
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 4, textTransform: 'capitalize' }}>Como foi {recapHome.mesLabel}</div>
+            </div>
+            <button onClick={dispensarRecap} aria-label="Dispensar" style={{ background: 'transparent', border: 'none', color: 'var(--pink)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
+          </div>
+
+          <div style={{ padding: '14px 16px' }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)' }}>Você recuperou de clientes que tinham sumido</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--green)', lineHeight: 1, margin: '5px 0 3px', fontFamily: "'JetBrains Mono', monospace" }}>{formatBRL(recapHome.recuperadasValor)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 14 }}>
+              {recapHome.recuperadasQtd === 0 ? 'nenhuma cliente sumida voltou' : `${recapHome.recuperadasQtd} cliente${recapHome.recuperadasQtd !== 1 ? 's' : ''} que sumiram e voltaram`}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {recapHome.lucro !== null && (
+                <div style={{ background: 'var(--surface2, #FAFAFA)', borderRadius: 10, padding: '10px 11px' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp size={12} /> Lucro</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: recapHome.lucro >= 0 ? 'var(--green)' : '#B91C1C', fontFamily: "'JetBrains Mono', monospace", marginTop: 3 }}>{formatBRL(recapHome.lucro)}</div>
+                </div>
+              )}
+              <div style={{ background: 'var(--surface2, #FAFAFA)', borderRadius: 10, padding: '10px 11px' }}>
+                <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> Atend.</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginTop: 3 }}>{recapHome.atendimentos}</div>
+              </div>
+              <div style={{ background: 'var(--surface2, #FAFAFA)', borderRadius: 10, padding: '10px 11px' }}>
+                <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><Users size={12} /> Novas</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginTop: 3 }}>{recapHome.novas}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/metas?tab=recap')}
+              style={{ marginTop: 14, width: '100%', background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+            >Ver mês completo <ChevronRight size={15} /></button>
+          </div>
+        </div>
+      )}
 
       {/* Rede de proteção: se o carregamento falhar, aviso amigável com "tentar de novo" */}
       {!loading && erroDashboard && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info, MessageCircle, ChevronRight } from 'lucide-react'
+import { TrendingUp, Plus, X, Target, Pencil, DollarSign, Zap, Users, BarChart2, Ban, UserCheck, Gauge, Award, Calendar, Info, MessageCircle, ChevronRight, Sparkles, CalendarCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -12,6 +12,7 @@ import { inputBase, labelBase, btnPrimaryBase, btnSecondaryBase } from '../lib/u
 import { formatBRL, linkWhatsApp } from '../lib/formatters'
 import { MSG_RETORNO_PADRAO, MSG_REAGENDAR_PADRAO, MSG_SINAL_PADRAO, aplicarVariaveis } from '../lib/mensagens'
 import { DIAS_RETORNO_PADRAO } from '../lib/constants'
+import { carregarRecap } from '../lib/recapMensal'
 import { traduzErro } from '../lib/erros'
 import {
   format, endOfMonth, startOfMonth, subMonths, subDays, addMonths, eachDayOfInterval, getDay, parseISO, differenceInDays
@@ -66,12 +67,14 @@ function horaParaMin(h) {
 
 export default function Metas() {
   const { user } = useAuth()
-  const { salaoId } = useSalao()
+  const { salaoId, gerenciaTudo } = useSalao()
   const { confirmar, sucesso, erro: toastErro } = useToast()
   const { temAcesso, plano } = useAssinatura()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [tab, setTab] = useState(searchParams.get('tab') === 'indicadores' ? 'kpis' : 'metas')
+  const tabInicial = searchParams.get('tab') === 'indicadores' ? 'kpis'
+    : searchParams.get('tab') === 'recap' ? 'recap' : 'metas'
+  const [tab, setTab] = useState(tabInicial)
 
   // ── Metas ───────────────────────────────────────────
   const [metas, setMetas] = useState([])
@@ -100,8 +103,14 @@ export default function Metas() {
   const [loadingKpi, setLoadingKpi] = useState(false)   // carga inicial (todos)
   const [kpiBasico, setKpiBasico] = useState(null)      // KPIs gratuitos do Solo
   const [loadingBasico, setLoadingBasico] = useState(false)
+  const [recap, setRecap] = useState(null)              // recap "Meu mês"
+  const [loadingRecap, setLoadingRecap] = useState(false)
 
   useEffect(() => { if (salaoId) { loadConfig(); loadMetas() } }, [salaoId])
+  useEffect(() => {
+    if (!salaoId || tab !== 'recap') return
+    loadRecap()
+  }, [salaoId, tab, mesFiltro])
   useEffect(() => {
     if (!salaoId || tab !== 'kpis') return
     loadKpiBasico()
@@ -477,6 +486,18 @@ export default function Metas() {
     setLoadingBasico(false)
   }
 
+  // Recap "Meu mês" — usa o mês selecionado no seletor.
+  async function loadRecap() {
+    setLoadingRecap(true)
+    try {
+      const r = await carregarRecap(supabase, { salaoId, gerenciaTudo, mesDate: new Date(mesFiltro + '-02') })
+      setRecap(r)
+    } catch (e) {
+      toastErro('Não foi possível carregar o resumo do mês.')
+    }
+    setLoadingRecap(false)
+  }
+
   // Carga completa (entrada na tab)
   async function loadKpis() {
     setLoadingKpi(true)
@@ -683,6 +704,9 @@ export default function Metas() {
         </button>
         <button style={{ ...tabs.btn, ...(tab === 'kpis' ? tabs.btnAtivo : {}) }} onClick={() => setTab('kpis')}>
           <BarChart2 size={14} /> Indicadores
+        </button>
+        <button style={{ ...tabs.btn, ...(tab === 'recap' ? tabs.btnAtivo : {}) }} onClick={() => setTab('recap')}>
+          <Sparkles size={14} /> Meu mês
         </button>
       </div>
 
@@ -1076,6 +1100,92 @@ export default function Metas() {
                 </div>
                 </div>
                 </>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── TAB: MEU MÊS (recap) ───────────────────────── */}
+      {tab === 'recap' && (
+        <>
+          <div style={s.mesNav}>
+            <button style={s.mesNavBtn} onClick={mesAnterior}>‹</button>
+            <div style={s.mesNavLabel}>
+              {labelMesFiltro}
+              {ehMesAtual && <span style={s.mesAtualChip}>atual</span>}
+            </div>
+            <button style={s.mesNavBtn} onClick={mesProximo}>›</button>
+          </div>
+
+          {(loadingRecap || !recap) ? (
+            <div style={s.kpiEmpty}>Calculando…</div>
+          ) : !recap.temAlgumDado ? (
+            <div style={s.empty}>
+              <Sparkles size={32} color="var(--text3)" style={{ marginBottom: 10 }} />
+              <p style={{ color: 'var(--text3)', fontSize: 14 }}>Sem movimento em {labelMesFiltro} ainda.</p>
+            </div>
+          ) : (
+            <>
+              {/* Destaque: clientes recuperadas */}
+              <div style={{ background: 'linear-gradient(135deg, #FBEAF0, var(--surface))', border: '1px solid var(--pink)', borderRadius: 'var(--radius-sm)', padding: '16px 18px', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--pink)', fontWeight: 700 }}>
+                  <Sparkles size={15} /> Seu resultado com o Lumen
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8 }}>Você recuperou de clientes que tinham sumido</div>
+                <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--green)', lineHeight: 1, margin: '6px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>
+                  {formatBRL(recap.recuperadasValor)}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                  {recap.recuperadasQtd === 0 ? 'nenhuma cliente sumida voltou neste mês' : `${recap.recuperadasQtd} cliente${recap.recuperadasQtd !== 1 ? 's' : ''} que sumiram e voltaram`}
+                </div>
+              </div>
+
+              {/* Números do mês */}
+              <div style={s.secHead}>
+                <span style={s.secHeadIcon}><BarChart2 size={14} /></span>
+                <span style={s.secHeadTitle}>O que rolou no mês</span>
+                <span style={s.secHeadLine} />
+              </div>
+              <div style={{ ...s.kpiGrid, marginBottom: 16 }}>
+                {recap.lucro !== null && (
+                  <div style={s.kpiCard}>
+                    <div style={s.kpiCardTitle}><TrendingUp size={15} color="#15803D" /> Lucro do mês</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: recap.lucro >= 0 ? 'var(--green)' : '#B91C1C', lineHeight: 1, margin: '10px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>{formatBRL(recap.lucro)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>depois das despesas</div>
+                  </div>
+                )}
+                <div style={s.kpiCard}>
+                  <div style={s.kpiCardTitle}><DollarSign size={15} color="#15803D" /> Faturamento</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1, margin: '10px 0 4px', fontFamily: "'JetBrains Mono', monospace" }}>{formatBRL(recap.receita)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>recebido no mês</div>
+                </div>
+                <div style={s.kpiCard}>
+                  <div style={s.kpiCardTitle}><Calendar size={15} color="var(--pink)" /> Atendimentos</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--pink)', lineHeight: 1, margin: '10px 0 4px' }}>{recap.atendimentos}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>realizados</div>
+                </div>
+                <div style={s.kpiCard}>
+                  <div style={s.kpiCardTitle}><Users size={15} color="#1E40AF" /> Clientes novas</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#1E40AF', lineHeight: 1, margin: '10px 0 4px' }}>{recap.novas}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>entraram no mês</div>
+                </div>
+                <div style={s.kpiCard}>
+                  <div style={s.kpiCardTitle}><MessageCircle size={15} color="#15803D" /> Cobranças enviadas</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1, margin: '10px 0 4px' }}>{recap.cobrancasQtd}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{recap.cobrancasValor > 0 ? `${formatBRL(recap.cobrancasValor)} já pagos` : 'WhatsApp + Pix'}</div>
+                </div>
+                <div style={s.kpiCard}>
+                  <div style={s.kpiCardTitle}><CalendarCheck size={15} color="#1E40AF" /> Faltas evitadas</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1, margin: '10px 0 4px' }}>{recap.confirmacoesLink}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>confirmadas pelo link</div>
+                </div>
+              </div>
+
+              {ehMesAtual && (
+                <div style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center', marginBottom: 8 }}>
+                  Mês em andamento — números até hoje.
+                </div>
               )}
             </>
           )}
