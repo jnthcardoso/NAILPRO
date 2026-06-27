@@ -62,8 +62,8 @@ export default function NovoAgendamentoModal({
       </div>
       <div style={s.row}>
         <div style={{ ...s.field, flex: 1, minWidth: 0 }}>
-          <label htmlFor="ag-valor" style={s.label}>Valor (R$)</label>
-          <input id="ag-valor" style={{ ...s.input, width: '100%', fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
+          <label htmlFor="ag-valor" style={s.label}>Valor (R$) <span style={{ color: 'var(--pink)' }}>*</span></label>
+          <input id="ag-valor" style={{ ...s.input, width: '100%', fontFamily: "'JetBrains Mono', monospace" }} type="number" placeholder="0,00" min="0.01" step="0.01" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} />
         </div>
         <div style={{ ...s.field, flex: 1, minWidth: 0 }}>
           <label htmlFor="ag-status" style={s.label}>Status</label>

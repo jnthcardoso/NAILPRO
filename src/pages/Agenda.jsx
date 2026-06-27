@@ -366,6 +366,7 @@ export default function Agenda() {
 
   async function salvarAgendamento() {
     if (!form.cliente_id || !form.horario || !form.servico || !form.data) return
+    if (!form.valor || parseFloat(form.valor) <= 0) { erro('Informe o valor do atendimento.'); return }
 
     // ── Aviso (não trava) se a data/hora já passou — pega erro de digitação,
     // mas permite lançar atendimento retroativo de propósito. ──
