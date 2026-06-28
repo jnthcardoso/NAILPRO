@@ -116,8 +116,9 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
         return c
       }).filter(Boolean)
       // Dedup: prioridade ao cancelamento (sinal mais claro) — tira do "sumidas".
+      // Também exclui quem já tem agendamento futuro (não precisa de ação).
       const cancelIds = new Set(cancelouNaoRemarcou.map(c => c.id))
-      const sumidasDedup = sumidas.filter(c => !cancelIds.has(c.id))
+      const sumidasDedup = sumidas.filter(c => !cancelIds.has(c.id) && !comFuturo.has(c.id))
 
       if (ativo) {
         setDados({

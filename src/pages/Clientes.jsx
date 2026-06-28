@@ -452,10 +452,12 @@ export default function Clientes() {
             <span style={{ ...s.chipBadge, background: 'rgba(146,64,14,0.15)', color: '#92400e' }}>{vips.length}</span>
           </button>
         )}
-        <button style={{ ...s.chip2, ...s.chip2Retorno, ...(filtro === 'sumidas' ? s.chip2RetornoAtivo : {}) }} onClick={() => setFiltro('sumidas')}>
-          <Clock size={12} style={{ flexShrink: 0 }} /> Retorno
-          {sumidasSemFuturo.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(153,27,27,0.15)', color: '#991b1b' }}>{sumidasSemFuturo.length}</span>}
-        </button>
+        {sumidasSemFuturo.length > 0 && (
+          <button style={{ ...s.chip2, ...s.chip2Retorno, ...(filtro === 'sumidas' ? s.chip2RetornoAtivo : {}) }} onClick={() => setFiltro('sumidas')}>
+            <Clock size={12} style={{ flexShrink: 0 }} /> Retorno
+            <span style={{ ...s.chipBadge, background: 'rgba(153,27,27,0.15)', color: '#991b1b' }}>{sumidasSemFuturo.length}</span>
+          </button>
+        )}
         <button style={{ ...s.chip2, ...s.chip2Novas, ...(filtro === 'sem_visita' ? s.chip2NovasAtivo : {}) }} onClick={() => setFiltro('sem_visita')}>
           Novas
           {semVisita.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(20,83,45,0.15)', color: '#14532d' }}>{semVisita.length}</span>}
