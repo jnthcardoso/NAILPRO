@@ -220,15 +220,21 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
         )}
 
         {cancelouNaoRemarcou.length > 0 && (
-          <div style={{ ...s.insight, background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', borderColor: '#FDBA74' }}>
+          <div
+            style={{ ...s.insight, background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', borderColor: '#FDBA74', cursor: 'pointer' }}
+            onClick={() => navigate('/app/metas?tab=indicadores&modal=cancel')}
+            role="button"
+          >
             <CalendarX size={18} color="#C2410C" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...s.insightTitle, color: '#7C2D12' }}>
                 {cancelouNaoRemarcou.length} cancelaram e não remarcaram
               </div>
-              <div style={{ ...s.insightSub, color: '#9A3412' }}>Toque no nome pra chamar pra remarcar no WhatsApp</div>
-              <Pessoas clientes={cancelouNaoRemarcou} montarMsg={msgReagendar} tipo="retorno" />
+              <div style={{ ...s.insightSub, color: '#9A3412', marginBottom: 0 }}>
+                Toque para ver quem são e chamar de volta
+              </div>
             </div>
+            <ChevronRight size={18} color="#C2410C" style={{ flexShrink: 0, alignSelf: 'center' }} />
           </div>
         )}
 

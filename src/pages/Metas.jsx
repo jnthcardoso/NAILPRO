@@ -114,6 +114,13 @@ export default function Metas() {
     if (temAcesso('relatoriosAvancados')) loadKpis()
   }, [salaoId, tab])
 
+  // Abre o modal de cancelamentos automaticamente quando vier da Home com ?modal=cancel
+  useEffect(() => {
+    if (cancelamento && searchParams.get('modal') === 'cancel') {
+      setDrill({ tipo: 'cancel' })
+    }
+  }, [cancelamento])
+
 
   // ── Config ────────────────────────────────────────────
   async function loadConfig() {
