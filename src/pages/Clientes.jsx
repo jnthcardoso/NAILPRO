@@ -298,6 +298,11 @@ export default function Clientes() {
   const ehAniversarianteMes = (c) => { const d = dataParaDate(c.data_nascimento); return !!d && d.getMonth() === mesAtual }
 
   const sumidas = useMemo(() => ativas.filter(estaSumida), [ativas])
+  // Só conta como "retorno pendente" quem está sumida E não tem agendamento futuro
+  const sumidasSemFuturo = useMemo(
+    () => sumidas.filter(c => !dadosExtras.proximoMap[c.id]),
+    [sumidas, dadosExtras]
+  )
   const vips = useMemo(() => ativas.filter(c => c.total_visitas >= VISITAS_VIP), [ativas])
   const semVisita = useMemo(() => ativas.filter(c => !c.ultimo_atendimento), [ativas])
   const aniversariantes = useMemo(() => ativas.filter(ehAniversarianteMes), [ativas, mesAtual])
@@ -312,7 +317,7 @@ export default function Clientes() {
         if (!achouNome && !achouTel) return false
       }
       if (filtro === 'vip') return c.total_visitas >= VISITAS_VIP
-      if (filtro === 'sumidas') return estaSumida(c)
+      if (filtro === 'sumidas') return estaSumida(c) && !dadosExtras.proximoMap[c.id]
       if (filtro === 'sem_visita') return !c.ultimo_atendimento
       if (filtro === 'aniversariantes') return ehAniversarianteMes(c)
       return true
@@ -328,7 +333,7 @@ export default function Clientes() {
         return parseUADate(b.ultimo_atendimento) - parseUADate(a.ultimo_atendimento)
       }
       return a.nome.localeCompare(b.nome)
-    }), [ativas, arquivadas, filtro, busca, ordenacao, mesAtual])
+    }), [ativas, arquivadas, filtro, busca, ordenacao, mesAtual, dadosExtras])
 
   const filtradaExibidas = filtradas.slice(0, pagina * ITENS_POR_PAGINA)
   const temMais = filtradas.length > pagina * ITENS_POR_PAGINA
@@ -339,7 +344,7 @@ export default function Clientes() {
     if (!tel) return
     // Cliente com retorno pendente já abre o WhatsApp com a mensagem de retorno
     // pronta (mesma editável em Configurações). As demais abrem o chat normal.
-    const msg = estaSumida(c)
+    const msg = (estaSumida(c) && !dadosExtras.proximoMap[c.id])
       ? aplicarVariaveis(configMsg.msg_retorno || MSG_RETORNO_PADRAO, { nome: c.nome, salao: configMsg.nome_salao })
       : ''
     window.open(linkWhatsApp(tel, msg), '_blank')
@@ -449,7 +454,7 @@ export default function Clientes() {
         )}
         <button style={{ ...s.chip2, ...s.chip2Retorno, ...(filtro === 'sumidas' ? s.chip2RetornoAtivo : {}) }} onClick={() => setFiltro('sumidas')}>
           <Clock size={12} style={{ flexShrink: 0 }} /> Retorno
-          {sumidas.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(153,27,27,0.15)', color: '#991b1b' }}>{sumidas.length}</span>}
+          {sumidasSemFuturo.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(153,27,27,0.15)', color: '#991b1b' }}>{sumidasSemFuturo.length}</span>}
         </button>
         <button style={{ ...s.chip2, ...s.chip2Novas, ...(filtro === 'sem_visita' ? s.chip2NovasAtivo : {}) }} onClick={() => setFiltro('sem_visita')}>
           Novas
@@ -503,8 +508,8 @@ export default function Clientes() {
           <div style={{ ...s.statNum, color: semVisita.length ? '#1D4ED8' : 'var(--text3)' }}>{semVisita.length}</div>
           <div style={s.statLabel}>Novas clientes</div>
         </div>
-        <div style={{ ...s.statCard, cursor: sumidas.length ? 'pointer' : 'default' }} onClick={() => sumidas.length && setFiltro(filtro === 'sumidas' ? 'todas' : 'sumidas')}>
-          <div style={{ ...s.statNum, color: sumidas.length ? 'var(--red, #B91C1C)' : 'var(--text3)' }}>{sumidas.length}</div>
+        <div style={{ ...s.statCard, cursor: sumidasSemFuturo.length ? 'pointer' : 'default' }} onClick={() => sumidasSemFuturo.length && setFiltro(filtro === 'sumidas' ? 'todas' : 'sumidas')}>
+          <div style={{ ...s.statNum, color: sumidasSemFuturo.length ? 'var(--red, #B91C1C)' : 'var(--text3)' }}>{sumidasSemFuturo.length}</div>
           <div style={s.statLabel}>Retorno</div>
         </div>
       </div>
@@ -533,7 +538,7 @@ export default function Clientes() {
           </div>
 
           {filtradaExibidas.map(c => {
-            const sumida = estaSumida(c)
+            const sumida = estaSumida(c) && !dadosExtras.proximoMap[c.id]
             const diasPassados = c.ultimo_atendimento ? differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) : null
             const prox = dadosExtras.proximoMap[c.id]
             const cancelados = dadosExtras.canceladosMap[c.id] || 0
