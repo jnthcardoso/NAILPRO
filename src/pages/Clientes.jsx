@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download } from 'lucide-react'
+import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download, Info } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -418,14 +418,16 @@ export default function Clientes() {
 
   return (
     <div style={s.page}>
-      <div style={s.searchBar}>
-        <Search size={16} color="var(--text3)" />
-        <input style={s.searchInput} placeholder="Buscar cliente..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={s.topRow}>
+        <div style={s.searchBar}>
+          <Search size={16} color="var(--text3)" />
+          <input style={s.searchInput} placeholder="Buscar cliente..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
+        </div>
         <button style={s.btnImportar} onClick={() => setShowImport(true)}>
-          <Upload size={14} /> Importar clientes
+          <Upload size={14} /> Importar
+        </button>
+        <button style={s.btnNova} onClick={abrirModalNova}>
+          <Plus size={14} /> Nova
         </button>
       </div>
 
@@ -459,11 +461,11 @@ export default function Clientes() {
       <div style={s.statsRow}>
         <div style={s.statCard}>
           <div style={s.statNum}>{ativas.length}</div>
-          <div style={s.statLabel}>Total</div>
+          <div style={s.statLabel}>Total de clientes</div>
         </div>
-        <div style={{ ...s.statCard, cursor: vips.length ? 'pointer' : 'default' }} onClick={() => vips.length && setFiltro(filtro === 'vip' ? 'todas' : 'vip')}>
-          <div style={{ ...s.statNum, color: 'var(--gold, #D4AF37)' }}>{vips.length}</div>
-          <div style={s.statLabel}>✦ VIP</div>
+        <div style={{ ...s.statCard, cursor: semVisita.length ? 'pointer' : 'default' }} onClick={() => semVisita.length && setFiltro(filtro === 'sem_visita' ? 'todas' : 'sem_visita')}>
+          <div style={{ ...s.statNum, color: semVisita.length ? '#1D4ED8' : 'var(--text3)' }}>{semVisita.length}</div>
+          <div style={s.statLabel}>Novas clientes</div>
         </div>
         <div style={{ ...s.statCard, cursor: sumidas.length ? 'pointer' : 'default' }} onClick={() => sumidas.length && setFiltro(filtro === 'sumidas' ? 'todas' : 'sumidas')}>
           <div style={{ ...s.statNum, color: sumidas.length ? 'var(--red, #B91C1C)' : 'var(--text3)' }}>{sumidas.length}</div>
@@ -532,10 +534,16 @@ export default function Clientes() {
         <div style={s.tableWrap}>
           {/* Cabeçalho */}
           <div style={s.tableHead}>
-            <div style={s.thStatus}>Status</div>
+            <div style={s.thStatus}>
+              Status
+              <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'help', flexShrink: 0 }} title="✓ Verde = retorno em dia · ⏰ Âmbar = nova (sem visita) · ! Vermelho = retorno pendente" />
+            </div>
             <div style={s.thNome}>Nome</div>
             <div style={s.thTel}>Telefone</div>
-            <div style={s.thHist}>Histórico</div>
+            <div style={s.thHist}>
+              Histórico
+              <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'help', flexShrink: 0 }} title="Verde = atendimentos realizados · Vermelho = cancelamentos · Âmbar = pagamentos a receber" />
+            </div>
             <div style={s.thData}>Último atend.</div>
             <div style={s.thData}>Próximo atend.</div>
             <div style={s.thOpt}>Edição</div>
@@ -618,7 +626,7 @@ export default function Clientes() {
                   {prox ? (
                     <>
                       <div style={s.dataValor}>{format(dataParaDate(prox.data), 'dd/MM/yy')}</div>
-                      <div style={s.dataRel}>{prox.horario}</div>
+                      <div style={s.dataRel}>{prox.horario?.slice(0, 5)}</div>
                     </>
                   ) : <span style={s.noData}>—</span>}
                 </div>
@@ -817,7 +825,8 @@ export default function Clientes() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 8px' },
-  searchBar: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', marginBottom: 16, boxShadow: 'var(--shadow-xs)' },
+  topRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 },
+  searchBar: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   chipsRow: { display: 'flex', flexWrap: 'wrap', gap: 6 },
   chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
@@ -874,7 +883,8 @@ const s = {
   empty: { padding: '40px 0', textAlign: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
-  btnImportar: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '8px 14px', fontSize: 12.5, fontWeight: 700, color: 'var(--pink)', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-xs)' },
+  btnImportar: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', fontSize: 12.5, fontWeight: 700, color: 'var(--pink)', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-xs)' },
+  btnNova: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--pink)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '9px 16px', fontSize: 12.5, fontWeight: 700, color: 'white', cursor: 'pointer', fontFamily: 'inherit' },
   uploadBox: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, textAlign: 'center', border: '2px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '20px 14px', cursor: 'pointer', background: 'var(--surface2)', marginBottom: 12 },
   importResumo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', fontSize: 12.5, color: 'var(--text2)', marginBottom: 12 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
