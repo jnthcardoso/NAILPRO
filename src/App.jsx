@@ -80,7 +80,7 @@ function OnboardingGuard({ children }) {
         if (cancelled) return
         if (error) {
           console.warn('OnboardingGuard:', error.message)
-          setStatus('needs') // pessimista: em caso de erro, mostra onboarding
+          setStatus('done') // fail-open: em caso de falha de rede, não trava veteranas no /bem-vindo
           return
         }
         // Só pula onboarding se EXPLICITAMENTE marcado como true

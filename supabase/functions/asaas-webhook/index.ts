@@ -71,6 +71,16 @@ async function enviarCompraGa4(opts: {
   else console.log('GA4 purchase enviada:', opts.valor, opts.plano, opts.ciclo)
 }
 
+// Comparacao de tempo constante: evita timing attack para inferir o token byte a byte.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  const ab = new TextEncoder().encode(a)
+  const bb = new TextEncoder().encode(b)
+  let result = 0
+  for (let i = 0; i < ab.length; i++) result |= ab[i] ^ bb[i]
+  return result === 0
+}
+
 // Eventos de cobranca do Asaas (nao ha webhook de assinatura — so de cobranca).
 Deno.serve(async (req: Request) => {
   const key = Deno.env.get('ASAAS_API_KEY') ?? ''
@@ -83,7 +93,7 @@ Deno.serve(async (req: Request) => {
   // ASAAS_WEBHOOK_TOKEN faltar. IMPORTANTE: so faca deploy desta funcao DEPOIS de
   // confirmar que o segredo esta setado no Supabase, senao os webhooks reais caem.
   const tokenRecebido = req.headers.get('asaas-access-token') ?? ''
-  if (!tokenEsperado || tokenRecebido !== tokenEsperado) {
+  if (!tokenEsperado || !timingSafeEqual(tokenRecebido, tokenEsperado)) {
     console.warn('Webhook: token ausente ou invalido')
     return new Response('unauthorized', { status: 401 })
   }

@@ -69,7 +69,7 @@ export function trackInicioAssinatura(plano, ciclo, valorReais) {
  * confiável. Religar este disparo no navegador contaria a venda DUAS VEZES.
  * Mantido apenas como referência.
  */
-export function trackPagamentoConfirmado(plano, ciclo, valorReais) {
+function trackPagamentoConfirmado(plano, ciclo, valorReais) {
   ga('purchase', {
     currency: 'BRL',
     value: valorReais,

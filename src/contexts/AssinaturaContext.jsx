@@ -191,6 +191,7 @@ export function AssinaturaProvider({ children }) {
     // pro mesmo salão (ex.: re-assinatura), vale a atual — nunca uma antiga já vencida.
     const { data } = await supabase.from('assinaturas')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()

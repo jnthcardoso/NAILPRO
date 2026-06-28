@@ -214,9 +214,12 @@ export default function Financeiro() {
 
       const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
       const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
-      const { data: data6m } = await supabase.from('pagamentos')
-        .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
-        .gte('data', inicio6m).lte('data', fim6m).limit(6000)
+      const { data: data6m, error: err6m } = await comTimeout(
+        supabase.from('pagamentos')
+          .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
+          .gte('data', inicio6m).lte('data', fim6m).limit(6000)
+      )
+      if (err6m) console.warn('Gráfico 6 meses: falha ao carregar', err6m.message)
       setPagamentos6m((data6m || []).filter(p => p.agendamentos?.status !== 'cancelado'))
     } catch (err) {
       toastErro(err.message || 'Não foi possível carregar os pagamentos.')

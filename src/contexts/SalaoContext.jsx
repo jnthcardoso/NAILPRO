@@ -14,12 +14,13 @@ export function SalaoProvider({ children }) {
     if (!user?.id) { setMembro(null); setSalao(null); setLoading(false); return }
     setLoading(true)
     // membro do usuário logado (papel + salao_id)
-    const { data: m } = await supabase
+    const { data: m, error: mErr } = await supabase
       .from('salao_membros')
       .select('id, salao_id, user_id, nome, email, papel, ativo')
       .eq('user_id', user.id)
       .eq('ativo', true)
       .maybeSingle()
+    if (mErr) console.error('SalaoContext: falha ao carregar membro', mErr.message)
     setMembro(m || null)
     if (m?.salao_id) {
       const { data: s } = await supabase
