@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
 import { formatBRL, formatMoeda, linkWhatsApp, validarTelefone } from '../lib/formatters'
-import { MSG_COBRANCA_PADRAO, aplicarVariaveis } from '../lib/mensagens'
+import { aplicarVariaveis } from '../lib/mensagens'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { CardSkeleton } from '../components/common/Skeleton'
 import PagamentoModal from '../components/agenda/PagamentoModal'
@@ -18,16 +18,17 @@ import RegistrarPagamentoModal from '../components/financeiro/RegistrarPagamento
 import ProLaboreModal from '../components/financeiro/ProLaboreModal'
 import DespesaModal from '../components/financeiro/DespesaModal'
 import ConfirmarPagarDespesaModal from '../components/financeiro/ConfirmarPagarDespesaModal'
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval, startOfYear, endOfYear, endOfWeek } from 'date-fns'
+import { format, addMonths, subMonths, eachMonthOfInterval } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
 import { useToast } from '../contexts/ToastContext'
 import { traduzErro } from '../lib/erros'
 import { exportarPDFResumo, exportarPDFReceitas, exportarPDFDespesas, exportarPDFAnalises, exportarPDFAnual } from '../lib/pdfExporter'
-import { comTimeout } from '../lib/queryUtils'
 import { s, tabs } from './Financeiro.styles'
 import { CATEGORIAS, FORMAS_PAGAMENTO } from './Financeiro.constants'
+import { useFinanceiroDados } from '../hooks/useFinanceiroDados'
+import { useFinanceiroConfig } from '../hooks/useFinanceiroConfig'
 
 // Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
 function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle, categorias = CATEGORIAS }) {
@@ -68,56 +69,52 @@ export default function Financeiro() {
   const { salaoId, gerenciaTudo } = useSalao()
   const { temAcesso } = useAssinatura()
   const { erro: toastErro, sucesso, confirmar } = useToast()
+
+  // ── Estados de UI ─────────────────────────────────────────────────────────
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const [pagamentos, setPagamentos] = useState([])
-  const [despesas, setDespesas] = useState([])
-  const [pagamentos6m, setPagamentos6m] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showDespesaModal, setShowDespesaModal] = useState(false)
   const [editandoDespesa, setEditandoDespesa] = useState(null)
-  // Categorias personalizadas criadas pelo salão (somam-se às 14 fixas).
-  const [categoriasCustom, setCategoriasCustom] = useState([])
   const [showNovaCat, setShowNovaCat] = useState(false)
   const [novaCat, setNovaCat] = useState({ label: '', icon: '📦', cor: '#8B2655' })
   const [savingCat, setSavingCat] = useState(false)
-  const [agendamentos, setAgendamentos] = useState([])
-  // Previsão = receita futura (agendamentos pendentes/confirmados a partir de hoje).
-  const [previsao, setPrevisao] = useState({ entraMes: 0, qtdEntraMes: 0 })
-  const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
   const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
   const [saving, setSaving] = useState(false)
   const [savingDespesa, setSavingDespesa] = useState(false)
-  // Confirmar pagamento de despesa a pagar (modal de confirmação).
   const [despesaParaPagar, setDespesaParaPagar] = useState(null)
   const [formPagarDespesa, setFormPagarDespesa] = useState({ forma_pagamento: 'pix' })
   const [savingPagarDespesa, setSavingPagarDespesa] = useState(false)
-  // Confirmar um pagamento pendente como pago (reaproveita o modal da agenda: 1 ou 2 formas).
   const [pagSelecionado, setPagSelecionado] = useState(null)
   const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
   const [savingPag, setSavingPag] = useState(false)
   const [filtro, setFiltro] = useState('todos')
-  const [filtroDespesa, setFiltroDespesa] = useState('todas') // 'todas' | 'recorrentes' | 'preencher'
+  const [filtroDespesa, setFiltroDespesa] = useState('todas')
   const [periodoSel, setPeriodoSel] = useState(new Date())
-  const [rangeMode, setRangeMode] = useState('mes') // 'mes' | 'custom'
-  const [customInicio, setCustomInicio] = useState('') // vazios: o usuario escolhe
+  const [rangeMode, setRangeMode] = useState('mes')
+  const [customInicio, setCustomInicio] = useState('')
   const [customFim, setCustomFim] = useState('')
   const [exportando, setExportando] = useState(false)
   const [exportandoAnual, setExportandoAnual] = useState(false)
   const [tab, setTab] = useState('resumo')
-  // Layout 2 faixas só no computador; no celular mantém as faixas empilhadas.
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 769)
-  // Config de cobrança (chave Pix + modelo da mensagem) — usada no botão "Cobrar".
-  const [cobranca, setCobranca] = useState({ chavePix: '', template: MSG_COBRANCA_PADRAO, nomeSalao: '' })
-  // Pró-labore ("meu salário"): valor mensal que a dona tira pra ela.
-  const [proLabore, setProLabore] = useState(0)
-  const [showProLabore, setShowProLabore] = useState(false)
-  const [proLaboreInput, setProLaboreInput] = useState('')
-  const [savingProLabore, setSavingProLabore] = useState(false)
-  // Linhas do DRE que podem expandir a lista de lançamentos (pagas / a pagar / pessoal).
   const [dreAberto, setDreAberto] = useState({})
   const toggleDre = (k) => setDreAberto(p => ({ ...p, [k]: !p[k] }))
   const [searchParams] = useSearchParams()
+
+  // ── Dados do banco (pagamentos, despesas, agendamentos, previsão) ──────────
+  const {
+    pagamentos, setPagamentos, despesas, pagamentos6m, agendamentos, previsao, loading,
+    loadPagamentos, loadDespesas, refDate,
+  } = useFinanceiroDados({ salaoId, user, gerenciaTudo, periodoSel, rangeMode, customInicio, customFim })
+
+  // ── Configurações do salão (cobrança PIX, pró-labore, categorias) ──────────
+  const {
+    cobranca, proLabore, showProLabore, setShowProLabore,
+    proLaboreInput, setProLaboreInput, savingProLabore,
+    categoriasCustom, setCategoriasCustom,
+    abrirProLabore, salvarProLabore,
+  } = useFinanceiroConfig({ salaoId, user })
 
   // Alterna entre layout celular e computador ao redimensionar a janela.
   useEffect(() => {
@@ -125,29 +122,6 @@ export default function Financeiro() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
-
-  // Config de cobrança (chave Pix + modelo) — carrega uma vez por salão.
-  useEffect(() => {
-    if (!salaoId) return
-    supabase.from('configuracoes')
-      .select('chave_pix, msg_cobranca, nome_salao, pro_labore')
-      .eq('salao_id', salaoId).maybeSingle()
-      .then(({ data }) => {
-        if (!data) return
-        setCobranca({
-          chavePix: data.chave_pix || '',
-          template: data.msg_cobranca || MSG_COBRANCA_PADRAO,
-          nomeSalao: data.nome_salao || '',
-        })
-        setProLabore(Number(data.pro_labore) || 0)
-      })
-    loadCategorias()
-  }, [salaoId])
-
-  async function loadCategorias() {
-    const { data } = await supabase.from('categorias_despesa').select('*').eq('salao_id', salaoId).order('label')
-    setCategoriasCustom(data || [])
-  }
 
   // Atalho vindo da Home: ?ver=pendentes abre direto Receitas filtrado em pendentes.
   useEffect(() => {
@@ -160,112 +134,6 @@ export default function Financeiro() {
       setFiltroDespesa('a_pagar')
     }
   }, [searchParams])
-
-  // Intervalo efetivo (mês selecionado ou período personalizado)
-  function getRange() {
-    if (rangeMode === 'custom' && customInicio && customFim) {
-      return customInicio <= customFim
-        ? { inicio: customInicio, fim: customFim }
-        : { inicio: customFim, fim: customInicio }
-    }
-    return { inicio: format(startOfMonth(periodoSel), 'yyyy-MM-dd'), fim: format(endOfMonth(periodoSel), 'yyyy-MM-dd') }
-  }
-  // Data de referência (para janela de 6 meses e relatório anual)
-  const refDate = (rangeMode === 'custom' && customFim) ? new Date(customFim + 'T12:00:00') : periodoSel
-
-  // Mostra o esqueleto só na 1ª carga. Ao trocar mês/período, rebusca em
-  // segundo plano mantendo os números antigos na tela (sem "piscar" reload).
-  const primeiraCarga = useRef(true)
-  useEffect(() => {
-    if (!salaoId) return
-    if (primeiraCarga.current) setLoading(true)
-    Promise.all([loadPagamentos(), loadAgendamentos(), loadDespesas(), loadPrevisao()])
-      .finally(() => { setLoading(false); primeiraCarga.current = false })
-  }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
-
-  // Recarrega ao voltar o foco para a aba/janela: mantém os números frescos
-  // quando dona e profissional mexem ao mesmo tempo em sessões diferentes.
-  useEffect(() => {
-    function aoFocar() {
-      if (document.visibilityState === 'visible' && salaoId) {
-        loadPagamentos(); loadDespesas()
-      }
-    }
-    window.addEventListener('focus', aoFocar)
-    document.addEventListener('visibilitychange', aoFocar)
-    return () => {
-      window.removeEventListener('focus', aoFocar)
-      document.removeEventListener('visibilitychange', aoFocar)
-    }
-  }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
-
-  async function loadPagamentos() {
-    const { inicio, fim } = getRange()
-    try {
-      const { data, error } = await comTimeout(
-        supabase.from('pagamentos').select('*, agendamentos(servico, status, clientes(nome, telefone))')
-          .eq('salao_id', salaoId).gte('data', inicio).lte('data', fim)
-          .order('data', { ascending: false }).limit(2000)
-      )
-      if (error) { toastErro(traduzErro(error, 'Não foi possível carregar os pagamentos.')); return }
-      // Pagamento de atendimento CANCELADO não é receita (some do perfil da cliente
-      // pelo mesmo motivo). Avulso (sem agendamento) continua contando.
-      setPagamentos((data || []).filter(p => p.agendamentos?.status !== 'cancelado'))
-
-      const inicio6m = format(startOfMonth(subMonths(refDate, 5)), 'yyyy-MM-dd')
-      const fim6m = format(endOfMonth(refDate), 'yyyy-MM-dd')
-      const { data: data6m, error: err6m } = await comTimeout(
-        supabase.from('pagamentos')
-          .select('data, valor, status, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
-          .gte('data', inicio6m).lte('data', fim6m).limit(6000)
-      )
-      if (err6m) console.warn('Gráfico 6 meses: falha ao carregar', err6m.message)
-      setPagamentos6m((data6m || []).filter(p => p.agendamentos?.status !== 'cancelado'))
-    } catch (err) {
-      toastErro(err.message || 'Não foi possível carregar os pagamentos.')
-    }
-  }
-
-  // Previsão de receita: o que AINDA vai entrar (agendamentos pendentes/confirmados
-  // de hoje em diante). Independe do período selecionado — é sempre "daqui pra frente".
-  async function loadPrevisao() {
-    // Previsão de RECEITA: atendimentos agendados que ainda vão acontecer neste mês
-    // (de hoje até o fim do mês). Mostrado num card no Resumo.
-    const hoje = format(new Date(), 'yyyy-MM-dd')
-    const fimMes = format(endOfMonth(new Date()), 'yyyy-MM-dd')
-    // "Vai entrar" só conta atendimentos SEM pagamento ainda. Se já tem pagamento
-    // (pago → já está em "recebido"; pendente → já está em "a receber"), não conta
-    // de novo — evita dupla contagem na "Previsão de fechamento".
-    const { data: ags } = await supabase
-      .from('agendamentos').select('valor, pagamentos(status)')
-      .eq('salao_id', salaoId)
-      .gte('data', hoje).lte('data', fimMes)
-      .in('status', ['pendente', 'confirmado'])
-    const arr = (ags || []).filter(a => (a.pagamentos || []).length === 0)
-    setPrevisao({ entraMes: arr.reduce((acc, a) => acc + (a.valor || 0), 0), qtdEntraMes: arr.length })
-  }
-
-  async function loadDespesas() {
-    const { inicio, fim } = getRange()
-    // Dona/recepção veem as despesas do salão; a profissional vê só as DELA
-    // (privadas, gravadas com salao_id NULL e identificadas pelo user_id).
-    let q = supabase.from('despesas')
-      .select('*')
-      .gte('data', inicio).lte('data', fim).order('data', { ascending: false }).limit(500)
-    q = gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id)
-    try {
-      const { data, error } = await comTimeout(q)
-      if (error) { toastErro(traduzErro(error, 'Não foi possível carregar as despesas.')); return }
-      setDespesas(data || [])
-    } catch (err) {
-      toastErro(err.message || 'Não foi possível carregar as despesas.')
-    }
-  }
-
-  async function loadAgendamentos() {
-    const { data } = await supabase.from('agendamentos').select('id, servico, data, clientes(nome)').eq('salao_id', salaoId).order('data', { ascending: false }).limit(50)
-    setAgendamentos(data || [])
-  }
 
   async function salvarPagamento() {
     if (!form.valor) return
@@ -374,22 +242,6 @@ export default function Financeiro() {
     if (error) { toastErro(traduzErro(error, 'Não foi possível criar a despesa recorrente.')); return }
     sucesso(`Despesa recorrente criada (${linhas.length} ${linhas.length === 1 ? 'mês' : 'meses'}) ✓`)
     fecharDespesaModal(); loadDespesas()
-  }
-
-  function abrirProLabore() {
-    setProLaboreInput(proLabore ? String(proLabore) : '')
-    setShowProLabore(true)
-  }
-
-  async function salvarProLabore() {
-    const valor = parseFloat(proLaboreInput) || 0
-    setSavingProLabore(true)
-    const { error } = await supabase.from('configuracoes').update({ pro_labore: valor }).eq('salao_id', salaoId)
-    setSavingProLabore(false)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível salvar seu salário.')); return }
-    setProLabore(valor)
-    setShowProLabore(false)
-    sucesso('Pró-labore salvo ✓')
   }
 
   async function salvarNovaCategoria() {
