@@ -483,13 +483,13 @@ export default function Clientes() {
         <div style={s.tableWrap}>
           {/* Cabeçalho */}
           <div style={s.tableHead}>
-            <div style={s.thStatus} />
+            <div style={s.thStatus}>Status</div>
             <div style={s.thNome}>Nome</div>
             <div style={s.thTel}>Telefone</div>
             <div style={s.thHist}>Histórico</div>
             <div style={s.thData}>Último atend.</div>
             <div style={s.thData}>Próximo atend.</div>
-            <div style={s.thOpt} />
+            <div style={s.thOpt}>Edição</div>
           </div>
 
           {filtradaExibidas.map(c => {
@@ -733,31 +733,31 @@ const s = {
   filtroSelect: { width: '100%', height: 42, boxSizing: 'border-box', padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
   // ── Tabela de clientes (7 colunas) ──
   tableWrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' },
-  tableHead: { display: 'grid', gridTemplateColumns: '22px minmax(0,1.5fr) minmax(0,1fr) 110px 78px 78px 52px', gap: 8, alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', minWidth: 600 },
-  thStatus: { },
-  thNome: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  thTel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  thHist: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  thData: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  thOpt: { },
-  tableRow: { display: 'grid', gridTemplateColumns: '22px minmax(0,1.5fr) minmax(0,1fr) 110px 78px 78px 52px', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', minWidth: 600 },
-  tdStatus: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  tdNome: { minWidth: 0 },
+  tableHead: { display: 'grid', gridTemplateColumns: '58px minmax(0,1.4fr) minmax(0,1fr) 108px 84px 84px 58px', gap: 0, alignItems: 'center', padding: '0', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', minWidth: 600 },
+  thStatus: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 10px' },
+  thNome: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 10px' },
+  thTel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 10px' },
+  thHist: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 10px' },
+  thData: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 10px' },
+  thOpt: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 10px', textAlign: 'right' },
+  tableRow: { display: 'grid', gridTemplateColumns: '58px minmax(0,1.4fr) minmax(0,1fr) 108px 84px 84px 58px', gap: 0, alignItems: 'center', padding: '0', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', minWidth: 600 },
+  tdStatus: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 10px' },
+  tdNome: { minWidth: 0, padding: '10px 10px' },
   rowName: { fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   rowTags: { display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap' },
-  tdTel: { minWidth: 0 },
+  tdTel: { minWidth: 0, padding: '10px 10px' },
   telBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', color: 'var(--text2)', maxWidth: '100%' },
   telBtnEnviado: { display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', color: 'var(--text3)', maxWidth: '100%' },
   telNum: { fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  tdHist: { display: 'flex', alignItems: 'center', gap: 4 },
+  tdHist: { display: 'flex', alignItems: 'center', gap: 4, padding: '10px 10px' },
   hpGreen: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 20, background: '#eaf3de', color: '#3b6d11' },
   hpRed: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 20, background: '#fcebeb', color: '#a32d2d' },
   hpAmber: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 20, background: '#faeeda', color: '#854f0b' },
-  tdData: { },
+  tdData: { padding: '10px 10px' },
   dataValor: { fontSize: 12, color: 'var(--text2)' },
   dataRel: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
   noData: { fontSize: 12, color: 'var(--text3)' },
-  tdOpt: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
+  tdOpt: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, padding: '10px 10px' },
   editBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'none', border: '1px solid var(--border2)', cursor: 'pointer', color: 'var(--text3)', flexShrink: 0, fontFamily: 'inherit' },
   confirmWrap: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 },
   btnConfirmei: { background: 'var(--green, #15803D)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
