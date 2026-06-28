@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Plus, FileDown, ChevronLeft, ChevronRight, Crown, Calendar,
-  TrendingUp, TrendingDown, DollarSign, Receipt, X, Pencil,
-  BarChart2, ListOrdered, CalendarClock, MessageCircle, Check
+  FileDown, ChevronLeft, ChevronRight, Calendar,
+  TrendingUp, TrendingDown, DollarSign, Receipt,
+  BarChart2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
 import { useAssinatura } from '../contexts/AssinaturaContext'
-import { formatBRL, formatMoeda, linkWhatsApp, validarTelefone } from '../lib/formatters'
-import { aplicarVariaveis } from '../lib/mensagens'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import { CardSkeleton } from '../components/common/Skeleton'
 import PagamentoModal from '../components/agenda/PagamentoModal'
@@ -20,50 +18,19 @@ import DespesaModal from '../components/financeiro/DespesaModal'
 import ConfirmarPagarDespesaModal from '../components/financeiro/ConfirmarPagarDespesaModal'
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import BarChart, { HBarChart } from '../components/charts/BarChart'
-import DonutChart from '../components/charts/DonutChart'
 import { useToast } from '../contexts/ToastContext'
 import { exportarPDFResumo, exportarPDFReceitas, exportarPDFDespesas, exportarPDFAnalises, exportarPDFAnual } from '../lib/pdfExporter'
+import { formatBRL } from '../lib/formatters'
 import { s, tabs } from './Financeiro.styles'
-import { CATEGORIAS, FORMAS_PAGAMENTO } from './Financeiro.constants'
+import { CATEGORIAS } from './Financeiro.constants'
 import { useFinanceiroDados } from '../hooks/useFinanceiroDados'
 import { useFinanceiroConfig } from '../hooks/useFinanceiroConfig'
 import { useFinanceiroReceitas } from '../hooks/useFinanceiroReceitas'
 import { useFinanceiroDespesas } from '../hooks/useFinanceiroDespesas'
-
-// Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
-function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle, categorias = CATEGORIAS }) {
-  return (
-    <>
-      <div style={{ ...s.dreLinha, cursor: 'pointer' }} onClick={onToggle}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <ChevronRight size={13} style={{ transition: 'transform .15s', transform: aberto ? 'rotate(90deg)' : 'none', flexShrink: 0 }} />
-          {label}{sub && <span style={{ color: 'var(--text3)', fontSize: 11 }}> {sub}</span>}
-        </span>
-        <span style={{ ...s.mono, color: cor }}>− {formatBRL(valor)}</span>
-      </div>
-      {aberto && (
-        <div style={s.dreSubLista}>
-          {items.length === 0
-            ? <div style={{ ...s.dreSubItem, color: 'var(--text3)' }}>nenhum lançamento</div>
-            : items.map(d => {
-              const c = categorias.find(x => x.id === d.categoria)
-              return (
-                <div key={d.id} style={s.dreSubItem}>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                    {c?.icon || '📦'} {d.descricao}
-                  </span>
-                  <span style={{ ...s.mono, color: 'var(--text2)', flexShrink: 0 }}>
-                    {d.valor_a_preencher ? '—' : formatBRL(d.valor)}
-                  </span>
-                </div>
-              )
-            })}
-        </div>
-      )}
-    </>
-  )
-}
+import TabResumo from '../components/financeiro/TabResumo'
+import TabAnalises from '../components/financeiro/TabAnalises'
+import TabReceitas from '../components/financeiro/TabReceitas'
+import TabDespesas from '../components/financeiro/TabDespesas'
 
 export default function Financeiro() {
   const { user } = useAuth()
@@ -395,398 +362,60 @@ export default function Financeiro() {
 
       {/* ── ABA: Resumo ── */}
       {!loading && tab === 'resumo' && (
-        <div style={s.tabContent}>
-          {/* KPIs */}
-          <div style={{ ...s.grid4, ...(ehMesAtual ? { gridTemplateColumns: 'repeat(5, 1fr)' } : {}) }} className="fin-resumo-grid">
-            <div style={{ ...s.card, borderTop: '3px solid var(--green)' }} className="fin-resumo-card">
-              <div style={s.cardLabel} className="fin-card-label"><DollarSign size={11} /> Recebido</div>
-              <div style={{ ...s.cardValue, color: 'var(--green)' }} className="fin-card-value">{formatBRL(recebido)}</div>
-              <div style={s.cardSub} className="fin-card-sub">{qtdPagos} pagamento{qtdPagos !== 1 ? 's' : ''}</div>
-            </div>
-            <div style={{ ...s.card, borderTop: '3px solid #B91C1C' }} className="fin-resumo-card">
-              <div style={s.cardLabel} className="fin-card-label"><Receipt size={11} /> Despesas do salão</div>
-              <div style={{ ...s.cardValue, color: '#B91C1C' }} className="fin-card-value">{formatBRL(totalDespesasSalao)}</div>
-              <div style={s.cardSub} className="fin-card-sub">{despesas.filter(d => d.tipo !== 'pessoal').length} lançamento{despesas.filter(d => d.tipo !== 'pessoal').length !== 1 ? 's' : ''}</div>
-            </div>
-            <div
-              style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}`, cursor: 'pointer' }}
-              className="fin-resumo-card"
-              onClick={() => { setTab('receitas'); setFiltro('pendente') }}
-              title="Ver receitas pendentes"
-            >
-              <div style={s.cardLabel} className="fin-card-label">⏰ A receber</div>
-              <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }} className="fin-card-value">{formatBRL(pendente)}</div>
-              <div style={s.cardSub} className="fin-card-sub">{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
-            </div>
-            <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }} className="fin-resumo-card">
-              <div style={s.cardLabel} className="fin-card-label">{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
-              <div style={{ ...s.cardValue, color: lucro >= 0 ? 'var(--gold, #B7791F)' : '#B91C1C' }} className="fin-card-value">{formatBRL(lucro)}</div>
-              <div style={s.cardSub} className="fin-card-sub">{margemLucro.toFixed(0)}% de margem</div>
-            </div>
-            {/* Previsão de receita do mês — só no mês atual */}
-            {ehMesAtual && (
-              <div style={{ ...s.card, borderTop: '3px solid var(--pink)' }} className="fin-resumo-card">
-                <div style={s.cardLabel} className="fin-card-label"><Calendar size={11} /> Previsão de fechamento</div>
-                <div style={{ ...s.cardValue, color: 'var(--pink)' }} className="fin-card-value">{formatBRL(recebido + pendente + previsao.entraMes)}</div>
-                <div style={s.cardSub} className="fin-card-sub">estimativa do mês</div>
-              </div>
-            )}
-          </div>
-
-          {/* DRE */}
-          <div style={s.dreCard}>
-            <div style={s.dreTitulo}>📊 DRE — {periodoLabel}</div>
-            <div style={s.dreLinha}>
-              <span>(+) Receitas recebidas</span>
-              <span style={{ ...s.mono, color: 'var(--green)' }}>{formatBRL(recebido)}</span>
-            </div>
-            {salaoAPagar > 0 ? (
-              <>
-                <LinhaDespesaExpansivel
-                  label="(−) Despesas do salão" sub="(já pagas)"
-                  valor={salaoPagas} cor="#B91C1C" items={salaoPagasArr}
-                  aberto={!!dreAberto.pagas} onToggle={() => toggleDre('pagas')}
-                  categorias={categoriasTodas}
-                />
-                <LinhaDespesaExpansivel
-                  label="(−) Contas a pagar" sub="(vai sair)"
-                  valor={salaoAPagar} cor="#B45309" items={salaoAPagarArr}
-                  aberto={!!dreAberto.apagar} onToggle={() => toggleDre('apagar')}
-                  categorias={categoriasTodas}
-                />
-              </>
-            ) : (
-              <LinhaDespesaExpansivel
-                label="(−) Despesas do salão"
-                valor={totalDespesasSalao} cor="#B91C1C" items={despesasSalaoArr}
-                aberto={!!dreAberto.salao} onToggle={() => toggleDre('salao')}
-                categorias={categoriasTodas}
-              />
-            )}
-
-            {/* Pró-labore é despesa operacional: vem ANTES do lucro líquido */}
-            {mostraProLabore && (
-              proLabore > 0 ? (
-                <div style={s.dreLinha}>
-                  <span>
-                    (−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span>
-                    <button onClick={abrirProLabore} style={s.proLaboreEdit} title="Editar seu salário"><Pencil size={11} /></button>
-                  </span>
-                  <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(proLabore)}</span>
-                </div>
-              ) : (
-                <div style={s.dreLinha}>
-                  <span>(−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span></span>
-                  <button onClick={abrirProLabore} style={s.proLaboreLink}>+ definir</button>
-                </div>
-              )
-            )}
-
-            <div style={s.dreDivider} />
-            <div style={{ ...s.dreLinha, ...s.dreTotal }}>
-              <span>(=) Lucro líquido</span>
-              <span style={{ ...s.mono, color: lucro >= 0 ? 'var(--green)' : '#B91C1C', fontSize: 16 }}>{formatBRL(lucro)}</span>
-            </div>
-            {recebido > 0 && (
-              <div style={s.dreMargem}>
-                Margem de lucro: <strong>{margemLucro.toFixed(1)}%</strong>
-                {margemLucro >= 30 && ' 🎉 Excelente!'}
-                {margemLucro >= 15 && margemLucro < 30 && ' 👍 Saudável'}
-                {margemLucro >= 0 && margemLucro < 15 && ' ⚠️ Atenção'}
-                {margemLucro < 0 && ' 🚨 Prejuízo'}
-              </div>
-            )}
-
-            {/* Seu bolso: gastos pessoais (não entram no lucro do salão) */}
-            {mostraProLabore && totalDespesasPessoal > 0 && (
-              <>
-                <div style={s.dreDivider} />
-                <LinhaDespesaExpansivel
-                  label="👤 Gastos pessoais" sub="(seu bolso)"
-                  valor={totalDespesasPessoal} cor="#7C3AED" items={despesasPessoalArr}
-                  aberto={!!dreAberto.pessoal} onToggle={() => toggleDre('pessoal')}
-                  categorias={categoriasTodas}
-                />
-                {proLabore > 0
-                  ? <div style={s.dreMargem}>
-                      {sobrouPraVoce >= 0
-                        ? <>Do seu salário de {formatBRL(proLabore)}, sobrou <strong>{formatBRL(sobrouPraVoce)}</strong> pra você 💜</>
-                        : <>🚨 Você gastou <strong>{formatBRL(-sobrouPraVoce)}</strong> a mais do que tirou de salário</>}
-                    </div>
-                  : <div style={s.dreMargem}>Defina seu salário acima pra saber se seus gastos pessoais cabem no que você tira. 💡</div>}
-              </>
-            )}
-          </div>
-
-        </div>
+        <TabResumo
+          ehMesAtual={ehMesAtual}
+          recebido={recebido} qtdPagos={qtdPagos}
+          totalDespesasSalao={totalDespesasSalao} despesas={despesas}
+          pendente={pendente} pagamentos={pagamentos}
+          lucro={lucro} margemLucro={margemLucro} previsao={previsao}
+          dreAberto={dreAberto} toggleDre={toggleDre} categoriasTodas={categoriasTodas}
+          salaoAPagar={salaoAPagar} salaoPagas={salaoPagas}
+          salaoPagasArr={salaoPagasArr} salaoAPagarArr={salaoAPagarArr}
+          despesasSalaoArr={despesasSalaoArr}
+          mostraProLabore={mostraProLabore} proLabore={proLabore}
+          sobrouPraVoce={sobrouPraVoce}
+          despesasPessoalArr={despesasPessoalArr} totalDespesasPessoal={totalDespesasPessoal}
+          periodoLabel={periodoLabel} abrirProLabore={abrirProLabore}
+          onVerPendentes={() => { setTab('receitas'); setFiltro('pendente') }}
+        />
       )}
 
       {/* ── ABA: Análises ── */}
       {!loading && tab === 'analises' && (
-        <div style={s.tabContent}>
-          {/* KPI cards */}
-          <div style={s.kpiGrid}>
-            {[
-              {
-                label: 'Receita recebida',
-                valor: formatBRL(recebido),
-                sub: recebidoMesAnterior !== null
-                  ? (recebido >= recebidoMesAnterior
-                    ? { seta: '▲', cor: '#15803D', txt: `+${formatBRL(recebido - recebidoMesAnterior)} vs mês ant.` }
-                    : { seta: '▼', cor: '#DC2626', txt: `-${formatBRL(recebidoMesAnterior - recebido)} vs mês ant.` })
-                  : null,
-              },
-              {
-                label: 'Atendimentos',
-                valor: totalAtendimentos,
-                sub: null,
-              },
-              {
-                label: 'Ticket médio',
-                valor: ticketMedio > 0 ? formatBRL(ticketMedio) : '—',
-                sub: null,
-              },
-              {
-                label: 'Margem de lucro',
-                valor: recebido > 0 ? `${margemLucro.toFixed(0)}%` : '—',
-                sub: recebido > 0
-                  ? { cor: margemLucro >= 0 ? '#15803D' : '#DC2626', txt: margemLucro >= 0 ? 'positiva' : 'negativa' }
-                  : null,
-              },
-            ].map((k, i) => (
-              <div key={i} style={s.kpiCard}>
-                <div style={s.kpiLabel}>{k.label}</div>
-                <div style={s.kpiValor}>{k.valor}</div>
-                {k.sub && (
-                  <div style={{ ...s.kpiSub, color: k.sub.cor }}>
-                    {k.sub.seta && <span>{k.sub.seta} </span>}{k.sub.txt}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div style={s.graficosGrid}>
-            <div style={s.graficoCard}>
-              <div style={s.graficoTitulo}>Receita dos últimos 6 meses</div>
-              <BarChart data={dadosReceita6m} cor="#15803D" prefixo="R$ " height={160} />
-            </div>
-
-            <div style={s.graficoCard}>
-              <div style={s.graficoTitulo}>Despesas por categoria</div>
-              {dadosDespesas.length === 0
-                ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem despesas no período</div>
-                : <DonutChart data={dadosDespesas} size={160} centerLabel={formatBRL(totalDespesas)} centerSub="total" />
-              }
-            </div>
-
-            <div style={s.graficoCard}>
-              <div style={s.graficoTitulo}>Como você recebeu</div>
-              {dadosFormas.length === 0
-                ? <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 30 }}>Sem dados</div>
-                : <DonutChart data={dadosFormas} size={160} centerLabel={formatBRL(recebido)} centerSub="recebido" />
-              }
-            </div>
-
-            <div style={{ ...s.graficoCard, gridColumn: '1 / -1' }}>
-              <div style={s.graficoTitulo}>Top serviços por receita</div>
-              <HBarChart data={topServicos} cor="var(--pink)" formatValor={(v) => formatBRL(v)} showQtd />
-            </div>
-          </div>
-        </div>
+        <TabAnalises
+          recebido={recebido} recebidoMesAnterior={recebidoMesAnterior}
+          totalAtendimentos={totalAtendimentos} ticketMedio={ticketMedio} margemLucro={margemLucro}
+          totalDespesas={totalDespesas} dadosReceita6m={dadosReceita6m}
+          dadosDespesas={dadosDespesas} dadosFormas={dadosFormas} topServicos={topServicos}
+        />
       )}
 
       {/* ── ABA: Receitas ── */}
       {!loading && tab === 'receitas' && (
-        <div style={s.tabContent}>
-          <div style={s.colHeader}>
-            <div style={s.colTitulo}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
-              Receitas ({filtrados.length})
-            </div>
-            <button style={s.addBtnSmall} onClick={() => setShowModal(true)}>
-              <Plus size={13} /> Pagamento
-            </button>
-          </div>
-
-          <div style={s.filtros} className="fin-filtros-receita">
-            {['todos', 'pago', 'pendente'].map(f => (
-              <button key={f} style={{ ...s.filtroBtn, ...(filtro === f ? s.filtroBtnActive : {}) }} onClick={() => setFiltro(f)}>
-                {f === 'todos' ? 'Todos' : f === 'pago' ? 'Pagos' : 'Pendentes'}
-              </button>
-            ))}
-          </div>
-
-          {filtrados.length === 0
-            ? <div style={s.empty}>Nenhum lançamento encontrado</div>
-            : filtrados.map(p => {
-              const pago = p.status === 'pago'
-              const tel = p.agendamentos?.clientes?.telefone
-              // Cobrança só faz sentido em pendente com telefone válido.
-              const podeCobrar = !pago && validarTelefone(tel) && temAcesso('cobrancaWhatsapp')
-              const cobrado = !!p.cobranca_enviada_em
-              const msgCobranca = aplicarVariaveis(cobranca.template, {
-                nome: p.agendamentos?.clientes?.nome || '',
-                salao: cobranca.nomeSalao,
-                servico: p.agendamentos?.servico || '',
-                valor: formatBRL(p.valor ?? 0),
-                pix: cobranca.chavePix,
-              })
-              return (
-                <div key={p.id} style={s.finCard}>
-                  <div style={{ ...s.dot, background: pago ? 'var(--green)' : '#F59E0B' }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={s.finNome}>{p.agendamentos?.clientes?.nome || '—'}</div>
-                    <div style={s.finSub}>
-                      {p.agendamentos?.servico || '—'} · {format(new Date(p.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                      {' · '}{FORMA_LABEL[p.forma] || p.forma}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ ...s.finValor, color: pago ? 'var(--green)' : 'var(--amber)' }}>
-                      {formatBRL(p.valor ?? 0)}
-                    </div>
-                    <div style={{ display: 'flex', gap: 5, marginTop: 3, justifyContent: 'flex-end' }}>
-                      {podeCobrar && (
-                        <a
-                          style={cobrado ? s.cobradoBtn : s.cobrarBtn}
-                          href={linkWhatsApp(tel, msgCobranca)}
-                          target="_blank" rel="noreferrer"
-                          onClick={() => marcarCobrado(p)}
-                          title={cobrado ? 'Cobrança já enviada — toque para reenviar' : 'Cobrar pelo WhatsApp'}
-                        >
-                          {cobrado ? <><Check size={11} /> Cobrado</> : <><MessageCircle size={11} /> Cobrar</>}
-                        </a>
-                      )}
-                      <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? reverterParaPendente(p) : abrirConfirmarPago(p)}>
-                        {pago ? '✓ Pago' : '⏳ Pendente'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          }
-        </div>
+        <TabReceitas
+          filtrados={filtrados} filtro={filtro} setFiltro={setFiltro}
+          cobranca={cobranca} setShowModal={setShowModal}
+          marcarCobrado={marcarCobrado} reverterParaPendente={reverterParaPendente}
+          abrirConfirmarPago={abrirConfirmarPago}
+        />
       )}
 
       {/* ── ABA: Despesas ── */}
       {!loading && tab === 'despesas' && (
-        <div style={s.tabContent}>
-          {/* Cards de resumo por bolso. Pro: 4 cards (salão pago/a pagar + pessoal pago/a pagar). Solo: 2 (totais por bolso). */}
-          {temAcesso('contasAPagar') ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ ...s.card, borderTop: '3px solid var(--green)', cursor: 'pointer', ...(filtroDespesa === 'salao_pago' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('salao_pago')} title="Ver só os lançamentos do salão já pagos">
-                <div style={s.cardLabel}>🏢 Salão — pago</div>
-                <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(salaoPagas)}</div>
-                <div style={s.cardSub}>{salaoPagasArr.length} lançamento{salaoPagasArr.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div style={{ ...s.card, borderTop: '3px solid #FCD34D', cursor: 'pointer', ...(filtroDespesa === 'salao_apagar' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('salao_apagar')} title="Ver só as contas do salão a pagar">
-                <div style={s.cardLabel}>🏢 Salão — a pagar</div>
-                <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(salaoAPagar)}</div>
-                <div style={s.cardSub}>{salaoAPagarArr.length} conta{salaoAPagarArr.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div style={{ ...s.card, borderTop: '3px solid var(--green)', cursor: 'pointer', ...(filtroDespesa === 'pessoal_pago' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('pessoal_pago')} title="Ver só os gastos pessoais já pagos">
-                <div style={s.cardLabel}>👤 Pessoal — pago</div>
-                <div style={{ ...s.cardValue, color: '#15803D' }}>{formatBRL(pessoalPagas)}</div>
-                <div style={s.cardSub}>{pessoalPagasArr.length} lançamento{pessoalPagasArr.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div style={{ ...s.card, borderTop: '3px solid #FCD34D', cursor: 'pointer', ...(filtroDespesa === 'pessoal_apagar' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('pessoal_apagar')} title="Ver só os gastos pessoais a pagar">
-                <div style={s.cardLabel}>👤 Pessoal — a pagar</div>
-                <div style={{ ...s.cardValue, color: '#B45309' }}>{formatBRL(pessoalAPagar)}</div>
-                <div style={s.cardSub}>{pessoalAPagarArr.length} conta{pessoalAPagarArr.length !== 1 ? 's' : ''}</div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ ...s.card, borderTop: '3px solid #B91C1C', cursor: 'pointer', ...(filtroDespesa === 'salao' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('salao')} title="Ver só as despesas do salão">
-                <div style={s.cardLabel}>🏢 Despesas do salão</div>
-                <div style={{ ...s.cardValue, color: '#B91C1C' }}>{formatBRL(totalDespesasSalao)}</div>
-                <div style={s.cardSub}>{despesasSalaoArr.length} lançamento{despesasSalaoArr.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div style={{ ...s.card, borderTop: '3px solid #7C3AED', cursor: 'pointer', ...(filtroDespesa === 'pessoal' ? s.cardAtivo : {}) }} onClick={() => toggleFiltroCard('pessoal')} title="Ver só as despesas pessoais">
-                <div style={s.cardLabel}>👤 Despesas pessoais</div>
-                <div style={{ ...s.cardValue, color: '#7C3AED' }}>{formatBRL(totalDespesasPessoal)}</div>
-                <div style={s.cardSub}>{despesasPessoalArr.length} lançamento{despesasPessoalArr.length !== 1 ? 's' : ''}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Cabeçalho: título + filtro + adicionar.
-              Desktop: numa linha só. Mobile: título+botão na 1ª linha, filtro embaixo. */}
-          <div style={s.colHeader} className="fin-despesas-header">
-            <div style={s.colTitulo}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#B91C1C' }} />
-              Despesas ({despesasVisiveis.length})
-            </div>
-            <select className="fin-despesas-filtro" value={filtroDespesa} onChange={e => setFiltroDespesa(e.target.value)} style={{ ...s.filtroSelect, marginLeft: 'auto' }}>
-                <option value="todas">Todas</option>
-                <option value="salao">🏢 Do salão</option>
-                <option value="pessoal">👤 Pessoal</option>
-                {temAcesso('contasAPagar') && <option value="a_pagar">💸 A pagar</option>}
-                {temAcesso('contasAPagar') && <option value="salao_pago">🏢 Salão — pagas</option>}
-                {temAcesso('contasAPagar') && <option value="salao_apagar">🏢 Salão — a pagar</option>}
-                {temAcesso('contasAPagar') && <option value="pessoal_pago">👤 Pessoal — pagas</option>}
-                {temAcesso('contasAPagar') && <option value="pessoal_apagar">👤 Pessoal — a pagar</option>}
-                <option value="recorrentes">🔁 Recorrentes</option>
-                <option value="preencher">⚠️ A preencher</option>
-            </select>
-            <button className="fin-despesas-addbtn" style={s.addBtnSmall} onClick={abrirNovaDespesa}>
-              <Plus size={13} /> Despesa
-            </button>
-          </div>
-
-          {despesasVisiveis.length === 0
-            ? <div style={s.empty}>Nenhuma despesa {
-                filtroDespesa === 'a_pagar' || filtroDespesa === 'salao_apagar' || filtroDespesa === 'pessoal_apagar' ? 'a pagar'
-                : filtroDespesa === 'salao_pago' || filtroDespesa === 'pessoal_pago' ? 'paga'
-                : filtroDespesa === 'recorrentes' ? 'recorrente'
-                : filtroDespesa === 'preencher' ? 'a preencher'
-                : 'registrada'}</div>
-            : despesasVisiveis.map(d => {
-              const cat = findCat(d.categoria)
-              const ehAPagar = d.pago === false
-              return (
-                <div key={d.id} style={s.finCard}>
-                  <div style={{ ...s.catBadge, background: (cat?.cor || '#888') + '22', color: cat?.cor || '#888' }}>
-                    {cat?.icon || '📦'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={s.finNome}>{d.descricao}</div>
-                    <div style={s.finSub}>
-                      {d.tipo === 'pessoal' && <span style={{ fontWeight: 700, color: '#7C3AED' }}>👤 Pessoal · </span>}
-                      {cat?.label || 'Categoria removida'} · {ehAPagar ? 'vence ' : ''}{format(new Date(d.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
-                      {d.recorrente && ' · 🔁 mensal'}{d.valor_variavel && ' (valor varia)'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    {d.valor_a_preencher
-                      ? <div style={{ ...s.finValor, color: '#B45309', fontSize: 12 }}>⚠️ a preencher</div>
-                      : <div style={{ ...s.finValor, color: '#B91C1C' }}>− {formatBRL(d.valor ?? 0)}</div>}
-                    {temAcesso('contasAPagar') && !d.valor_a_preencher && (
-                      ehAPagar
-                        ? <div style={s.aPagarBadge}>💸 a pagar</div>
-                        : <div style={s.pagaBadge}>✓ paga</div>
-                    )}
-                    <div style={{ display: 'flex', gap: 4, marginTop: 4, justifyContent: 'flex-end' }}>
-                      {ehAPagar && !d.valor_a_preencher && (
-                        <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)} title="Confirmar pagamento">
-                          <Check size={11} /> Pagar
-                        </button>
-                      )}
-                      <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
-                        <Pencil size={11} />
-                      </button>
-                      <button style={{ ...s.miniIconBtn, color: '#B91C1C' }} onClick={() => excluirDespesa(d)} title="Excluir">
-                        <X size={11} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          }
-        </div>
+        <TabDespesas
+          temAcesso={temAcesso}
+          filtroDespesa={filtroDespesa} setFiltroDespesa={setFiltroDespesa}
+          toggleFiltroCard={toggleFiltroCard}
+          despesasVisiveis={despesasVisiveis} categoriasTodas={categoriasTodas}
+          salaoPagas={salaoPagas} salaoPagasArr={salaoPagasArr}
+          salaoAPagar={salaoAPagar} salaoAPagarArr={salaoAPagarArr}
+          pessoalPagas={pessoalPagas} pessoalPagasArr={pessoalPagasArr}
+          pessoalAPagar={pessoalAPagar} pessoalAPagarArr={pessoalAPagarArr}
+          totalDespesasSalao={totalDespesasSalao} totalDespesasPessoal={totalDespesasPessoal}
+          despesasSalaoArr={despesasSalaoArr} despesasPessoalArr={despesasPessoalArr}
+          abrirNovaDespesa={abrirNovaDespesa} abrirEditarDespesa={abrirEditarDespesa}
+          excluirDespesa={excluirDespesa} abrirConfirmarPagarDespesa={abrirConfirmarPagarDespesa}
+        />
       )}
 
       <UpgradeModal
