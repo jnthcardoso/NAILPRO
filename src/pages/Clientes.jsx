@@ -426,7 +426,7 @@ export default function Clientes() {
         </div>
         <div style={s.filtrosBtnWrap}>
           <SlidersHorizontal size={14} color="var(--text2)" style={{ pointerEvents: 'none', flexShrink: 0 }} />
-          <span style={s.filtrosBtnLabel}>Filtros</span>
+          <span className="filtros-btn-label" style={s.filtrosBtnLabel}>Filtros</span>
           <select style={s.filtrosBtnSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
             <option value="nome">A–Z</option>
             <option value="gasto">Maior gasto</option>
@@ -507,31 +507,6 @@ export default function Clientes() {
         </div>
       </div>
 
-      {/* Celular: menus compactos (escondido no computador via CSS) */}
-      <div className="clientes-filtros-selects">
-        <div style={{ ...s.selectGroup, flex: 1.8 }}>
-          <span style={s.selectLabel}>Mostrar</span>
-          <select style={s.filtroSelect} value={filtro} onChange={e => setFiltro(e.target.value)}>
-            <option value="todas">Todas ({ativas.length})</option>
-            <option value="vip">✦ VIP ({vips.length})</option>
-            <option value="sumidas">⏰ Retorno ({sumidas.length})</option>
-            <option value="sem_visita">🆕 Novas ({semVisita.length})</option>
-            {(aniversariantes.length > 0 || filtro === 'aniversariantes') &&
-              <option value="aniversariantes">🎂 Aniversários ({aniversariantes.length})</option>}
-            {(arquivadas.length > 0 || filtro === 'arquivadas') &&
-              <option value="arquivadas">🗄 Arquivadas ({arquivadas.length})</option>}
-          </select>
-        </div>
-        <div style={{ ...s.selectGroup, flex: 1 }}>
-          <span style={s.selectLabel}>Ordenar</span>
-          <select style={s.filtroSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
-            <option value="nome">A–Z</option>
-            <option value="gasto">Maior gasto</option>
-            <option value="visitas">Mais visitas</option>
-            <option value="recente">Mais recente</option>
-          </select>
-        </div>
-      </div>
 
       {loading ? <CardSkeleton count={5} /> : <>
       <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
