@@ -285,6 +285,25 @@ input:focus, select:focus, textarea:focus {
   .filtros-btn-label { display: inline; }
 }
 
+/* ── Clientes: header responsivo ── */
+.clientes-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.clientes-header-actions { display: flex; gap: 8px; align-items: center; }
+.clientes-filtros-mobile { display: inline-flex !important; }
+.clientes-sort-desktop { display: none !important; }
+.clientes-filtros-chips { display: none; }
+.clientes-stats-grid { grid-template-columns: 1fr 1fr !important; }
+.clientes-stat-aniv { display: flex !important; }
+@media (min-width: 769px) {
+  .clientes-header { flex-direction: row; align-items: center; gap: 8px; }
+  .clientes-header .clientes-search-bar { flex: 1; min-width: 0; }
+  .clientes-header-actions { flex-shrink: 0; }
+  .clientes-filtros-mobile { display: none !important; }
+  .clientes-sort-desktop { display: inline-flex !important; }
+  .clientes-filtros-chips { display: flex; }
+  .clientes-stats-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .clientes-stat-aniv { display: none !important; }
+}
+
 /* ── Grid de métricas do perfil da cliente: 2 cols mobile, 4 cols desktop ── */
 .metricas-grid { grid-template-columns: 1fr 1fr; }
 @media (min-width: 769px) {

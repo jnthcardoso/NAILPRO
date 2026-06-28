@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download, Info, SlidersHorizontal } from 'lucide-react'
+import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download, Info, SlidersHorizontal, ChevronDown, X } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -76,6 +76,7 @@ export default function Clientes() {
   const [errosEdit, setErrosEdit] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
   const [infoModal, setInfoModal] = useState(null)
+  const [showFiltroPanel, setShowFiltroPanel] = useState(false)
 
   const ITENS_POR_PAGINA = 20
 
@@ -424,24 +425,34 @@ export default function Clientes() {
 
   return (
     <div style={s.page}>
-      <div style={s.topRow}>
+      <div className="clientes-header">
         <div className="clientes-search-bar" style={s.searchBar}>
           <Search size={16} color="var(--text3)" style={{ flexShrink: 0 }} />
           <input style={s.searchInput} placeholder="Buscar por nome ou telefone..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
         </div>
-        <div style={s.filtrosBtnWrap}>
-          <SlidersHorizontal size={14} color="var(--text2)" style={{ pointerEvents: 'none', flexShrink: 0 }} />
-          <span className="filtros-btn-label" style={s.filtrosBtnLabel}>Filtros</span>
-          <select style={s.filtrosBtnSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
-            <option value="nome">A–Z</option>
-            <option value="gasto">Maior gasto</option>
-            <option value="visitas">Mais visitas</option>
-            <option value="recente">Mais recente</option>
-          </select>
+        <div className="clientes-header-actions">
+          {/* Mobile: abre painel de filtros + ordenação */}
+          <button className="clientes-filtros-mobile" style={s.filtrosMobileBtn} onClick={() => setShowFiltroPanel(true)}>
+            <SlidersHorizontal size={14} color="var(--text2)" style={{ pointerEvents: 'none', flexShrink: 0 }} />
+            <span style={s.filtrosBtnLabel}>Filtros</span>
+            {filtro !== 'todas' && <span style={s.filtroAtivoDot} />}
+            <ChevronDown size={12} color="var(--text3)" style={{ marginLeft: 'auto', pointerEvents: 'none' }} />
+          </button>
+          {/* Desktop: select de ordenação com overlay invisível */}
+          <div className="clientes-sort-desktop" style={s.filtrosBtnWrap}>
+            <SlidersHorizontal size={14} color="var(--text2)" style={{ pointerEvents: 'none', flexShrink: 0 }} />
+            <span className="filtros-btn-label" style={s.filtrosBtnLabel}>Filtros</span>
+            <select style={s.filtrosBtnSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
+              <option value="nome">A–Z</option>
+              <option value="gasto">Maior gasto</option>
+              <option value="visitas">Mais visitas</option>
+              <option value="recente">Mais recente</option>
+            </select>
+          </div>
+          <button style={s.btnImportar} onClick={() => setShowImport(true)}>
+            <Upload size={14} /> Importar
+          </button>
         </div>
-        <button style={s.btnImportar} onClick={() => setShowImport(true)}>
-          <Upload size={14} /> Importar
-        </button>
       </div>
 
       <div className="clientes-filtros-chips">
@@ -500,19 +511,24 @@ export default function Clientes() {
         </div>
       )}
 
-      {/* Mini stats */}
-      <div style={s.statsRow}>
+      {/* Mini stats — 3 cols desktop / 2×2 mobile */}
+      <div className="clientes-stats-grid" style={s.statsRow}>
         <div style={{ ...s.statCard, cursor: 'pointer' }} onClick={() => setFiltro('todas')}>
           <div style={s.statNum}>{ativas.length}</div>
           <div style={s.statLabel}>Total de clientes</div>
         </div>
         <div style={{ ...s.statCard, cursor: semVisita.length ? 'pointer' : 'default' }} onClick={() => semVisita.length && setFiltro(filtro === 'sem_visita' ? 'todas' : 'sem_visita')}>
-          <div style={{ ...s.statNum, color: semVisita.length ? '#1D4ED8' : 'var(--text3)' }}>{semVisita.length}</div>
+          <div style={{ ...s.statNum, color: semVisita.length ? 'var(--green)' : 'var(--text3)' }}>{semVisita.length}</div>
           <div style={s.statLabel}>Novas clientes</div>
         </div>
         <div style={{ ...s.statCard, cursor: sumidasSemFuturo.length ? 'pointer' : 'default' }} onClick={() => sumidasSemFuturo.length && setFiltro(filtro === 'sumidas' ? 'todas' : 'sumidas')}>
           <div style={{ ...s.statNum, color: sumidasSemFuturo.length ? 'var(--red, #B91C1C)' : 'var(--text3)' }}>{sumidasSemFuturo.length}</div>
           <div style={s.statLabel}>Retorno</div>
+        </div>
+        {/* 4º card: Aniversariantes — visível só no mobile (2×2) */}
+        <div className="clientes-stat-aniv" style={{ ...s.statCard, cursor: aniversariantes.length ? 'pointer' : 'default' }} onClick={() => aniversariantes.length && setFiltro(filtro === 'aniversariantes' ? 'todas' : 'aniversariantes')}>
+          <div style={{ ...s.statNum, color: aniversariantes.length ? '#7C3AED' : 'var(--text3)' }}>{aniversariantes.length}</div>
+          <div style={s.statLabel}>Aniversariantes</div>
         </div>
       </div>
 
@@ -697,6 +713,55 @@ export default function Clientes() {
         descricao={`Você atingiu o limite de ${limiteClientes} clientes do plano ${plano?.nome}. Faça upgrade pro Pro pra cadastrar quantas clientes quiser.`}
       />
 
+      {/* ── Painel de filtros mobile (bottom sheet) ── */}
+      {showFiltroPanel && (
+        <Modal onClose={() => setShowFiltroPanel(false)} variant="sheet" boxStyle={s.filtroPanel}>
+          <div style={s.filtroPanelHeader}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Filtros</span>
+            <button style={s.filtroPanelClose} onClick={() => setShowFiltroPanel(false)}><X size={18} /></button>
+          </div>
+
+          <div style={s.filtroPanelSec}>Filtrar por</div>
+          <div style={s.filtroPanelOpts}>
+            {[
+              { id: 'todas',          label: 'Todas',       count: ativas.length },
+              ...(vips.length          ? [{ id: 'vip',            label: 'VIP',         count: vips.length }] : []),
+              ...(sumidasSemFuturo.length ? [{ id: 'sumidas',    label: 'Retorno',     count: sumidasSemFuturo.length }] : []),
+              { id: 'sem_visita',     label: 'Novas',       count: semVisita.length },
+              ...(aniversariantes.length  ? [{ id: 'aniversariantes', label: 'Aniversários', count: aniversariantes.length }] : []),
+              ...(arquivadas.length    ? [{ id: 'arquivadas',  label: 'Arquivadas',  count: arquivadas.length }] : []),
+            ].map(opt => {
+              const ativo = filtro === opt.id
+              return (
+                <button key={opt.id} style={{ ...s.filtroPanelOpt, ...(ativo ? s.filtroPanelOptAtivo : {}) }}
+                  onClick={() => { setFiltro(opt.id); setShowFiltroPanel(false) }}>
+                  {opt.label}
+                  <span style={{ ...s.chipBadge, ...(ativo ? { background: 'rgba(255,255,255,0.25)', color: 'white' } : {}) }}>{opt.count}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={s.filtroPanelSec}>Ordenar por</div>
+          <div style={s.filtroPanelOpts}>
+            {[
+              { id: 'nome',    label: 'A–Z' },
+              { id: 'gasto',   label: 'Maior gasto' },
+              { id: 'visitas', label: 'Mais visitas' },
+              { id: 'recente', label: 'Mais recente' },
+            ].map(opt => {
+              const ativo = ordenacao === opt.id
+              return (
+                <button key={opt.id} style={{ ...s.filtroPanelOpt, ...(ativo ? s.filtroPanelOptAtivo : {}) }}
+                  onClick={() => setOrdenacao(opt.id)}>
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+        </Modal>
+      )}
+
       {showModal && (
         <Modal onClose={() => setShowModal(false)} variant="responsive" boxStyle={s.modal}>
             <div style={s.modalTitle}>Nova cliente</div>
@@ -849,6 +914,15 @@ const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 8px' },
   topRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 },
+  filtrosMobileBtn: { position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer', fontFamily: 'inherit' },
+  filtroAtivoDot: { width: 7, height: 7, borderRadius: '50%', background: 'var(--pink)', flexShrink: 0 },
+  filtroPanel: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '20px 16px 36px', width: '100%', maxWidth: 520 },
+  filtroPanelHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  filtroPanelClose: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'flex', padding: 4, fontFamily: 'inherit' },
+  filtroPanelSec: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10, marginTop: 18 },
+  filtroPanelOpts: { display: 'flex', flexWrap: 'wrap', gap: 8 },
+  filtroPanelOpt: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit' },
+  filtroPanelOptAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
   searchBar: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   filtrosBtnWrap: { position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer' },
