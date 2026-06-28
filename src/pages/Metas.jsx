@@ -271,12 +271,18 @@ export default function Metas() {
   // Clientes nunca atendidas não entram na base.
   async function loadAtividade(cfgParam) {
     const cicloPadrao = (cfgParam ?? cfg)?.dias_retorno_alerta || DIAS_RETORNO_PADRAO
-    const { data: cls } = await supabase
-      .from('clientes')
-      .select('id, nome, telefone, ultimo_atendimento, dias_retorno')
-      .eq('salao_id', salaoId)
-      .eq('arquivada', false)
+    const hojeStr = format(new Date(), 'yyyy-MM-dd')
+    const [{ data: cls }, { data: futuros }] = await Promise.all([
+      supabase.from('clientes')
+        .select('id, nome, telefone, ultimo_atendimento, dias_retorno')
+        .eq('salao_id', salaoId).eq('arquivada', false),
+      supabase.from('agendamentos').select('cliente_id')
+        .eq('salao_id', salaoId)
+        .in('status', ['pendente', 'agendado', 'confirmado'])
+        .gte('data', hojeStr),
+    ])
     if (!cls) return
+    const comFuturo = new Set((futuros || []).map(a => a.cliente_id))
     const hoje = new Date()
     let ativas = 0
     const sumidasLista = []
@@ -286,7 +292,7 @@ export default function Metas() {
       const dias = differenceInDays(hoje, parseISO(c.ultimo_atendimento))
       // Pendente quando ATINGE o ciclo (>=), igual à Home (Oportunidades) e à
       // lista de Clientes (estaSumida). "Chegou o dia de voltar = já é retorno".
-      if (dias < ciclo) ativas++
+      if (dias < ciclo || comFuturo.has(c.id)) ativas++
       else sumidasLista.push({ id: c.id, nome: c.nome, telefone: c.telefone, ultimo: c.ultimo_atendimento, dias })
     })
     sumidasLista.sort((a, b) => b.dias - a.dias) // quem sumiu há mais tempo primeiro
