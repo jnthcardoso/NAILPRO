@@ -23,12 +23,13 @@ import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
 import { useToast } from '../contexts/ToastContext'
-import { traduzErro } from '../lib/erros'
 import { exportarPDFResumo, exportarPDFReceitas, exportarPDFDespesas, exportarPDFAnalises, exportarPDFAnual } from '../lib/pdfExporter'
 import { s, tabs } from './Financeiro.styles'
 import { CATEGORIAS, FORMAS_PAGAMENTO } from './Financeiro.constants'
 import { useFinanceiroDados } from '../hooks/useFinanceiroDados'
 import { useFinanceiroConfig } from '../hooks/useFinanceiroConfig'
+import { useFinanceiroReceitas } from '../hooks/useFinanceiroReceitas'
+import { useFinanceiroDespesas } from '../hooks/useFinanceiroDespesas'
 
 // Linha do DRE que expande pra mostrar os lançamentos que somam aquele valor.
 function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggle, categorias = CATEGORIAS }) {
@@ -72,22 +73,6 @@ export default function Financeiro() {
 
   // ── Estados de UI ─────────────────────────────────────────────────────────
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-  const [showDespesaModal, setShowDespesaModal] = useState(false)
-  const [editandoDespesa, setEditandoDespesa] = useState(null)
-  const [showNovaCat, setShowNovaCat] = useState(false)
-  const [novaCat, setNovaCat] = useState({ label: '', icon: '📦', cor: '#8B2655' })
-  const [savingCat, setSavingCat] = useState(false)
-  const [form, setForm] = useState({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
-  const [formDespesa, setFormDespesa] = useState({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
-  const [saving, setSaving] = useState(false)
-  const [savingDespesa, setSavingDespesa] = useState(false)
-  const [despesaParaPagar, setDespesaParaPagar] = useState(null)
-  const [formPagarDespesa, setFormPagarDespesa] = useState({ forma_pagamento: 'pix' })
-  const [savingPagarDespesa, setSavingPagarDespesa] = useState(false)
-  const [pagSelecionado, setPagSelecionado] = useState(null)
-  const [formPag, setFormPag] = useState({ forma: 'pix', status: 'pago', valor: '', modo: 'simples', forma2: 'cartao_credito', valor2: '' })
-  const [savingPag, setSavingPag] = useState(false)
   const [filtro, setFiltro] = useState('todos')
   const [filtroDespesa, setFiltroDespesa] = useState('todas')
   const [periodoSel, setPeriodoSel] = useState(new Date())
@@ -116,6 +101,31 @@ export default function Financeiro() {
     abrirProLabore, salvarProLabore,
   } = useFinanceiroConfig({ salaoId, user })
 
+  // ── Ações de receitas (registrar, confirmar pago, reverter, cobrar) ────────
+  const {
+    showModal, setShowModal,
+    form, setForm, saving,
+    pagSelecionado, setPagSelecionado,
+    formPag, setFormPag, savingPag,
+    salvarPagamento, reverterParaPendente, marcarCobrado,
+    abrirConfirmarPago, salvarPagamentoConfirmado,
+  } = useFinanceiroReceitas({ loadPagamentos, setPagamentos })
+
+  // ── Ações de despesas (criar, editar, pagar, excluir, categorias) ──────────
+  const {
+    showDespesaModal, setShowDespesaModal,
+    editandoDespesa,
+    formDespesa, setFormDespesa, savingDespesa,
+    despesaParaPagar, setDespesaParaPagar,
+    formPagarDespesa, setFormPagarDespesa, savingPagarDespesa,
+    showNovaCat, setShowNovaCat,
+    novaCat, setNovaCat, savingCat,
+    abrirNovaDespesa, abrirEditarDespesa, fecharDespesaModal,
+    abrirConfirmarPagarDespesa,
+    salvarDespesa, confirmarPagarDespesa, excluirDespesa,
+    salvarNovaCategoria, excluirCategoria,
+  } = useFinanceiroDespesas({ loadDespesas, setCategoriasCustom })
+
   // Alterna entre layout celular e computador ao redimensionar a janela.
   useEffect(() => {
     const onResize = () => setIsDesktop(window.innerWidth >= 769)
@@ -134,305 +144,6 @@ export default function Financeiro() {
       setFiltroDespesa('a_pagar')
     }
   }, [searchParams])
-
-  async function salvarPagamento() {
-    if (!form.valor) return
-    setSaving(true)
-    // agendamento_id vem '' quando nenhum atendimento é escolhido (pagamento
-    // avulso). '' não é uuid válido → precisa virar null, senão o insert falha.
-    const { error } = await supabase.from('pagamentos').insert({ ...form, agendamento_id: form.agendamento_id || null, user_id: user.id, salao_id: salaoId, valor: parseFloat(form.valor) })
-    setSaving(false)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível registrar o pagamento.')); return }
-    setShowModal(false)
-    setForm({ agendamento_id: '', valor: '', status: 'pendente', forma: 'pix', data: format(new Date(), 'yyyy-MM-dd') })
-    loadPagamentos()
-    sucesso('Pagamento registrado')
-  }
-
-  async function salvarDespesa() {
-    // Recorrente variável: o valor pode ficar em branco (entra como "a preencher").
-    const ehVariavel = formDespesa.recorrente && formDespesa.valor_variavel
-    if (!formDespesa.descricao || (!formDespesa.valor && !ehVariavel)) {
-      toastErro('Preencha descrição e valor')
-      return
-    }
-    if (formDespesa.recorrente && !editandoDespesa && !formDespesa.recorrente_ate) {
-      toastErro('Escolha até quando repetir a despesa')
-      return
-    }
-    setSavingDespesa(true)
-    // "Contas a pagar" é Pro/Salão: no Solo, toda despesa entra como já paga.
-    const podeContasAPagar = temAcesso('contasAPagar')
-    const baseValor = formDespesa.valor ? parseFloat(formDespesa.valor) : 0
-    // Profissional: despesa privada (sem vínculo ao salão, fora do DRE da dona).
-    const comum = {
-      user_id: user.id,
-      salao_id: gerenciaTudo ? salaoId : null,
-      descricao: formDespesa.descricao,
-      categoria: formDespesa.categoria,
-      forma_pagamento: formDespesa.forma_pagamento || null,
-      observacoes: formDespesa.observacoes || null,
-      tipo: formDespesa.tipo || 'salao',
-    }
-
-    // EDIÇÃO: atualiza só ESTE lançamento (não regenera a série). Útil também
-    // pra preencher o valor de um card variável "a preencher".
-    if (editandoDespesa) {
-      const dados = {
-        ...comum,
-        valor: baseValor,
-        data: formDespesa.data,
-        recorrente: formDespesa.recorrente,
-        valor_variavel: formDespesa.valor_variavel,
-        valor_a_preencher: !!editandoDespesa.valor_a_preencher && baseValor === 0,
-        pago: podeContasAPagar ? formDespesa.pago : true,
-      }
-      const base = supabase.from('despesas')
-      const resp = gerenciaTudo
-        ? await base.update(dados).eq('id', editandoDespesa.id).eq('salao_id', salaoId)
-        : await base.update(dados).eq('id', editandoDespesa.id).eq('user_id', user.id)
-      setSavingDespesa(false)
-      if (resp.error) { toastErro(traduzErro(resp.error, 'Não foi possível salvar a despesa.')); return }
-      sucesso('Despesa atualizada ✓')
-      fecharDespesaModal(); loadDespesas()
-      return
-    }
-
-    // CRIAÇÃO simples (não recorrente).
-    if (!formDespesa.recorrente) {
-      const { error } = await supabase.from('despesas').insert({
-        ...comum, valor: baseValor, data: formDespesa.data,
-        recorrente: false, valor_variavel: false, valor_a_preencher: false,
-        pago: podeContasAPagar ? formDespesa.pago : true,
-      })
-      setSavingDespesa(false)
-      if (error) { toastErro(traduzErro(error, 'Não foi possível salvar a despesa.')); return }
-      sucesso('Despesa registrada ✓')
-      fecharDespesaModal(); loadDespesas()
-      return
-    }
-
-    // CRIAÇÃO recorrente: gera um lançamento por mês, no mesmo dia, até "repetir até".
-    //   - fixo:     todos os meses com o valor.
-    //   - variável: 1º mês usa o que foi digitado; meses seguintes entram em
-    //               branco (valor 0, "a preencher").
-    const recorrenciaId = crypto.randomUUID()
-    const inicio = new Date(formDespesa.data + 'T12:00:00')
-    const ate = new Date(formDespesa.recorrente_ate + 'T12:00:00')
-    const LIMITE_MESES = 36
-    const linhas = []
-    for (let i = 0; i < LIMITE_MESES; i++) {
-      const dt = addMonths(inicio, i)
-      if (dt > ate) break
-      const valorMes = i === 0 ? baseValor : (formDespesa.valor_variavel ? 0 : baseValor)
-      linhas.push({
-        ...comum,
-        data: format(dt, 'yyyy-MM-dd'),
-        valor: valorMes,
-        recorrente: true,
-        recorrencia_id: recorrenciaId,
-        valor_variavel: formDespesa.valor_variavel,
-        valor_a_preencher: formDespesa.valor_variavel && valorMes === 0,
-        // 1º mês segue o checkbox; meses futuros já nascem "a pagar".
-        pago: podeContasAPagar ? (i === 0 ? formDespesa.pago : false) : true,
-      })
-    }
-    const { error } = await supabase.from('despesas').insert(linhas)
-    setSavingDespesa(false)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível criar a despesa recorrente.')); return }
-    sucesso(`Despesa recorrente criada (${linhas.length} ${linhas.length === 1 ? 'mês' : 'meses'}) ✓`)
-    fecharDespesaModal(); loadDespesas()
-  }
-
-  async function salvarNovaCategoria() {
-    const label = novaCat.label.trim()
-    if (!label) { toastErro('Dê um nome para a categoria'); return }
-    setSavingCat(true)
-    const { data, error } = await supabase.from('categorias_despesa')
-      .insert({ salao_id: salaoId, user_id: user.id, label, icon: novaCat.icon?.trim() || '📦', cor: novaCat.cor || '#525252' })
-      .select().single()
-    setSavingCat(false)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível criar a categoria.')); return }
-    setCategoriasCustom(prev => [...prev, data])
-    setFormDespesa(f => ({ ...f, categoria: data.id }))
-    setShowNovaCat(false)
-    setNovaCat({ label: '', icon: '📦', cor: '#8B2655' })
-    sucesso('Categoria criada ✓')
-  }
-
-  async function excluirCategoria(cat) {
-    const ok = await confirmar({
-      titulo: 'Excluir esta categoria?',
-      mensagem: `${cat.icon} ${cat.label} — despesas já lançadas com ela continuam, mas ficam sem categoria.`,
-      confirmarLabel: 'Sim, excluir',
-      tipo: 'perigo',
-    })
-    if (!ok) return
-    const { error } = await supabase.from('categorias_despesa').delete().eq('id', cat.id).eq('salao_id', salaoId)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível excluir a categoria.')); return }
-    setCategoriasCustom(prev => prev.filter(c => c.id !== cat.id))
-    if (formDespesa.categoria === cat.id) setFormDespesa(f => ({ ...f, categoria: 'produtos' }))
-    sucesso('Categoria excluída')
-  }
-
-  function abrirNovaDespesa() {
-    setEditandoDespesa(null)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
-    setShowDespesaModal(true)
-  }
-
-  function abrirEditarDespesa(despesa) {
-    setEditandoDespesa(despesa)
-    setFormDespesa({
-      descricao: despesa.descricao,
-      categoria: despesa.categoria,
-      valor: String(despesa.valor),
-      data: despesa.data,
-      forma_pagamento: despesa.forma_pagamento || 'pix',
-      recorrente: despesa.recorrente || false,
-      valor_variavel: despesa.valor_variavel || false,
-      recorrente_ate: '',
-      observacoes: despesa.observacoes || '',
-      pago: despesa.pago !== false,
-      tipo: despesa.tipo || 'salao',
-    })
-    setShowDespesaModal(true)
-  }
-
-  function fecharDespesaModal() {
-    setShowDespesaModal(false)
-    setEditandoDespesa(null)
-    setShowNovaCat(false)
-    setFormDespesa({ descricao: '', categoria: 'produtos', valor: '', data: format(new Date(), 'yyyy-MM-dd'), forma_pagamento: 'pix', recorrente: false, valor_variavel: false, recorrente_ate: '', observacoes: '', pago: false, tipo: 'salao' })
-  }
-
-  // Abre modal de confirmação de pagamento da despesa.
-  function abrirConfirmarPagarDespesa(despesa) {
-    setFormPagarDespesa({ forma_pagamento: despesa.forma_pagamento || 'pix' })
-    setDespesaParaPagar(despesa)
-  }
-
-  // Confirma o pagamento após revisão no modal.
-  async function confirmarPagarDespesa() {
-    if (!despesaParaPagar) return
-    setSavingPagarDespesa(true)
-    const q = supabase.from('despesas').update({ pago: true, forma_pagamento: formPagarDespesa.forma_pagamento }).eq('id', despesaParaPagar.id)
-    const { error } = await (gerenciaTudo ? q.eq('salao_id', salaoId) : q.eq('user_id', user.id))
-    setSavingPagarDespesa(false)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível marcar como paga.')); return }
-    const despesaPaga = despesaParaPagar
-    setDespesaParaPagar(null)
-    loadDespesas()
-    sucesso('Conta marcada como paga ✓', {
-      acaoLabel: 'Desfazer',
-      acao: async () => {
-        const uq = supabase.from('despesas').update({ pago: false }).eq('id', despesaPaga.id)
-        await (gerenciaTudo ? uq.eq('salao_id', salaoId) : uq.eq('user_id', user.id))
-        loadDespesas()
-      },
-    })
-  }
-
-  async function excluirDespesa(despesa) {
-    const ok = await confirmar({
-      titulo: 'Excluir esta despesa?',
-      mensagem: `${despesa.descricao} - ${formatBRL(despesa.valor)}`,
-      confirmarLabel: 'Sim, excluir',
-      tipo: 'perigo',
-    })
-    if (!ok) return
-
-    // Se faz parte de uma série recorrente, oferece apagar os próximos também.
-    if (despesa.recorrencia_id) {
-      const serie = await confirmar({
-        titulo: 'Apagar os próximos também?',
-        mensagem: 'Esta despesa se repete nos próximos meses. Quer apagar também os lançamentos seguintes (do mesmo dia em diante)?',
-        confirmarLabel: 'Sim, apagar os próximos',
-        cancelarLabel: 'Não, só esta',
-        tipo: 'perigo',
-      })
-      if (serie) {
-        const dq = supabase.from('despesas').delete()
-          .eq('recorrencia_id', despesa.recorrencia_id).gte('data', despesa.data)
-        const { error } = await (gerenciaTudo ? dq.eq('salao_id', salaoId) : dq.eq('user_id', user.id))
-        if (error) { toastErro(traduzErro(error, 'Não foi possível excluir os lançamentos.')); return }
-        sucesso('Despesas recorrentes excluídas (deste mês em diante)')
-        loadDespesas()
-        return
-      }
-    }
-
-    const delQ = supabase.from('despesas').delete().eq('id', despesa.id)
-    const { error } = await (gerenciaTudo ? delQ.eq('salao_id', salaoId) : delQ.eq('user_id', user.id))
-    if (error) { toastErro(traduzErro(error, 'Não foi possível excluir a despesa.')); return }
-    sucesso('Despesa excluída', {
-      acaoLabel: 'Desfazer',
-      acao: async () => {
-        const { id, created_at, updated_at, ...rest } = despesa
-        await supabase.from('despesas').insert(rest)
-        loadDespesas()
-      },
-    })
-    loadDespesas()
-  }
-
-  // Reverter um pagamento de "pago" para "pendente" — pede confirmação (evita clique acidental).
-  async function reverterParaPendente(pag) {
-    const ok = await confirmar({
-      titulo: 'Marcar como pendente?',
-      mensagem: `${pag.agendamentos?.clientes?.nome || 'Este pagamento'} · ${formatBRL(pag.valor ?? 0)} (${FORMA_LABEL[pag.forma] || pag.forma}) deixará de ser um valor recebido.`,
-      confirmarLabel: 'Sim, marcar pendente',
-      tipo: 'perigo',
-    })
-    if (!ok) return
-    const { error } = await supabase.from('pagamentos').update({ status: 'pendente' }).eq('id', pag.id).eq('salao_id', salaoId)
-    if (error) { toastErro(traduzErro(error, 'Não foi possível atualizar o pagamento.')); return }
-    loadPagamentos()
-  }
-
-  // Marca que a cobrança foi enviada (1º clique no "Cobrar"). Atualiza a tela na
-  // hora (otimista) e grava a data no banco — igual ao "enviado" dos lembretes.
-  // Reenvios não re-gravam: o link do WhatsApp abre normalmente nos dois casos.
-  async function marcarCobrado(pag) {
-    if (pag.cobranca_enviada_em) return
-    const agora = new Date().toISOString()
-    setPagamentos(prev => prev.map(x => x.id === pag.id ? { ...x, cobranca_enviada_em: agora } : x))
-    await supabase.from('pagamentos').update({ cobranca_enviada_em: agora }).eq('id', pag.id).eq('salao_id', salaoId)
-  }
-
-  // Abre o modal (igual ao da agenda) para confirmar um pendente como pago.
-  function abrirConfirmarPago(pag) {
-    setFormPag({ forma: pag.forma || 'pix', status: 'pago', valor: String(pag.valor || ''), modo: 'simples', forma2: 'cartao_credito', valor2: '' })
-    setPagSelecionado(pag)
-  }
-
-  async function salvarPagamentoConfirmado() {
-    if (!pagSelecionado) return
-    const v1 = parseFloat(formPag.valor) || 0
-    const v2 = formPag.modo === 'duplo' ? (parseFloat(formPag.valor2) || 0) : 0
-    if (v1 <= 0) { toastErro('Informe o valor do pagamento.'); return }
-    if (formPag.modo === 'duplo' && v2 <= 0) { toastErro('Informe o valor da 2ª forma de pagamento.'); return }
-    setSavingPag(true)
-    // 1ª forma: atualiza o pagamento que já existia (mantém o vínculo com o agendamento)
-    const { error } = await supabase.from('pagamentos')
-      .update({ status: formPag.status, forma: formPag.forma, valor: v1 })
-      .eq('id', pagSelecionado.id).eq('salao_id', salaoId)
-    let erro2 = null
-    // 2ª forma (modo duplo): cria um segundo lançamento para o mesmo agendamento
-    if (!error && formPag.modo === 'duplo') {
-      const r = await supabase.from('pagamentos').insert({
-        user_id: pagSelecionado.user_id || user.id, salao_id: salaoId,
-        agendamento_id: pagSelecionado.agendamento_id || null, data: pagSelecionado.data,
-        status: formPag.status, valor: v2, forma: formPag.forma2,
-      })
-      erro2 = r.error
-    }
-    setSavingPag(false)
-    if (error || erro2) { toastErro('Erro ao registrar pagamento: ' + (error || erro2).message); return }
-    setPagSelecionado(null)
-    sucesso(formPag.modo === 'duplo' ? 'Pagamento em 2 formas registrado' : 'Pagamento registrado')
-    loadPagamentos()
-  }
 
   // PDF contextual: exporta o conteúdo da aba ativa respeitando o filtro vigente.
   async function handleExportarPDF() {
