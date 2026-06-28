@@ -21,17 +21,20 @@ export default function Modal({ onClose, children, variant = 'center', boxStyle,
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const isSheet = variant === 'sheet'
+  const isResponsive = variant === 'responsive'
+
   const overlay = {
     position: 'fixed', inset: 0, background: 'rgba(24,7,18,0.52)', zIndex,
     display: 'flex', justifyContent: 'center',
-    alignItems: variant === 'sheet' ? 'flex-end' : 'center',
-    padding: variant === 'sheet' ? 0 : 16,
+    alignItems: isSheet ? 'flex-end' : 'center',
+    padding: isSheet ? 0 : (isResponsive ? 0 : 16),
     ...overlayStyle,
   }
 
   return (
-    <div style={overlay} onClick={() => onClose?.()}>
-      <div style={boxStyle} onClick={e => e.stopPropagation()}>
+    <div style={overlay} className={isResponsive ? 'modal-overlay-resp' : ''} onClick={() => onClose?.()}>
+      <div style={boxStyle} className={isResponsive ? 'modal-box-resp' : ''} onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>

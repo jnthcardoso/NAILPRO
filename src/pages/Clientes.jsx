@@ -527,7 +527,7 @@ export default function Clientes() {
               Histórico
               <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'pointer', flexShrink: 0 }} onClick={e => { e.stopPropagation(); setInfoModal('historico') }} />
             </div>
-            <div style={s.thData}>Último atend.</div>
+            <div style={s.thData}>{filtro === 'aniversariantes' ? 'Aniversário' : 'Último atend.'}</div>
             <div style={s.thData}>Próximo atend.</div>
             <div style={s.thOpt}>Edição</div>
           </div>
@@ -590,18 +590,29 @@ export default function Clientes() {
                   <span style={s.hpAmber}>{aReceber}</span>
                 </div>
 
-                {/* Último atendimento */}
+                {/* Último atendimento / Aniversário (quando filtro=aniversariantes) */}
                 <div style={s.tdData}>
-                  {c.ultimo_atendimento ? (
-                    <>
-                      <div style={{ ...s.dataValor, ...(sumida ? { color: '#B91C1C', fontWeight: 600 } : {}) }}>
-                        {format(parseUADate(c.ultimo_atendimento), 'dd/MM/yy')}
-                      </div>
-                      <div style={{ ...s.dataRel, ...(sumida ? { color: '#B91C1C' } : {}) }}>
-                        há {diasPassados}d
-                      </div>
-                    </>
-                  ) : <span style={s.noData}>—</span>}
+                  {filtro === 'aniversariantes' ? (
+                    c.data_nascimento ? (() => {
+                      const dn = dataParaDate(c.data_nascimento)
+                      const idade = new Date().getFullYear() - dn.getFullYear()
+                      return <>
+                        <div style={{ ...s.dataValor, color: '#7C3AED', fontWeight: 600 }}>{format(dn, 'dd/MM')}</div>
+                        <div style={s.dataRel}>{idade} anos</div>
+                      </>
+                    })() : <span style={s.noData}>—</span>
+                  ) : (
+                    c.ultimo_atendimento ? (
+                      <>
+                        <div style={{ ...s.dataValor, ...(sumida ? { color: '#B91C1C', fontWeight: 600 } : {}) }}>
+                          {format(parseUADate(c.ultimo_atendimento), 'dd/MM/yy')}
+                        </div>
+                        <div style={{ ...s.dataRel, ...(sumida ? { color: '#B91C1C' } : {}) }}>
+                          há {diasPassados}d
+                        </div>
+                      </>
+                    ) : <span style={s.noData}>—</span>
+                  )}
                 </div>
 
                 {/* Próximo atendimento */}
@@ -680,7 +691,7 @@ export default function Clientes() {
       />
 
       {showModal && (
-        <Modal onClose={() => setShowModal(false)} variant="sheet" boxStyle={s.modal}>
+        <Modal onClose={() => setShowModal(false)} variant="responsive" boxStyle={s.modal}>
             <div style={s.modalTitle}>Nova cliente</div>
             <div style={s.field}>
               <label style={s.label}>Nome *</label>
@@ -738,7 +749,7 @@ export default function Clientes() {
       )}
 
       {showImport && (
-        <Modal onClose={fecharImport} variant="sheet" boxStyle={s.modal}>
+        <Modal onClose={fecharImport} variant="responsive" boxStyle={s.modal}>
           <div style={s.modalTitle}>Importar clientes</div>
           <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, margin: '0 0 14px' }}>
             Tem uma lista de clientes (caderno, planilha do celular)? Baixe o modelo, preencha e suba aqui — todas de uma vez.
@@ -771,7 +782,7 @@ export default function Clientes() {
       )}
 
       {showEditModal && clienteEditando && (
-        <Modal onClose={() => setShowEditModal(false)} variant="sheet" boxStyle={s.modal}>
+        <Modal onClose={() => setShowEditModal(false)} variant="responsive" boxStyle={s.modal}>
           <div style={s.modalTitle}>Editar cliente</div>
           <div style={s.field}>
             <label style={s.label}>Nome *</label>
@@ -894,7 +905,7 @@ const s = {
   tagNew: { fontSize: 10, padding: '2px 6px', borderRadius: 'var(--radius-pill)', background: '#E6F1FB', color: '#185fa5', fontWeight: 600 },
   tagHoje: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: '#FAE8FF', color: '#86198F', fontWeight: 700 },
   empty: { padding: '40px 0', textAlign: 'center' },
-  modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
+  modal: { background: 'var(--surface)', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   btnImportar: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', fontSize: 12.5, fontWeight: 700, color: 'var(--pink)', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-xs)' },
   infoModalBox: { background: 'var(--surface)', borderRadius: 18, padding: '20px 20px 24px', width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 14 },

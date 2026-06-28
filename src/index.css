@@ -285,6 +285,14 @@ input:focus, select:focus, textarea:focus {
   .filtros-btn-label { display: inline; }
 }
 
+/* ── Modal responsivo: sheet no celular, centralizado no desktop ── */
+.modal-overlay-resp { align-items: flex-end; }
+.modal-box-resp { border-radius: 20px 20px 0 0; }
+@media (min-width: 769px) {
+  .modal-overlay-resp { align-items: center; padding: 16px; }
+  .modal-box-resp { border-radius: 18px; }
+}
+
 /* ── "Mais" sheet (mobile bottom nav overflow) ── */
 .mais-sheet-overlay {
   position: fixed;
