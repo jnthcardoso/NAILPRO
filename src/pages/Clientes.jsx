@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download, Info } from 'lucide-react'
+import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download, Info, SlidersHorizontal } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -422,37 +422,47 @@ export default function Clientes() {
       <div style={s.topRow}>
         <div style={s.searchBar}>
           <Search size={16} color="var(--text3)" />
-          <input style={s.searchInput} placeholder="Buscar cliente..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
+          <input style={s.searchInput} placeholder="Buscar por nome ou telefone..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
         </div>
-        <button style={s.btnImportar} onClick={() => setShowImport(true)}>
-          <Upload size={14} /> Importar
-        </button>
-        <div className="clientes-filtros-chips">
-          <div style={s.filtrosChips}>
-            {[
-              { id: 'todas', label: 'Todas' },
-              { id: 'vip', label: '✦ VIP' },
-              { id: 'sumidas', label: '⏰ Retorno' },
-              { id: 'sem_visita', label: '🆕 Novas' },
-              ...(aniversariantes.length ? [{ id: 'aniversariantes', label: `🎂 Aniversários (${aniversariantes.length})` }] : []),
-              ...(arquivadas.length ? [{ id: 'arquivadas', label: `🗄 Arquivadas (${arquivadas.length})` }] : []),
-            ].map(f => (
-              <button
-                key={f.id}
-                style={{ ...s.filtroChip, ...(filtro === f.id ? s.filtroChipAtivo : {}) }}
-                onClick={() => setFiltro(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <select style={s.sortSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
+        <div style={s.filtrosBtnWrap}>
+          <SlidersHorizontal size={14} color="var(--text2)" style={{ pointerEvents: 'none', flexShrink: 0 }} />
+          <span style={s.filtrosBtnLabel}>Filtros</span>
+          <select style={s.filtrosBtnSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
             <option value="nome">A–Z</option>
             <option value="gasto">Maior gasto</option>
             <option value="visitas">Mais visitas</option>
             <option value="recente">Mais recente</option>
           </select>
         </div>
+        <button style={s.btnImportar} onClick={() => setShowImport(true)}>
+          <Upload size={14} /> Importar
+        </button>
+      </div>
+
+      <div className="clientes-filtros-chips">
+        <button style={{ ...s.chip2, ...(filtro === 'todas' ? s.chip2Ativo : {}) }} onClick={() => setFiltro('todas')}>Todas</button>
+        <button style={{ ...s.chip2, ...s.chip2Vip, ...(filtro === 'vip' ? s.chip2VipAtivo : {}) }} onClick={() => setFiltro('vip')}>
+          <Crown size={12} style={{ flexShrink: 0 }} /> VIP
+          {vips.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(146,64,14,0.15)', color: '#92400e' }}>{vips.length}</span>}
+        </button>
+        <button style={{ ...s.chip2, ...s.chip2Retorno, ...(filtro === 'sumidas' ? s.chip2RetornoAtivo : {}) }} onClick={() => setFiltro('sumidas')}>
+          <Clock size={12} style={{ flexShrink: 0 }} /> Retorno
+          {sumidas.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(153,27,27,0.15)', color: '#991b1b' }}>{sumidas.length}</span>}
+        </button>
+        <button style={{ ...s.chip2, ...s.chip2Novas, ...(filtro === 'sem_visita' ? s.chip2NovasAtivo : {}) }} onClick={() => setFiltro('sem_visita')}>
+          Novas
+          {semVisita.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(20,83,45,0.15)', color: '#14532d' }}>{semVisita.length}</span>}
+        </button>
+        {aniversariantes.length > 0 && (
+          <button style={{ ...s.chip2, ...s.chip2Aniv, ...(filtro === 'aniversariantes' ? s.chip2AnivAtivo : {}) }} onClick={() => setFiltro('aniversariantes')}>
+            🎂 Aniversários <span style={{ ...s.chipBadge, background: 'rgba(76,29,149,0.15)', color: '#4c1d95' }}>{aniversariantes.length}</span>
+          </button>
+        )}
+        {arquivadas.length > 0 && (
+          <button style={{ ...s.chip2, ...s.chip2Arquiv, ...(filtro === 'arquivadas' ? s.chip2Ativo : {}) }} onClick={() => setFiltro('arquivadas')}>
+            🗄 Arquivadas <span style={{ ...s.chipBadge, background: 'rgba(0,0,0,0.08)', color: 'var(--text3)' }}>{arquivadas.length}</span>
+          </button>
+        )}
       </div>
 
       {/* Aviso de limite (Starter) */}
@@ -843,20 +853,28 @@ export default function Clientes() {
 const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 8px' },
-  topRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 },
-  searchBar: { display: 'flex', alignItems: 'center', gap: 8, flex: '0 1 220px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' },
+  topRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 },
+  searchBar: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
-  chipsRow: { display: 'flex', flexWrap: 'wrap', gap: 6 },
-  chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
+  filtrosBtnWrap: { position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer' },
+  filtrosBtnLabel: { fontSize: 12.5, fontWeight: 700, color: 'var(--text2)' },
+  filtrosBtnSelect: { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%', fontSize: 0 },
+  chip2: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
+  chip2Ativo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', boxShadow: 'var(--shadow-pink)' },
+  chip2Vip: { background: '#FEF3C7', border: '1px solid #D97706', color: '#92400E' },
+  chip2VipAtivo: { background: '#D97706', color: 'white', border: '1px solid #D97706' },
+  chip2Retorno: { background: '#FEE2E2', border: '1px solid #DC2626', color: '#991B1B' },
+  chip2RetornoAtivo: { background: '#DC2626', color: 'white', border: '1px solid #DC2626' },
+  chip2Novas: { background: '#DCFCE7', border: '1px solid #16A34A', color: '#14532D' },
+  chip2NovasAtivo: { background: '#16A34A', color: 'white', border: '1px solid #16A34A' },
+  chip2Aniv: { background: '#EDE9FE', border: '1px solid #7C3AED', color: '#4C1D95' },
+  chip2AnivAtivo: { background: '#7C3AED', color: 'white', border: '1px solid #7C3AED' },
+  chip2Arquiv: { background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text3)' },
+  chipBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 16, borderRadius: 10, padding: '0 5px', fontSize: 10, fontWeight: 700 },
   statsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 },
   statCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center', boxShadow: 'var(--shadow-xs)', transition: 'border 0.15s' },
   statNum: { fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
   statLabel: { fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: 3 },
-  // Chips (computador)
-  filtrosChips: { display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap' },
-  filtroChip: { flexShrink: 0, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' },
-  filtroChipAtivo: { background: 'var(--pink)', color: 'white', border: '1px solid var(--pink)', boxShadow: 'var(--shadow-pink)' },
-  sortSelect: { flexShrink: 0, padding: '6px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
   // Menus compactos (celular)
   selectGroup: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
   selectLabel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingLeft: 2 },

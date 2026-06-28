@@ -279,7 +279,7 @@ input:focus, select:focus, textarea:focus {
 .clientes-filtros-chips { display: none; }
 .clientes-filtros-selects { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
 @media (min-width: 769px) {
-  .clientes-filtros-chips { display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap; }
+  .clientes-filtros-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   .clientes-filtros-selects { display: none; }
 }
 
