@@ -1,4 +1,5 @@
-import { CheckCircle, XCircle, Calendar, CreditCard, MessageCircle, Pencil, User, Lock, Trash2, Repeat } from 'lucide-react'
+import { CheckCircle, XCircle, Calendar, CreditCard, Pencil, User, Lock, Trash2, Repeat } from 'lucide-react'
+import WaIcon from '../common/WaIcon'
 import Modal from '../common/Modal'
 import { s } from '../../pages/Agenda.styles'
 import { STATUS, resumoPagamento } from '../../pages/Agenda.constants'
@@ -164,13 +165,13 @@ export default function DetalheAgendamentoDrawer({
           {waConfirm && temAcesso('lembretesWhatsapp') && (
             <a href={waConfirm} target="_blank" rel="noopener noreferrer"
               style={{ ...s.actionBtn, background: '#DCFCE7', color: '#15803D', border: '1px solid #4ADE80', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
-              <MessageCircle size={13} />Confirmar via WA
+              <WaIcon size={13} />Confirmar via WA
             </a>
           )}
           {waDirectUrl && (
             <a href={waDirectUrl} target="_blank" rel="noopener noreferrer"
               style={{ ...s.actionBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border2)', flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
-              <MessageCircle size={13} />Abrir WA
+              <WaIcon size={13} />Abrir WA
             </a>
           )}
         </div>

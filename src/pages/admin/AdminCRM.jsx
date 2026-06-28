@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { MessageCircle, Phone, Mail, HelpCircle, Plus, Trash2, Calendar } from 'lucide-react'
+import { Phone, Mail, HelpCircle, Plus, Trash2, Calendar } from 'lucide-react'
+import WaIcon from '../../components/common/WaIcon'
 import { supabase } from '../../lib/supabase'
 import { format, formatDistanceToNow, isPast, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 const CANAIS = [
-  { id: 'whatsapp', label: 'WhatsApp', Ico: MessageCircle, cor: '#15803D', bg: '#DCFCE7' },
+  { id: 'whatsapp', label: 'WhatsApp', Ico: WaIcon, cor: '#25D366', bg: '#DCFCE7' },
   { id: 'ligacao',  label: 'Ligação',  Ico: Phone,         cor: '#1E40AF', bg: '#DBEAFE' },
   { id: 'email',    label: 'E-mail',   Ico: Mail,          cor: '#92400E', bg: '#FEF3C7' },
   { id: 'outro',    label: 'Outro',    Ico: HelpCircle,    cor: '#6B7280', bg: '#F3F4F6' },

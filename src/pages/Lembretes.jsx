@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, MessageCircle, Check, Send, Settings, Phone } from 'lucide-react'
+import { Bell, Check, Send, Settings, Phone } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -250,7 +251,7 @@ export default function Lembretes() {
             </div>
             {pendentes.length > 1 && !seq && (
               <button style={s.btnEnviarTodos} onClick={iniciarSequencia}>
-                <MessageCircle size={14} />
+                <WaIcon size={14} />
                 Enviar todos
               </button>
             )}
@@ -300,7 +301,7 @@ export default function Lembretes() {
               </div>
               <div style={s.seqBtns}>
                 <button style={s.btnConfirmei} onClick={seqAbrir}>
-                  <MessageCircle size={14} /> Abrir WhatsApp
+                  <WaIcon size={14} /> Abrir WhatsApp
                 </button>
                 <button style={s.btnNaoEnviei} onClick={seqPular}>Pular</button>
                 <button style={s.btnNaoEnviei} onClick={() => setSeq(null)}>Parar</button>

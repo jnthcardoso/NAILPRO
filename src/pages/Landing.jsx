@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, MessageCircle, Mail, Phone, Instagram, Facebook, Gift, UsersRound, Link2, Target, Plug, ClipboardList } from 'lucide-react'
+import { Calendar, DollarSign, Users, Bell, Check, Sparkles, ShieldCheck, Menu, X, Mail, Phone, Instagram, Facebook, Gift, UsersRound, Link2, Target, Plug, ClipboardList } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { LumenLogo } from '../components/common/Brand'
 import { PLANOS, formatPreco, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { trackFaleConosco, trackVerPlanos } from '../lib/analytics'
@@ -165,7 +166,7 @@ export default function Landing() {
           {/* Botões — desktop */}
           <div style={s.navBtns} className="lp-nav-btns">
             <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.navBtnWhats}>
-              <MessageCircle size={14} />
+              <WaIcon size={14} />
               Fale conosco
             </a>
             <button style={s.navBtnLogin} onClick={ir}>Login</button>
@@ -190,7 +191,7 @@ export default function Landing() {
             </Link>
             <div style={s.mobileDivider} />
             <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.mobileBtnWhats}>
-              <MessageCircle size={14} /> Fale conosco
+              <WaIcon size={14} /> Fale conosco
             </a>
             <button style={s.mobileBtnLogin} onClick={() => { setMenuAberto(false); ir() }}>
               Login
@@ -214,7 +215,7 @@ export default function Landing() {
               A Lumen cuida da gestão enquanto você cuida das unhas.
             </p>
             <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
-              <button style={s.ctaPrimary} onClick={agendarDemo}><MessageCircle size={16} /> Agendar demonstração</button>
+              <button style={s.ctaPrimary} onClick={agendarDemo}><WaIcon size={16} /> Agendar demonstração</button>
               <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
@@ -378,7 +379,7 @@ export default function Landing() {
         <h2 style={s.ctaFinalTitulo}>pronta pra organizar seu salão?</h2>
         <p style={s.ctaFinalSub}>Agende uma demonstração gratuita ou contrate agora — com garantia de 7 dias.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button style={s.ctaPrimary} onClick={agendarDemo}><MessageCircle size={16} /> Agendar demonstração</button>
+          <button style={s.ctaPrimary} onClick={agendarDemo}><WaIcon size={16} /> Agendar demonstração</button>
           <button style={{ ...s.ctaGhost, color: BERRY, borderColor: BERRY, background: 'transparent' }} onClick={() => scrollTo('planos')}>Ver planos</button>
         </div>
       </section>
@@ -456,7 +457,7 @@ export default function Landing() {
               rel="noreferrer"
               style={s.footerBtnWhats}
             >
-              <MessageCircle size={15} /> Fale conosco
+              <WaIcon size={15} /> Fale conosco
             </a>
           </div>
         </div>

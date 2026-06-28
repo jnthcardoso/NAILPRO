@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Phone, Calendar, DollarSign, Archive, RotateCcw, Pencil, Mail, Trash2, AlertCircle, CheckCircle } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -215,7 +216,7 @@ export default function ClienteDetalhe() {
         )}
         {cliente.telefone && (
           <a href={linkWhatsApp(cliente.telefone, retornoPendente ? msgRetorno : '')} style={s.wppBtn} target="_blank" rel="noopener noreferrer">
-            <Phone size={14} /> {formatTelefone(cliente.telefone)}
+            <WaIcon size={14} /> {formatTelefone(cliente.telefone)}
           </a>
         )}
         {cliente.email && (

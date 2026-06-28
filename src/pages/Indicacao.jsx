@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Gift, Copy, Check, MessageCircle, ArrowRight, ChevronLeft } from 'lucide-react'
+import { Gift, Copy, Check, ArrowRight, ChevronLeft } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { useAuth } from '../contexts/AuthContext'
 import { LumenLogo } from '../components/common/Brand'
 import { linkWhatsApp } from '../lib/formatters'
@@ -85,7 +86,7 @@ export default function Indicacao() {
                 {copiado ? <><Check size={15} /> Copiado!</> : <><Copy size={15} /> Copiar</>}
               </button>
               <a style={s.btnWhats} href={linkWhatsApp('', msgWhats)} target="_blank" rel="noreferrer">
-                <MessageCircle size={15} /> Compartilhar
+                <WaIcon size={15} /> Compartilhar
               </a>
             </div>
             <p style={s.obs}>Depois que a indicada assinar, fale com o suporte no WhatsApp para receber sua comissão.</p>

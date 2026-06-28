@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, X, Sparkles, ArrowLeft, CreditCard, Star, FileText, Zap, MessageCircle, AlertCircle } from 'lucide-react'
+import { Check, X, Sparkles, ArrowLeft, CreditCard, Star, FileText, Zap, AlertCircle } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { useAuth } from '../contexts/AuthContext'
 import { useAssinatura, PLANOS, formatPreco, whatsappAssinarLink, PRECO_USUARIO_ADICIONAL, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { supabase } from '../lib/supabase'
@@ -148,7 +149,7 @@ export default function Planos() {
       {!isActive && (
         <div style={s.demoCtaWrap}>
           <button style={s.demoCtaPill} onClick={abrirDemoWhatsapp}>
-            <MessageCircle size={14} color="var(--whatsapp)" />
+            <WaIcon size={14} color="var(--whatsapp)" />
             <span>Quer ver antes? <strong style={{ color: 'var(--pink)' }}>Agende uma demonstração</strong></span>
           </button>
         </div>
@@ -210,7 +211,7 @@ export default function Planos() {
           <AlertCircle size={16} />
           <span>{assinarErro}</span>
           <button style={s.erroWpp} onClick={() => handleAssinarWhatsapp(assinarLoading || 'pro')}>
-            <MessageCircle size={13} /> Assinar via WhatsApp
+            <WaIcon size={13} /> Assinar via WhatsApp
           </button>
         </div>
       )}
@@ -280,7 +281,7 @@ export default function Planos() {
           ))}
         </div>
         <button style={s.studioBtn} onClick={() => handleAssinar('salao')}>
-          <MessageCircle size={14} /> Assinar o plano Salão ({ciclo === 'anual' ? 'anual' : 'mensal'})
+          <WaIcon size={14} /> Assinar o plano Salão ({ciclo === 'anual' ? 'anual' : 'mensal'})
         </button>
       </div>
 

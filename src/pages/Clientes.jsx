@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download, Info, SlidersHorizontal, ChevronDown, X } from 'lucide-react'
+import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, Pencil, Crown, Upload, Download, Info, SlidersHorizontal, ChevronDown, X } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -666,7 +667,7 @@ export default function Clientes() {
                         onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c)}
                         title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns') : (sumida ? 'Chamar de volta' : 'Abrir WhatsApp')}
                       >
-                        <MessageCircle size={13} style={{ flexShrink: 0, color: filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? 'var(--text3)' : '#15803D' }} />
+                        <WaIcon size={13} color={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? 'var(--text3)' : '#25D366'} />
                         <span style={s.telNum}>{formatTelefone(c.telefone)}</span>
                       </button>
                     )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, ChevronLeft, Check, Sparkles, MessageCircle, Scissors, Target, Users, Calendar, ArrowRight } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Sparkles, Scissors, Target, Users, Calendar, ArrowRight } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -136,7 +137,7 @@ export default function BemVindo() {
               <div style={s.featureRow}><Calendar size={16} color="var(--pink)" /> Gerencie sua agenda</div>
               <div style={s.featureRow}><Users size={16} color="var(--pink)" /> Acompanhe suas clientes</div>
               <div style={s.featureRow}><Target size={16} color="var(--pink)" /> Bata suas metas</div>
-              <div style={s.featureRow}><MessageCircle size={16} color="var(--pink)" /> WhatsApp integrado</div>
+              <div style={s.featureRow}><WaIcon size={16} color="var(--pink)" /> WhatsApp integrado</div>
             </div>
             <button style={s.btnPrimary} onClick={() => setStep(1)}>
               Vamos começar <ArrowRight size={16} />
@@ -178,7 +179,7 @@ export default function BemVindo() {
           <div style={s.stepBox}>
             <div style={s.stepNumber}>Passo 2 de 4</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-              <MessageCircle size={28} color="var(--whatsapp)" />
+              <WaIcon size={28} color="var(--whatsapp)" />
             </div>
             <h1 style={s.title}>Seu WhatsApp?</h1>
             <p style={s.subtitle}>

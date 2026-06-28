@@ -1,6 +1,7 @@
 import { differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { AlertTriangle, Clock, RefreshCw, MessageCircle } from 'lucide-react'
+import { AlertTriangle, Clock, RefreshCw } from 'lucide-react'
+import WaIcon from '../../components/common/WaIcon'
 
 function quando(ts) {
   if (!ts) return 'nunca'
@@ -82,7 +83,7 @@ export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade
                 <div style={s.acoes}>
                   {wppLink && (
                     <a href={wppLink} target="_blank" rel="noreferrer" style={s.btnWpp}>
-                      <MessageCircle size={12} /> Wpp
+                      <WaIcon size={12} /> Wpp
                     </a>
                   )}
                   {onEstenderTrial && (
@@ -126,7 +127,7 @@ export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade
                 <div style={s.acoes}>
                   {wppLink && (
                     <a href={wppLink} target="_blank" rel="noreferrer" style={s.btnWpp}>
-                      <MessageCircle size={12} /> Wpp
+                      <WaIcon size={12} /> Wpp
                     </a>
                   )}
                   {onVerAtividade && (
@@ -164,7 +165,7 @@ export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade
                 <div style={s.acoes}>
                   {wppLink && (
                     <a href={wppLink} target="_blank" rel="noreferrer" style={s.btnWpp}>
-                      <MessageCircle size={12} /> Wpp
+                      <WaIcon size={12} /> Wpp
                     </a>
                   )}
                   {onVerAtividade && (

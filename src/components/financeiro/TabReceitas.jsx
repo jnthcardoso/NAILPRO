@@ -1,4 +1,5 @@
-import { Plus, MessageCircle, Check } from 'lucide-react'
+import { Plus, Check } from 'lucide-react'
+import WaIcon from '../common/WaIcon'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatBRL, linkWhatsApp, validarTelefone } from '../../lib/formatters'
@@ -74,7 +75,7 @@ export default function TabReceitas({
                       onClick={() => marcarCobrado(p)}
                       title={cobrado ? 'Cobrança já enviada — toque para reenviar' : 'Cobrar pelo WhatsApp'}
                     >
-                      {cobrado ? <><Check size={11} /> Cobrado</> : <><MessageCircle size={11} /> Cobrar</>}
+                      {cobrado ? <><Check size={11} /> Cobrado</> : <><WaIcon size={11} /> Cobrar</>}
                     </a>
                   )}
                   <button style={{ ...s.statusBtn, ...(pago ? s.statusPago : s.statusPendente) }} onClick={() => pago ? reverterParaPendente(p) : abrirConfirmarPago(p)}>

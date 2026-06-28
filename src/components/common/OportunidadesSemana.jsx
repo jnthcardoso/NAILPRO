@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Cake, UserX, CalendarClock, CalendarX, MessageCircle, Link2, ChevronRight } from 'lucide-react'
+import { Sparkles, Cake, UserX, CalendarClock, CalendarX, Link2, ChevronRight } from 'lucide-react'
+import WaIcon from './WaIcon'
 import { supabase } from '../../lib/supabase'
 import { useSalao } from '../../contexts/SalaoContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -193,7 +194,7 @@ export default function OportunidadesSemana({ variant = 'banner', withHeader = f
           aria-label={`Enviar WhatsApp para ${primeiroNome(c.nome)}`}
         >
           <span style={s.pessoaNome}>{primeiroNome(c.nome)}</span>
-          <span style={s.pessoaWa}><MessageCircle size={12} /> WhatsApp</span>
+          <span style={s.pessoaWa}><WaIcon size={12} /> WhatsApp</span>
         </a>
       ))}
       {clientes.length > 3 && <div style={s.maisPessoas}>+{clientes.length - 3}</div>}
@@ -357,7 +358,7 @@ function Card({ icon, cor, bg, titulo, sub, clientes, montarMsg, onContatar }) {
             aria-label={`Enviar WhatsApp para ${primeiroNome(c.nome)}`}
           >
             <span style={s.pessoaNome}>{primeiroNome(c.nome)}</span>
-            <span style={s.pessoaWa}><MessageCircle size={12} /> WhatsApp</span>
+            <span style={s.pessoaWa}><WaIcon size={12} /> WhatsApp</span>
           </a>
         ))}
         {clientes.length > 3 && <div style={s.maisPessoas}>+{clientes.length - 3}</div>}

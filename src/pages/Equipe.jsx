@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Users, UserPlus, Crown, Trash2, Check, X, ShieldCheck, Headset, Sparkles, Info, MessageCircle } from 'lucide-react'
+import { Users, UserPlus, Crown, Trash2, Check, X, ShieldCheck, Headset, Sparkles, Info } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -254,7 +255,7 @@ export default function Equipe() {
       {membroConvite && (
         <div style={s.conviteCard}>
           <div style={s.conviteIconWrap}>
-            <MessageCircle size={20} color="var(--whatsapp)" />
+            <WaIcon size={20} color="var(--whatsapp)" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={s.conviteTitulo}>Convide {membroConvite.nome.split(' ')[0]} pelo WhatsApp</div>
@@ -324,7 +325,7 @@ export default function Equipe() {
             {salvando ? 'Adicionando...' : 'Adicionar membro'}
           </button>
           <div style={s.formNota}>
-            <MessageCircle size={12} style={{ flexShrink: 0, color: 'var(--whatsapp)' }} />
+            <WaIcon size={12} color="var(--whatsapp)" />
             Após adicionar, você poderá enviar um convite via WhatsApp com o link de cadastro.
           </div>
         </form>
@@ -379,7 +380,7 @@ export default function Equipe() {
                       window.open(link, '_blank')
                     }}
                   >
-                    <MessageCircle size={14} color="var(--whatsapp)" />
+                    <WaIcon size={14} color="var(--whatsapp)" />
                   </button>
                 )}
 

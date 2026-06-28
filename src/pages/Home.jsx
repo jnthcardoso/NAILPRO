@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ChevronRight, Plus, UserPlus, Calendar, Sparkles, Bell,
-  TrendingUp, TrendingDown, DollarSign, Target, Clock, Award, Users, MessageCircle, ArrowUpRight
+  TrendingUp, TrendingDown, DollarSign, Target, Clock, Award, Users, ArrowUpRight
 } from 'lucide-react'
+import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
@@ -775,7 +776,7 @@ export default function Home() {
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
               </button>
               <button style={{ ...s.qaBtn, ...s.qaBtnLight }} onClick={() => navigate('/app/lembretes')}>
-                <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><MessageCircle size={16} color="#15803D" /></div>
+                <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><WaIcon size={16} /></div>
                 <span>Enviar lembretes</span>
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
               </button>
