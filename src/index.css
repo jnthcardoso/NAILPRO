@@ -304,6 +304,14 @@ input:focus, select:focus, textarea:focus {
   .clientes-stat-aniv { display: block !important; }
 }
 
+/* ── Clientes: tabela mobile (4 cols) vs desktop (7 cols) ── */
+.clientes-mobile-table { display: block !important; }
+.clientes-desktop-table { display: none !important; }
+@media (min-width: 769px) {
+  .clientes-mobile-table { display: none !important; }
+  .clientes-desktop-table { display: block !important; }
+}
+
 /* ── Grid de métricas do perfil da cliente: 2 cols mobile, 4 cols desktop ── */
 .metricas-grid { grid-template-columns: 1fr 1fr; }
 @media (min-width: 769px) {

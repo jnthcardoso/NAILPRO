@@ -543,7 +543,52 @@ export default function Clientes() {
       <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
 
       {filtradas.length > 0 && (
-        <div style={s.tableWrap}>
+        <>
+        {/* ── Tabela mobile: 4 colunas (Nome, Telefone, Histórico, Próximo) ── */}
+        <div className="clientes-mobile-table" style={s.tableWrap}>
+          <div style={s.mobileHead}>
+            <div style={s.mthNome}>Nome</div>
+            <div style={s.mthTel}>Telefone</div>
+            <div style={s.mthHist}>Hist.</div>
+            <div style={s.mthProx}>Próximo</div>
+          </div>
+          {filtradaExibidas.map(c => {
+            const sumida = estaSumida(c) && !dadosExtras.proximoMap[c.id]
+            const prox = dadosExtras.proximoMap[c.id]
+            const cancelados = dadosExtras.canceladosMap[c.id] || 0
+            const aReceber = dadosExtras.pendentesMap[c.id] || 0
+            const statusLabel = sumida ? '⚠ Retorno' : !c.ultimo_atendimento ? 'Nova' : '✓ Em dia'
+            const statusColor = sumida ? '#B91C1C' : !c.ultimo_atendimento ? '#1D4ED8' : '#15803D'
+            const statusBg   = sumida ? '#FEE2E2' : !c.ultimo_atendimento ? '#DBEAFE' : '#DCFCE7'
+            return (
+              <div key={c.id} style={s.mobileRow} onClick={() => navigate(`/app/clientes/${c.id}`)}>
+                <div style={s.mtdNome}>
+                  <div style={s.mobileRowName}>{c.nome}</div>
+                  <span style={{ ...s.mobileStatusBadge, background: statusBg, color: statusColor }}>{statusLabel}</span>
+                </div>
+                <div style={s.mtdTel}>
+                  <span style={s.mobileTelNum}>{c.telefone ? formatTelefone(c.telefone) : '—'}</span>
+                </div>
+                <div style={s.mtdHist}>
+                  <span style={s.hpGreen}>{c.total_visitas || 0}</span>
+                  <span style={s.hpRed}>{cancelados}</span>
+                  <span style={s.hpAmber}>{aReceber}</span>
+                </div>
+                <div style={s.mtdProx}>
+                  {prox ? (
+                    <>
+                      <div style={s.mobileProxData}>{format(dataParaDate(prox.data), 'dd/MM')}</div>
+                      <div style={s.dataRel}>{prox.horario?.slice(0, 5)}</div>
+                    </>
+                  ) : <span style={s.noData}>—</span>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ── Tabela desktop: 7 colunas (original) ── */}
+        <div className="clientes-desktop-table" style={s.tableWrap}>
           {/* Cabeçalho */}
           <div style={s.tableHead}>
             <div style={s.thStatus}>
@@ -665,6 +710,7 @@ export default function Clientes() {
             )
           })}
         </div>
+        </>
       )}
 
       {filtradas.length === 0 && (
@@ -972,6 +1018,21 @@ const s = {
   selectGroup: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
   selectLabel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingLeft: 2 },
   filtroSelect: { width: '100%', height: 42, boxSizing: 'border-box', padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
+  // ── Tabela mobile de clientes (4 colunas) ──
+  mobileHead: { display: 'grid', gridTemplateColumns: '1fr 110px 62px 50px', gap: 0, alignItems: 'center', padding: 0, borderBottom: '1px solid var(--border)', background: 'var(--surface2)' },
+  mthNome:  { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 8px' },
+  mthTel:   { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 6px' },
+  mthHist:  { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 4px', textAlign: 'center' },
+  mthProx:  { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 6px', textAlign: 'center' },
+  mobileRow: { display: 'grid', gridTemplateColumns: '1fr 110px 62px 50px', gap: 0, alignItems: 'center', padding: 0, borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s' },
+  mtdNome:  { minWidth: 0, padding: '10px 8px' },
+  mtdTel:   { minWidth: 0, padding: '10px 6px' },
+  mtdHist:  { display: 'flex', alignItems: 'center', gap: 2, padding: '10px 4px', flexWrap: 'wrap' },
+  mtdProx:  { padding: '10px 6px', textAlign: 'center' },
+  mobileRowName: { fontSize: 12, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  mobileStatusBadge: { display: 'inline-block', fontSize: 9, fontWeight: 700, borderRadius: 10, padding: '1px 6px', marginTop: 3 },
+  mobileTelNum: { fontSize: 11, color: 'var(--text2)', whiteSpace: 'nowrap' },
+  mobileProxData: { fontSize: 11, fontWeight: 600, color: 'var(--pink)' },
   // ── Tabela de clientes (7 colunas) ──
   tableWrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' },
   tableHead: { display: 'grid', gridTemplateColumns: '0.55fr 1.3fr 1.1fr 1fr 1fr 1fr 0.55fr', gap: 0, alignItems: 'center', padding: '0', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', minWidth: 680 },
