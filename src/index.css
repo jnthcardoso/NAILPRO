@@ -292,7 +292,7 @@ input:focus, select:focus, textarea:focus {
 .clientes-sort-desktop { display: none !important; }
 .clientes-filtros-chips { display: none; }
 .clientes-stats-grid { grid-template-columns: 1fr 1fr !important; }
-.clientes-stat-aniv { display: flex !important; }
+.clientes-stat-aniv { display: block !important; }
 @media (min-width: 769px) {
   .clientes-header { flex-direction: row; align-items: center; gap: 8px; }
   .clientes-header .clientes-search-bar { flex: 1; min-width: 0; }
