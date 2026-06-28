@@ -34,7 +34,7 @@ const APP_URL = Deno.env.get('APP_URL') ?? 'https://lumengestaoempresarial.com.b
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-oauth`
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': APP_URL,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 

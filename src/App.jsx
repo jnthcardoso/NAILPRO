@@ -33,7 +33,7 @@ const Landing = lazy(() => import('./pages/Landing'))
 const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha'))
 const Indicacao = lazy(() => import('./pages/Indicacao'))
 const ConfirmarAgendamento = lazy(() => import('./pages/ConfirmarAgendamento'))
-import { AssinaturaProvider, useAssinatura } from './contexts/AssinaturaContext'
+import { AssinaturaProvider, useAssinatura, useIsAdmin } from './contexts/AssinaturaContext'
 import { SalaoProvider, useSalao } from './contexts/SalaoContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { PageSkeleton } from './components/common/Skeleton'
@@ -104,6 +104,13 @@ function OnboardingGuard({ children }) {
   return children
 }
 
+// Bloqueia acesso às páginas de admin/dev para não-admins.
+function RequireAdmin({ children }) {
+  const { isAdmin, checking } = useIsAdmin()
+  if (checking) return <PageSkeleton />
+  return isAdmin ? children : <Navigate to="/app" replace />
+}
+
 // Bloqueia profissionais de páginas de gestão (clientes, financeiro do salão,
 // metas, lembretes, configurações). Dona e recepcionista passam.
 function RequireGerencia({ children }) {
@@ -161,12 +168,12 @@ export default function App() {
               <Route path="configuracoes" element={<RequireGerencia><Configuracoes /></RequireGerencia>} />
               <Route path="minhas-configuracoes" element={<RequireProfissional><MinhasConfiguracoes /></RequireProfissional>} />
               <Route path="equipe" element={<Equipe />} />
-              <Route path="admin" element={<Admin />} />
-              <Route path="dev/pipeline" element={<DevPipeline />} />
-              <Route path="dev/alertas" element={<DevAlertas />} />
-              <Route path="dev/feed" element={<DevFeed />} />
-              <Route path="dev/crm" element={<DevCRM />} />
-              <Route path="dev/relatorios" element={<DevRelatorios />} />
+              <Route path="admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+              <Route path="dev/pipeline" element={<RequireAdmin><DevPipeline /></RequireAdmin>} />
+              <Route path="dev/alertas" element={<RequireAdmin><DevAlertas /></RequireAdmin>} />
+              <Route path="dev/feed" element={<RequireAdmin><DevFeed /></RequireAdmin>} />
+              <Route path="dev/crm" element={<RequireAdmin><DevCRM /></RequireAdmin>} />
+              <Route path="dev/relatorios" element={<RequireAdmin><DevRelatorios /></RequireAdmin>} />
               <Route path="avisos" element={<Avisos />} />
             </Route>
           </Routes>

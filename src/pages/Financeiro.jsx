@@ -145,7 +145,7 @@ export default function Financeiro() {
   }, [salaoId])
 
   async function loadCategorias() {
-    const { data } = await supabase.from('categorias_despesa').select('*').order('label')
+    const { data } = await supabase.from('categorias_despesa').select('*').eq('salao_id', salaoId).order('label')
     setCategoriasCustom(data || [])
   }
 
