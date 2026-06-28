@@ -277,8 +277,10 @@ input:focus, select:focus, textarea:focus {
 /* ── Filtros da página de Clientes ── */
 .clientes-filtros-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .clientes-filtros-selects { display: none; }
-/* No celular esconde o texto "Filtros" no botão — só ícone, cabe na tela */
+/* No celular: esconde texto "Filtros" e força busca a encolher */
 .filtros-btn-label { display: none; }
+.clientes-search-bar { min-width: 0; }
+.clientes-search-bar input { min-width: 0; width: 100%; }
 @media (min-width: 769px) {
   .filtros-btn-label { display: inline; }
 }

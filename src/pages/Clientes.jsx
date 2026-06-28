@@ -420,8 +420,8 @@ export default function Clientes() {
   return (
     <div style={s.page}>
       <div style={s.topRow}>
-        <div style={s.searchBar}>
-          <Search size={16} color="var(--text3)" />
+        <div className="clientes-search-bar" style={s.searchBar}>
+          <Search size={16} color="var(--text3)" style={{ flexShrink: 0 }} />
           <input style={s.searchInput} placeholder="Buscar por nome ou telefone..." value={buscaInput} onChange={e => setBuscaInput(e.target.value)} />
         </div>
         <div style={s.filtrosBtnWrap}>
@@ -441,10 +441,12 @@ export default function Clientes() {
 
       <div className="clientes-filtros-chips">
         <button style={{ ...s.chip2, ...(filtro === 'todas' ? s.chip2Ativo : {}) }} onClick={() => setFiltro('todas')}>Todas</button>
-        <button style={{ ...s.chip2, ...s.chip2Vip, ...(filtro === 'vip' ? s.chip2VipAtivo : {}) }} onClick={() => setFiltro('vip')}>
-          <Crown size={12} style={{ flexShrink: 0 }} /> VIP
-          {vips.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(146,64,14,0.15)', color: '#92400e' }}>{vips.length}</span>}
-        </button>
+        {vips.length > 0 && (
+          <button style={{ ...s.chip2, ...s.chip2Vip, ...(filtro === 'vip' ? s.chip2VipAtivo : {}) }} onClick={() => setFiltro('vip')}>
+            <Crown size={12} style={{ flexShrink: 0 }} /> VIP
+            <span style={{ ...s.chipBadge, background: 'rgba(146,64,14,0.15)', color: '#92400e' }}>{vips.length}</span>
+          </button>
+        )}
         <button style={{ ...s.chip2, ...s.chip2Retorno, ...(filtro === 'sumidas' ? s.chip2RetornoAtivo : {}) }} onClick={() => setFiltro('sumidas')}>
           <Clock size={12} style={{ flexShrink: 0 }} /> Retorno
           {sumidas.length > 0 && <span style={{ ...s.chipBadge, background: 'rgba(153,27,27,0.15)', color: '#991b1b' }}>{sumidas.length}</span>}
