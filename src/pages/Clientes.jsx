@@ -549,11 +549,8 @@ export default function Clientes() {
         <div className="clientes-mobile-table" style={s.tableWrap}>
           {/* Cabeçalho */}
           <div style={s.mobileHead}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={s.mobileHeadLabel}>Informações</span>
-              <Info size={11} color="var(--text3)" style={{ cursor: 'pointer', flexShrink: 0 }} onClick={e => { e.stopPropagation(); setInfoModal('historico') }} />
-            </div>
-            <span style={s.mobileHeadLabel}>Próximo atend.</span>
+            <span style={s.mobileHeadLabel}>Informações</span>
+            <span style={s.mobileHeadLabel}>{filtro === 'aniversariantes' ? 'Aniversário' : 'Próximo atend.'}</span>
           </div>
 
           {filtradaExibidas.map(c => {
@@ -561,9 +558,12 @@ export default function Clientes() {
             const prox = dadosExtras.proximoMap[c.id]
             const cancelados = dadosExtras.canceladosMap[c.id] || 0
             const aReceber = dadosExtras.pendentesMap[c.id] || 0
-            const statusLabel = sumida ? '⚠ Retorno' : !c.ultimo_atendimento ? 'Nova' : '✓ Em dia'
-            const statusColor = sumida ? '#B91C1C' : !c.ultimo_atendimento ? '#1D4ED8' : '#15803D'
-            const statusBg   = sumida ? '#FEE2E2' : !c.ultimo_atendimento ? '#DBEAFE' : '#DCFCE7'
+            const ehAniv = filtro === 'aniversariantes'
+            const statusLabel = ehAniv
+              ? (aniversarioHoje(c) ? '🎂 Hoje!' : '🎂 Aniversário')
+              : sumida ? '⚠ Retorno' : !c.ultimo_atendimento ? 'Nova' : '✓ Retorno em dia'
+            const statusColor = ehAniv ? '#4C1D95' : sumida ? '#B91C1C' : !c.ultimo_atendimento ? '#1D4ED8' : '#15803D'
+            const statusBg   = ehAniv ? '#EDE9FE' : sumida ? '#FEE2E2' : !c.ultimo_atendimento ? '#DBEAFE' : '#DCFCE7'
             const rowBg = sumida ? '#FFF9F9' : 'transparent'
             return (
               <div key={c.id} style={{ ...s.mobileRow, background: rowBg }} onClick={() => navigate(`/app/clientes/${c.id}`)}>
@@ -588,15 +588,14 @@ export default function Clientes() {
 
                 {/* Direita */}
                 <div style={s.mobileRight}>
-                  <div style={s.mtdHist}>
-                    <span style={s.hpGreen}>{c.total_visitas || 0}</span>
-                    <span style={s.hpRed}>{cancelados}</span>
-                    <span style={s.hpAmber}>{aReceber}</span>
-                  </div>
                   <div style={s.mobileProxWrap}>
-                    {prox
-                      ? <span style={s.mobileProxData}>{format(dataParaDate(prox.data), 'dd/MM')} · {prox.horario?.slice(0, 5)}</span>
-                      : <span style={s.noData}>—</span>}
+                    {filtro === 'aniversariantes'
+                      ? (c.data_nascimento
+                          ? <span style={{ ...s.mobileProxData, color: '#7C3AED' }}>{format(dataParaDate(c.data_nascimento), 'dd/MM')}</span>
+                          : <span style={s.noData}>—</span>)
+                      : prox
+                        ? <span style={s.mobileProxData}>{format(dataParaDate(prox.data), 'dd/MM')} · {prox.horario?.slice(0, 5)}</span>
+                        : <span style={s.noData}>—</span>}
                   </div>
                 </div>
               </div>
@@ -676,9 +675,9 @@ export default function Clientes() {
 
                 {/* Histórico: realizados / cancelados / a receber */}
                 <div style={s.tdHist}>
-                  <span style={s.hpGreen}>{c.total_visitas || 0}</span>
-                  <span style={s.hpRed}>{cancelados}</span>
-                  <span style={s.hpAmber}>{aReceber}</span>
+                  <span style={s.hpGreen} title="Atendimentos realizados">{c.total_visitas || 0}</span>
+                  <span style={s.hpRed} title="Cancelamentos">{cancelados}</span>
+                  <span style={s.hpAmber} title="A receber (pendentes)">{aReceber}</span>
                 </div>
 
                 {/* Último atendimento / Aniversário (quando filtro=aniversariantes) */}
@@ -1045,7 +1044,7 @@ const s = {
   mobileStatusBadge: { flexShrink: 0, fontSize: 9, fontWeight: 700, borderRadius: 10, padding: '2px 7px', whiteSpace: 'nowrap' },
   mobileWaBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' },
   mobileTelNum: { fontSize: 11, color: 'var(--text2)', whiteSpace: 'nowrap' },
-  mobileRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6, flexShrink: 0 },
+  mobileRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 6, flexShrink: 0 },
   mtdHist:  { display: 'flex', alignItems: 'center', gap: 3 },
   mobileProxWrap: { textAlign: 'right' },
   mobileProxData: { fontSize: 11, fontWeight: 600, color: 'var(--pink)', whiteSpace: 'nowrap' },
