@@ -247,12 +247,12 @@ export default function ClienteDetalhe() {
           <>
             {temRetorno && <div style={s.situDivider} />}
             <div style={s.situRow}>
-              <div style={{ ...s.situIcon, background: '#DBEAFE' }}>
-                <Calendar size={14} color="#1D4ED8" />
+              <div style={{ ...s.situIcon, background: 'var(--pink-light)' }}>
+                <Calendar size={14} color="var(--pink)" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={s.situLabel}>Próximo agendamento</div>
-                <div style={{ ...s.situValor, color: '#1D4ED8' }}>
+                <div style={{ ...s.situValor, color: 'var(--pink)' }}>
                   {format(new Date(proximoAgendamento.data + 'T12:00:00'), "EEE, dd/MM", { locale: ptBR })} · {proximoAgendamento.horario?.slice(0, 5)}
                 </div>
               </div>
@@ -533,7 +533,7 @@ const s = {
   situValor: { fontSize: 13, fontWeight: 600 },
   situDivider: { height: 1, background: 'var(--border)', marginLeft: 42 },
   chamarBtn: { flexShrink: 0, background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', textDecoration: 'none', fontFamily: 'inherit' },
-  badgeAzul: { flexShrink: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: '#1D4ED8', background: '#DBEAFE', borderRadius: 'var(--radius-pill)', padding: '4px 10px' },
+  badgeAzul: { flexShrink: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: 'var(--pink)', background: 'var(--pink-light)', borderRadius: 'var(--radius-pill)', padding: '4px 10px' },
   cobrarBtn: { flexShrink: 0, background: 'var(--green, #15803D)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', textDecoration: 'none', fontFamily: 'inherit' },
 
   // Métricas (4 cards — gridTemplateColumns via CSS class .metricas-grid)
