@@ -86,7 +86,7 @@ export default function Indicacao() {
                 {copiado ? <><Check size={15} /> Copiado!</> : <><Copy size={15} /> Copiar</>}
               </button>
               <a style={s.btnWhats} href={linkWhatsApp('', msgWhats)} target="_blank" rel="noreferrer">
-                <WaIcon size={15} /> Compartilhar
+                <WaIcon size={15} color="white" /> Compartilhar
               </a>
             </div>
             <p style={s.obs}>Depois que a indicada assinar, fale com o suporte no WhatsApp para receber sua comissão.</p>

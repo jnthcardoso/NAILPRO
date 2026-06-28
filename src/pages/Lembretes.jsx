@@ -251,7 +251,7 @@ export default function Lembretes() {
             </div>
             {pendentes.length > 1 && !seq && (
               <button style={s.btnEnviarTodos} onClick={iniciarSequencia}>
-                <WaIcon size={14} />
+                <WaIcon size={14} color="white" />
                 Enviar todos
               </button>
             )}
@@ -301,7 +301,7 @@ export default function Lembretes() {
               </div>
               <div style={s.seqBtns}>
                 <button style={s.btnConfirmei} onClick={seqAbrir}>
-                  <WaIcon size={14} /> Abrir WhatsApp
+                  <WaIcon size={14} color="white" /> Abrir WhatsApp
                 </button>
                 <button style={s.btnNaoEnviei} onClick={seqPular}>Pular</button>
                 <button style={s.btnNaoEnviei} onClick={() => setSeq(null)}>Parar</button>

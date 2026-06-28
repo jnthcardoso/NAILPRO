@@ -537,7 +537,7 @@ export default function Metas() {
                   <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>Sem voltar há {c.dias} dias</div>
                 </div>
                 {c.telefone
-                  ? <a style={s.waBtn} href={linkWhatsApp(c.telefone, msgRetorno(c.nome))} target="_blank" rel="noreferrer"><WaIcon size={13} /> Chamar</a>
+                  ? <a style={s.waBtn} href={linkWhatsApp(c.telefone, msgRetorno(c.nome))} target="_blank" rel="noreferrer"><WaIcon size={13} color="white" /> Chamar</a>
                   : <span style={s.semTel}>sem telefone</span>}
               </div>
             ))}
@@ -572,7 +572,7 @@ export default function Metas() {
                       <div style={s.drillMeta}>cancelou em {ddMM(cl.ultima)}</div>
                       <div style={{ ...s.drillMeta, color: 'var(--pink)', fontWeight: 600 }}>{cl.nunca ? 'não remarcou' : `Sem voltar há ${cl.dias} dias`}</div>
                     </div>
-                    {cl.telefone && <a style={s.waBtn} href={linkWhatsApp(cl.telefone, msgReagendar(cl.nome))} target="_blank" rel="noreferrer"><WaIcon size={13} /> Chamar</a>}
+                    {cl.telefone && <a style={s.waBtn} href={linkWhatsApp(cl.telefone, msgReagendar(cl.nome))} target="_blank" rel="noreferrer"><WaIcon size={13} color="white" /> Chamar</a>}
                   </div>
                 ))}
               </div>
@@ -593,7 +593,7 @@ export default function Metas() {
                           : cl.ultimo ? `voltou em ${ddMM(cl.ultimo)}` : 'sem retorno pendente'}
                       </div>
                     </div>
-                    {cl.qtd >= 2 && cl.telefone && <a style={s.waBtnAmber} href={linkWhatsApp(cl.telefone, msgSinal(cl.nome))} target="_blank" rel="noreferrer"><WaIcon size={13} /> Pedir sinal</a>}
+                    {cl.qtd >= 2 && cl.telefone && <a style={s.waBtnAmber} href={linkWhatsApp(cl.telefone, msgSinal(cl.nome))} target="_blank" rel="noreferrer"><WaIcon size={13} color="white" /> Pedir sinal</a>}
                   </div>
                 ))}
               </div>
