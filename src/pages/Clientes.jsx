@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, ChevronRight, MessageCircle, Crown, Upload, Download } from 'lucide-react'
+import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Crown, Upload, Download } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -303,10 +303,6 @@ export default function Clientes() {
   const filtradaExibidas = filtradas.slice(0, pagina * ITENS_POR_PAGINA)
   const temMais = filtradas.length > pagina * ITENS_POR_PAGINA
 
-  function getInitials(nome) {
-    return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
-  }
-
   function handleWhatsApp(e, c) {
     e.stopPropagation()
     const tel = (c.telefone || '').replace(/\D/g, '')
@@ -459,49 +455,93 @@ export default function Clientes() {
       {loading ? <CardSkeleton count={5} /> : <>
       <div style={s.sectionTitle}>{filtradas.length} cliente{filtradas.length !== 1 ? 's' : ''}</div>
 
-      {filtradaExibidas.map(c => {
-        const sumida = estaSumida(c)
-        return (
-          <div key={c.id} style={s.card} onClick={() => navigate(`/app/clientes/${c.id}`)}>
-            <div style={s.avatar}>{getInitials(c.nome)}</div>
-            <div style={{ flex: 1 }}>
-              <div style={s.cardName}>
-                {c.nome}
-                {filtro === 'aniversariantes' && aniversarioHoje(c) && <span style={s.tagHoje}>🎂 hoje!</span>}
-                {filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) && !aguardandoParabens.has(c.id) && <span style={s.tagParabens}>✓ parabéns enviado</span>}
-                {sumida && <span style={s.tagSumida}>Sumida</span>}
-                {c.total_visitas >= VISITAS_VIP && <span style={s.tagVip}>✦ VIP</span>}
-              </div>
-              <div style={s.cardSub}>
-                {filtro === 'aniversariantes'
-                  ? `🎂 Aniversário: ${format(dataParaDate(c.data_nascimento), 'dd/MM')}`
-                  : (c.ultimo_atendimento ? `Última vez: ${format(parseUADate(c.ultimo_atendimento), 'dd/MM/yyyy')}` : 'Nunca atendida')}
-              </div>
-            </div>
-            <div style={s.cardRight}>
-              <div style={s.cardValor}>{formatBRL(c.total_gasto || 0)}</div>
-              <div style={s.cardVisitas}>{c.total_visitas || 0} visitas</div>
-            </div>
-            {c.telefone && (
-              filtro === 'aniversariantes' && aguardandoParabens.has(c.id) ? (
-                <div style={s.confirmWrap}>
-                  <button style={s.btnConfirmei} onClick={e => confirmarParabens(e, c)}>✓ Já enviei</button>
-                  <button style={s.btnNaoEnviei} onClick={e => cancelarParabens(e, c)}>Não enviei</button>
-                </div>
-              ) : (
-                <button
-                  style={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? s.waBtnEnviado : s.waBtn}
-                  onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c)}
-                  title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns no WhatsApp') : (sumida ? 'Chamar de volta no WhatsApp' : 'Abrir WhatsApp')}
-                >
-                  <MessageCircle size={15} />
-                </button>
-              )
-            )}
-            <ChevronRight size={16} color="var(--text3)" />
+      {filtradas.length > 0 && (
+        <div style={s.tableWrap}>
+          {/* Cabeçalho */}
+          <div style={s.tableHead}>
+            <div style={s.thStatus} />
+            <div style={s.thNome}>Nome</div>
+            <div style={s.thInfo}>Telefone · Visitas</div>
+            <div style={s.thUltimo}>Último atend.</div>
+            <div style={s.thOpt} />
           </div>
-        )
-      })}
+
+          {filtradaExibidas.map(c => {
+            const sumida = estaSumida(c)
+            const diasPassados = c.ultimo_atendimento ? differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) : null
+
+            return (
+              <div key={c.id} style={s.tableRow} onClick={() => navigate(`/app/clientes/${c.id}`)}>
+                {/* Status */}
+                <div style={s.tdStatus}>
+                  {sumida
+                    ? <AlertCircle size={16} color="#B91C1C" />
+                    : !c.ultimo_atendimento
+                      ? <Clock size={16} color="#D97706" />
+                      : <CheckCircle2 size={16} color="#15803D" />}
+                </div>
+
+                {/* Nome + tags */}
+                <div style={s.tdNome}>
+                  <div style={s.rowName}>{c.nome}</div>
+                  <div style={s.rowTags}>
+                    {filtro === 'aniversariantes' && aniversarioHoje(c) && <span style={s.tagHoje}>🎂 hoje!</span>}
+                    {filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) && !aguardandoParabens.has(c.id) && <span style={s.tagParabens}>✓ parabéns</span>}
+                    {sumida && <span style={s.tagSumida}>Sumida</span>}
+                    {c.total_visitas >= VISITAS_VIP && <span style={s.tagVip}>✦ VIP</span>}
+                    {!c.ultimo_atendimento && <span style={s.tagNew}>Nova</span>}
+                  </div>
+                </div>
+
+                {/* Telefone + visitas */}
+                <div style={s.tdInfo}>
+                  <div style={s.infoTel}>{c.telefone ? formatTelefone(c.telefone) : <span style={s.noData}>Sem telefone</span>}</div>
+                  <div style={s.infoVisitas}>
+                    {filtro === 'aniversariantes' && c.data_nascimento
+                      ? `🎂 ${format(dataParaDate(c.data_nascimento), 'dd/MM')}`
+                      : `${c.total_visitas || 0} visita${(c.total_visitas || 0) !== 1 ? 's' : ''} · ${formatBRL(c.total_gasto || 0)}`}
+                  </div>
+                </div>
+
+                {/* Último atendimento */}
+                <div style={s.tdUltimo}>
+                  {c.ultimo_atendimento ? (
+                    <>
+                      <div style={{ ...s.dataValor, ...(sumida ? { color: '#B91C1C', fontWeight: 600 } : {}) }}>
+                        {format(parseUADate(c.ultimo_atendimento), 'dd/MM/yy')}
+                      </div>
+                      <div style={{ ...s.dataRel, ...(sumida ? { color: '#B91C1C' } : {}) }}>
+                        há {diasPassados}d
+                      </div>
+                    </>
+                  ) : <span style={s.noData}>—</span>}
+                </div>
+
+                {/* Ações */}
+                <div style={s.tdOpt} onClick={e => e.stopPropagation()}>
+                  {c.telefone && (
+                    filtro === 'aniversariantes' && aguardandoParabens.has(c.id) ? (
+                      <div style={s.confirmWrap}>
+                        <button style={s.btnConfirmei} onClick={e => confirmarParabens(e, c)}>✓ Enviei</button>
+                        <button style={s.btnNaoEnviei} onClick={e => cancelarParabens(e, c)}>Não</button>
+                      </div>
+                    ) : (
+                      <button
+                        style={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? s.waBtnEnviado : s.waBtn}
+                        onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c)}
+                        title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns') : (sumida ? 'Chamar de volta' : 'WhatsApp')}
+                      >
+                        <MessageCircle size={14} />
+                      </button>
+                    )
+                  )}
+                  <ChevronRight size={14} color="var(--text3)" />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {filtradas.length === 0 && (
         busca
@@ -647,15 +687,29 @@ const s = {
   selectGroup: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
   selectLabel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingLeft: 2 },
   filtroSelect: { width: '100%', height: 42, boxSizing: 'border-box', padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
-  card: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '13px 14px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' },
-  avatar: { width: 42, height: 42, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--pink)', flexShrink: 0 },
-  cardName: { fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
-  cardSub: { fontSize: 12, color: 'var(--text3)', marginTop: 2 },
-  cardRight: { textAlign: 'right', flexShrink: 0 },
-  cardValor: { fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 500, color: 'var(--pink)' },
-  cardVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
-  waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
-  waBtnEnviado: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', flexShrink: 0 },
+  // ── Tabela de clientes ──
+  tableWrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' },
+  tableHead: { display: 'grid', gridTemplateColumns: '20px 1fr 1fr 80px 70px', gap: 8, alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' },
+  thStatus: { },
+  thNome: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  thInfo: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  thUltimo: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  thOpt: { },
+  tableRow: { display: 'grid', gridTemplateColumns: '20px 1fr 1fr 80px 70px', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s' },
+  tdStatus: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  tdNome: { minWidth: 0 },
+  rowName: { fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  rowTags: { display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap' },
+  tdInfo: { minWidth: 0 },
+  infoTel: { fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  infoVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
+  tdUltimo: { },
+  dataValor: { fontSize: 12, color: 'var(--text2)' },
+  dataRel: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
+  noData: { fontSize: 12, color: 'var(--text3)' },
+  tdOpt: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+  waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 'var(--radius-pill)', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
+  waBtnEnviado: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 'var(--radius-pill)', background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', flexShrink: 0 },
   confirmWrap: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 },
   btnConfirmei: { background: 'var(--green, #15803D)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   btnNaoEnviei: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
@@ -663,6 +717,7 @@ const s = {
   verMaisBtn: { width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
+  tagNew: { fontSize: 10, padding: '2px 6px', borderRadius: 'var(--radius-pill)', background: '#E6F1FB', color: '#185fa5', fontWeight: 600 },
   tagHoje: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: '#FAE8FF', color: '#86198F', fontWeight: 700 },
   empty: { padding: '40px 0', textAlign: 'center' },
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
