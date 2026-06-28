@@ -32,6 +32,9 @@ const CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID') ?? ''
 const CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET') ?? ''
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://lumengestaoempresarial.com.br'
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-oauth`
+// Segredo dedicado para assinar o OAuth state (anti-CSRF). Separado do SERVICE_KEY
+// para que a rotação de um não quebre o outro. Se não estiver setado, cai no SERVICE_KEY.
+const OAUTH_STATE_SECRET = Deno.env.get('GOOGLE_OAUTH_STATE_SECRET') ?? SERVICE_KEY
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': APP_URL,
@@ -45,7 +48,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY)
 const enc = new TextEncoder()
 async function hmac(data: string): Promise<string> {
   const key = await crypto.subtle.importKey(
-    'raw', enc.encode(SERVICE_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    'raw', enc.encode(OAUTH_STATE_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
   )
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data))
   return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
