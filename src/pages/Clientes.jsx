@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Crown, Upload, Download } from 'lucide-react'
+import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -69,6 +69,7 @@ export default function Clientes() {
   const [importResumo, setImportResumo] = useState(null)
   const [importNomeArquivo, setImportNomeArquivo] = useState('')
   const [importando, setImportando] = useState(false)
+  const [dadosExtras, setDadosExtras] = useState({ proximoMap: {}, canceladosMap: {}, pendentesMap: {} })
 
   const ITENS_POR_PAGINA = 20
 
@@ -78,7 +79,7 @@ export default function Clientes() {
   const noLimite = limiteClientes !== Infinity && ativas.length >= limiteClientes
   const perto = limiteClientes !== Infinity && ativas.length >= limiteClientes - 5 && !noLimite
 
-  useEffect(() => { if (salaoId) { loadClientes(); loadConfigMsg() } }, [salaoId])
+  useEffect(() => { if (salaoId) { loadClientes(); loadConfigMsg(); loadDadosExtras() } }, [salaoId])
 
   // Debounce na busca (300ms)
   useEffect(() => {
@@ -104,6 +105,29 @@ export default function Clientes() {
       msg_retorno: data.msg_retorno || MSG_RETORNO_PADRAO,
       nome_salao: data.nome_salao || '',
     })
+  }
+
+  async function loadDadosExtras() {
+    const hoje = format(new Date(), 'yyyy-MM-dd')
+    const [proxRes, cancelRes, pendRes] = await Promise.all([
+      supabase.from('agendamentos').select('cliente_id, data, horario')
+        .eq('salao_id', salaoId).in('status', ['agendado', 'confirmado']).gte('data', hoje)
+        .order('data').order('horario'),
+      supabase.from('agendamentos').select('cliente_id')
+        .eq('salao_id', salaoId).eq('status', 'cancelado'),
+      supabase.from('pagamentos').select('agendamentos!inner(cliente_id)')
+        .eq('status', 'pendente').eq('agendamentos.salao_id', salaoId),
+    ])
+    const proximoMap = {}
+    proxRes.data?.forEach(a => { if (!proximoMap[a.cliente_id]) proximoMap[a.cliente_id] = a })
+    const canceladosMap = {}
+    cancelRes.data?.forEach(a => { canceladosMap[a.cliente_id] = (canceladosMap[a.cliente_id] || 0) + 1 })
+    const pendentesMap = {}
+    pendRes.data?.forEach(p => {
+      const cid = p.agendamentos?.cliente_id
+      if (cid) pendentesMap[cid] = (pendentesMap[cid] || 0) + 1
+    })
+    setDadosExtras({ proximoMap, canceladosMap, pendentesMap })
   }
 
   async function salvarCliente() {
@@ -461,24 +485,29 @@ export default function Clientes() {
           <div style={s.tableHead}>
             <div style={s.thStatus} />
             <div style={s.thNome}>Nome</div>
-            <div style={s.thInfo}>Telefone · Visitas</div>
-            <div style={s.thUltimo}>Último atend.</div>
+            <div style={s.thTel}>Telefone</div>
+            <div style={s.thHist}>Histórico</div>
+            <div style={s.thData}>Último atend.</div>
+            <div style={s.thData}>Próximo atend.</div>
             <div style={s.thOpt} />
           </div>
 
           {filtradaExibidas.map(c => {
             const sumida = estaSumida(c)
             const diasPassados = c.ultimo_atendimento ? differenceInDays(new Date(), parseUADate(c.ultimo_atendimento)) : null
+            const prox = dadosExtras.proximoMap[c.id]
+            const cancelados = dadosExtras.canceladosMap[c.id] || 0
+            const aReceber = dadosExtras.pendentesMap[c.id] || 0
 
             return (
               <div key={c.id} style={s.tableRow} onClick={() => navigate(`/app/clientes/${c.id}`)}>
                 {/* Status */}
                 <div style={s.tdStatus}>
                   {sumida
-                    ? <AlertCircle size={16} color="#B91C1C" />
+                    ? <AlertCircle size={15} color="#B91C1C" />
                     : !c.ultimo_atendimento
-                      ? <Clock size={16} color="#D97706" />
-                      : <CheckCircle2 size={16} color="#15803D" />}
+                      ? <Clock size={15} color="#D97706" />
+                      : <CheckCircle2 size={15} color="#15803D" />}
                 </div>
 
                 {/* Nome + tags */}
@@ -493,18 +522,36 @@ export default function Clientes() {
                   </div>
                 </div>
 
-                {/* Telefone + visitas */}
-                <div style={s.tdInfo}>
-                  <div style={s.infoTel}>{c.telefone ? formatTelefone(c.telefone) : <span style={s.noData}>Sem telefone</span>}</div>
-                  <div style={s.infoVisitas}>
-                    {filtro === 'aniversariantes' && c.data_nascimento
-                      ? `🎂 ${format(dataParaDate(c.data_nascimento), 'dd/MM')}`
-                      : `${c.total_visitas || 0} visita${(c.total_visitas || 0) !== 1 ? 's' : ''} · ${formatBRL(c.total_gasto || 0)}`}
-                  </div>
+                {/* Telefone com ícone WA inline */}
+                <div style={s.tdTel} onClick={e => e.stopPropagation()}>
+                  {c.telefone ? (
+                    filtro === 'aniversariantes' && aguardandoParabens.has(c.id) ? (
+                      <div style={s.confirmWrap}>
+                        <button style={s.btnConfirmei} onClick={e => confirmarParabens(e, c)}>✓ Enviei</button>
+                        <button style={s.btnNaoEnviei} onClick={e => cancelarParabens(e, c)}>Não</button>
+                      </div>
+                    ) : (
+                      <button
+                        style={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? s.telBtnEnviado : s.telBtn}
+                        onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c)}
+                        title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns') : (sumida ? 'Chamar de volta' : 'Abrir WhatsApp')}
+                      >
+                        <MessageCircle size={13} style={{ flexShrink: 0, color: filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? 'var(--text3)' : '#15803D' }} />
+                        <span style={s.telNum}>{formatTelefone(c.telefone)}</span>
+                      </button>
+                    )
+                  ) : <span style={s.noData}>—</span>}
+                </div>
+
+                {/* Histórico: realizados / cancelados / a receber */}
+                <div style={s.tdHist}>
+                  <span style={s.hpGreen}>{c.total_visitas || 0}</span>
+                  <span style={s.hpRed}>{cancelados}</span>
+                  <span style={s.hpAmber}>{aReceber}</span>
                 </div>
 
                 {/* Último atendimento */}
-                <div style={s.tdUltimo}>
+                <div style={s.tdData}>
                   {c.ultimo_atendimento ? (
                     <>
                       <div style={{ ...s.dataValor, ...(sumida ? { color: '#B91C1C', fontWeight: 600 } : {}) }}>
@@ -517,25 +564,22 @@ export default function Clientes() {
                   ) : <span style={s.noData}>—</span>}
                 </div>
 
-                {/* Ações */}
+                {/* Próximo atendimento */}
+                <div style={s.tdData}>
+                  {prox ? (
+                    <>
+                      <div style={s.dataValor}>{format(dataParaDate(prox.data), 'dd/MM/yy')}</div>
+                      <div style={s.dataRel}>{prox.horario}</div>
+                    </>
+                  ) : <span style={s.noData}>—</span>}
+                </div>
+
+                {/* Opções */}
                 <div style={s.tdOpt} onClick={e => e.stopPropagation()}>
-                  {c.telefone && (
-                    filtro === 'aniversariantes' && aguardandoParabens.has(c.id) ? (
-                      <div style={s.confirmWrap}>
-                        <button style={s.btnConfirmei} onClick={e => confirmarParabens(e, c)}>✓ Enviei</button>
-                        <button style={s.btnNaoEnviei} onClick={e => cancelarParabens(e, c)}>Não</button>
-                      </div>
-                    ) : (
-                      <button
-                        style={filtro === 'aniversariantes' && parabensEnviadoEsteAno(c) ? s.waBtnEnviado : s.waBtn}
-                        onClick={e => filtro === 'aniversariantes' ? enviarParabens(e, c) : handleWhatsApp(e, c)}
-                        title={filtro === 'aniversariantes' ? (parabensEnviadoEsteAno(c) ? 'Reenviar parabéns' : 'Enviar parabéns') : (sumida ? 'Chamar de volta' : 'WhatsApp')}
-                      >
-                        <MessageCircle size={14} />
-                      </button>
-                    )
-                  )}
-                  <ChevronRight size={14} color="var(--text3)" />
+                  <button style={s.editBtn} onClick={e => { e.stopPropagation(); navigate(`/app/clientes/${c.id}`) }} title="Editar">
+                    <Pencil size={13} />
+                  </button>
+                  <ChevronRight size={13} color="var(--text3)" />
                 </div>
               </div>
             )
@@ -687,29 +731,34 @@ const s = {
   selectGroup: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
   selectLabel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingLeft: 2 },
   filtroSelect: { width: '100%', height: 42, boxSizing: 'border-box', padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' },
-  // ── Tabela de clientes ──
-  tableWrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' },
-  tableHead: { display: 'grid', gridTemplateColumns: '20px 1fr 1fr 80px 70px', gap: 8, alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' },
+  // ── Tabela de clientes (7 colunas) ──
+  tableWrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' },
+  tableHead: { display: 'grid', gridTemplateColumns: '22px minmax(0,1.5fr) minmax(0,1fr) 110px 78px 78px 52px', gap: 8, alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', minWidth: 600 },
   thStatus: { },
   thNome: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  thInfo: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  thUltimo: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  thTel: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  thHist: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  thData: { fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' },
   thOpt: { },
-  tableRow: { display: 'grid', gridTemplateColumns: '20px 1fr 1fr 80px 70px', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s' },
+  tableRow: { display: 'grid', gridTemplateColumns: '22px minmax(0,1.5fr) minmax(0,1fr) 110px 78px 78px 52px', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', minWidth: 600 },
   tdStatus: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
   tdNome: { minWidth: 0 },
   rowName: { fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   rowTags: { display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap' },
-  tdInfo: { minWidth: 0 },
-  infoTel: { fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  infoVisitas: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
-  tdUltimo: { },
+  tdTel: { minWidth: 0 },
+  telBtn: { display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', color: 'var(--text2)', maxWidth: '100%' },
+  telBtnEnviado: { display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', color: 'var(--text3)', maxWidth: '100%' },
+  telNum: { fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  tdHist: { display: 'flex', alignItems: 'center', gap: 4 },
+  hpGreen: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 20, background: '#eaf3de', color: '#3b6d11' },
+  hpRed: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 20, background: '#fcebeb', color: '#a32d2d' },
+  hpAmber: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 20, background: '#faeeda', color: '#854f0b' },
+  tdData: { },
   dataValor: { fontSize: 12, color: 'var(--text2)' },
   dataRel: { fontSize: 11, color: 'var(--text3)', marginTop: 1 },
   noData: { fontSize: 12, color: 'var(--text3)' },
-  tdOpt: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-  waBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 'var(--radius-pill)', background: '#DCFCE7', color: '#15803D', border: 'none', cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s' },
-  waBtnEnviado: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 'var(--radius-pill)', background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)', cursor: 'pointer', flexShrink: 0 },
+  tdOpt: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
+  editBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'none', border: '1px solid var(--border2)', cursor: 'pointer', color: 'var(--text3)', flexShrink: 0, fontFamily: 'inherit' },
   confirmWrap: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 },
   btnConfirmei: { background: 'var(--green, #15803D)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   btnNaoEnviei: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
