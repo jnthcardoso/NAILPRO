@@ -18,7 +18,7 @@ import RegistrarPagamentoModal from '../components/financeiro/RegistrarPagamento
 import ProLaboreModal from '../components/financeiro/ProLaboreModal'
 import DespesaModal from '../components/financeiro/DespesaModal'
 import ConfirmarPagarDespesaModal from '../components/financeiro/ConfirmarPagarDespesaModal'
-import { format, addMonths, subMonths, eachMonthOfInterval } from 'date-fns'
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachMonthOfInterval } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import BarChart, { HBarChart } from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
