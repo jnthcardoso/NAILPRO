@@ -78,7 +78,7 @@ export default function Clientes() {
   const [infoModal, setInfoModal] = useState(null)
   const [showFiltroPanel, setShowFiltroPanel] = useState(false)
 
-  const ITENS_POR_PAGINA = 20
+  const ITENS_POR_PAGINA = 30
 
   const ativas = useMemo(() => clientes.filter(c => !c.arquivada), [clientes])
   const arquivadas = useMemo(() => clientes.filter(c => c.arquivada), [clientes])
@@ -336,8 +336,14 @@ export default function Clientes() {
       return a.nome.localeCompare(b.nome)
     }), [ativas, arquivadas, filtro, busca, ordenacao, mesAtual, dadosExtras])
 
-  const filtradaExibidas = filtradas.slice(0, pagina * ITENS_POR_PAGINA)
-  const temMais = filtradas.length > pagina * ITENS_POR_PAGINA
+  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / ITENS_POR_PAGINA))
+  const paginaSegura = Math.min(pagina, totalPaginas)
+  const filtradaExibidas = filtradas.slice((paginaSegura - 1) * ITENS_POR_PAGINA, paginaSegura * ITENS_POR_PAGINA)
+
+  function irParaPagina(p) {
+    setPagina(p)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function handleWhatsApp(e, c) {
     e.stopPropagation()
@@ -674,10 +680,28 @@ export default function Clientes() {
       )}
       </>}
 
-      {temMais && (
-        <button style={s.verMaisBtn} onClick={() => setPagina(p => p + 1)}>
-          Ver mais ({filtradas.length - pagina * ITENS_POR_PAGINA} restantes)
-        </button>
+      {totalPaginas > 1 && (
+        <div style={s.paginacao}>
+          <button style={{ ...s.pgBtn, ...(paginaSegura === 1 ? s.pgBtnOff : {}) }} onClick={() => irParaPagina(paginaSegura - 1)} disabled={paginaSegura === 1}>
+            ‹
+          </button>
+          {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === totalPaginas || Math.abs(p - paginaSegura) <= 1)
+            .reduce((acc, p, idx, arr) => {
+              if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+              acc.push(p)
+              return acc
+            }, [])
+            .map((p, i) => p === '...'
+              ? <span key={`e${i}`} style={s.pgEllipsis}>…</span>
+              : <button key={p} style={{ ...s.pgBtn, ...(p === paginaSegura ? s.pgBtnAtivo : {}) }} onClick={() => irParaPagina(p)}>{p}</button>
+            )
+          }
+          <button style={{ ...s.pgBtn, ...(paginaSegura === totalPaginas ? s.pgBtnOff : {}) }} onClick={() => irParaPagina(paginaSegura + 1)} disabled={paginaSegura === totalPaginas}>
+            ›
+          </button>
+          <span style={s.pgInfo}>{(paginaSegura - 1) * ITENS_POR_PAGINA + 1}–{Math.min(paginaSegura * ITENS_POR_PAGINA, filtradas.length)} de {filtradas.length}</span>
+        </div>
       )}
 
       <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova cliente">
@@ -981,6 +1005,12 @@ const s = {
   btnNaoEnviei: { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   tagParabens: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: '#DCFCE7', color: '#15803D', fontWeight: 700 },
   verMaisBtn: { width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' },
+  paginacao: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 16, marginBottom: 16, flexWrap: 'wrap' },
+  pgBtn: { minWidth: 36, height: 36, padding: '0 10px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  pgBtnAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
+  pgBtnOff: { opacity: 0.35, cursor: 'default' },
+  pgEllipsis: { fontSize: 14, color: 'var(--text3)', padding: '0 4px' },
+  pgInfo: { fontSize: 12, color: 'var(--text3)', marginLeft: 8, whiteSpace: 'nowrap' },
   tagSumida: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 },
   tagVip: { fontSize: 10, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
   tagNew: { fontSize: 10, padding: '2px 6px', borderRadius: 'var(--radius-pill)', background: '#E6F1FB', color: '#185fa5', fontWeight: 600 },
