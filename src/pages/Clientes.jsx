@@ -75,6 +75,7 @@ export default function Clientes() {
   const [formEdit, setFormEdit] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
   const [errosEdit, setErrosEdit] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
+  const [infoModal, setInfoModal] = useState(null)
 
   const ITENS_POR_PAGINA = 20
 
@@ -426,9 +427,32 @@ export default function Clientes() {
         <button style={s.btnImportar} onClick={() => setShowImport(true)}>
           <Upload size={14} /> Importar
         </button>
-        <button style={s.btnNova} onClick={abrirModalNova}>
-          <Plus size={14} /> Nova
-        </button>
+        <div className="clientes-filtros-chips">
+          <div style={s.filtrosChips}>
+            {[
+              { id: 'todas', label: 'Todas' },
+              { id: 'vip', label: '✦ VIP' },
+              { id: 'sumidas', label: '⏰ Retorno' },
+              { id: 'sem_visita', label: '🆕 Novas' },
+              ...(aniversariantes.length ? [{ id: 'aniversariantes', label: `🎂 Aniversários (${aniversariantes.length})` }] : []),
+              ...(arquivadas.length ? [{ id: 'arquivadas', label: `🗄 Arquivadas (${arquivadas.length})` }] : []),
+            ].map(f => (
+              <button
+                key={f.id}
+                style={{ ...s.filtroChip, ...(filtro === f.id ? s.filtroChipAtivo : {}) }}
+                onClick={() => setFiltro(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <select style={s.sortSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
+            <option value="nome">A–Z</option>
+            <option value="gasto">Maior gasto</option>
+            <option value="visitas">Mais visitas</option>
+            <option value="recente">Mais recente</option>
+          </select>
+        </div>
       </div>
 
       {/* Aviso de limite (Starter) */}
@@ -459,7 +483,7 @@ export default function Clientes() {
 
       {/* Mini stats */}
       <div style={s.statsRow}>
-        <div style={s.statCard}>
+        <div style={{ ...s.statCard, cursor: 'pointer' }} onClick={() => setFiltro('todas')}>
           <div style={s.statNum}>{ativas.length}</div>
           <div style={s.statLabel}>Total de clientes</div>
         </div>
@@ -471,34 +495,6 @@ export default function Clientes() {
           <div style={{ ...s.statNum, color: sumidas.length ? 'var(--red, #B91C1C)' : 'var(--text3)' }}>{sumidas.length}</div>
           <div style={s.statLabel}>Retorno</div>
         </div>
-      </div>
-
-      {/* Computador: chips + ordenar (escondido no celular via CSS) */}
-      <div className="clientes-filtros-chips">
-        <div style={s.filtrosChips}>
-          {[
-            { id: 'todas', label: 'Todas' },
-            { id: 'vip', label: '✦ VIP' },
-            { id: 'sumidas', label: '⏰ Retorno' },
-            { id: 'sem_visita', label: '🆕 Novas' },
-            ...(aniversariantes.length ? [{ id: 'aniversariantes', label: `🎂 Aniversários (${aniversariantes.length})` }] : []),
-            ...(arquivadas.length ? [{ id: 'arquivadas', label: `🗄 Arquivadas (${arquivadas.length})` }] : []),
-          ].map(f => (
-            <button
-              key={f.id}
-              style={{ ...s.filtroChip, ...(filtro === f.id ? s.filtroChipAtivo : {}) }}
-              onClick={() => setFiltro(f.id)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-        <select style={s.sortSelect} value={ordenacao} onChange={e => setOrdenacao(e.target.value)}>
-          <option value="nome">A–Z</option>
-          <option value="gasto">Maior gasto</option>
-          <option value="visitas">Mais visitas</option>
-          <option value="recente">Mais recente</option>
-        </select>
       </div>
 
       {/* Celular: menus compactos (escondido no computador via CSS) */}
@@ -536,13 +532,13 @@ export default function Clientes() {
           <div style={s.tableHead}>
             <div style={s.thStatus}>
               Status
-              <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'help', flexShrink: 0 }} title="✓ Verde = retorno em dia · ⏰ Âmbar = nova (sem visita) · ! Vermelho = retorno pendente" />
+              <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'pointer', flexShrink: 0 }} onClick={e => { e.stopPropagation(); setInfoModal('status') }} />
             </div>
             <div style={s.thNome}>Nome</div>
             <div style={s.thTel}>Telefone</div>
             <div style={s.thHist}>
               Histórico
-              <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'help', flexShrink: 0 }} title="Verde = atendimentos realizados · Vermelho = cancelamentos · Âmbar = pagamentos a receber" />
+              <Info size={11} color="var(--text3)" style={{ marginLeft: 3, verticalAlign: 'middle', cursor: 'pointer', flexShrink: 0 }} onClick={e => { e.stopPropagation(); setInfoModal('historico') }} />
             </div>
             <div style={s.thData}>Último atend.</div>
             <div style={s.thData}>Próximo atend.</div>
@@ -666,6 +662,28 @@ export default function Clientes() {
       <button className="fab-btn" onClick={abrirModalNova} aria-label="Nova cliente">
         <Plus size={22} color="white" />
       </button>
+
+      {infoModal && (
+        <Modal onClose={() => setInfoModal(null)} boxStyle={s.infoModalBox}>
+          {infoModal === 'status' ? (
+            <>
+              <div style={s.infoModalTitle}>Coluna Status</div>
+              <div style={s.infoModalItem}><CheckCircle2 size={16} color="#15803D" style={{ flexShrink: 0 }} /><div><strong>Verde</strong> — Retorno em dia. A última visita está dentro do prazo configurado.</div></div>
+              <div style={s.infoModalItem}><Clock size={16} color="#D97706" style={{ flexShrink: 0 }} /><div><strong>Âmbar</strong> — Nova cliente. Ainda não tem nenhuma visita registrada.</div></div>
+              <div style={s.infoModalItem}><AlertCircle size={16} color="#B91C1C" style={{ flexShrink: 0 }} /><div><strong>Vermelho</strong> — Retorno pendente. Passou o prazo desde a última visita.</div></div>
+              <button style={s.btnSecondary} onClick={() => setInfoModal(null)}>Fechar</button>
+            </>
+          ) : (
+            <>
+              <div style={s.infoModalTitle}>Coluna Histórico</div>
+              <div style={s.infoModalItem}><span style={{ ...s.hpGreen, minWidth: 22 }}>3</span><div><strong>Verde</strong> — Atendimentos realizados (total de visitas concluídas).</div></div>
+              <div style={s.infoModalItem}><span style={{ ...s.hpRed, minWidth: 22 }}>1</span><div><strong>Vermelho</strong> — Cancelamentos registrados.</div></div>
+              <div style={s.infoModalItem}><span style={{ ...s.hpAmber, minWidth: 22 }}>2</span><div><strong>Âmbar</strong> — Pagamentos a receber (pendentes).</div></div>
+              <button style={s.btnSecondary} onClick={() => setInfoModal(null)}>Fechar</button>
+            </>
+          )}
+        </Modal>
+      )}
 
       <UpgradeModal
         aberto={showUpgrade}
@@ -826,7 +844,7 @@ const s = {
   page: { padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px', margin: '0 0 8px' },
   topRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 },
-  searchBar: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' },
+  searchBar: { display: 'flex', alignItems: 'center', gap: 8, flex: '0 1 220px', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' },
   searchInput: { border: 'none', outline: 'none', flex: 1, fontSize: 14, background: 'transparent', color: 'var(--text)' },
   chipsRow: { display: 'flex', flexWrap: 'wrap', gap: 6 },
   chip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid #FECACA', borderRadius: 'var(--radius-pill)', padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer' },
@@ -884,7 +902,9 @@ const s = {
   modal: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '90vh', overflowY: 'auto' },
   modalTitle: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
   btnImportar: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', fontSize: 12.5, fontWeight: 700, color: 'var(--pink)', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-xs)' },
-  btnNova: { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', background: 'var(--pink)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '9px 16px', fontSize: 12.5, fontWeight: 700, color: 'white', cursor: 'pointer', fontFamily: 'inherit' },
+  infoModalBox: { background: 'var(--surface)', borderRadius: 18, padding: '20px 20px 24px', width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 14 },
+  infoModalTitle: { fontSize: 15, fontWeight: 700, marginBottom: 2 },
+  infoModalItem: { display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 },
   uploadBox: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, textAlign: 'center', border: '2px dashed var(--border2)', borderRadius: 'var(--radius-sm)', padding: '20px 14px', cursor: 'pointer', background: 'var(--surface2)', marginBottom: 12 },
   importResumo: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', fontSize: 12.5, color: 'var(--text2)', marginBottom: 12 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
