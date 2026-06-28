@@ -285,6 +285,12 @@ input:focus, select:focus, textarea:focus {
   .filtros-btn-label { display: inline; }
 }
 
+/* ── Grid de métricas do perfil da cliente: 2 cols mobile, 4 cols desktop ── */
+.metricas-grid { grid-template-columns: 1fr 1fr; }
+@media (min-width: 769px) {
+  .metricas-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
 /* ── Modal responsivo: sheet no celular, centralizado no desktop ── */
 .modal-overlay-resp { align-items: flex-end; }
 .modal-box-resp { border-radius: 20px 20px 0 0; }
