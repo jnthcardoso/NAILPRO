@@ -1,11 +1,11 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, AlertCircle, CheckCircle2, Clock, ChevronRight, MessageCircle, Pencil, Crown, Upload, Download } from 'lucide-react'
 // xlsx é carregado sob demanda (só ao importar/baixar modelo) — mantém a tela de Clientes leve.
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
-import { useAssinatura, PLANOS } from '../contexts/AssinaturaContext'
+import { useAssinatura } from '../contexts/AssinaturaContext'
 import { useToast } from '../contexts/ToastContext'
 import { UpgradeModal } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
@@ -70,6 +70,11 @@ export default function Clientes() {
   const [importNomeArquivo, setImportNomeArquivo] = useState('')
   const [importando, setImportando] = useState(false)
   const [dadosExtras, setDadosExtras] = useState({ proximoMap: {}, canceladosMap: {}, pendentesMap: {} })
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [clienteEditando, setClienteEditando] = useState(null)
+  const [formEdit, setFormEdit] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
+  const [errosEdit, setErrosEdit] = useState({})
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const ITENS_POR_PAGINA = 20
 
@@ -91,7 +96,7 @@ export default function Clientes() {
   useEffect(() => { setPagina(1) }, [filtro, ordenacao])
 
   async function loadClientes() {
-    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno, data_nascimento, parabens_enviado_em').eq('salao_id', salaoId).order('nome')
+    const { data, error } = await supabase.from('clientes').select('id, nome, telefone, email, observacoes, ultimo_atendimento, total_visitas, total_gasto, arquivada, dias_retorno, data_nascimento, parabens_enviado_em').eq('salao_id', salaoId).order('nome')
     setLoading(false)
     if (error) { erro(traduzErro(error, 'Não foi possível carregar as clientes.')); return }
     setClientes(data || [])
@@ -115,7 +120,7 @@ export default function Clientes() {
         .order('data').order('horario'),
       supabase.from('agendamentos').select('cliente_id')
         .eq('salao_id', salaoId).eq('status', 'cancelado'),
-      supabase.from('pagamentos').select('agendamentos!inner(cliente_id)')
+      supabase.from('pagamentos').select('agendamentos!inner(cliente_id, salao_id)')
         .eq('status', 'pendente').eq('agendamentos.salao_id', salaoId),
     ])
     const proximoMap = {}
@@ -367,6 +372,50 @@ export default function Clientes() {
     setAguardandoParabens(prev => { const n = new Set(prev); n.delete(c.id); return n })
   }
 
+  function abrirEditModal(c) {
+    setClienteEditando(c)
+    setFormEdit({
+      nome: c.nome || '',
+      telefone: c.telefone || '',
+      email: c.email || '',
+      data_nascimento: c.data_nascimento || '',
+      observacoes: c.observacoes || '',
+      dias_retorno: c.dias_retorno != null ? String(c.dias_retorno) : '',
+    })
+    setErrosEdit({})
+    setShowEditModal(true)
+  }
+
+  async function salvarEdicaoRapida() {
+    const novosErros = {}
+    if (!validarNome(formEdit.nome)) novosErros.nome = 'Nome inválido (mín. 2 caracteres)'
+    if (formEdit.telefone && !validarTelefone(formEdit.telefone)) novosErros.telefone = 'WhatsApp deve ter 10 ou 11 dígitos'
+    if (formEdit.email && !validarEmail(formEdit.email)) novosErros.email = 'E-mail inválido'
+    const dr = formEdit.dias_retorno === '' ? null : parseInt(formEdit.dias_retorno, 10)
+    if (dr != null && (!Number.isFinite(dr) || dr < 1 || dr > 365)) novosErros.dias_retorno = 'Informe entre 1 e 365 dias'
+    if (Object.keys(novosErros).length > 0) { setErrosEdit(novosErros); return }
+    const telLimpo = unformatTelefone(formEdit.telefone)
+    if (telLimpo) {
+      const jaExiste = clientes.find(c => c.id !== clienteEditando.id && unformatTelefone(c.telefone) === telLimpo)
+      if (jaExiste) { setErrosEdit({ telefone: `Já existe uma cliente com esse WhatsApp: ${jaExiste.nome}` }); return }
+    }
+    setSavingEdit(true)
+    const updates = {
+      nome: formEdit.nome.trim(),
+      telefone: unformatTelefone(formEdit.telefone) || null,
+      email: formEdit.email.trim() || null,
+      data_nascimento: formEdit.data_nascimento || null,
+      observacoes: formEdit.observacoes.trim() || null,
+      dias_retorno: dr,
+    }
+    const { error } = await supabase.from('clientes').update(updates).eq('id', clienteEditando.id).eq('salao_id', salaoId)
+    setSavingEdit(false)
+    if (error) { erro(traduzErro(error, 'Não foi possível salvar.')); return }
+    setClientes(prev => prev.map(c => c.id === clienteEditando.id ? { ...c, ...updates } : c))
+    setShowEditModal(false)
+    sucesso('Cliente atualizada')
+  }
+
   return (
     <div style={s.page}>
       <div style={s.searchBar}>
@@ -576,7 +625,7 @@ export default function Clientes() {
 
                 {/* Opções */}
                 <div style={s.tdOpt} onClick={e => e.stopPropagation()}>
-                  <button style={s.editBtn} onClick={e => { e.stopPropagation(); navigate(`/app/clientes/${c.id}`) }} title="Editar">
+                  <button style={s.editBtn} onClick={e => { e.stopPropagation(); abrirEditModal(c) }} title="Editar">
                     <Pencil size={13} />
                   </button>
                   <ChevronRight size={13} color="var(--text3)" />
@@ -705,6 +754,60 @@ export default function Clientes() {
             {importando ? 'Importando...' : importLinhas.length ? `Importar ${importLinhas.length} cliente(s)` : 'Selecione um arquivo'}
           </button>
           <button style={s.btnSecondary} onClick={fecharImport}>Cancelar</button>
+        </Modal>
+      )}
+
+      {showEditModal && clienteEditando && (
+        <Modal onClose={() => setShowEditModal(false)} variant="sheet" boxStyle={s.modal}>
+          <div style={s.modalTitle}>Editar cliente</div>
+          <div style={s.field}>
+            <label style={s.label}>Nome *</label>
+            <input
+              style={{ ...s.input, ...(errosEdit.nome ? s.inputErro : {}) }}
+              placeholder="Nome completo"
+              value={formEdit.nome}
+              onChange={e => { setFormEdit({ ...formEdit, nome: e.target.value }); setErrosEdit({ ...errosEdit, nome: null }) }}
+            />
+            {errosEdit.nome && <span style={s.erroMsg}>{errosEdit.nome}</span>}
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>WhatsApp</label>
+            <input
+              style={{ ...s.input, ...(errosEdit.telefone ? s.inputErro : {}) }}
+              placeholder="(51) 99999-9999"
+              value={formatTelefone(formEdit.telefone)}
+              onChange={e => { setFormEdit({ ...formEdit, telefone: e.target.value }); setErrosEdit({ ...errosEdit, telefone: null }) }}
+              inputMode="numeric"
+            />
+            {errosEdit.telefone && <span style={s.erroMsg}>{errosEdit.telefone}</span>}
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>E-mail</label>
+            <input
+              style={{ ...s.input, ...(errosEdit.email ? s.inputErro : {}) }}
+              type="email" placeholder="opcional"
+              value={formEdit.email}
+              onChange={e => { setFormEdit({ ...formEdit, email: e.target.value }); setErrosEdit({ ...errosEdit, email: null }) }}
+            />
+            {errosEdit.email && <span style={s.erroMsg}>{errosEdit.email}</span>}
+          </div>
+          <div style={s.field}><label style={s.label}>Data de nascimento</label><input style={s.input} type="date" value={formEdit.data_nascimento} onChange={e => setFormEdit({ ...formEdit, data_nascimento: e.target.value })} /></div>
+          <div style={s.field}><label style={s.label}>Observações</label><input style={s.input} placeholder="Preferências, alergias..." value={formEdit.observacoes} onChange={e => setFormEdit({ ...formEdit, observacoes: e.target.value })} /></div>
+          <div style={s.field}>
+            <label style={s.label}>Retorno a cada (dias)</label>
+            <input
+              style={{ ...s.input, ...(errosEdit.dias_retorno ? s.inputErro : {}) }}
+              type="number" min="1" max="365" inputMode="numeric"
+              placeholder={`Padrão (${diasAlerta} dias)`}
+              value={formEdit.dias_retorno}
+              onChange={e => { setFormEdit({ ...formEdit, dias_retorno: e.target.value }); setErrosEdit({ ...errosEdit, dias_retorno: null }) }}
+            />
+            {errosEdit.dias_retorno
+              ? <span style={s.erroMsg}>{errosEdit.dias_retorno}</span>
+              : <span style={s.hint}>Deixe em branco para usar o padrão de {diasAlerta} dias.</span>}
+          </div>
+          <button style={s.btnPrimary} onClick={salvarEdicaoRapida} disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
+          <button style={s.btnSecondary} onClick={() => setShowEditModal(false)}>Cancelar</button>
         </Modal>
       )}
     </div>

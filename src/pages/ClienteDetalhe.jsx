@@ -97,14 +97,11 @@ export default function ClienteDetalhe() {
     const { data, error } = await supabase.from('agendamentos')
       .select('*, pagamentos(status, valor, forma)')
       .eq('cliente_id', id)
+      .eq('salao_id', salaoId)
       .order('data', { ascending: false })
       .order('horario', { ascending: false })
     if (error) { erro(traduzErro(error, 'Não foi possível carregar o histórico.')); return }
     setHistorico(data || [])
-  }
-
-  function getInitials(nome) {
-    return nome?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '??'
   }
 
   async function toggleArquivar() {
@@ -162,6 +159,10 @@ export default function ClienteDetalhe() {
   // do topo e não inflar o ticket com pagamento de atendimento não-realizado.
   const totalRecebido = realizados.reduce((acc, h) => acc + somaPagos(h), 0)
   const ticketMedio = realizados.length ? totalRecebido / realizados.length : 0
+  const hoje = format(new Date(), 'yyyy-MM-dd')
+  const proximoAgendamento = historico
+    .filter(h => (h.status === 'agendado' || h.status === 'confirmado') && h.data >= hoje)
+    .sort((a, b) => a.data.localeCompare(b.data) || (a.horario || '').localeCompare(b.horario || ''))[0] ?? null
 
   if (!cliente) return <div style={{ padding: 24, color: 'var(--text3)' }}>Carregando...</div>
 
@@ -199,7 +200,6 @@ export default function ClienteDetalhe() {
       </div>
 
       <div style={s.profile}>
-        <div style={s.avatar}>{getInitials(cliente.nome)}</div>
         <div style={s.profileName}>{cliente.nome}</div>
         {/* VIP badge: Gold + Noir */}
         {(cliente.total_visitas || 0) >= VISITAS_VIP && (
@@ -249,6 +249,20 @@ export default function ClienteDetalhe() {
           são do salão inteiro. Avisa pra não parecer número errado. */}
       {!gerenciaTudo && (
         <div style={s.escopoNota}>Resumo geral do salão</div>
+      )}
+
+      {proximoAgendamento && (
+        <div style={s.proximoCard}>
+          <div style={{ flex: 1 }}>
+            <div style={s.obsTitle}>Próximo agendamento</div>
+            <div style={s.retornoSub}>
+              {format(new Date(proximoAgendamento.data + 'T12:00:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })} · {proximoAgendamento.horario?.slice(0, 5)}
+            </div>
+          </div>
+          <div style={{ ...s.retornoBadge, background: '#DBEAFE', color: '#1D4ED8' }}>
+            {format(new Date(proximoAgendamento.data + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
+          </div>
+        </div>
       )}
 
       {cliente.observacoes && (
@@ -312,7 +326,9 @@ export default function ClienteDetalhe() {
 
       <div style={s.sectionTitle}>
         linha do tempo
-        {cancelados.length > 0 && <span style={s.cancelInfo}> · {cancelados.length} cancelado{cancelados.length > 1 ? 's' : ''}</span>}
+        {cancelados.length > 0 && (
+          <span style={s.cancelInfo}> · {cancelados.length} cancelado{cancelados.length > 1 ? 's' : ''}{!gerenciaTudo ? ' (seus)' : ''}</span>
+        )}
       </div>
 
       {historico.length === 0
@@ -461,6 +477,7 @@ export default function ClienteDetalhe() {
 }
 
 const HIST_STATUS = {
+  agendado:   { label: 'Agendada',   cor: '#1D4ED8', bg: '#DBEAFE' },
   realizado:  { label: 'Realizado',  cor: '#5B21B6', bg: '#EDE9FE' },
   confirmado: { label: 'Confirmada', cor: '#15803D', bg: '#DCFCE7' },
   pendente:   { label: 'Aguardando', cor: '#92400E', bg: '#FEF3C7' },
@@ -475,7 +492,6 @@ const s = {
   backBtn: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, cursor: 'pointer', color: 'var(--text)', display: 'flex', padding: '6px 8px' },
   topTitle: { fontSize: 15, fontWeight: 700 },
   profile: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20, gap: 7 },
-  avatar: { width: 76, height: 76, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--pink)', marginBottom: 4, boxShadow: '0 4px 16px rgba(var(--pink-rgb),0.18)' },
   profileName: { fontSize: 20, fontWeight: 700 },
   /* VIP badge: Gold + Noir */
   vipBadge: { fontSize: 12, padding: '3px 12px', borderRadius: 'var(--radius-pill)', background: 'var(--gold)', color: 'var(--text)', fontWeight: 700, letterSpacing: '0.2px' },
@@ -494,6 +510,7 @@ const s = {
   obs: { background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)' },
   obsTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 },
   obsText: { fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 },
+  proximoCard: { display: 'flex', alignItems: 'center', gap: 12, background: '#DBEAFE', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, border: '1px solid #BFDBFE' },
   retornoCard: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', borderRadius: 'var(--radius-sm)', padding: '13px 15px', marginBottom: 16, boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border)', cursor: 'pointer' },
   retornoSub: { fontSize: 13, color: 'var(--text2)', marginTop: 4 },
   retornoBadge: { flexShrink: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 700, color: 'var(--pink)', background: 'var(--pink-light)', borderRadius: 'var(--radius-pill)', padding: '6px 14px' },
