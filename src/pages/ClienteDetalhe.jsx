@@ -161,7 +161,7 @@ export default function ClienteDetalhe() {
   const ticketMedio = realizados.length ? totalRecebido / realizados.length : 0
   const hoje = format(new Date(), 'yyyy-MM-dd')
   const proximoAgendamento = historico
-    .filter(h => (h.status === 'agendado' || h.status === 'confirmado') && h.data >= hoje)
+    .filter(h => (h.status === 'pendente' || h.status === 'agendado' || h.status === 'confirmado') && h.data >= hoje)
     .sort((a, b) => a.data.localeCompare(b.data) || (a.horario || '').localeCompare(b.horario || ''))[0] ?? null
 
   if (!cliente) return <div style={{ padding: 24, color: 'var(--text3)' }}>Carregando...</div>

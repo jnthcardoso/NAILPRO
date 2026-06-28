@@ -116,7 +116,7 @@ export default function Clientes() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
     const [proxRes, cancelRes, pendRes] = await Promise.all([
       supabase.from('agendamentos').select('cliente_id, data, horario')
-        .eq('salao_id', salaoId).in('status', ['agendado', 'confirmado']).gte('data', hoje)
+        .eq('salao_id', salaoId).in('status', ['pendente', 'agendado', 'confirmado']).gte('data', hoje)
         .order('data').order('horario'),
       supabase.from('agendamentos').select('cliente_id')
         .eq('salao_id', salaoId).eq('status', 'cancelado'),
