@@ -715,7 +715,7 @@ export default function Clientes() {
 
       {/* ── Painel de filtros mobile (bottom sheet) ── */}
       {showFiltroPanel && (
-        <Modal onClose={() => setShowFiltroPanel(false)} variant="sheet" boxStyle={s.filtroPanel}>
+        <Modal onClose={() => setShowFiltroPanel(false)} variant="responsive" boxStyle={s.filtroPanel}>
           <div style={s.filtroPanelHeader}>
             <span style={{ fontSize: 15, fontWeight: 700 }}>Filtros</span>
             <button style={s.filtroPanelClose} onClick={() => setShowFiltroPanel(false)}><X size={18} /></button>
@@ -916,7 +916,7 @@ const s = {
   topRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 },
   filtrosMobileBtn: { position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1, whiteSpace: 'nowrap', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-pill)', padding: '9px 14px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer', fontFamily: 'inherit' },
   filtroAtivoDot: { width: 7, height: 7, borderRadius: '50%', background: 'var(--pink)', flexShrink: 0 },
-  filtroPanel: { background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '20px 16px 36px', width: '100%', maxWidth: 520 },
+  filtroPanel: { background: 'var(--surface)', padding: '20px 16px 36px', width: '100%', maxWidth: 520 },
   filtroPanelHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   filtroPanelClose: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'flex', padding: 4, fontFamily: 'inherit' },
   filtroPanelSec: { fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10, marginTop: 18 },
