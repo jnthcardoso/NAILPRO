@@ -26,6 +26,7 @@ export default function ClienteDetalhe() {
   const [config, setConfig] = useState({ msg_retorno: MSG_RETORNO_PADRAO, msg_cobranca: MSG_COBRANCA_PADRAO, chave_pix: '', nome_salao: '' })
   const [historico, setHistorico] = useState([])
   const [histLimite, setHistLimite] = useState(10)
+  const [filtroTimeline, setFiltroTimeline] = useState('todos')
   const [arquivando, setArquivando] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_nascimento: '', observacoes: '', dias_retorno: '' })
@@ -179,9 +180,19 @@ export default function ClienteDetalhe() {
   // ── Aniversário ──
   const nascDate = cliente.data_nascimento ? new Date(cliente.data_nascimento + 'T12:00:00') : null
 
-  // ── Timeline paginada ──
-  const historicoVisivel = historico.slice(0, histLimite)
-  const temMaisHistorico = historico.length > histLimite
+  // ── Timeline paginada com filtro ──
+  const FILTROS_TIMELINE = [
+    { id: 'todos',      label: 'Todos' },
+    { id: 'realizados', label: 'Realizados' },
+    { id: 'agendados',  label: 'Agendados' },
+    { id: 'cancelados', label: 'Cancelados' },
+  ]
+  const historicoFiltrado = filtroTimeline === 'todos' ? historico
+    : filtroTimeline === 'realizados' ? historico.filter(h => h.status === 'realizado')
+    : filtroTimeline === 'agendados'  ? historico.filter(h => ['pendente', 'agendado', 'confirmado'].includes(h.status))
+    : historico.filter(h => h.status === 'cancelado')
+  const historicoVisivel = historicoFiltrado.slice(0, histLimite)
+  const temMaisHistorico = historicoFiltrado.length > histLimite
 
   // ── Flags de visibilidade da seção Situação ──
   const temRetorno = diasSemVoltar != null
@@ -349,14 +360,29 @@ export default function ClienteDetalhe() {
       </div>
 
       {/* ── Linha do tempo ── */}
-      <div style={s.sectionTitle}>
-        linha do tempo
-        {cancelados.length > 0 && (
-          <span style={s.cancelInfo}> · {cancelados.length} cancelado{cancelados.length > 1 ? 's' : ''}{!gerenciaTudo ? ' (seus)' : ''}</span>
-        )}
+      <div style={s.sectionTitle}>linha do tempo</div>
+      <div style={s.tlFiltros}>
+        {FILTROS_TIMELINE.map(f => {
+          const count = f.id === 'todos' ? historico.length
+            : f.id === 'realizados' ? realizados.length
+            : f.id === 'agendados'  ? historico.filter(h => ['pendente', 'agendado', 'confirmado'].includes(h.status)).length
+            : cancelados.length
+          if (count === 0 && f.id !== 'todos') return null
+          const ativo = filtroTimeline === f.id
+          return (
+            <button
+              key={f.id}
+              style={{ ...s.tlChip, ...(ativo ? s.tlChipAtivo : {}) }}
+              onClick={() => { setFiltroTimeline(f.id); setHistLimite(10) }}
+            >
+              {f.label}
+              <span style={{ ...s.tlChipBadge, ...(ativo ? s.tlChipBadgeAtivo : {}) }}>{count}</span>
+            </button>
+          )
+        })}
       </div>
 
-      {historico.length === 0
+      {historicoFiltrado.length === 0
         ? <div style={s.empty}>Nenhum atendimento registrado</div>
         : (
           <div style={s.timeline}>
@@ -408,7 +434,7 @@ export default function ClienteDetalhe() {
 
       {temMaisHistorico && (
         <button style={s.verMaisHist} onClick={() => setHistLimite(l => l + 10)}>
-          Ver mais atendimentos ({historico.length - histLimite} restantes)
+          Ver mais atendimentos ({historicoFiltrado.length - histLimite} restantes)
         </button>
       )}
 
@@ -552,6 +578,11 @@ const s = {
   retornoUnidade: { fontSize: 11, color: 'var(--text3)', fontWeight: 600 },
 
   // Linha do tempo
+  tlFiltros: { display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 },
+  tlChip: { display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border2)', background: 'var(--surface)', fontSize: 12, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', fontFamily: 'inherit' },
+  tlChipAtivo: { background: 'var(--pink)', color: 'white', borderColor: 'var(--pink)' },
+  tlChipBadge: { fontSize: 10, fontWeight: 700, background: 'var(--border2)', color: 'var(--text3)', borderRadius: 10, padding: '1px 6px' },
+  tlChipBadgeAtivo: { background: 'rgba(255,255,255,0.25)', color: 'white' },
   cancelInfo: { color: '#B91C1C', fontWeight: 600 },
   timeline: { display: 'flex', flexDirection: 'column' },
   tlRow: { display: 'flex', gap: 12 },
