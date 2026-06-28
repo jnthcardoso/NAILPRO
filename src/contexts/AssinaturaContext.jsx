@@ -4,9 +4,13 @@ import { useAuth } from './AuthContext'
 import { differenceInDays } from 'date-fns'
 import { formatReais, linkWhatsAppCompleto } from '../lib/formatters'
 
-// Preço de cada manicure adicional (login próprio além da dona/recepcionista) — só no Salão
+// Preço de cada manicure adicional (login próprio além da dona/recepcionista) — só no Salão.
+// DEVE espelhar PRECO_MANICURE em supabase/functions/_shared/precos.ts (× 100, centavos).
 export const PRECO_USUARIO_ADICIONAL = 4490 // R$ 44,90/mês por usuário
 
+// Preços exibidos na tela em centavos.
+// DEVEM espelhar os valores em supabase/functions/_shared/precos.ts (× 100).
+// Ao reajustar: atualize _shared/precos.ts PRIMEIRO, depois ajuste aqui.
 export const PLANOS = {
   solo: {
     id: 'solo',

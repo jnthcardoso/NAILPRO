@@ -1,24 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { PRECOS, PRECO_MANICURE, MAX_MANICURES } from '../_shared/precos.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('APP_URL') ?? 'https://lumengestaoempresarial.com.br',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Valor cobrado (em reais). Mensal = valor do mes; Anual = valor do ANO (1x na contratacao).
-const PRECOS: Record<string, number> = {
-  solo_mensal:  127.00,
-  solo_anual:  1164.00,
-  pro_mensal:   229.00,
-  pro_anual:   2148.00,
-  salao_mensal: 249.00,
-  salao_anual: 2388.00,
-}
 const NOMES: Record<string, string> = { solo: 'Solo', pro: 'Pro', salao: 'Salao' }
-
-// Manicure adicional (login proprio alem de dona/recepcionista) — so no plano Salao.
-const PRECO_MANICURE = 44.90      // por mes
-const MAX_MANICURES = 15
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })

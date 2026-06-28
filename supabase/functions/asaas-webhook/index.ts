@@ -1,16 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { PRECOS, PRECO_MANICURE } from '../_shared/precos.ts'
 
-// Valor cobrado (em reais) por plano+ciclo — espelha asaas-criar-checkout.
-// Mensal = valor do mes; Anual = valor do ANO (cobranca unica parcelavel).
-// Usado como "value" da conversao enviada ao Meta/GA (receita real -> otimizacao por ROAS).
-const PRECOS: Record<string, number> = {
-  solo_mensal:  127.00,
-  solo_anual:  1164.00,
-  pro_mensal:   229.00,
-  pro_anual:   2148.00,
-  salao_mensal: 249.00,
-  salao_anual: 2388.00,
-}
+// PRECOS e PRECO_MANICURE vêm de _shared/precos.ts — fonte única de verdade.
 
 // SHA-256 em hex (exigido pelo Meta para dados de contato como e-mail).
 async function sha256Hex(input: string): Promise<string> {
@@ -122,7 +113,6 @@ Deno.serve(async (req: Request) => {
     if (!userId) { console.warn('Webhook sem externalReference utilizavel'); return new Response('OK') }
     // Manicures pagas (assentos de profissional). So existe em externalReference novo do Salao.
     const manicuresPagas = plano === 'salao' ? Math.max(0, Math.floor(Number(manicuresRaw) || 0)) : 0
-    const PRECO_MANICURE = 44.90 // por mes — espelha asaas-criar-checkout
 
     const now = new Date()
     const setPeriodo = () => {
