@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, X, Check, Filter, AlertCircle, Clock, CheckCircle2, CircleDashed } from 'lucide-react'
+import { Plus, Pencil, X, Check, Filter } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatBRL } from '../../lib/formatters'
@@ -25,12 +25,20 @@ function getDiffLabel(data) {
 }
 
 const FILTROS = [
-  { id: 'todas',      label: 'Todas' },
-  { id: 'salao',      label: '🏢 Salão' },
-  { id: 'pessoal',    label: '👤 Pessoal' },
-  { id: 'recorrentes',label: '🔁 Recorrentes' },
-  { id: 'preencher',  label: '⚠️ A preencher' },
+  { id: 'todas',       label: 'Todas' },
+  { id: 'salao',       label: '🏢 Salão' },
+  { id: 'pessoal',     label: '👤 Pessoal' },
+  { id: 'recorrentes', label: '🔁 Recorrentes' },
+  { id: 'preencher',   label: '⚠️ A preencher' },
 ]
+
+// Colunas do cabeçalho desktop: descrição | tipo | categoria | data | valor | ações
+const GRID = '1fr 82px 100px 90px 130px auto'
+
+const thStyle = {
+  fontSize: 10, fontWeight: 700, color: '#8B2655',
+  textTransform: 'uppercase', letterSpacing: '0.6px',
+}
 
 export default function TabDespesas({
   temAcesso, isDesktop,
@@ -39,7 +47,6 @@ export default function TabDespesas({
   totalDespesasSalao, totalDespesasPessoal, despesasSalaoArr, despesasPessoalArr,
   categoriasTodas,
   abrirNovaDespesa, abrirEditarDespesa, excluirDespesa, abrirConfirmarPagarDespesa,
-  // mantidos para compatibilidade com PDF export no pai
   filtroDespesa, setFiltroDespesa, toggleFiltroCard, despesasVisiveis,
 }) {
   const [subAba, setSubAba] = useState('apagar')
@@ -65,16 +72,16 @@ export default function TabDespesas({
 
   function aplicarFiltro(arr) {
     switch (filtroLocal) {
-      case 'salao':       return arr.filter(d => d.tipo !== 'pessoal')
-      case 'pessoal':     return arr.filter(d => d.tipo === 'pessoal')
-      case 'recorrentes': return arr.filter(d => d.recorrente)
-      case 'preencher':   return arr.filter(d => d.valor_a_preencher)
-      default:            return arr
+      case 'salao':        return arr.filter(d => d.tipo !== 'pessoal')
+      case 'pessoal':      return arr.filter(d => d.tipo === 'pessoal')
+      case 'recorrentes':  return arr.filter(d => d.recorrente)
+      case 'preencher':    return arr.filter(d => d.valor_a_preencher)
+      default:             return arr
     }
   }
 
-  const lista   = aplicarFiltro(subAba === 'apagar' ? apagar : pagas)
-  const isPago  = subAba === 'pagas'
+  const lista      = aplicarFiltro(subAba === 'apagar' ? apagar : pagas)
+  const isPago     = subAba === 'pagas'
   const totalLista = lista.reduce((acc, d) => acc + (d.valor || 0), 0)
 
   return (
@@ -183,22 +190,19 @@ export default function TabDespesas({
           {isDesktop && (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '36px 1fr 110px 95px 130px auto',
+              gridTemplateColumns: GRID,
               alignItems: 'center',
               background: '#f9edf2',
               borderBottom: '1px solid #e8c4d0',
-              padding: '8px 14px',
-              gap: 8,
+              padding: '9px 16px',
+              gap: 12,
             }}>
-              {['', 'Descrição', 'Categoria', isPago ? 'Pago em' : 'Vencimento', 'Valor', 'Ações'].map((col, i) => (
-                <div key={i} style={{
-                  fontSize: 10, fontWeight: 700, color: '#8B2655',
-                  textTransform: 'uppercase', letterSpacing: '0.6px',
-                  textAlign: i >= 4 ? 'right' : 'left',
-                }}>
-                  {col}
-                </div>
-              ))}
+              <div style={thStyle}>Descrição</div>
+              <div style={{ ...thStyle, textAlign: 'center' }}>Tipo</div>
+              <div style={{ ...thStyle, textAlign: 'center' }}>Categoria</div>
+              <div style={{ ...thStyle, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
+              <div style={{ ...thStyle, textAlign: 'right' }}>Valor</div>
+              <div style={{ ...thStyle, textAlign: 'right' }}>Ações</div>
             </div>
           )}
 
@@ -207,18 +211,19 @@ export default function TabDespesas({
             const urg    = isPago ? 'done' : getUrgencia(d.data)
             const dataD  = new Date(d.data + 'T12:00:00')
             const isLast = idx === lista.length - 1
+            const isPessoal = d.tipo === 'pessoal'
 
-            const corUrg = urg === 'late' ? '#B91C1C' : urg === 'soon' ? '#B45309' : 'var(--text2)'
+            const corUrg      = urg === 'late' ? '#B91C1C' : urg === 'soon' ? '#B45309' : 'var(--text2)'
             const bordaLateral = isPago ? '#22C55E' : urg === 'late' ? '#EF4444' : urg === 'soon' ? '#F59E0B' : '#22C55E'
-            const statusBg     = isPago ? '#F0FDF4' : urg === 'late' ? '#FEE2E2' : urg === 'soon' ? '#FEF3C7' : '#F0FDF4'
-            const StatusIco    = isPago ? CheckCircle2 : urg === 'late' ? AlertCircle : urg === 'soon' ? Clock : CircleDashed
-            const statusCor    = isPago ? '#15803D' : urg === 'late' ? '#B91C1C' : urg === 'soon' ? '#B45309' : '#15803D'
 
-            const badges = (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                {d.tipo === 'pessoal' && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#EDE9FE', color: '#5B21B6' }}>👤 pessoal</span>
-                )}
+            // Badge tipo — sempre visível
+            const tipoBadge = isPessoal
+              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#EDE9FE', color: '#5B21B6', whiteSpace: 'nowrap' }}>👤 Pessoal</span>
+              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#FCE7F3', color: '#9D174D', whiteSpace: 'nowrap' }}>🏢 Salão</span>
+
+            // Badges extras (recorrente / a preencher) abaixo da descrição
+            const extraBadges = (d.recorrente || d.valor_a_preencher) ? (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
                 {d.recorrente && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>
                 )}
@@ -226,13 +231,16 @@ export default function TabDespesas({
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>
                 )}
               </div>
-            )
+            ) : null
 
             const valorEl = d.valor_a_preencher
-              ? <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E' }}>⚠ a preencher</span>
-              : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C' }}>
-                  − {formatBRL(d.valor ?? 0)}
+              ? <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E' }}>⚠ preencher</span>
+              : (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C' }}>
+                  {isPago && <Check size={12} color="#15803D" strokeWidth={2.5} />}
+                  {isPago ? '' : '− '}{formatBRL(d.valor ?? 0)}
                 </span>
+              )
 
             const acoes = (
               <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -263,27 +271,25 @@ export default function TabDespesas({
                   style={{
                     ...rowBase,
                     display: 'grid',
-                    gridTemplateColumns: '36px 1fr 110px 95px 130px auto',
+                    gridTemplateColumns: GRID,
                     alignItems: 'center',
-                    padding: '10px 14px',
-                    gap: 8,
+                    padding: '10px 16px',
+                    gap: 12,
                   }}
                 >
-                  {/* Status */}
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: statusBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <StatusIco size={14} color={statusCor} />
-                  </div>
                   {/* Descrição */}
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: isPago ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {d.descricao}
                     </div>
-                    {badges}
+                    {extraBadges}
                   </div>
+                  {/* Tipo */}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
                   {/* Categoria */}
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{cat?.label || '—'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{cat?.label || '—'}</div>
                   {/* Data */}
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
                       {format(dataD, 'dd/MM', { locale: ptBR })}
                     </div>
@@ -334,7 +340,15 @@ export default function TabDespesas({
                     {d.descricao}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{cat?.label || ''}</div>
-                  {badges}
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                    {tipoBadge}
+                    {d.recorrente && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>
+                    )}
+                    {d.valor_a_preencher && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>
+                    )}
+                  </div>
                 </div>
                 {/* Valor + ações */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
@@ -348,7 +362,7 @@ export default function TabDespesas({
           {/* Rodapé */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 14px', background: '#f9edf2', borderTop: '1px solid #e8c4d0',
+            padding: '8px 16px', background: '#f9edf2', borderTop: '1px solid #e8c4d0',
             fontSize: 11, fontWeight: 700, color: '#8B2655',
           }}>
             <span>{lista.length} {subAba === 'apagar' ? 'conta' : 'lançamento'}{lista.length !== 1 ? 's' : ''}</span>
