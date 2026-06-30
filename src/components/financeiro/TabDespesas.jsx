@@ -33,7 +33,7 @@ const FILTROS = [
 ]
 
 // Colunas do cabeçalho desktop: descrição | tipo | categoria | data | valor | ações
-const GRID = 'minmax(0,1.8fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr) auto'
+const GRID = 'minmax(0,1.8fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr) 114px'
 
 const thStyle = {
   fontSize: 10, fontWeight: 700, color: '#8B2655',
