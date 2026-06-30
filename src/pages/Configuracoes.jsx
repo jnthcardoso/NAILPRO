@@ -269,7 +269,7 @@ export default function Configuracoes() {
     const ok = params.get('gcal') === 'ok'
     params.delete('gcal')
     navigate({ pathname: '/app/configuracoes', search: params.toString() }, { replace: true })
-    setTab('integracoes')
+    setTab('agenda')
     if (ok) {
       supabase.from('configuracoes').update({ google_conectado: true }).eq('salao_id', salaoId)
         .then(() => { setForm(f => ({ ...f, google_conectado: true })); sucesso('Google Agenda conectado ✅') })
@@ -881,7 +881,7 @@ export default function Configuracoes() {
       </div>
 
       {/* ── Google Agenda ───────────────────── */}
-      <div style={{ ...s.section, display: tab === 'integracoes' ? 'block' : 'none' }}>
+      <div style={{ ...s.section, display: tab === 'agenda' ? 'block' : 'none' }}>
         <div style={s.sectionTitle}>Google Agenda</div>
         <div style={s.googleCard}>
           <svg width="22" height="22" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
