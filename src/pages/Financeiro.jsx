@@ -403,7 +403,7 @@ export default function Financeiro() {
       {/* ── ABA: Despesas ── */}
       {!loading && tab === 'despesas' && (
         <TabDespesas
-          temAcesso={temAcesso}
+          temAcesso={temAcesso} isDesktop={isDesktop}
           filtroDespesa={filtroDespesa} setFiltroDespesa={setFiltroDespesa}
           toggleFiltroCard={toggleFiltroCard}
           despesasVisiveis={despesasVisiveis} categoriasTodas={categoriasTodas}
