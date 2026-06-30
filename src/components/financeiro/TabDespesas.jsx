@@ -32,8 +32,8 @@ const FILTROS = [
   { id: 'preencher',   label: '⚠️ A preencher' },
 ]
 
-// Colunas do cabeçalho desktop: descrição | tipo | categoria | data | valor | ações
-const GRID = 'minmax(0,1.8fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr) 114px'
+// Colunas desktop: descrição | categoria | tipo | vencimento | valor | ações
+const GRID = 'minmax(0,1.8fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1fr) minmax(0,1.1fr) 90px'
 
 const thStyle = {
   fontSize: 10, fontWeight: 700, color: '#8B2655',
@@ -198,8 +198,8 @@ export default function TabDespesas({
               gap: 12,
             }}>
               <div style={thStyle}>Descrição</div>
-              <div style={{ ...thStyle, textAlign: 'center' }}>Tipo</div>
               <div style={{ ...thStyle, textAlign: 'center' }}>Categoria</div>
+              <div style={{ ...thStyle, textAlign: 'center' }}>Tipo</div>
               <div style={{ ...thStyle, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
               <div style={{ ...thStyle, textAlign: 'right' }}>Valor</div>
               <div style={{ ...thStyle, textAlign: 'right' }}>Ações</div>
@@ -242,7 +242,22 @@ export default function TabDespesas({
                 </span>
               )
 
-            const acoes = (
+            // Desktop: só lápis + pagar
+            const acoesDesktop = (
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
+                {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
+                  <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)}>
+                    <Check size={11} /> Pagar
+                  </button>
+                )}
+                <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
+                  <Pencil size={11} />
+                </button>
+              </div>
+            )
+
+            // Mobile: lápis + pagar + excluir
+            const acoesMobile = (
               <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
                 {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
                   <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)}>
@@ -284,10 +299,10 @@ export default function TabDespesas({
                     </div>
                     {extraBadges}
                   </div>
-                  {/* Tipo */}
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
                   {/* Categoria */}
                   <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{cat?.label || '—'}</div>
+                  {/* Tipo */}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
                   {/* Data */}
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
@@ -302,7 +317,7 @@ export default function TabDespesas({
                   {/* Valor */}
                   <div style={{ textAlign: 'right' }}>{valorEl}</div>
                   {/* Ações */}
-                  <div>{acoes}</div>
+                  <div>{acoesDesktop}</div>
                 </div>
               )
             }
@@ -353,7 +368,7 @@ export default function TabDespesas({
                 {/* Valor + ações */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
                   {valorEl}
-                  {acoes}
+                  {acoesMobile}
                 </div>
               </div>
             )
