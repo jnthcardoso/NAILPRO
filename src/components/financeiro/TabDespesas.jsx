@@ -32,12 +32,14 @@ const FILTROS = [
   { id: 'preencher',   label: '⚠️ A preencher' },
 ]
 
-// Colunas desktop: descrição | categoria | tipo | vencimento | valor | ações
-const GRID = 'minmax(0,1.8fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1fr) minmax(0,1.1fr) 90px'
+// gap: 0 igual ao módulo Clientes — padding interno em cada célula garante alinhamento perfeito
+const GRID = '1.3fr 1.1fr 1fr 1fr 1.1fr 0.6fr'
+const MINGRID = 680
 
 const thStyle = {
   fontSize: 10, fontWeight: 700, color: '#8B2655',
   textTransform: 'uppercase', letterSpacing: '0.6px',
+  padding: '9px 10px',
 }
 
 export default function TabDespesas({
@@ -194,8 +196,8 @@ export default function TabDespesas({
               alignItems: 'center',
               background: '#f9edf2',
               borderBottom: '1px solid #e8c4d0',
-              padding: '9px 16px',
-              gap: 12,
+              minWidth: MINGRID,
+              gap: 0,
             }}>
               <div style={thStyle}>Descrição</div>
               <div style={{ ...thStyle, textAlign: 'center' }}>Categoria</div>
@@ -288,23 +290,23 @@ export default function TabDespesas({
                     display: 'grid',
                     gridTemplateColumns: GRID,
                     alignItems: 'center',
-                    padding: '10px 16px',
-                    gap: 12,
+                    minWidth: MINGRID,
+                    gap: 0,
                   }}
                 >
                   {/* Descrição */}
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ padding: '10px 10px', minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: isPago ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {d.descricao}
                     </div>
                     {extraBadges}
                   </div>
                   {/* Categoria */}
-                  <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{cat?.label || '—'}</div>
+                  <div style={{ padding: '10px 10px', fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{cat?.label || '—'}</div>
                   {/* Tipo */}
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
+                  <div style={{ padding: '10px 10px', display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
                   {/* Data */}
-                  <div style={{ textAlign: 'center' }}>
+                  <div style={{ padding: '10px 10px', textAlign: 'center' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
                       {format(dataD, 'dd/MM', { locale: ptBR })}
                     </div>
@@ -315,9 +317,9 @@ export default function TabDespesas({
                     )}
                   </div>
                   {/* Valor */}
-                  <div style={{ textAlign: 'right' }}>{valorEl}</div>
+                  <div style={{ padding: '10px 10px', textAlign: 'right' }}>{valorEl}</div>
                   {/* Ações */}
-                  <div>{acoesDesktop}</div>
+                  <div style={{ padding: '10px 10px' }}>{acoesDesktop}</div>
                 </div>
               )
             }
