@@ -7,7 +7,7 @@ import { s } from '../../pages/Financeiro.styles'
 
 function getUrgencia(data) {
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
-  const d = new Date(data + 'T12:00:00')
+  const d = new Date(data + 'T00:00:00')
   const diff = Math.round((d - hoje) / 86400000)
   if (diff < 0) return 'late'
   if (diff <= 7) return 'soon'
@@ -16,7 +16,7 @@ function getUrgencia(data) {
 
 function getDiffLabel(data) {
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
-  const d = new Date(data + 'T12:00:00')
+  const d = new Date(data + 'T00:00:00')
   const diff = Math.round((d - hoje) / 86400000)
   if (diff < 0) return diff === -1 ? 'ontem' : `${Math.abs(diff)}d atrás`
   if (diff === 0) return 'hoje'
@@ -26,7 +26,7 @@ function getDiffLabel(data) {
 
 const FILTROS = [
   { id: 'todas',       label: 'Todas' },
-  { id: 'salao',       label: '🏢 Salão' },
+  { id: 'salao',       label: '🏠 Salão' },
   { id: 'pessoal',     label: '👤 Pessoal' },
   { id: 'recorrentes', label: '🔁 Recorrentes' },
   { id: 'preencher',   label: '⚠️ A preencher' },
@@ -219,13 +219,13 @@ export default function TabDespesas({
             // Badge tipo — sempre visível
             const tipoBadge = isPessoal
               ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#EDE9FE', color: '#5B21B6', whiteSpace: 'nowrap' }}>👤 Pessoal</span>
-              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#FCE7F3', color: '#9D174D', whiteSpace: 'nowrap' }}>🏢 Salão</span>
+              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#E0F2FE', color: '#0369A1', whiteSpace: 'nowrap' }}>🏠 Salão</span>
 
             // Badges extras (recorrente / a preencher) abaixo da descrição
             const extraBadges = (d.recorrente || d.valor_a_preencher) ? (
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
                 {d.recorrente && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 recorrente</span>
                 )}
                 {d.valor_a_preencher && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>
@@ -358,7 +358,7 @@ export default function TabDespesas({
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
                     {tipoBadge}
                     {d.recorrente && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 recorrente</span>
                     )}
                     {d.valor_a_preencher && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>

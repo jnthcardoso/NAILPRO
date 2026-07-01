@@ -96,7 +96,7 @@ export default function DespesaModal({
           <label style={s.label}>Quem paga?</label>
           <div style={segWrap}>
             <SegBtn
-              label="🏢 Salão" borderRight
+              label="🏠 Salão" borderRight
               ativo={(formDespesa.tipo || 'salao') === 'salao'}
               onClick={() => setFormDespesa({ ...formDespesa, tipo: 'salao' })}
             />
