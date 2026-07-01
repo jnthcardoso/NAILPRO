@@ -91,7 +91,7 @@ export default function Home() {
     const chave = `recap_visto_${salaoId}_${format(mesRecap, 'yyyy-MM')}`
     if (localStorage.getItem(chave)) return
     carregarRecap(supabase, { salaoId, gerenciaTudo, mesDate: mesRecap })
-      .then(r => { if (r?.temAlgumDado) setRecapHome({ ...r, mesLabel: format(mesRecap, 'MMMM', { locale: ptBR }), chave }) })
+      .then(r => { if (r?.temAlgumDado) setRecapHome({ ...r, mesLabel: format(mesRecap, 'MMMM', { locale: ptBR }), mesChave: format(mesRecap, 'yyyy-MM'), chave }) })
       .catch(() => {})
   }, [salaoId, gerenciaTudo])
 
@@ -476,7 +476,7 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => navigate('/app/metas?tab=recap')}
+              onClick={() => navigate(`/app/metas?tab=recap&mes=${recapHome.mesChave}`)}
               style={{ marginTop: 14, width: '100%', background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
             >Ver mês completo <ChevronRight size={15} /></button>
           </div>

@@ -81,7 +81,12 @@ export default function Metas() {
   const [metas, setMetas] = useState([])
   const [progressos, setProgressos] = useState({})
   const [diasFuncionamento, setDiasFuncionamento] = useState(DIAS_UTEIS_PADRAO)
-  const [mesFiltro, setMesFiltro] = useState(format(new Date(), 'yyyy-MM'))
+  // Vindo da Home (card "Seu resultado com o Lumen"), o link já indica o mês
+  // certo (?mes=yyyy-MM) — sem isso o recap abria sempre no mês atual, não no
+  // mês que o card estava mostrando.
+  const mesParam = searchParams.get('mes')
+  const mesInicial = mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : format(new Date(), 'yyyy-MM')
+  const [mesFiltro, setMesFiltro] = useState(mesInicial)
   const [showModal, setShowModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [form, setForm] = useState({ tipo: 'mes', periodo: format(new Date(), 'yyyy-MM'), valor_meta: '' })
