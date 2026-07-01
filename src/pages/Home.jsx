@@ -476,7 +476,7 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => navigate('/metas?tab=recap')}
+              onClick={() => navigate('/app/metas?tab=recap')}
               style={{ marginTop: 14, width: '100%', background: 'var(--pink)', color: 'white', border: 'none', borderRadius: 'var(--radius-pill)', padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
             >Ver mês completo <ChevronRight size={15} /></button>
           </div>
