@@ -200,8 +200,8 @@ export default function TabDespesas({
               <div style={thStyle}>Descrição</div>
               <div style={{ ...thStyle, textAlign: 'center' }}>Categoria</div>
               <div style={{ ...thStyle, textAlign: 'center' }}>Tipo</div>
-              <div style={{ ...thStyle, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
               <div style={{ ...thStyle, textAlign: 'right' }}>Valor</div>
+              <div style={{ ...thStyle, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
               <div style={{ ...thStyle, textAlign: 'right' }}>Ações</div>
             </div>
           )}
@@ -303,6 +303,8 @@ export default function TabDespesas({
                   <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{cat?.label || '—'}</div>
                   {/* Tipo */}
                   <div style={{ display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
+                  {/* Valor */}
+                  <div style={{ textAlign: 'right' }}>{valorEl}</div>
                   {/* Data */}
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
@@ -314,8 +316,6 @@ export default function TabDespesas({
                       </div>
                     )}
                   </div>
-                  {/* Valor */}
-                  <div style={{ textAlign: 'right' }}>{valorEl}</div>
                   {/* Ações */}
                   <div>{acoesDesktop}</div>
                 </div>
