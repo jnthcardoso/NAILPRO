@@ -191,16 +191,23 @@ export function AssinaturaProvider({ children }) {
 
   const carregar = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
-    // Pega a assinatura mais RECENTE (DESC): se um dia houver mais de uma linha
-    // pro mesmo salão (ex.: re-assinatura), vale a atual — nunca uma antiga já vencida.
-    const { data } = await supabase.from('assinaturas')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    setAssinatura(data)
-    setLoading(false)
+    try {
+      // Pega a assinatura mais RECENTE (DESC): se um dia houver mais de uma linha
+      // pro mesmo salão (ex.: re-assinatura), vale a atual — nunca uma antiga já vencida.
+      const { data } = await supabase.from('assinaturas')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      setAssinatura(data)
+    } catch (err) {
+      // Falha de rede aqui não pode travar o app em loading pra sempre.
+      console.error('AssinaturaContext: falha ao carregar', err)
+      setAssinatura(null)
+    } finally {
+      setLoading(false)
+    }
   }, [user?.id])
 
   useEffect(() => { carregar() }, [carregar])

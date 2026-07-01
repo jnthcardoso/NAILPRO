@@ -13,26 +13,35 @@ export function SalaoProvider({ children }) {
   const carregar = useCallback(async () => {
     if (!user?.id) { setMembro(null); setSalao(null); setLoading(false); return }
     setLoading(true)
-    // membro do usuário logado (papel + salao_id)
-    const { data: m, error: mErr } = await supabase
-      .from('salao_membros')
-      .select('id, salao_id, user_id, nome, email, papel, ativo')
-      .eq('user_id', user.id)
-      .eq('ativo', true)
-      .maybeSingle()
-    if (mErr) console.error('SalaoContext: falha ao carregar membro', mErr.message)
-    setMembro(m || null)
-    if (m?.salao_id) {
-      const { data: s } = await supabase
-        .from('saloes')
-        .select('id, nome, dona_user_id, created_at')
-        .eq('id', m.salao_id)
+    // Falha de rede aqui (não erro de query, que o supabase-js já devolve em
+    // `error`) não pode travar o app em loading pra sempre — daí o try/finally.
+    try {
+      // membro do usuário logado (papel + salao_id)
+      const { data: m, error: mErr } = await supabase
+        .from('salao_membros')
+        .select('id, salao_id, user_id, nome, email, papel, ativo')
+        .eq('user_id', user.id)
+        .eq('ativo', true)
         .maybeSingle()
-      setSalao(s || null)
-    } else {
+      if (mErr) console.error('SalaoContext: falha ao carregar membro', mErr.message)
+      setMembro(m || null)
+      if (m?.salao_id) {
+        const { data: s } = await supabase
+          .from('saloes')
+          .select('id, nome, dona_user_id, created_at')
+          .eq('id', m.salao_id)
+          .maybeSingle()
+        setSalao(s || null)
+      } else {
+        setSalao(null)
+      }
+    } catch (err) {
+      console.error('SalaoContext: falha ao carregar', err)
+      setMembro(null)
       setSalao(null)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [user?.id])
 
   useEffect(() => { carregar() }, [carregar])

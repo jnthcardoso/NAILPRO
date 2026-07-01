@@ -11,11 +11,15 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user?.email) setPixelUser(session.user.email) // Advanced Matching (Meta)
-      setLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user ?? null)
+        if (session?.user?.email) setPixelUser(session.user.email) // Advanced Matching (Meta)
+      })
+      // Sessão corrompida/expirada não pode travar o app em "Carregando" pra
+      // sempre — sem isso, a única saída era limpar dados do site manualmente.
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user?.email) setPixelUser(session.user.email) // Advanced Matching (Meta)
