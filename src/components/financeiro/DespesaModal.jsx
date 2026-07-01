@@ -1,8 +1,16 @@
+import { useState } from 'react'
 import { format, addMonths } from 'date-fns'
 import { X } from 'lucide-react'
 import Modal from '../common/Modal'
 import { s } from '../../pages/Financeiro.styles'
 import { CATEGORIAS, FORMAS_PAGAMENTO } from '../../pages/Financeiro.constants'
+
+const EMOJIS_CAT = [
+  '💄','💅','💆','🧴','✂️','💈','🪮','🪥','🧼','🛁',
+  '🧹','🏪','🛒','📦','🧾','💰','💳','📊','🎁','🎀',
+  '👗','👠','🪷','🌸','✨','💡','⚡','🌊','🏠','🚗',
+  '🍽️','📱','💻','🔧','🔑','💊','📌','🗓️','🎵','🐾',
+]
 
 function isDataPassada(dataStr) {
   if (!dataStr) return false
@@ -34,15 +42,49 @@ function SegBtn({ label, ativo, cor, onClick, borderRight }) {
   )
 }
 
+function Toggle({ checked, onChange }) {
+  return (
+    <div
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 36, height: 20, borderRadius: 10,
+        background: checked ? 'var(--pink)' : 'var(--border2)',
+        cursor: 'pointer', position: 'relative',
+        transition: 'background 0.2s', flexShrink: 0,
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 3,
+        left: checked ? 19 : 3,
+        width: 14, height: 14, borderRadius: '50%',
+        background: 'white', transition: 'left 0.2s',
+      }} />
+    </div>
+  )
+}
+
 export default function DespesaModal({
   editandoDespesa, formDespesa, setFormDespesa,
   showNovaCat, setShowNovaCat, categoriasCustom, novaCat, setNovaCat,
   salvarNovaCategoria, savingCat, excluirCategoria,
   temAcesso, savingDespesa, onSalvar, onClose,
 }) {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+
   const mostrarStatus = temAcesso('contasAPagar')
   const aPagar = !formDespesa.pago
   const alertaDataPassada = mostrarStatus && aPagar && isDataPassada(formDespesa.data)
+
+  function toggleRecorrente(checked) {
+    setFormDespesa(f => ({
+      ...f,
+      recorrente: checked,
+      valor_variavel: checked ? f.valor_variavel : false,
+      recorrente_ate: checked && !f.recorrente_ate
+        ? format(addMonths(new Date((f.data || format(new Date(), 'yyyy-MM-dd')) + 'T12:00:00'), 12), 'yyyy-MM-dd')
+        : f.recorrente_ate,
+    }))
+  }
 
   return (
     <Modal onClose={onClose} boxStyle={s.modalCentro}>
@@ -64,11 +106,6 @@ export default function DespesaModal({
               onClick={() => setFormDespesa({ ...formDespesa, tipo: 'pessoal' })}
             />
           </div>
-          {(formDespesa.tipo || 'salao') === 'pessoal' && (
-            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
-              Gasto seu — não conta no lucro do salão.
-            </div>
-          )}
         </div>
 
         {mostrarStatus && (
@@ -128,13 +165,23 @@ export default function DespesaModal({
 
         {showNovaCat && (
           <div style={s.novaCatPanel}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                style={{ ...s.input, width: 52, textAlign: 'center', flexShrink: 0, padding: '10px 4px' }}
-                value={novaCat.icon}
-                onChange={e => setNovaCat({ ...novaCat, icon: e.target.value })}
-                placeholder="📦" maxLength={2} title="Emoji da categoria"
-              />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              {/* Botão de emoji com picker */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(v => !v)}
+                  title="Escolher ícone"
+                  style={{
+                    width: 44, height: 44, fontSize: 22, borderRadius: 'var(--radius-sm)',
+                    border: '1px solid ' + (showEmojiPicker ? 'var(--pink)' : 'var(--border2)'),
+                    background: 'var(--surface)', cursor: 'pointer', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {novaCat.icon || '📦'}
+                </button>
+              </div>
               <input
                 style={{ ...s.input, flex: 1, minWidth: 0 }}
                 value={novaCat.label}
@@ -142,6 +189,32 @@ export default function DespesaModal({
                 placeholder="Nome da categoria"
               />
             </div>
+
+            {/* Grade de emojis */}
+            {showEmojiPicker && (
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2,
+                padding: '8px', background: 'var(--surface)', borderRadius: 8,
+                border: '1px solid var(--border2)',
+              }}>
+                {EMOJIS_CAT.map(e => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => { setNovaCat({ ...novaCat, icon: e }); setShowEmojiPicker(false) }}
+                    style={{
+                      fontSize: 20, padding: '4px', borderRadius: 6, border: 'none',
+                      background: novaCat.icon === e ? 'var(--pink-light, #f9e8f0)' : 'transparent',
+                      cursor: 'pointer', lineHeight: 1,
+                    }}
+                    title={e}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <button type="button" style={{ ...s.addBtnSmall, justifyContent: 'center', padding: '8px 12px' }} onClick={salvarNovaCategoria} disabled={savingCat}>
               {savingCat ? 'Salvando...' : 'Criar categoria'}
             </button>
@@ -189,7 +262,9 @@ export default function DespesaModal({
         </select>
       </div>
 
-      {/* Recorrente */}
+      {/* Divisor + Recorrente */}
+      <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0 8px' }} />
+
       {editandoDespesa ? (
         formDespesa.recorrente && (
           <div style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px' }}>
@@ -198,26 +273,34 @@ export default function DespesaModal({
         )
       ) : (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={formDespesa.recorrente} onChange={e => {
-              const checked = e.target.checked
-              setFormDespesa(f => ({
-                ...f,
-                recorrente: checked,
-                valor_variavel: checked ? f.valor_variavel : false,
-                recorrente_ate: checked && !f.recorrente_ate
-                  ? format(addMonths(new Date((f.data || format(new Date(), 'yyyy-MM-dd')) + 'T12:00:00'), 12), 'yyyy-MM-dd')
-                  : f.recorrente_ate,
-              }))
-            }} />
-            🔁 Despesa mensal recorrente
-          </label>
+          {/* Toggle de recorrente */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: formDespesa.recorrente ? 10 : 0 }}
+            onClick={() => toggleRecorrente(!formDespesa.recorrente)}
+          >
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>🔁 Despesa recorrente</div>
+              <div style={{ fontSize: 11, color: 'var(--text3)' }}>Repete todo mês automaticamente</div>
+            </div>
+            <Toggle checked={formDespesa.recorrente} onChange={toggleRecorrente} />
+          </div>
+
+          {/* Card de opções de recorrência */}
           {formDespesa.recorrente && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 12px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '12px 14px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-                <input type="checkbox" checked={formDespesa.valor_variavel} onChange={e => setFormDespesa({ ...formDespesa, valor_variavel: e.target.checked })} />
-                💧 O valor muda todo mês (futuros entram em branco pra preencher)
+                <input
+                  type="checkbox"
+                  checked={formDespesa.valor_variavel}
+                  onChange={e => setFormDespesa({ ...formDespesa, valor_variavel: e.target.checked })}
+                />
+                💧 O valor muda todo mês
               </label>
+              {formDespesa.valor_variavel && (
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: -6 }}>
+                  Os meses futuros entrarão em branco para você preencher na hora.
+                </div>
+              )}
               <div style={s.field}>
                 <label style={s.label}>Repetir até *</label>
                 <input style={s.input} type="date" value={formDespesa.recorrente_ate} onChange={e => setFormDespesa({ ...formDespesa, recorrente_ate: e.target.value })} />
@@ -227,7 +310,7 @@ export default function DespesaModal({
         </>
       )}
 
-      <div style={s.field}>
+      <div style={{ ...s.field, marginTop: 8 }}>
         <label style={s.label}>Observações</label>
         <input style={s.input} placeholder="Opcional..." value={formDespesa.observacoes} onChange={e => setFormDespesa({ ...formDespesa, observacoes: e.target.value })} />
       </div>
