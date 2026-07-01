@@ -18,6 +18,7 @@ export function useFinanceiroDados({ salaoId, user, gerenciaTudo, periodoSel, ra
   const [pagamentos6m, setPagamentos6m] = useState([])
   const [agendamentos, setAgendamentos] = useState([])
   const [previsao, setPrevisao] = useState({ entraMes: 0, qtdEntraMes: 0 })
+  const [pendentesTodos, setPendentesTodos] = useState([])
   const [loading, setLoading] = useState(true)
   const primeiraCarga = useRef(true)
 
@@ -66,6 +67,22 @@ export function useFinanceiroDados({ salaoId, user, gerenciaTudo, periodoSel, ra
     }
   }
 
+  // "A receber" é independente do mês navegado — mostra TODAS as pendências
+  // do salão (qualquer data), pra uma cobrança de mês passado não sumir da
+  // tela quando a dona vira o mês. Só "Recebido" fica preso ao período.
+  async function loadPendentesTodos() {
+    try {
+      const { data, error } = await comTimeout(
+        supabase.from('pagamentos')
+          .select('*, agendamentos(servico, status, clientes(nome, telefone))')
+          .eq('salao_id', salaoId).eq('status', 'pendente')
+          .order('data', { ascending: true }).limit(2000)
+      )
+      if (error) return
+      setPendentesTodos((data || []).filter(p => p.agendamentos?.status !== 'cancelado'))
+    } catch (err) { /* falha silenciosa — não bloqueia a tela */ }
+  }
+
   async function loadDespesas() {
     const { inicio, fim } = getRange()
     // Dona/recepção veem as despesas do salão; profissional vê só as dela.
@@ -112,11 +129,17 @@ export function useFinanceiroDados({ salaoId, user, gerenciaTudo, periodoSel, ra
       .finally(() => { setLoading(false); primeiraCarga.current = false })
   }, [salaoId, periodoSel, rangeMode, customInicio, customFim])
 
+  // "A receber" global: só depende do salão, NÃO do período navegado.
+  useEffect(() => {
+    if (!salaoId) return
+    loadPendentesTodos()
+  }, [salaoId])
+
   // Recarrega ao voltar o foco — mantém dados frescos com sessões simultâneas.
   useEffect(() => {
     function aoFocar() {
       if (document.visibilityState === 'visible' && salaoId) {
-        loadPagamentos(); loadDespesas()
+        loadPagamentos(); loadDespesas(); loadPendentesTodos()
       }
     }
     window.addEventListener('focus', aoFocar)
@@ -133,6 +156,7 @@ export function useFinanceiroDados({ salaoId, user, gerenciaTudo, periodoSel, ra
     pagamentos6m,
     agendamentos,
     previsao,
+    pendentesTodos,
     loading,
     loadPagamentos,
     loadDespesas,

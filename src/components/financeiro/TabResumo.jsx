@@ -36,7 +36,7 @@ function LinhaDespesaExpansivel({ label, sub, valor, cor, items, aberto, onToggl
 }
 
 export default function TabResumo({
-  ehMesAtual, recebido, qtdPagos, totalDespesasSalao, despesas, pendente, pagamentos,
+  ehMesAtual, recebido, qtdPagos, totalDespesasSalao, despesas, pendente, pendenteMes, qtdPendentes,
   lucro, margemLucro, previsao, dreAberto, toggleDre, categoriasTodas,
   salaoAPagar, salaoPagas, salaoPagasArr, salaoAPagarArr, despesasSalaoArr,
   mostraProLabore, proLabore, sobrouPraVoce,
@@ -62,11 +62,11 @@ export default function TabResumo({
           style={{ ...s.card, borderTop: `3px solid ${pendente > 0 ? 'var(--amber)' : 'var(--border2)'}`, cursor: 'pointer' }}
           className="fin-resumo-card"
           onClick={onVerPendentes}
-          title="Ver receitas pendentes"
+          title="Ver receitas pendentes (todos os meses)"
         >
-          <div style={s.cardLabel} className="fin-card-label">⏰ A receber</div>
+          <div style={s.cardLabel} className="fin-card-label">⏰ A receber <span style={{ fontWeight: 400 }}>(todos os meses)</span></div>
           <div style={{ ...s.cardValue, color: pendente > 0 ? 'var(--amber)' : 'var(--text3)' }} className="fin-card-value">{formatBRL(pendente)}</div>
-          <div style={s.cardSub} className="fin-card-sub">{pagamentos.filter(p => p.status === 'pendente').length} pendente{pagamentos.filter(p => p.status === 'pendente').length !== 1 ? 's' : ''}</div>
+          <div style={s.cardSub} className="fin-card-sub">{qtdPendentes} pendente{qtdPendentes !== 1 ? 's' : ''}</div>
         </div>
         <div style={{ ...s.card, borderTop: `3px solid ${lucro >= 0 ? 'var(--gold, #D4AF37)' : '#B91C1C'}`, background: lucro >= 0 ? 'linear-gradient(135deg, #FEFCE8, var(--surface))' : 'linear-gradient(135deg, #FEF2F2, var(--surface))' }} className="fin-resumo-card">
           <div style={s.cardLabel} className="fin-card-label">{lucro >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />} Lucro líquido</div>
@@ -76,7 +76,7 @@ export default function TabResumo({
         {ehMesAtual && (
           <div style={{ ...s.card, borderTop: '3px solid var(--pink)' }} className="fin-resumo-card">
             <div style={s.cardLabel} className="fin-card-label"><Calendar size={11} /> Previsão de fechamento</div>
-            <div style={{ ...s.cardValue, color: 'var(--pink)' }} className="fin-card-value">{formatBRL(recebido + pendente + previsao.entraMes)}</div>
+            <div style={{ ...s.cardValue, color: 'var(--pink)' }} className="fin-card-value">{formatBRL(recebido + pendenteMes + previsao.entraMes)}</div>
             <div style={s.cardSub} className="fin-card-sub">estimativa do mês</div>
           </div>
         )}

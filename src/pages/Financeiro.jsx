@@ -56,7 +56,7 @@ export default function Financeiro() {
 
   // ── Dados do banco (pagamentos, despesas, agendamentos, previsão) ──────────
   const {
-    pagamentos, setPagamentos, despesas, pagamentos6m, agendamentos, previsao, loading,
+    pagamentos, setPagamentos, despesas, pagamentos6m, agendamentos, previsao, pendentesTodos, loading,
     loadPagamentos, loadDespesas, refDate,
   } = useFinanceiroDados({ salaoId, user, gerenciaTudo, periodoSel, rangeMode, customInicio, customFim })
 
@@ -117,7 +117,7 @@ export default function Financeiro() {
     if (!temAcesso('exportPDF')) { setShowUpgrade(true); return }
     setExportando(true)
     try {
-      if (tab === 'resumo')   await exportarPDFResumo({ periodoLabel, recebido, pendente, qtdPagos, totalDespesasSalao, salaoPagas, salaoAPagar, totalDespesasPessoal, proLabore: proLaboreEfetivo, mostraProLabore, lucro, margemLucro, despesasSalaoArr, salaoPagasArr, salaoAPagarArr, despesasPessoalArr, categorias: categoriasTodas })
+      if (tab === 'resumo')   await exportarPDFResumo({ periodoLabel, recebido, pendente: pendenteMes, qtdPagos, totalDespesasSalao, salaoPagas, salaoAPagar, totalDespesasPessoal, proLabore: proLaboreEfetivo, mostraProLabore, lucro, margemLucro, despesasSalaoArr, salaoPagasArr, salaoAPagarArr, despesasPessoalArr, categorias: categoriasTodas })
       if (tab === 'receitas') await exportarPDFReceitas(filtrados, periodoLabel, filtro)
       if (tab === 'despesas') await exportarPDFDespesas(despesasVisiveis, periodoLabel, filtroDespesa, categoriasTodas)
       if (tab === 'analises') await exportarPDFAnalises({ periodoLabel, recebido, totalDespesasSalao, lucro, topServicos, dadosFormas, dadosDespesas })
@@ -156,7 +156,11 @@ export default function Financeiro() {
 
   // ─── Calculos ───
   const recebido = pagamentos.filter(p => p.status === 'pago').reduce((s, p) => s + p.valor, 0)
-  const pendente = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
+  // "A receber" é GLOBAL (todas as pendências, qualquer mês) — não some quando a
+  // dona vira o mês na tela. Só a previsão de fechamento (abaixo) usa a pendência
+  // do MÊS pra não inflar a estimativa com dívida antiga.
+  const pendente = pendentesTodos.reduce((s, p) => s + (p.valor || 0), 0)
+  const pendenteMes = pagamentos.filter(p => p.status === 'pendente').reduce((s, p) => s + p.valor, 0)
   const qtdPagos = pagamentos.filter(p => p.status === 'pago').length
   const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0)
   // Bolso: despesa do salão (custo do negócio) × pessoal (gasto da dona).
@@ -169,7 +173,10 @@ export default function Financeiro() {
   const proLaboreEfetivo = mostraProLabore ? proLabore : 0
   const lucro = recebido - totalDespesasSalao - proLaboreEfetivo
   const margemLucro = recebido > 0 ? (lucro / recebido) * 100 : 0
-  const filtrados = filtro === 'todos' ? pagamentos : pagamentos.filter(p => p.status === filtro)
+  const recebidosPeriodo = pagamentos.filter(p => p.status === 'pago')
+  const filtrados = filtro === 'pendente' ? pendentesTodos
+    : filtro === 'pago' ? recebidosPeriodo
+    : [...recebidosPeriodo, ...pendentesTodos]
   // Previsão de receita só faz sentido no MÊS ATUAL (é "daqui pra frente").
   const ehMesAtual = rangeMode === 'mes' && format(periodoSel, 'yyyy-MM') === format(new Date(), 'yyyy-MM')
   const periodoLabel = (rangeMode === 'custom' && customInicio && customFim)
@@ -366,7 +373,7 @@ export default function Financeiro() {
           ehMesAtual={ehMesAtual}
           recebido={recebido} qtdPagos={qtdPagos}
           totalDespesasSalao={totalDespesasSalao} despesas={despesas}
-          pendente={pendente} pagamentos={pagamentos}
+          pendente={pendente} pendenteMes={pendenteMes} qtdPendentes={pendentesTodos.length}
           lucro={lucro} margemLucro={margemLucro} previsao={previsao}
           dreAberto={dreAberto} toggleDre={toggleDre} categoriasTodas={categoriasTodas}
           salaoAPagar={salaoAPagar} salaoPagas={salaoPagas}
@@ -395,7 +402,7 @@ export default function Financeiro() {
       {/* ── ABA: Receitas ── */}
       {!loading && tab === 'receitas' && (
         <TabReceitas
-          pagamentos={pagamentos} filtro={filtro} setFiltro={setFiltro}
+          pendentes={pendentesTodos} recebidas={recebidosPeriodo} filtro={filtro} setFiltro={setFiltro}
           cobranca={cobranca} setShowModal={setShowModal} isDesktop={isDesktop}
           marcarCobrado={marcarCobrado} reverterParaPendente={reverterParaPendente}
           abrirConfirmarPago={abrirConfirmarPago}

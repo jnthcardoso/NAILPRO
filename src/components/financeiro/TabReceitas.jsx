@@ -40,20 +40,22 @@ function getDiffLabel(data) {
 }
 
 export default function TabReceitas({
-  pagamentos, filtro, setFiltro, cobranca, setShowModal, isDesktop,
+  pendentes: pendentesProp, recebidas: recebidasProp, filtro, setFiltro, cobranca, setShowModal, isDesktop,
   marcarCobrado, reverterParaPendente, abrirConfirmarPago,
 }) {
   const { temAcesso } = useAssinatura()
   const [filtroForma, setFiltroForma] = useState('todas')
   const [showFiltro, setShowFiltro] = useState(false)
 
+  // "A receber" vem de TODOS os meses (global); "Recebidas" fica presa ao
+  // período navegado — a dona não perde de vista uma cobrança antiga.
   const pendentes = useMemo(() =>
-    pagamentos.filter(p => p.status === 'pendente').sort((a, b) => new Date(a.data) - new Date(b.data)),
-    [pagamentos]
+    [...pendentesProp].sort((a, b) => new Date(a.data) - new Date(b.data)),
+    [pendentesProp]
   )
   const recebidas = useMemo(() =>
-    pagamentos.filter(p => p.status === 'pago').sort((a, b) => new Date(b.data) - new Date(a.data)),
-    [pagamentos]
+    [...recebidasProp].sort((a, b) => new Date(b.data) - new Date(a.data)),
+    [recebidasProp]
   )
 
   const totalAReceber = pendentes.reduce((acc, p) => acc + (p.valor || 0), 0)
@@ -74,12 +76,12 @@ export default function TabReceitas({
       {/* Cards de resumo */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div style={{ background: '#FFFBEB', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid #FDE68A' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 3 }}>Total a receber</div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 3 }}>Total a receber <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(todos os meses)</span></div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: '#B45309', lineHeight: 1 }}>{formatBRL(totalAReceber)}</div>
           <div style={{ fontSize: 10, color: '#92400E', marginTop: 4 }}>{pendentes.length} pendente{pendentes.length !== 1 ? 's' : ''}</div>
         </div>
         <div style={{ background: '#F0FDF4', borderRadius: 'var(--radius-sm)', padding: '12px 14px', border: '1px solid #BBF7D0' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#14532D', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 3 }}>Total recebido</div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#14532D', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 3 }}>Total recebido <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(neste período)</span></div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 700, color: '#15803D', lineHeight: 1 }}>{formatBRL(totalRecebido)}</div>
           <div style={{ fontSize: 10, color: '#14532D', marginTop: 4 }}>{recebidas.length} lançamento{recebidas.length !== 1 ? 's' : ''}</div>
         </div>
