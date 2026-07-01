@@ -32,19 +32,18 @@ const FILTROS = [
   { id: 'preencher',   label: '⚠️ A preencher' },
 ]
 
-// Mesmo padrão da tabela de Clientes: grid de frações fixas (espaçamento
-// uniforme, colunas não encolhem ao conteúdo), gap 0, padding por célula.
-// Cabeçalho e conteúdo compartilham o mesmo grid → alinham na mesma borda.
-const GRID = '1.6fr 1fr 0.9fr 1fr 1fr 1.1fr'
+// Único grid para cabeçalho + linhas — garante que colunas auto sejam calculadas
+// sobre TODOS os dados de uma vez, igual a um <table>
+// Descrição: 1fr (cresce), Categoria/Tipo/Vencimento/Valor: auto (ajusta ao conteúdo)
+const GRID = '1fr auto auto auto auto 90px'
 const MINGRID = 680
 
-// Célula de cabeçalho — idêntica ao módulo Clientes
 const thCell = {
-  fontSize: 10, fontWeight: 700, color: 'var(--text3)',
-  textTransform: 'uppercase', letterSpacing: '0.5px',
-  padding: '8px 10px',
-  background: 'var(--surface2)',
-  borderBottom: '1px solid var(--border)',
+  fontSize: 10, fontWeight: 700, color: '#8B2655',
+  textTransform: 'uppercase', letterSpacing: '0.6px',
+  padding: '9px 12px',
+  background: '#f9edf2',
+  borderBottom: '1px solid #e8c4d0',
   whiteSpace: 'nowrap',
 }
 
@@ -192,13 +191,12 @@ export default function TabDespesas({
               : 'Nenhuma despesa paga neste período'}
         </div>
       ) : (
-        <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid #e8c4d0' }}>
 
           {isDesktop ? (
-            /* ── Desktop: mesmo padrão da tabela de Clientes ─────────────────────
-               Grid de frações fixas (espaçamento uniforme) compartilhado entre
-               cabeçalho e linhas, gap 0, padding por célula. Cabeçalho e conteúdo
-               de cada coluna alinham na mesma borda. */
+            /* ── Desktop: UM único grid para header + todas as linhas ────────────
+               Colunas "auto" são calculadas sobre todo o conteúdo de uma vez,
+               garantindo que CATEGORIA comece exatamente onde DESCRIÇÃO termina. */
             <div style={{
               display: 'grid',
               gridTemplateColumns: GRID,
@@ -207,9 +205,9 @@ export default function TabDespesas({
             }}>
               {/* Cabeçalho */}
               <div style={thCell}>Descrição</div>
-              <div style={thCell}>Categoria</div>
-              <div style={thCell}>Tipo</div>
-              <div style={thCell}>{isPago ? 'Pago em' : 'Vencimento'}</div>
+              <div style={{ ...thCell, textAlign: 'center' }}>Categoria</div>
+              <div style={{ ...thCell, textAlign: 'center' }}>Tipo</div>
+              <div style={{ ...thCell, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
               <div style={{ ...thCell, textAlign: 'right' }}>Valor</div>
               <div style={{ ...thCell, textAlign: 'right' }}>Ações</div>
 
@@ -224,8 +222,9 @@ export default function TabDespesas({
                 const bordaLateral = isPago ? '#22C55E' : urg === 'late' ? '#EF4444' : urg === 'soon' ? '#F59E0B' : '#22C55E'
 
                 const td = {
-                  padding: '10px 10px',
-                  borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                  padding: '10px 12px',
+                  background: 'var(--surface)',
+                  borderBottom: isLast ? 'none' : '0.5px solid var(--border)',
                 }
 
                 const tipoBadge = isPessoal
@@ -256,15 +255,15 @@ export default function TabDespesas({
                       {extraBadges}
                     </div>
                     {/* Categoria */}
-                    <div style={{ ...td, fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+                    <div style={{ ...td, fontSize: 12, color: 'var(--text3)', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       {cat?.label || '—'}
                     </div>
                     {/* Tipo */}
-                    <div style={{ ...td, display: 'flex', alignItems: 'center' }}>
+                    <div style={{ ...td, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                       {tipoBadge}
                     </div>
                     {/* Data */}
-                    <div style={{ ...td, whiteSpace: 'nowrap' }}>
+                    <div style={{ ...td, textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
                         {format(dataD, 'dd/MM', { locale: ptBR })}
                       </div>
@@ -363,8 +362,8 @@ export default function TabDespesas({
           {/* Rodapé */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 16px', background: 'var(--surface2)', borderTop: '1px solid var(--border)',
-            fontSize: 11, fontWeight: 700, color: 'var(--text3)',
+            padding: '8px 16px', background: '#f9edf2', borderTop: '1px solid #e8c4d0',
+            fontSize: 11, fontWeight: 700, color: '#8B2655',
           }}>
             <span>{lista.length} {subAba === 'apagar' ? 'conta' : 'lançamento'}{lista.length !== 1 ? 's' : ''}</span>
             <span>Total: {formatBRL(totalLista)}</span>
