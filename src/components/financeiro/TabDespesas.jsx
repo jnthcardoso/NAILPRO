@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { Plus, Pencil, X, Check, Filter } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -32,14 +32,19 @@ const FILTROS = [
   { id: 'preencher',   label: '⚠️ A preencher' },
 ]
 
-// gap: 0 igual ao módulo Clientes — padding interno em cada célula garante alinhamento perfeito
-const GRID = '1.3fr 1.1fr 1fr 1fr 1.1fr 0.6fr'
+// Único grid para cabeçalho + linhas — garante que colunas auto sejam calculadas
+// sobre TODOS os dados de uma vez, igual a um <table>
+// Descrição: 1fr (cresce), Categoria/Tipo/Vencimento/Valor: auto (ajusta ao conteúdo)
+const GRID = '1fr auto auto auto auto 90px'
 const MINGRID = 680
 
-const thStyle = {
+const thCell = {
   fontSize: 10, fontWeight: 700, color: '#8B2655',
   textTransform: 'uppercase', letterSpacing: '0.6px',
-  padding: '9px 10px',
+  padding: '9px 12px',
+  background: '#f9edf2',
+  borderBottom: '1px solid #e8c4d0',
+  whiteSpace: 'nowrap',
 }
 
 export default function TabDespesas({
@@ -188,193 +193,171 @@ export default function TabDespesas({
       ) : (
         <div style={{ borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid #e8c4d0' }}>
 
-          {/* Cabeçalho desktop */}
-          {isDesktop && (
+          {isDesktop ? (
+            /* ── Desktop: UM único grid para header + todas as linhas ────────────
+               Colunas "auto" são calculadas sobre todo o conteúdo de uma vez,
+               garantindo que CATEGORIA comece exatamente onde DESCRIÇÃO termina. */
             <div style={{
               display: 'grid',
               gridTemplateColumns: GRID,
-              alignItems: 'center',
-              background: '#f9edf2',
-              borderBottom: '1px solid #e8c4d0',
               minWidth: MINGRID,
-              gap: 0,
+              alignItems: 'center',
             }}>
-              <div style={thStyle}>Descrição</div>
-              <div style={{ ...thStyle, textAlign: 'center' }}>Categoria</div>
-              <div style={{ ...thStyle, textAlign: 'center' }}>Tipo</div>
-              <div style={{ ...thStyle, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
-              <div style={{ ...thStyle, textAlign: 'right' }}>Valor</div>
-              <div style={{ ...thStyle, textAlign: 'right' }}>Ações</div>
+              {/* Cabeçalho */}
+              <div style={thCell}>Descrição</div>
+              <div style={{ ...thCell, textAlign: 'center' }}>Categoria</div>
+              <div style={{ ...thCell, textAlign: 'center' }}>Tipo</div>
+              <div style={{ ...thCell, textAlign: 'center' }}>{isPago ? 'Pago em' : 'Vencimento'}</div>
+              <div style={{ ...thCell, textAlign: 'right' }}>Valor</div>
+              <div style={{ ...thCell, textAlign: 'right' }}>Ações</div>
+
+              {/* Linhas de dados */}
+              {lista.map((d, idx) => {
+                const cat       = findCat(d.categoria)
+                const urg       = isPago ? 'done' : getUrgencia(d.data)
+                const dataD     = new Date(d.data + 'T12:00:00')
+                const isLast    = idx === lista.length - 1
+                const isPessoal = d.tipo === 'pessoal'
+                const corUrg    = urg === 'late' ? '#B91C1C' : urg === 'soon' ? '#B45309' : 'var(--text2)'
+                const bordaLateral = isPago ? '#22C55E' : urg === 'late' ? '#EF4444' : urg === 'soon' ? '#F59E0B' : '#22C55E'
+
+                const td = {
+                  padding: '10px 12px',
+                  background: 'var(--surface)',
+                  borderBottom: isLast ? 'none' : '0.5px solid var(--border)',
+                }
+
+                const tipoBadge = isPessoal
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#EDE9FE', color: '#5B21B6', whiteSpace: 'nowrap' }}>👤 Pessoal</span>
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#FCE7F3', color: '#9D174D', whiteSpace: 'nowrap' }}>🏢 Salão</span>
+
+                const extraBadges = (d.recorrente || d.valor_a_preencher) ? (
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                    {d.recorrente && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>}
+                    {d.valor_a_preencher && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>}
+                  </div>
+                ) : null
+
+                const valorEl = d.valor_a_preencher
+                  ? <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E' }}>⚠ preencher</span>
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C', whiteSpace: 'nowrap' }}>
+                      {isPago && <Check size={12} color="#15803D" strokeWidth={2.5} />}
+                      {isPago ? '' : '− '}{formatBRL(d.valor ?? 0)}
+                    </span>
+
+                return (
+                  <Fragment key={d.id}>
+                    {/* Descrição — carrega borda lateral da linha inteira */}
+                    <div style={{ ...td, minWidth: 0, borderLeft: `3px solid ${bordaLateral}` }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: isPago ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {d.descricao}
+                      </div>
+                      {extraBadges}
+                    </div>
+                    {/* Categoria */}
+                    <div style={{ ...td, fontSize: 12, color: 'var(--text3)', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {cat?.label || '—'}
+                    </div>
+                    {/* Tipo */}
+                    <div style={{ ...td, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {tipoBadge}
+                    </div>
+                    {/* Data */}
+                    <div style={{ ...td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
+                        {format(dataD, 'dd/MM', { locale: ptBR })}
+                      </div>
+                      {!isPago && (
+                        <div style={{ fontSize: 10, color: urg === 'late' ? '#B91C1C' : 'var(--text3)', marginTop: 2 }}>
+                          {getDiffLabel(d.data)}
+                        </div>
+                      )}
+                    </div>
+                    {/* Valor */}
+                    <div style={{ ...td, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      {valorEl}
+                    </div>
+                    {/* Ações */}
+                    <div style={{ ...td, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                      {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
+                        <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)}>
+                          <Check size={11} /> Pagar
+                        </button>
+                      )}
+                      <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
+                        <Pencil size={11} />
+                      </button>
+                    </div>
+                  </Fragment>
+                )
+              })}
             </div>
-          )}
+          ) : (
+            /* ── Mobile ─────────────────────────────────────────────────────── */
+            lista.map((d, idx) => {
+              const cat       = findCat(d.categoria)
+              const urg       = isPago ? 'done' : getUrgencia(d.data)
+              const dataD     = new Date(d.data + 'T12:00:00')
+              const isLast    = idx === lista.length - 1
+              const isPessoal = d.tipo === 'pessoal'
+              const corUrg    = urg === 'late' ? '#B91C1C' : urg === 'soon' ? '#B45309' : 'var(--text2)'
+              const bordaLateral = isPago ? '#22C55E' : urg === 'late' ? '#EF4444' : urg === 'soon' ? '#F59E0B' : '#22C55E'
 
-          {lista.map((d, idx) => {
-            const cat    = findCat(d.categoria)
-            const urg    = isPago ? 'done' : getUrgencia(d.data)
-            const dataD  = new Date(d.data + 'T12:00:00')
-            const isLast = idx === lista.length - 1
-            const isPessoal = d.tipo === 'pessoal'
+              const tipoBadge = isPessoal
+                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#EDE9FE', color: '#5B21B6', whiteSpace: 'nowrap' }}>👤 Pessoal</span>
+                : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#FCE7F3', color: '#9D174D', whiteSpace: 'nowrap' }}>🏢 Salão</span>
 
-            const corUrg      = urg === 'late' ? '#B91C1C' : urg === 'soon' ? '#B45309' : 'var(--text2)'
-            const bordaLateral = isPago ? '#22C55E' : urg === 'late' ? '#EF4444' : urg === 'soon' ? '#F59E0B' : '#22C55E'
+              const valorEl = d.valor_a_preencher
+                ? <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E' }}>⚠ preencher</span>
+                : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C' }}>
+                    {isPago && <Check size={12} color="#15803D" strokeWidth={2.5} />}
+                    {isPago ? '' : '− '}{formatBRL(d.valor ?? 0)}
+                  </span>
 
-            // Badge tipo — sempre visível
-            const tipoBadge = isPessoal
-              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#EDE9FE', color: '#5B21B6', whiteSpace: 'nowrap' }}>👤 Pessoal</span>
-              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#FCE7F3', color: '#9D174D', whiteSpace: 'nowrap' }}>🏢 Salão</span>
-
-            // Badges extras (recorrente / a preencher) abaixo da descrição
-            const extraBadges = (d.recorrente || d.valor_a_preencher) ? (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
-                {d.recorrente && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>
-                )}
-                {d.valor_a_preencher && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>
-                )}
-              </div>
-            ) : null
-
-            const valorEl = d.valor_a_preencher
-              ? <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E' }}>⚠ preencher</span>
-              : (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C' }}>
-                  {isPago && <Check size={12} color="#15803D" strokeWidth={2.5} />}
-                  {isPago ? '' : '− '}{formatBRL(d.valor ?? 0)}
-                </span>
-              )
-
-            // Desktop: só lápis + pagar
-            const acoesDesktop = (
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
-                {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
-                  <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)}>
-                    <Check size={11} /> Pagar
-                  </button>
-                )}
-                <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
-                  <Pencil size={11} />
-                </button>
-              </div>
-            )
-
-            // Mobile: lápis + pagar + excluir
-            const acoesMobile = (
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
-                {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
-                  <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)}>
-                    <Check size={11} /> Pagar
-                  </button>
-                )}
-                <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
-                  <Pencil size={11} />
-                </button>
-                <button style={{ ...s.miniIconBtn, color: '#B91C1C', borderColor: '#FCA5A5', background: 'rgba(185,28,28,0.06)' }} onClick={() => excluirDespesa(d)} title="Excluir">
-                  <X size={11} />
-                </button>
-              </div>
-            )
-
-            const rowBase = {
-              background: 'var(--surface)',
-              borderBottom: isLast ? 'none' : '0.5px solid var(--border)',
-              borderLeft: `3px solid ${bordaLateral}`,
-            }
-
-            if (isDesktop) {
               return (
                 <div
                   key={d.id}
                   style={{
-                    ...rowBase,
+                    background: 'var(--surface)',
+                    borderBottom: isLast ? 'none' : '0.5px solid var(--border)',
+                    borderLeft: `3px solid ${bordaLateral}`,
                     display: 'grid',
-                    gridTemplateColumns: GRID,
+                    gridTemplateColumns: '44px 1fr auto',
                     alignItems: 'center',
-                    minWidth: MINGRID,
-                    gap: 0,
+                    padding: '11px 12px',
+                    gap: 10,
                   }}
                 >
-                  {/* Descrição */}
-                  <div style={{ padding: '10px 10px', minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: isPago ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {d.descricao}
-                    </div>
-                    {extraBadges}
-                  </div>
-                  {/* Categoria */}
-                  <div style={{ padding: '10px 10px', fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>{cat?.label || '—'}</div>
-                  {/* Tipo */}
-                  <div style={{ padding: '10px 10px', display: 'flex', justifyContent: 'center' }}>{tipoBadge}</div>
-                  {/* Data */}
-                  <div style={{ padding: '10px 10px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
-                      {format(dataD, 'dd/MM', { locale: ptBR })}
-                    </div>
-                    {!isPago && (
-                      <div style={{ fontSize: 10, color: urg === 'late' ? '#B91C1C' : 'var(--text3)', marginTop: 2 }}>
-                        {getDiffLabel(d.data)}
-                      </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <span style={{ fontSize: 18, fontWeight: 700, lineHeight: 1, color: isPago ? 'var(--text3)' : corUrg }}>{format(dataD, 'dd')}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: isPago ? 'var(--text3)' : corUrg }}>{format(dataD, 'MMM', { locale: ptBR })}</span>
+                    {!isPago && urg !== 'ok' && (
+                      <span style={{ fontSize: 9, color: urg === 'late' ? '#B91C1C' : '#B45309', fontWeight: 600, marginTop: 2, textAlign: 'center', lineHeight: 1.1 }}>{getDiffLabel(d.data)}</span>
                     )}
                   </div>
-                  {/* Valor */}
-                  <div style={{ padding: '10px 10px', textAlign: 'right' }}>{valorEl}</div>
-                  {/* Ações */}
-                  <div style={{ padding: '10px 10px' }}>{acoesDesktop}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: isPago ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.descricao}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{cat?.label || ''}</div>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                      {tipoBadge}
+                      {d.recorrente && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>}
+                      {d.valor_a_preencher && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                    {valorEl}
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
+                        <button style={s.pagarBtn} onClick={() => abrirConfirmarPagarDespesa(d)}><Check size={11} /> Pagar</button>
+                      )}
+                      <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar"><Pencil size={11} /></button>
+                      <button style={{ ...s.miniIconBtn, color: '#B91C1C', borderColor: '#FCA5A5', background: 'rgba(185,28,28,0.06)' }} onClick={() => excluirDespesa(d)} title="Excluir"><X size={11} /></button>
+                    </div>
+                  </div>
                 </div>
               )
-            }
-
-            // Mobile
-            return (
-              <div
-                key={d.id}
-                style={{
-                  ...rowBase,
-                  display: 'grid',
-                  gridTemplateColumns: '44px 1fr auto',
-                  alignItems: 'center',
-                  padding: '11px 12px',
-                  gap: 10,
-                }}
-              >
-                {/* Data */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, lineHeight: 1, color: isPago ? 'var(--text3)' : corUrg }}>
-                    {format(dataD, 'dd')}
-                  </span>
-                  <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: isPago ? 'var(--text3)' : corUrg }}>
-                    {format(dataD, 'MMM', { locale: ptBR })}
-                  </span>
-                  {!isPago && urg !== 'ok' && (
-                    <span style={{ fontSize: 9, color: urg === 'late' ? '#B91C1C' : '#B45309', fontWeight: 600, marginTop: 2, textAlign: 'center', lineHeight: 1.1 }}>
-                      {getDiffLabel(d.data)}
-                    </span>
-                  )}
-                </div>
-                {/* Descrição */}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: isPago ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {d.descricao}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{cat?.label || ''}</div>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
-                    {tipoBadge}
-                    {d.recorrente && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text3)', border: '1px solid var(--border2)' }}>🔁 mensal</span>
-                    )}
-                    {d.valor_a_preencher && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>⚠ a preencher</span>
-                    )}
-                  </div>
-                </div>
-                {/* Valor + ações */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                  {valorEl}
-                  {acoesMobile}
-                </div>
-              </div>
-            )
-          })}
+            })
+          )}
 
           {/* Rodapé */}
           <div style={{
