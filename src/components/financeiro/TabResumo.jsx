@@ -39,7 +39,9 @@ export default function TabResumo({
   ehMesAtual, recebido, qtdPagos, totalDespesasSalao, despesas, pendente, pagamentos,
   lucro, margemLucro, previsao, dreAberto, toggleDre, categoriasTodas,
   salaoAPagar, salaoPagas, salaoPagasArr, salaoAPagarArr, despesasSalaoArr,
-  mostraProLabore, proLabore, sobrouPraVoce, despesasPessoalArr, totalDespesasPessoal,
+  mostraProLabore, proLabore, sobrouPraVoce,
+  despesasPessoalArr, totalDespesasPessoal,
+  pessoalPagas, pessoalPagasArr, pessoalAPagar, pessoalAPagarArr,
   periodoLabel, abrirProLabore, onVerPendentes,
 }) {
   return (
@@ -111,21 +113,13 @@ export default function TabResumo({
           />
         )}
 
-        {mostraProLabore && (
-          proLabore > 0 ? (
-            <div style={s.dreLinha}>
-              <span>
-                (−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span>
-                <button onClick={abrirProLabore} style={s.proLaboreEdit} title="Editar seu salário"><Pencil size={11} /></button>
-              </span>
-              <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(proLabore)}</span>
-            </div>
-          ) : (
-            <div style={s.dreLinha}>
-              <span>(−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span></span>
-              <button onClick={abrirProLabore} style={s.proLaboreLink}>+ definir</button>
-            </div>
-          )
+        {mostraProLabore && proLabore > 0 && (
+          <div style={s.dreLinha}>
+            <span>
+              (−) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span>
+            </span>
+            <span style={{ ...s.mono, color: '#7C3AED' }}>− {formatBRL(proLabore)}</span>
+          </div>
         )}
 
         <div style={s.dreDivider} />
@@ -143,22 +137,67 @@ export default function TabResumo({
           </div>
         )}
 
-        {mostraProLabore && totalDespesasPessoal > 0 && (
+        {/* ── Seu bolso (pessoal) ── */}
+        {(totalDespesasPessoal > 0 || (mostraProLabore && proLabore > 0)) && (
           <>
-            <div style={s.dreDivider} />
-            <LinhaDespesaExpansivel
-              label="👤 Gastos pessoais" sub="(seu bolso)"
-              valor={totalDespesasPessoal} cor="#7C3AED" items={despesasPessoalArr}
-              aberto={!!dreAberto.pessoal} onToggle={() => toggleDre('pessoal')}
-              categorias={categoriasTodas}
-            />
-            {proLabore > 0
-              ? <div style={s.dreMargem}>
+            <div style={{ ...s.dreDivider, margin: '12px 0 8px' }} />
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#7C3AED', marginBottom: 6 }}>💜 Seu bolso</div>
+
+            {/* Salário como receita (cenário com pró-labore) */}
+            {mostraProLabore && proLabore > 0 && (
+              <div style={s.dreLinha}>
+                <span style={{ color: '#7C3AED', fontWeight: 600 }}>
+                  (+) Seu salário
+                  <span style={{ color: 'var(--text3)', fontSize: 11, fontWeight: 400 }}> (pró-labore)</span>
+                  <button onClick={abrirProLabore} style={s.proLaboreEdit} title="Editar seu salário"><Pencil size={11} /></button>
+                </span>
+                <span style={{ ...s.mono, color: '#7C3AED' }}>{formatBRL(proLabore)}</span>
+              </div>
+            )}
+            {mostraProLabore && !proLabore && (
+              <div style={s.dreLinha}>
+                <span>(+) Seu salário <span style={{ color: 'var(--text3)', fontSize: 11 }}>(pró-labore)</span></span>
+                <button onClick={abrirProLabore} style={s.proLaboreLink}>+ definir</button>
+              </div>
+            )}
+
+            {/* Despesas pessoais já pagas */}
+            {(pessoalPagas || 0) > 0 && (
+              <LinhaDespesaExpansivel
+                label="(−) Despesas pessoais" sub="(já pagas)"
+                valor={pessoalPagas} cor="#B91C1C" items={pessoalPagasArr}
+                aberto={!!dreAberto.pessoalPagas} onToggle={() => toggleDre('pessoalPagas')}
+                categorias={categoriasTodas}
+              />
+            )}
+
+            {/* Contas pessoais a pagar */}
+            {(pessoalAPagar || 0) > 0 && (
+              <LinhaDespesaExpansivel
+                label="(−) Contas pessoais" sub="(vai sair)"
+                valor={pessoalAPagar} cor="#B45309" items={pessoalAPagarArr}
+                aberto={!!dreAberto.pessoalAPagar} onToggle={() => toggleDre('pessoalAPagar')}
+                categorias={categoriasTodas}
+              />
+            )}
+
+            {/* Resultado (quando tem pró-labore definido) */}
+            {mostraProLabore && proLabore > 0 && (
+              <>
+                <div style={s.dreDivider} />
+                <div style={{ ...s.dreLinha, ...s.dreTotal }}>
+                  <span>(=) Sobrou para você</span>
+                  <span style={{ ...s.mono, color: sobrouPraVoce >= 0 ? '#7C3AED' : '#B91C1C', fontSize: 16 }}>
+                    {formatBRL(Math.abs(sobrouPraVoce))}
+                  </span>
+                </div>
+                <div style={s.dreMargem}>
                   {sobrouPraVoce >= 0
-                    ? <>Do seu salário de {formatBRL(proLabore)}, sobrou <strong>{formatBRL(sobrouPraVoce)}</strong> pra você 💜</>
+                    ? <>Do salário de {formatBRL(proLabore)}, sobrou <strong>{formatBRL(sobrouPraVoce)}</strong> pra você 💜</>
                     : <>🚨 Você gastou <strong>{formatBRL(-sobrouPraVoce)}</strong> a mais do que tirou de salário</>}
                 </div>
-              : <div style={s.dreMargem}>Defina seu salário acima pra saber se seus gastos pessoais cabem no que você tira. 💡</div>}
+              </>
+            )}
           </>
         )}
       </div>

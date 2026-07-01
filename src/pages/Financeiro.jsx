@@ -375,6 +375,8 @@ export default function Financeiro() {
           mostraProLabore={mostraProLabore} proLabore={proLabore}
           sobrouPraVoce={sobrouPraVoce}
           despesasPessoalArr={despesasPessoalArr} totalDespesasPessoal={totalDespesasPessoal}
+          pessoalPagas={pessoalPagas} pessoalPagasArr={pessoalPagasArr}
+          pessoalAPagar={pessoalAPagar} pessoalAPagarArr={pessoalAPagarArr}
           periodoLabel={periodoLabel} abrirProLabore={abrirProLabore}
           onVerPendentes={() => { setTab('receitas'); setFiltro('pendente') }}
         />
