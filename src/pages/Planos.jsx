@@ -145,8 +145,9 @@ export default function Planos() {
         </p>
       </div>
 
-      {/* Quer ver antes de contratar? Saída compacta para demonstração/teste no WhatsApp */}
-      {!isActive && (
+      {/* Quer ver antes de contratar? Só faz sentido pra quem nunca usou o Lumen
+          (conta 'pending', sem trial) — quem já está no trial já está usando. */}
+      {isPending && (
         <div style={s.demoCtaWrap}>
           <button style={s.demoCtaPill} onClick={abrirDemoWhatsapp}>
             <WaIcon size={14} color="var(--whatsapp)" />

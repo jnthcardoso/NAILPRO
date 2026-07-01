@@ -3,10 +3,12 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Home, Calendar, Users, DollarSign, Settings, Target, Bell, ChevronLeft, ChevronRight, Shield, LogOut, UsersRound, Gift, Menu, X, Filter, Rss, MessageCircle, BarChart3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useIsAdmin, useAssinatura } from '../../contexts/AssinaturaContext'
+import { useIsAdmin, useAssinatura, SUPORTE_WHATSAPP } from '../../contexts/AssinaturaContext'
 import { useSalao } from '../../contexts/SalaoContext'
 import { LumenLogo, LumenFlameIcon } from '../common/Brand'
 import { useAvisos } from '../../hooks/useAvisos'
+import WaIcon from '../common/WaIcon'
+import { linkWhatsAppCompleto } from '../../lib/formatters'
 
 const EMAIL_DEV = 'vagasjonathancardoso@gmail.com'
 
@@ -345,6 +347,16 @@ export default function AppLayout() {
                   </NavLink>
                 )
               })}
+              {/* Suporte como item próprio no celular — na aba Configurações fica escondido demais */}
+              <a
+                href={linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Preciso de ajuda com a Lumen.')}
+                target="_blank"
+                rel="noreferrer"
+                style={ms.gridItem}
+              >
+                <WaIcon size={22} />
+                <span style={ms.gridLabel}>Suporte</span>
+              </a>
             </div>
             <button onClick={handleSair} style={ms.sairBtn}>
               <LogOut size={18} strokeWidth={2} />

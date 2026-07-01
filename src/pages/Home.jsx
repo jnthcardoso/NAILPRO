@@ -8,7 +8,7 @@ import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
-import { formatBRL, validarTelefone } from '../lib/formatters'
+import { formatBRL, validarTelefone, linkWhatsAppCompleto } from '../lib/formatters'
 import {
   format, addDays, subDays, differenceInDays, startOfDay, endOfDay,
   startOfMonth, endOfMonth, subMonths, subWeeks, eachDayOfInterval, getDay,
@@ -16,7 +16,7 @@ import {
   endOfDay as endOfDayFn
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useAssinatura } from '../contexts/AssinaturaContext'
+import { useAssinatura, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import TrialBanner from '../components/common/TrialBanner'
 import Skeleton from '../components/common/Skeleton'
 import OportunidadesSemana from '../components/common/OportunidadesSemana'
@@ -826,6 +826,16 @@ export default function Home() {
                 <span>Ver financeiro</span>
                 <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
               </button>
+              <a
+                style={{ ...s.qaBtn, ...s.qaBtnLight, textDecoration: 'none' }}
+                href={linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Preciso de ajuda com a Lumen.')}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <div style={{ ...s.qaIcon, background: '#DCFCE7' }}><WaIcon size={16} /></div>
+                <span>Fale com o suporte</span>
+                <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+              </a>
             </div>
           </div>
         )}

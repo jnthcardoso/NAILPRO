@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Plus, X, Copy, Check, ExternalLink, Camera, Crown, ChevronRight, Trash2, AlertTriangle, FileText, Lock, Download, User, Calendar, Plug, Briefcase } from 'lucide-react'
 import { exportarTodosDados } from '../lib/exportarDados'
-import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify, formatCPF, validarCPF, validarTelefone, validarEmail } from '../lib/formatters'
+import { formatTelefone, unformatTelefone, MSG_LEMBRETE_PADRAO, slugify, formatCPF, validarCPF, validarTelefone, validarEmail, linkWhatsAppCompleto } from '../lib/formatters'
+import WaIcon from '../components/common/WaIcon'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { MSG_ANIVERSARIO_PADRAO, MSG_RETORNO_PADRAO, MSG_REAGENDAR_PADRAO, MSG_COBRANCA_PADRAO, MSG_SINAL_PADRAO } from '../lib/mensagens'
 import { useAuth } from '../contexts/AuthContext'
 import { useSalao } from '../contexts/SalaoContext'
-import { useAssinatura, formatPreco, PLANOS } from '../contexts/AssinaturaContext'
+import { useAssinatura, formatPreco, PLANOS, SUPORTE_WHATSAPP } from '../contexts/AssinaturaContext'
 import { UpgradeModal, ProBadge } from '../components/common/UpgradeBlock'
 import Modal from '../components/common/Modal'
 import { s, tabs } from './Configuracoes.styles'
@@ -1055,6 +1056,15 @@ export default function Configuracoes() {
             <Lock size={14} /> Privacidade
           </a>
         </div>
+
+        <a
+          href={linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Preciso de ajuda com a Lumen.')}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--whatsapp-light, #E7F9F1)', color: 'var(--whatsapp, #128C7E)', border: '1px solid var(--whatsapp, #128C7E)', borderRadius: 'var(--radius-sm)', padding: '11px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none', marginBottom: 10 }}
+        >
+          <WaIcon size={15} /> Falar com o suporte
+        </a>
 
         <button style={s.logoutBtn} onClick={handleLogout}>
           <LogOut size={15} /> Sair da conta
