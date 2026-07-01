@@ -236,8 +236,7 @@ export default function TabDespesas({
             const valorEl = d.valor_a_preencher
               ? <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E' }}>⚠ preencher</span>
               : (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C' }}>
-                  {isPago && <Check size={12} color="#15803D" strokeWidth={2.5} />}
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: isPago ? 'var(--text3)' : '#B91C1C' }}>
                   {isPago ? '' : '− '}{formatBRL(d.valor ?? 0)}
                 </span>
               )
@@ -307,8 +306,9 @@ export default function TabDespesas({
                   <div style={{ textAlign: 'right' }}>{valorEl}</div>
                   {/* Data */}
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: isPago ? 'var(--text3)' : corUrg }}>
                       {format(dataD, 'dd/MM', { locale: ptBR })}
+                      {isPago && <Check size={12} color="#15803D" strokeWidth={2.5} />}
                     </div>
                     {!isPago && (
                       <div style={{ fontSize: 10, color: urg === 'late' ? '#B91C1C' : 'var(--text3)', marginTop: 2 }}>
