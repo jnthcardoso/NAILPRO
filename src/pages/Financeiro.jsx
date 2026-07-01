@@ -448,7 +448,7 @@ export default function Financeiro() {
           showNovaCat={showNovaCat} setShowNovaCat={setShowNovaCat}
           categoriasCustom={categoriasCustom} novaCat={novaCat} setNovaCat={setNovaCat}
           salvarNovaCategoria={salvarNovaCategoria} savingCat={savingCat} excluirCategoria={excluirCategoria}
-          temAcesso={temAcesso} savingDespesa={savingDespesa}
+          temAcesso={temAcesso} isDesktop={isDesktop} savingDespesa={savingDespesa}
           onSalvar={salvarDespesa} onClose={fecharDespesaModal}
         />
       )}

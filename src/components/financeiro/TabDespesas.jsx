@@ -241,7 +241,7 @@ export default function TabDespesas({
                 </span>
               )
 
-            // Desktop: só lápis + pagar
+            // Desktop: pagar + lápis + excluir
             const acoesDesktop = (
               <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
                 {!isPago && !d.valor_a_preencher && temAcesso('contasAPagar') && (
@@ -251,6 +251,9 @@ export default function TabDespesas({
                 )}
                 <button style={s.miniIconBtn} onClick={() => abrirEditarDespesa(d)} title="Editar">
                   <Pencil size={11} />
+                </button>
+                <button style={{ ...s.miniIconBtn, color: '#B91C1C', borderColor: '#FCA5A5', background: 'rgba(185,28,28,0.06)' }} onClick={() => excluirDespesa(d)} title="Excluir">
+                  <X size={11} />
                 </button>
               </div>
             )

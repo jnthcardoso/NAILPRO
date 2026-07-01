@@ -67,7 +67,7 @@ export default function DespesaModal({
   editandoDespesa, formDespesa, setFormDespesa,
   showNovaCat, setShowNovaCat, categoriasCustom, novaCat, setNovaCat,
   salvarNovaCategoria, savingCat, excluirCategoria,
-  temAcesso, savingDespesa, onSalvar, onClose,
+  temAcesso, isDesktop, savingDespesa, onSalvar, onClose,
 }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
@@ -90,8 +90,8 @@ export default function DespesaModal({
     <Modal onClose={onClose} boxStyle={s.modalCentro}>
       <div style={s.modalTitle}>{editandoDespesa ? '✏️ Editar despesa' : '📉 Nova despesa'}</div>
 
-      {/* Linha 1: Quem paga? + Situação — lado a lado */}
-      <div style={{ display: 'grid', gridTemplateColumns: mostrarStatus ? '1fr 1fr' : '1fr', gap: 10 }}>
+      {/* Linha 1: Quem paga? + Situação — lado a lado (desktop) ou empilhado (mobile) */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop && mostrarStatus ? '1fr 1fr' : '1fr', gap: 10 }}>
         <div style={s.field}>
           <label style={s.label}>Quem paga?</label>
           <div style={segWrap}>
