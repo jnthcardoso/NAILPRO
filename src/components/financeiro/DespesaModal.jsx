@@ -4,42 +4,110 @@ import Modal from '../common/Modal'
 import { s } from '../../pages/Financeiro.styles'
 import { CATEGORIAS, FORMAS_PAGAMENTO } from '../../pages/Financeiro.constants'
 
-// Modal de criação/edição de despesa (inclui bolso salão×pessoal, categorias
-// personalizadas, contas a pagar e recorrência). Apresentacional: recebe estado
-// e handlers do componente Financeiro.
+function isDataPassada(dataStr) {
+  if (!dataStr) return false
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+  return new Date(dataStr + 'T00:00:00') < hoje
+}
+
+const segWrap = {
+  display: 'flex', borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border2)', overflow: 'hidden',
+}
+
+function SegBtn({ label, ativo, cor, onClick, borderRight }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1, padding: '9px 6px', fontSize: 12, fontWeight: 700,
+        cursor: 'pointer', fontFamily: 'inherit', border: 'none',
+        borderRight: borderRight ? '1px solid var(--border2)' : 'none',
+        background: ativo ? (cor || 'var(--pink)') : 'var(--surface)',
+        color: ativo ? 'white' : 'var(--text3)',
+        transition: 'background 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 export default function DespesaModal({
   editandoDespesa, formDespesa, setFormDespesa,
   showNovaCat, setShowNovaCat, categoriasCustom, novaCat, setNovaCat,
   salvarNovaCategoria, savingCat, excluirCategoria,
   temAcesso, savingDespesa, onSalvar, onClose,
 }) {
+  const mostrarStatus = temAcesso('contasAPagar')
+  const aPagar = !formDespesa.pago
+  const alertaDataPassada = mostrarStatus && aPagar && isDataPassada(formDespesa.data)
+
   return (
     <Modal onClose={onClose} boxStyle={s.modalCentro}>
       <div style={s.modalTitle}>{editandoDespesa ? '✏️ Editar despesa' : '📉 Nova despesa'}</div>
 
-      {/* Bolso: do salão (custo do negócio) × pessoal (gasto da dona) */}
-      <div style={s.field}>
-        <label style={s.label}>De quem é esse gasto?</label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[{ id: 'salao', label: '🏢 Do salão' }, { id: 'pessoal', label: '👤 Pessoal' }].map(o => {
-            const ativo = (formDespesa.tipo || 'salao') === o.id
-            return (
-              <button key={o.id} type="button" onClick={() => setFormDespesa({ ...formDespesa, tipo: o.id })}
-                style={{ flex: 1, padding: '9px 12px', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid ' + (ativo ? 'var(--pink)' : 'var(--border2)'), background: ativo ? 'var(--pink)' : 'var(--surface)', color: ativo ? 'white' : 'var(--text3)' }}>
-                {o.label}
-              </button>
-            )
-          })}
+      {/* Linha 1: Quem paga? + Situação — lado a lado */}
+      <div style={{ display: 'grid', gridTemplateColumns: mostrarStatus ? '1fr 1fr' : '1fr', gap: 10 }}>
+        <div style={s.field}>
+          <label style={s.label}>Quem paga?</label>
+          <div style={segWrap}>
+            <SegBtn
+              label="🏢 Salão" borderRight
+              ativo={(formDespesa.tipo || 'salao') === 'salao'}
+              onClick={() => setFormDespesa({ ...formDespesa, tipo: 'salao' })}
+            />
+            <SegBtn
+              label="👤 Pessoal"
+              ativo={(formDespesa.tipo || 'salao') === 'pessoal'}
+              onClick={() => setFormDespesa({ ...formDespesa, tipo: 'pessoal' })}
+            />
+          </div>
+          {(formDespesa.tipo || 'salao') === 'pessoal' && (
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+              Gasto seu — não conta no lucro do salão.
+            </div>
+          )}
         </div>
-        {(formDespesa.tipo || 'salao') === 'pessoal' && (
-          <div style={{ fontSize: 11, color: 'var(--text3)' }}>Gasto seu (não conta no lucro do salão — vai pro "seu bolso").</div>
+
+        {mostrarStatus && (
+          <div style={s.field}>
+            <label style={s.label}>Situação</label>
+            <div style={segWrap}>
+              <SegBtn
+                label="⏳ A pagar" borderRight
+                ativo={aPagar}
+                onClick={() => setFormDespesa({ ...formDespesa, pago: false })}
+              />
+              <SegBtn
+                label="✅ Já paguei"
+                ativo={!aPagar}
+                cor="#059669"
+                onClick={() => setFormDespesa({ ...formDespesa, pago: true })}
+              />
+            </div>
+          </div>
         )}
       </div>
 
+      {/* Aviso: data passada + a pagar */}
+      {alertaDataPassada && (
+        <div style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px' }}>
+          ⚠️ A data já passou — se você já pagou, troque para <strong>Já paguei</strong>.
+        </div>
+      )}
+
       <div style={s.field}>
         <label style={s.label}>Descrição *</label>
-        <input style={s.input} placeholder="Ex: Conta de luz" value={formDespesa.descricao} onChange={e => setFormDespesa({ ...formDespesa, descricao: e.target.value })} />
+        <input
+          style={s.input}
+          placeholder="Ex: Conta de luz"
+          value={formDespesa.descricao}
+          onChange={e => setFormDespesa({ ...formDespesa, descricao: e.target.value })}
+        />
       </div>
+
       <div style={s.field}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <label style={s.label}>Categoria *</label>
@@ -61,8 +129,18 @@ export default function DespesaModal({
         {showNovaCat && (
           <div style={s.novaCatPanel}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input style={{ ...s.input, width: 52, textAlign: 'center', flexShrink: 0, padding: '10px 4px' }} value={novaCat.icon} onChange={e => setNovaCat({ ...novaCat, icon: e.target.value })} placeholder="📦" maxLength={2} title="Emoji da categoria" />
-              <input style={{ ...s.input, flex: 1, minWidth: 0 }} value={novaCat.label} onChange={e => setNovaCat({ ...novaCat, label: e.target.value })} placeholder="Nome da categoria" />
+              <input
+                style={{ ...s.input, width: 52, textAlign: 'center', flexShrink: 0, padding: '10px 4px' }}
+                value={novaCat.icon}
+                onChange={e => setNovaCat({ ...novaCat, icon: e.target.value })}
+                placeholder="📦" maxLength={2} title="Emoji da categoria"
+              />
+              <input
+                style={{ ...s.input, flex: 1, minWidth: 0 }}
+                value={novaCat.label}
+                onChange={e => setNovaCat({ ...novaCat, label: e.target.value })}
+                placeholder="Nome da categoria"
+              />
             </div>
             <button type="button" style={{ ...s.addBtnSmall, justifyContent: 'center', padding: '8px 12px' }} onClick={salvarNovaCategoria} disabled={savingCat}>
               {savingCat ? 'Salvando...' : 'Criar categoria'}
@@ -80,16 +158,30 @@ export default function DespesaModal({
           </div>
         )}
       </div>
+
+      {/* Valor + Data (label muda conforme situação) */}
       <div className="form-row-stack" style={s.row}>
         <div style={{ ...s.field, flex: 1 }}>
           <label style={s.label}>Valor (R$){formDespesa.recorrente && formDespesa.valor_variavel ? '' : ' *'}</label>
-          <input style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }} type="number" step="0.01" placeholder={formDespesa.recorrente && formDespesa.valor_variavel ? 'pode deixar em branco' : '0,00'} value={formDespesa.valor} onChange={e => setFormDespesa({ ...formDespesa, valor: e.target.value })} />
+          <input
+            style={{ ...s.input, fontFamily: "'JetBrains Mono', monospace" }}
+            type="number" step="0.01"
+            placeholder={formDespesa.recorrente && formDespesa.valor_variavel ? 'pode deixar em branco' : '0,00'}
+            value={formDespesa.valor}
+            onChange={e => setFormDespesa({ ...formDespesa, valor: e.target.value })}
+          />
         </div>
         <div style={{ ...s.field, flex: 1 }}>
-          <label style={s.label}>Data *</label>
-          <input style={s.input} type="date" value={formDespesa.data} onChange={e => setFormDespesa({ ...formDespesa, data: e.target.value })} />
+          <label style={s.label}>{mostrarStatus && aPagar ? 'Vencimento *' : 'Data do pagamento *'}</label>
+          <input
+            style={s.input}
+            type="date"
+            value={formDespesa.data}
+            onChange={e => setFormDespesa({ ...formDespesa, data: e.target.value })}
+          />
         </div>
       </div>
+
       <div style={s.field}>
         <label style={s.label}>Forma de pagamento</label>
         <select style={s.input} value={formDespesa.forma_pagamento} onChange={e => setFormDespesa({ ...formDespesa, forma_pagamento: e.target.value })}>
@@ -97,22 +189,7 @@ export default function DespesaModal({
         </select>
       </div>
 
-      {/* Já paga × conta a pagar (Pro/Salão) — vencimento = data acima */}
-      {temAcesso('contasAPagar') && (
-        <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={formDespesa.pago} onChange={e => setFormDespesa({ ...formDespesa, pago: e.target.checked })} />
-            ✅ Já paguei essa conta
-          </label>
-          {!formDespesa.pago && (
-            <div style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px' }}>
-              💸 Vai entrar em <strong>Contas a pagar</strong> com vencimento em {formDespesa.data ? format(new Date(formDespesa.data + 'T12:00:00'), 'dd/MM') : 'na data acima'}.
-              {formDespesa.recorrente && !editandoDespesa && ' Os próximos meses também já nascem a pagar.'}
-            </div>
-          )}
-        </>
-      )}
-
+      {/* Recorrente */}
       {editandoDespesa ? (
         formDespesa.recorrente && (
           <div style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px' }}>
@@ -149,11 +226,15 @@ export default function DespesaModal({
           )}
         </>
       )}
+
       <div style={s.field}>
         <label style={s.label}>Observações</label>
         <input style={s.input} placeholder="Opcional..." value={formDespesa.observacoes} onChange={e => setFormDespesa({ ...formDespesa, observacoes: e.target.value })} />
       </div>
-      <button style={s.btnPrimary} onClick={onSalvar} disabled={savingDespesa}>{savingDespesa ? 'Salvando...' : editandoDespesa ? 'Salvar alterações' : 'Registrar despesa'}</button>
+
+      <button style={s.btnPrimary} onClick={onSalvar} disabled={savingDespesa}>
+        {savingDespesa ? 'Salvando...' : editandoDespesa ? 'Salvar alterações' : 'Registrar despesa'}
+      </button>
       <button style={s.btnSecondary} onClick={onClose}>Cancelar</button>
     </Modal>
   )
