@@ -46,8 +46,8 @@ const INFO_INDICADORES = {
   },
   ocupacao: {
     titulo: 'Ocupação da agenda',
-    oque: 'O quanto da sua agenda disponível foi realmente usada no período.',
-    como: 'Sua jornada (início até o fim) ÷ duração padrão do atendimento = vagas por dia. Multiplicamos pelos seus dias de trabalho no período. "Usados" são os atendimentos realizados. Ocupação = usados ÷ vagas.',
+    oque: 'O quanto da sua agenda do mês está ocupada, contando o que já aconteceu e o que já está agendado pra frente.',
+    como: 'Sua jornada (início até o fim) ÷ duração padrão do atendimento = vagas por dia. Multiplicamos pelos seus dias de trabalho no mês inteiro. "Usados" são os agendamentos do mês que não foram cancelados (já realizados ou ainda por vir). Ocupação = usados ÷ vagas.',
     fazer: 'Abaixo de 60%, tem espaço — hora de puxar cliente. Acima de 85%, quase lotada — pense em preço ou equipe.',
     aviso: 'É uma estimativa: usa uma duração só e não desconta folgas nem bloqueios.',
   },
@@ -386,20 +386,22 @@ export default function Metas() {
   }
 
   // 5. Ocupação da agenda (mês-calendário atual + config). Estimativa:
-  // vagas = dias úteis trabalhados × (jornada ÷ duração média do atendimento).
+  // vagas = dias úteis do mês inteiro × (jornada ÷ duração média do atendimento).
+  // "Usados" conta o mês inteiro (passado + já agendado pra frente), não só o que já aconteceu —
+  // assim o quanto falta encaixar no mês não aparece como "vazio" só por ainda não ter passado.
   async function loadOcupacao(cfgParam) {
     const c = cfgParam ?? cfg
     const inicioDate = startOfMonth(new Date())
-    const hoje = new Date()
+    const fimDate = endOfMonth(new Date())
     const inicio = format(inicioDate, 'yyyy-MM-dd')
-    const hojeStr = format(hoje, 'yyyy-MM-dd')
+    const fim = format(fimDate, 'yyyy-MM-dd')
     const dur = c?.duracao_atendimento || 60
     const jornada = horaParaMin(c?.horario_fim || '18:00:00') - horaParaMin(c?.horario_inicio || '09:00:00')
     const slotsDia = Math.max(0, Math.floor(jornada / dur))
     const diasSemana = c?.dias_semana?.length ? c.dias_semana : diasFuncionamento
-    // Quantos de cada dia-da-semana há no período (só dias trabalhados)
+    // Quantos de cada dia-da-semana há no mês inteiro (só dias trabalhados)
     const contagemPorDow = {}
-    eachDayOfInterval({ start: inicioDate, end: hoje }).forEach(d => {
+    eachDayOfInterval({ start: inicioDate, end: fimDate }).forEach(d => {
       const dow = getDay(d)
       if (diasSemana.includes(dow)) contagemPorDow[dow] = (contagemPorDow[dow] || 0) + 1
     })
@@ -407,9 +409,9 @@ export default function Metas() {
       .from('agendamentos')
       .select('data')
       .eq('salao_id', salaoId)
-      .eq('status', 'realizado')
+      .neq('status', 'cancelado')
       .gte('data', inicio)
-      .lte('data', hojeStr)
+      .lte('data', fim)
     const usadasPorDow = {}
     ;(ags || []).forEach(a => { const dow = getDay(parseISO(a.data)); usadasPorDow[dow] = (usadasPorDow[dow] || 0) + 1 })
     const NOMES_DOW = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
@@ -975,7 +977,7 @@ export default function Metas() {
               {/* 5. Ocupação da agenda */}
               <div style={s.kpiCard}>
                 <div style={s.kpiCardTitle}><Gauge size={15} color="var(--pink)" /> Ocupação da agenda {infoBtn('ocupacao')}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelMesAtual} · estimativa</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>{labelMesAtual} inteiro · estimativa</div>
                 {ocupacao === null ? (
                   <div style={s.kpiEmpty}>Calculando...</div>
                 ) : ocupacao.vagas === 0 ? (
@@ -996,7 +998,7 @@ export default function Metas() {
                           {ocupacao.taxa >= 85 ? '🔥 Quase lotada' : ocupacao.taxa >= 60 ? '😊 Boa ocupação' : '📉 Agenda com espaço'}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
-                          {ocupacao.usadas} de {ocupacao.vagas} horários usados
+                          {ocupacao.usadas} de {ocupacao.vagas} horários ocupados
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
                           {ocupacao.taxa >= 85 ? 'Pra crescer, pense em preço ou equipe' : ocupacao.taxa < 60 ? 'Hora de puxar cliente sumida' : ''}
