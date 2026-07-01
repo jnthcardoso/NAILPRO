@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ChevronRight, Plus, UserPlus, Calendar, Sparkles, Bell,
-  TrendingUp, TrendingDown, DollarSign, Target, Clock, Award, Users, ArrowUpRight
+  TrendingUp, TrendingDown, DollarSign, Target, Clock, Award, Users, ArrowUpRight, Check
 } from 'lucide-react'
 import WaIcon from '../components/common/WaIcon'
 import { supabase } from '../lib/supabase'
@@ -16,6 +16,7 @@ import {
   endOfDay as endOfDayFn
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useAssinatura } from '../contexts/AssinaturaContext'
 import TrialBanner from '../components/common/TrialBanner'
 import Skeleton from '../components/common/Skeleton'
 import OportunidadesSemana from '../components/common/OportunidadesSemana'
@@ -32,6 +33,7 @@ export default function Home() {
 
   if (user?.email === EMAIL_DEV) return <FounderDash />
   const { salaoId, isProfissional, membroId, gerenciaTudo } = useSalao()
+  const { isTrialing } = useAssinatura()
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? 'você'
 
@@ -62,6 +64,8 @@ export default function Home() {
   const [totalClientes, setTotalClientes] = useState(null)
   const [totalAgendamentos, setTotalAgendamentos] = useState(null)
   const [lembretesPendentes, setLembretesPendentes] = useState(0)
+  const [lembreteJaEnviado, setLembreteJaEnviado] = useState(false)
+  const [agendaOnlineAtiva, setAgendaOnlineAtiva] = useState(false)
   const [contasAPagar, setContasAPagar] = useState({ qtd: 0, total: 0, vencidas: 0 })
   const [pedidosPublicos, setPedidosPublicos] = useState(0)
   const [modalPedidos, setModalPedidos] = useState(false)
@@ -140,9 +144,10 @@ export default function Home() {
       { data: ags },
       { count: countPedidos },
       { data: pagDia },
+      { count: countLembretesEnviados },
     ] = await Promise.all([
       supabase.from('configuracoes')
-        .select('meta_mensal, nome_salao, lembretes_ativos, dias_semana').eq('salao_id', salaoId).maybeSingle(),
+        .select('meta_mensal, nome_salao, lembretes_ativos, dias_semana, agenda_publica_ativa').eq('salao_id', salaoId).maybeSingle(),
       supabase.from('metas')
         .select('valor_meta')
         .eq('salao_id', salaoId).eq('tipo', 'mes').eq('periodo', periodoAtual)
@@ -189,6 +194,10 @@ export default function Home() {
       supabase.from('pagamentos')
         .select('data, valor, agendamentos(status)').eq('salao_id', salaoId).eq('status', 'pago')
         .gte('data', ontem).lte('data', hoje),
+      // Passo "enviar lembrete" do checklist de onboarding: já mandou algum, alguma vez?
+      supabase.from('agendamentos')
+        .select('*', { count: 'exact', head: true })
+        .eq('salao_id', salaoId).not('lembrete_enviado_em', 'is', null),
     ])
 
     // Pagamento de atendimento cancelado não é receita (mesma regra do Financeiro
@@ -203,6 +212,8 @@ export default function Home() {
     // Config
     if (config?.nome_salao) setNomeSalao(config.nome_salao)
     if (config?.dias_semana?.length) setDiasFuncionamento(config.dias_semana)
+    setAgendaOnlineAtiva(!!config?.agenda_publica_ativa)
+    setLembreteJaEnviado((countLembretesEnviados ?? 0) > 0)
 
     // Meta do mês: prioriza tabela metas, fallback pra config.meta_mensal
     const valorMeta = metaAtual?.valor_meta || config?.meta_mensal || 4000
@@ -373,6 +384,16 @@ export default function Home() {
   const isHoje = dataFiltro === format(new Date(), 'yyyy-MM-dd')
   const contaNova = totalClientes === 0 && totalAgendamentos === 0
 
+  // Checklist de "primeiros passos": cada passo fica marcado com base em dado
+  // real (não em sessão), então sobrevive a navegação/reload. Card some só
+  // quando os 4 estiverem feitos, ou quando o trial acabar/virar assinatura.
+  const passoCliente = (totalClientes ?? 0) > 0
+  const passoAgendamento = (totalAgendamentos ?? 0) > 0
+  const passoLembrete = lembreteJaEnviado
+  const passoAgendaOnline = agendaOnlineAtiva
+  const checklistCompleto = passoCliente && passoAgendamento && passoLembrete && passoAgendaOnline
+  const mostrarChecklist = isTrialing && !checklistCompleto
+
   // Comparativo hoje vs ontem
   const variacaoReceita = stats.receitaOntem > 0
     ? Math.round(((stats.receitaHoje - stats.receitaOntem) / stats.receitaOntem) * 100)
@@ -526,8 +547,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Onboarding pra conta nova */}
-      {!loading && contaNova && (
+      {/* Onboarding: checklist de primeiros passos, some só quando os 4 estiverem feitos */}
+      {!loading && mostrarChecklist && (
         <div style={s.welcomeCard}>
           <div style={s.welcomeHeader}>
             <Sparkles size={20} color="var(--pink)" />
@@ -535,35 +556,55 @@ export default function Home() {
           </div>
           <div style={s.welcomeSub}>Comece dando os primeiros passos abaixo:</div>
           <div style={s.welcomeSteps}>
-            <button style={s.welcomeStep} onClick={() => navigate('/app/clientes')}>
-              <div style={s.welcomeStepIcon}><UserPlus size={18} color="var(--pink)" /></div>
+            <button
+              style={{ ...s.welcomeStep, ...(passoCliente ? s.welcomeStepDone : {}) }}
+              onClick={() => navigate('/app/clientes')}
+            >
+              <div style={{ ...s.welcomeStepIcon, ...(passoCliente ? s.welcomeStepIconDone : {}) }}>
+                {passoCliente ? <Check size={18} color="white" /> : <UserPlus size={18} color="var(--pink)" />}
+              </div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>1. Cadastre sua primeira cliente</div>
-                <div style={s.welcomeStepSub}>Nome, WhatsApp e aniversário</div>
+                <div style={s.welcomeStepSub}>{passoCliente ? 'Feito ✓' : 'Nome, WhatsApp e aniversário'}</div>
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
-            <button style={s.welcomeStep} onClick={() => navigate('/app/agenda')}>
-              <div style={s.welcomeStepIcon}><Calendar size={18} color="var(--pink)" /></div>
+            <button
+              style={{ ...s.welcomeStep, ...(passoAgendamento ? s.welcomeStepDone : {}) }}
+              onClick={() => navigate('/app/agenda')}
+            >
+              <div style={{ ...s.welcomeStepIcon, ...(passoAgendamento ? s.welcomeStepIconDone : {}) }}>
+                {passoAgendamento ? <Check size={18} color="white" /> : <Calendar size={18} color="var(--pink)" />}
+              </div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>2. Crie seu primeiro agendamento</div>
-                <div style={s.welcomeStepSub}>Data, horário e valor</div>
+                <div style={s.welcomeStepSub}>{passoAgendamento ? 'Feito ✓' : 'Data, horário e valor'}</div>
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
-            <button style={s.welcomeStep} onClick={() => navigate('/app/lembretes')}>
-              <div style={s.welcomeStepIcon}><Bell size={18} color="var(--pink)" /></div>
+            <button
+              style={{ ...s.welcomeStep, ...(passoLembrete ? s.welcomeStepDone : {}) }}
+              onClick={() => navigate('/app/lembretes')}
+            >
+              <div style={{ ...s.welcomeStepIcon, ...(passoLembrete ? s.welcomeStepIconDone : {}) }}>
+                {passoLembrete ? <Check size={18} color="white" /> : <Bell size={18} color="var(--pink)" />}
+              </div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>3. Envie lembretes pelo WhatsApp</div>
-                <div style={s.welcomeStepSub}>1 dia antes do atendimento, com 1 clique</div>
+                <div style={s.welcomeStepSub}>{passoLembrete ? 'Feito ✓' : '1 dia antes do atendimento, com 1 clique'}</div>
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
-            <button style={s.welcomeStep} onClick={() => navigate('/app/configuracoes')}>
-              <div style={s.welcomeStepIcon}><Sparkles size={18} color="var(--pink)" /></div>
+            <button
+              style={{ ...s.welcomeStep, ...(passoAgendaOnline ? s.welcomeStepDone : {}) }}
+              onClick={() => navigate('/app/configuracoes')}
+            >
+              <div style={{ ...s.welcomeStepIcon, ...(passoAgendaOnline ? s.welcomeStepIconDone : {}) }}>
+                {passoAgendaOnline ? <Check size={18} color="white" /> : <Sparkles size={18} color="var(--pink)" />}
+              </div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={s.welcomeStepTitle}>4. Ative sua agenda online</div>
-                <div style={s.welcomeStepSub}>Clientes agendam pelo link sem te chamar</div>
+                <div style={s.welcomeStepSub}>{passoAgendaOnline ? 'Feito ✓' : 'Clientes agendam pelo link sem te chamar'}</div>
               </div>
               <ChevronRight size={16} color="var(--text3)" />
             </button>
@@ -992,7 +1033,9 @@ const s = {
   welcomeSub: { fontSize: 12, color: 'var(--text2)', marginBottom: 12 },
   welcomeSteps: { display: 'flex', flexDirection: 'column', gap: 8 },
   welcomeStep: { display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
+  welcomeStepDone: { opacity: 0.6 },
   welcomeStepIcon: { width: 36, height: 36, borderRadius: '50%', background: 'var(--pink-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  welcomeStepIconDone: { background: 'var(--pink)' },
   welcomeStepTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
   welcomeStepSub: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
 }

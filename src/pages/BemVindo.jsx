@@ -128,7 +128,7 @@ export default function BemVindo() {
         {step === 0 && (
           <div style={s.stepBox}>
             <div style={s.iconCircle}><Sparkles size={32} color="white" /></div>
-            <h1 style={s.title}>oi {firstName}, bem-vinda à <span style={{ color: 'var(--pink)' }}>lumen</span></h1>
+            <h1 style={s.title}>Olá {firstName}, bem-vindo(a) ao <span style={{ color: 'var(--pink)' }}>Lumen</span></h1>
             <p style={s.subtitle}>
               Vamos configurar seu espaço em 4 passos rápidos.<br />
               Leva menos de 1 minuto. ✨
