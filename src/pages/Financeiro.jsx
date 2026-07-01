@@ -40,7 +40,7 @@ export default function Financeiro() {
 
   // ── Estados de UI ─────────────────────────────────────────────────────────
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const [filtro, setFiltro] = useState('todos')
+  const [filtro, setFiltro] = useState('pendente')
   const [filtroDespesa, setFiltroDespesa] = useState('todas')
   const [periodoSel, setPeriodoSel] = useState(new Date())
   const [rangeMode, setRangeMode] = useState('mes')
@@ -395,8 +395,8 @@ export default function Financeiro() {
       {/* ── ABA: Receitas ── */}
       {!loading && tab === 'receitas' && (
         <TabReceitas
-          filtrados={filtrados} filtro={filtro} setFiltro={setFiltro}
-          cobranca={cobranca} setShowModal={setShowModal}
+          pagamentos={pagamentos} filtro={filtro} setFiltro={setFiltro}
+          cobranca={cobranca} setShowModal={setShowModal} isDesktop={isDesktop}
           marcarCobrado={marcarCobrado} reverterParaPendente={reverterParaPendente}
           abrirConfirmarPago={abrirConfirmarPago}
         />
