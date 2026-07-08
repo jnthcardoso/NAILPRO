@@ -117,7 +117,9 @@ export default function Landing() {
 
   const whatsappContato = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Quero saber mais sobre a Lumen 💅')
 
-  const abrirWhatsapp = (e) => { trackFaleConosco(); window.open(whatsappContato, '_blank') }
+  // Os links "Fale conosco" já são <a href target="_blank">, o navegador abre
+  // a aba sozinho — aqui só dispara o tracking (Lead), sem abrir de novo.
+  const abrirWhatsapp = () => trackFaleConosco()
   const irPlanos = () => { trackVerPlanos(); scrollTo('planos') }
 
   return (
