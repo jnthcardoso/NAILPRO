@@ -7,6 +7,7 @@ import AtualizacaoPWA from './components/common/AtualizacaoPWA'
 // código. Assim a landing/login/agenda pública não carregam as telas internas
 // pesadas (Agenda, Financeiro, etc.) e abrem muito mais rápido no celular.
 const Login = lazy(() => import('./pages/Login'))
+const CriarConta = lazy(() => import('./pages/CriarConta'))
 const Home = lazy(() => import('./pages/Home'))
 const Agenda = lazy(() => import('./pages/Agenda'))
 const Clientes = lazy(() => import('./pages/Clientes'))
@@ -147,6 +148,7 @@ export default function App() {
             {/* Rotas públicas */}
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/criar" element={<PublicRoute><CriarConta /></PublicRoute>} />
             <Route path="/agendar/:slug" element={<AgendaPublica />} />
             <Route path="/c/:token" element={<ConfirmarAgendamento />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />

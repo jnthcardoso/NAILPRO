@@ -73,7 +73,7 @@ export default function Landing() {
   // Cadastro com plano pré-selecionado (botões "Assinar agora" dos cards)
   const irComPlano = (planoId) => {
     sessionStorage.setItem('lumen_plano_intencao', JSON.stringify({ plano: planoId, ciclo }))
-    navigate('/login?modo=cadastro')
+    navigate('/criar')
   }
   const [menuAberto, setMenuAberto] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -212,7 +212,7 @@ export default function Landing() {
               A Lumen cuida da gestão enquanto você cuida das unhas.
             </p>
             <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
-              <button style={s.ctaPrimary} onClick={() => navigate('/login?modo=cadastro')}>Comece agora</button>
+              <button style={s.ctaPrimary} onClick={() => navigate('/criar')}>Comece agora</button>
               <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
@@ -376,7 +376,7 @@ export default function Landing() {
         <h2 style={s.ctaFinalTitulo}>pronta pra organizar seu salão?</h2>
         <p style={s.ctaFinalSub}>Crie sua conta agora — com garantia de 7 dias.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button style={s.ctaPrimary} onClick={() => navigate('/login?modo=cadastro')}>Comece agora</button>
+          <button style={s.ctaPrimary} onClick={() => navigate('/criar')}>Comece agora</button>
           <button style={{ ...s.ctaGhost, color: BERRY, borderColor: BERRY, background: 'transparent' }} onClick={() => scrollTo('planos')}>Ver planos</button>
         </div>
       </section>

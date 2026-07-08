@@ -14,7 +14,7 @@ export default function Indicacao() {
   // Nome que identifica quem indicou (vai no campo "Quem te indicou?" do cadastro).
   const nome = (user?.user_metadata?.full_name || user?.email?.split('@')[0] || '').trim()
   const origem = typeof window !== 'undefined' ? window.location.origin : 'https://lumengestaoempresarial.com.br'
-  const linkIndicacao = `${origem}/login?modo=cadastro&indicacao=${encodeURIComponent(nome)}`
+  const linkIndicacao = `${origem}/criar?indicacao=${encodeURIComponent(nome)}`
 
   const msgWhats = `Oi! Eu uso a Lumen pra organizar minha agenda, clientes e financeiro 💅\n\nSe você se cadastrar pelo meu link, ganha 50% de desconto no primeiro mês:\n${linkIndicacao}`
 
@@ -93,7 +93,7 @@ export default function Indicacao() {
           </div>
         ) : (
           <div style={s.acaoWrap}>
-            <button style={s.btnPrincipal} onClick={() => navigate('/login?modo=cadastro')}>
+            <button style={s.btnPrincipal} onClick={() => navigate('/criar')}>
               Criar minha conta grátis <ArrowRight size={16} />
             </button>
             <p style={s.obs}>

@@ -4,26 +4,27 @@ import { ChevronLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { LumenLogo } from '../components/common/Brand'
 import GoogleIcon from '../components/common/GoogleIcon'
-import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
-import { trackCadastro } from '../lib/analytics'
+import { validarEmail, validarSenha } from '../lib/formatters'
+import { s } from './auth/authStyles'
 
 export default function Login() {
-  const { user, signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
-  // Se vier com ?modo=cadastro (ex: botão "Começar grátis" da landing), abre signup direto
-  const [mode, setMode] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    return params.get('modo') === 'cadastro' ? 'signup' : 'login'
-  })
-  const [form, setForm] = useState(() => {
-    // Pré-preenche "quem indicou" se a pessoa chegou por um link ?indicacao=...
-    const indic = new URLSearchParams(window.location.search).get('indicacao') || ''
-    return { name: '', email: '', password: '', indicadoPor: indic }
-  })
-  const [aceitouTermos, setAceitouTermos] = useState(false)
+  const { user, signIn, signInWithGoogle, resetPassword } = useAuth()
+
+  // Compat: links antigos usavam /login?modo=cadastro — manda pra tela dedicada,
+  // preservando outros parâmetros (ex: ?indicacao=...).
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('modo') === 'cadastro') {
+    params.delete('modo')
+    const resto = params.toString()
+    return <Navigate to={`/criar${resto ? `?${resto}` : ''}`} replace />
+  }
+
+  const [mode, setMode] = useState('login') // 'login' | 'recuperar'
+  const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  const [msg, setMsg] = useState('') // mensagem de sucesso (ex: recuperação enviada)
+  const [msg, setMsg] = useState('')
 
   if (user) return <Navigate to="/app" replace />
 
@@ -35,8 +36,6 @@ export default function Login() {
       setError('Não foi possível continuar com o Google. Tente novamente.')
       setGoogleLoading(false)
     }
-    // Em caso de sucesso o navegador é redirecionado para o Google — não há
-    // necessidade de setGoogleLoading(false) aqui.
   }
 
   const handleRecuperar = async (e) => {
@@ -52,220 +51,114 @@ export default function Login() {
 
   const irPara = (novoModo) => { setMode(novoModo); setError(''); setMsg('') }
 
-  const handle = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
-
-    // Validações
-    if (!validarEmail(form.email)) {
-      setError('Digite um e-mail válido.')
-      return
-    }
-    if (!validarSenha(form.password)) {
-      setError('A senha deve ter no mínimo 6 caracteres.')
-      return
-    }
-    if (mode === 'signup') {
-      if (!validarNome(form.name)) {
-        setError('Digite seu nome completo.')
-        return
-      }
-      if (!aceitouTermos) {
-        setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade.')
-        return
-      }
-    }
+    if (!validarEmail(form.email)) { setError('Digite um e-mail válido.'); return }
+    if (!validarSenha(form.password)) { setError('A senha deve ter no mínimo 6 caracteres.'); return }
     setLoading(true)
-    if (mode === 'login') {
-      const { error } = await signIn(form.email, form.password)
-      if (error) setError('E-mail ou senha incorretos.')
-    } else {
-      const { data, error } = await signUp(form.email, form.password, form.name, form.indicadoPor)
-      if (error) {
-        // Traduz a causa mais comum; evita expor a mensagem técnica em inglês.
-        setError(/already registered|already exists|user already/i.test(error.message)
-          ? 'Este e-mail já tem conta. Tente entrar.'
-          : /rate limit|too many|after \d+ seconds/i.test(error.message)
-          ? 'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.'
-          : 'Não foi possível criar a conta. Tente novamente.')
-      } else {
-        trackCadastro()
-        // Com confirmação de e-mail ligada, o Supabase não devolve sessão:
-        // a pessoa precisa clicar no link enviado por e-mail antes de entrar.
-        // Sem sessão e sem aviso, ela ficaria travada nesta tela.
-        if (!data?.session) {
-          setMode('login')
-          setMsg('Conta criada! Enviamos um link de confirmação para o seu e-mail. Confira sua caixa de entrada (e o spam) e clique no link para ativar a conta e entrar.')
-        }
-      }
-    }
+    const { error } = await signIn(form.email, form.password)
+    if (error) setError('E-mail ou senha incorretos.')
     setLoading(false)
   }
 
   return (
     <div style={s.root}>
       <div className="fade-in" style={s.card}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <LumenLogo size={32} variant="reverso" layout="horizontal" />
         </div>
-        <p style={s.sub}>iluminando a gestão, impulsionando o seu talento</p>
-        <div style={{ textAlign: 'center', marginBottom: 6 }}>
-          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
+
+        {mode === 'recuperar' ? (
+          <>
+            <h1 style={s.title}>Redefinir senha</h1>
+            <p style={s.subtitle}>Enviamos um link para você criar uma nova senha</p>
+            <form onSubmit={handleRecuperar} style={s.form}>
+              <div style={s.field}>
+                <label htmlFor="rec-email" style={s.label}>E-mail</label>
+                <input
+                  id="rec-email"
+                  style={s.input}
+                  type="email"
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  required
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+              {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+              {msg && <div style={s.success}>{msg}</div>}
+              <button style={s.btn} type="submit" disabled={loading}>
+                {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+              </button>
+              <button type="button" style={s.linkBtn} onClick={() => irPara('login')}>
+                ← Voltar para o login
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <h1 style={s.title}>Entrar na Lumen</h1>
+            <p style={s.subtitle}>Acesse sua conta para continuar</p>
+
+            <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
+              <GoogleIcon size={18} />
+              {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
+            </button>
+
+            <div style={s.divider}><span style={s.dividerLine} /><span style={s.dividerText}>ou</span><span style={s.dividerLine} /></div>
+
+            <form onSubmit={handleLogin} style={s.form}>
+              <div style={s.field}>
+                <label htmlFor="login-email" style={s.label}>E-mail</label>
+                <input
+                  id="login-email"
+                  style={s.input}
+                  type="email"
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  required
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+              <div style={s.field}>
+                <label htmlFor="login-password" style={s.label}>Senha</label>
+                <input
+                  id="login-password"
+                  style={s.input}
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                />
+              </div>
+              <button type="button" style={s.esqueciBtn} onClick={() => irPara('recuperar')}>
+                Esqueci minha senha
+              </button>
+              {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+              {msg && <div style={s.success}>{msg}</div>}
+              <button style={s.btn} type="submit" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
+              </button>
+            </form>
+
+            <p style={s.switchRow}>
+              Não tem uma conta?{' '}
+              <Link to="/criar" style={s.switchLink}>Criar conta</Link>
+            </p>
+          </>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: 14 }}>
+          <Link to="/" style={s.voltar}>
             <ChevronLeft size={13} strokeWidth={2} />
             voltar ao site
           </Link>
         </div>
-
-        {mode !== 'recuperar' && (
-          <div style={s.tabs}>
-            <button
-              style={{ ...s.tab, ...(mode === 'login' ? s.tabActive : {}) }}
-              onClick={() => irPara('login')}
-            >
-              Entrar
-            </button>
-            <button
-              style={{ ...s.tab, ...(mode === 'signup' ? s.tabActive : {}) }}
-              onClick={() => irPara('signup')}
-            >
-              Criar conta
-            </button>
-          </div>
-        )}
-
-        {mode !== 'recuperar' && (
-          <>
-            <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
-              <GoogleIcon size={18} />
-              {googleLoading ? 'Redirecionando...' : mode === 'login' ? 'Entrar com Google' : 'Criar conta com Google'}
-            </button>
-            {mode === 'signup' && (
-              <p style={s.consentGoogle}>
-                Ao continuar, você concorda com os{' '}
-                <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
-                {' '}e a{' '}
-                <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
-              </p>
-            )}
-            <div style={s.divider}><span style={s.dividerLine} /><span style={s.dividerText}>ou</span><span style={s.dividerLine} /></div>
-          </>
-        )}
-
-        {mode === 'recuperar' ? (
-          <form onSubmit={handleRecuperar} style={s.form}>
-            <p style={s.recuperarTexto}>
-              Informe o e-mail da sua conta e enviaremos um link para você criar uma nova senha.
-            </p>
-            <div style={s.field}>
-              <label htmlFor="rec-email" style={s.label}>E-mail</label>
-              <input
-                id="rec-email"
-                style={s.input}
-                type="email"
-                placeholder="seu@email.com"
-                autoComplete="email"
-                required
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-            {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
-            {msg && <div style={s.success}>{msg}</div>}
-            <button style={s.btn} type="submit" disabled={loading}>
-              {loading ? 'Enviando...' : 'Enviar link de recuperação'}
-            </button>
-            <button type="button" style={s.linkBtn} onClick={() => irPara('login')}>
-              ← Voltar para o login
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handle} style={s.form}>
-            {mode === 'signup' && (
-              <div style={s.field}>
-                <label htmlFor="login-name" style={s.label}>Seu nome</label>
-                <input
-                  id="login-name"
-                  style={s.input}
-                  type="text"
-                  placeholder="Ex: Camila Souza"
-                  autoComplete="name"
-                  required
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-            )}
-            <div style={s.field}>
-              <label htmlFor="login-email" style={s.label}>E-mail</label>
-              <input
-                id="login-email"
-                style={s.input}
-                type="email"
-                placeholder="seu@email.com"
-                autoComplete="email"
-                required
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-            <div style={s.field}>
-              <label htmlFor="login-password" style={s.label}>Senha</label>
-              <input
-                id="login-password"
-                style={s.input}
-                type="password"
-                placeholder="••••••••"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                required
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-              />
-            </div>
-            {mode === 'login' && (
-              <button type="button" style={s.esqueciBtn} onClick={() => irPara('recuperar')}>
-                Esqueci minha senha
-              </button>
-            )}
-            {mode === 'signup' && (
-              <div style={s.field}>
-                <label htmlFor="login-indicacao" style={s.label}>Quem te indicou? <span style={{ opacity: 0.6, fontWeight: 400 }}>(opcional)</span></label>
-                <input
-                  id="login-indicacao"
-                  style={s.input}
-                  type="text"
-                  placeholder="Nome ou WhatsApp de quem indicou"
-                  value={form.indicadoPor}
-                  onChange={e => setForm({ ...form, indicadoPor: e.target.value })}
-                />
-              </div>
-            )}
-            {mode === 'signup' && (
-              <label style={s.termosRow}>
-                <input
-                  type="checkbox"
-                  checked={aceitouTermos}
-                  onChange={e => setAceitouTermos(e.target.checked)}
-                  style={s.checkbox}
-                />
-                <span>
-                  Li e aceito os{' '}
-                  <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
-                  {' '}e a{' '}
-                  <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
-                </span>
-              </label>
-            )}
-            {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
-            {msg && <div style={s.success}>{msg}</div>}
-            <button
-              style={s.btn}
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? (mode === 'login' ? 'Entrando...' : 'Criando conta...') : mode === 'login' ? 'Entrar' : 'Criar minha conta'}
-            </button>
-          </form>
-        )}
 
         <div style={s.footer}>
           <Link to="/termos" style={s.footerLink}>Termos</Link>
@@ -275,220 +168,4 @@ export default function Login() {
       </div>
     </div>
   )
-}
-
-const s = {
-  root: {
-    minHeight: '100vh',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'radial-gradient(circle at top, #2C1422 0%, var(--brand-dark-bg, #170D14) 100%)',
-    padding: 20,
-    overflowY: 'auto',
-  },
-  card: {
-    background: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 24,
-    padding: '18px 28px',
-    width: '100%',
-    maxWidth: 390,
-    margin: 'auto',
-    border: '1px solid rgba(255, 255, 255, 0.07)',
-    boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-  },
-  sub: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.55)',
-    marginTop: 2,
-    marginBottom: 10,
-    fontFamily: "'Instrument Serif', serif",
-    fontStyle: 'italic',
-    letterSpacing: '0.5px'
-  },
-  tabs: {
-    display: 'flex',
-    background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 'var(--radius-sm)',
-    padding: 3,
-    marginBottom: 12,
-    gap: 3,
-    border: '1px solid rgba(255, 255, 255, 0.06)'
-  },
-  tab: {
-    flex: 1,
-    padding: '8px 0',
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 500,
-    background: 'transparent',
-    color: 'rgba(255, 255, 255, 0.6)',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Bricolage Grotesque', sans-serif"
-  },
-  tabActive: { 
-    background: 'var(--gold, #E6C260)', 
-    color: 'var(--brand-dark-bg, #170D14)', 
-    boxShadow: 'var(--shadow-gold)', 
-    fontWeight: 800 
-  },
-  btnGoogle: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    width: '100%',
-    background: '#fff',
-    color: '#3c4043',
-    border: '1px solid rgba(0,0,0,0.1)',
-    borderRadius: 'var(--radius-sm)',
-    padding: '10px 0',
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontFamily: "'Bricolage Grotesque', sans-serif",
-    marginBottom: 4,
-  },
-  consentGoogle: {
-    fontSize: 11.5,
-    color: 'rgba(255,255,255,0.55)',
-    lineHeight: 1.4,
-    textAlign: 'center',
-    margin: '4px 0 0',
-  },
-  divider: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    margin: '12px 0',
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    background: 'rgba(255,255,255,0.12)',
-  },
-  dividerText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
-  },
-  form: { display: 'flex', flexDirection: 'column', gap: 8 },
-  field: { display: 'flex', flexDirection: 'column', gap: 4 },
-  label: {
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'rgba(255, 255, 255, 0.85)',
-    letterSpacing: '0.3px'
-  },
-  input: {
-    padding: '9px 14px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    fontSize: 14,
-    color: '#FFFFFF',
-    background: 'rgba(255, 255, 255, 0.04)',
-    outline: 'none',
-    transition: 'all 0.22s ease',
-  },
-  error: {
-    background: 'rgba(185, 28, 28, 0.15)',
-    color: '#FF8A8A',
-    fontSize: 13,
-    padding: '10px 14px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid rgba(185, 28, 28, 0.3)',
-    fontWeight: 500
-  },
-  success: {
-    background: 'rgba(21, 128, 61, 0.18)',
-    color: '#86EFAC',
-    fontSize: 13,
-    padding: '10px 14px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid rgba(21,128,61,0.35)',
-    fontWeight: 500,
-    lineHeight: 1.5,
-  },
-  recuperarTexto: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    lineHeight: 1.55,
-    margin: '0 0 2px',
-  },
-  esqueciBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--gold, #E6C260)',
-    fontSize: 12.5,
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    alignSelf: 'flex-end',
-    padding: 0,
-    marginTop: -4,
-  },
-  linkBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    marginTop: 2,
-  },
-  btn: {
-    background: 'var(--gold, #E6C260)',
-    color: 'var(--brand-dark-bg, #170D14)',
-    border: 'none',
-    borderRadius: 'var(--radius-sm)',
-    padding: '11px 0',
-    fontSize: 14,
-    fontWeight: 800,
-    cursor: 'pointer',
-    marginTop: 2,
-    boxShadow: 'var(--shadow-gold)',
-    transition: 'all 0.2s ease',
-    fontFamily: "'Bricolage Grotesque', sans-serif",
-  },
-  termosRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 8,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
-    cursor: 'pointer',
-    lineHeight: 1.4,
-    padding: '2px 0',
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    marginTop: 2,
-    cursor: 'pointer',
-    accentColor: 'var(--gold, #E6C260)',
-    flexShrink: 0,
-  },
-  linkTermos: {
-    color: 'var(--gold, #E6C260)',
-    textDecoration: 'underline',
-    fontWeight: 600,
-  },
-  footer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 10,
-    fontSize: 12,
-  },
-  footerLink: {
-    color: 'rgba(255,255,255,0.5)',
-    textDecoration: 'none',
-    fontWeight: 500,
-  },
 }
