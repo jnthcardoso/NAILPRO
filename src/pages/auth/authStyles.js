@@ -2,6 +2,7 @@
 // card enxuto, uma única ação por tela, sem abas.
 export const s = {
   root: {
+    position: 'relative',
     minHeight: '100vh',
     height: '100%',
     display: 'flex',
@@ -22,13 +23,15 @@ export const s = {
     WebkitBackdropFilter: 'blur(20px)',
   },
   voltar: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
     display: 'inline-flex',
     alignItems: 'center',
     gap: 3,
     fontSize: 12,
     color: 'rgba(255,255,255,0.5)',
     textDecoration: 'none',
-    marginBottom: 18,
   },
   title: {
     fontSize: 19,
@@ -209,28 +212,9 @@ export const s = {
     textDecoration: 'underline',
     fontWeight: 600,
   },
-  switchRow: {
-    textAlign: 'center',
-    marginTop: 18,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.55)',
-  },
   switchLink: {
     color: 'var(--gold, #E6C260)',
     textDecoration: 'none',
     fontWeight: 700,
-  },
-  footer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 14,
-    fontSize: 12,
-  },
-  footerLink: {
-    color: 'rgba(255,255,255,0.5)',
-    textDecoration: 'none',
-    fontWeight: 500,
   },
 }

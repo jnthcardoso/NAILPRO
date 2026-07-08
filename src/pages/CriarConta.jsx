@@ -61,6 +61,10 @@ export default function CriarConta() {
 
   return (
     <div style={s.root}>
+      <Link to="/" style={s.voltar}>
+        <ChevronLeft size={13} strokeWidth={2} />
+        voltar ao site
+      </Link>
       <div className="fade-in auth-card" style={s.card}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <LumenLogo size={32} variant="reverso" layout="horizontal" />
@@ -179,18 +183,6 @@ export default function CriarConta() {
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: 14 }}>
-          <Link to="/" style={s.voltar}>
-            <ChevronLeft size={13} strokeWidth={2} />
-            voltar ao site
-          </Link>
-        </div>
-
-        <div style={s.footer}>
-          <Link to="/termos" style={s.footerLink}>Termos</Link>
-          <span style={{ opacity: 0.3 }}>·</span>
-          <Link to="/privacidade" style={s.footerLink}>Privacidade</Link>
-        </div>
       </div>
     </div>
   )
