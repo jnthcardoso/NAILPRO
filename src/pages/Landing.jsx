@@ -168,7 +168,7 @@ export default function Landing() {
 
           {/* Botões — desktop */}
           <div style={s.navBtns} className="lp-nav-btns">
-            <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.navBtnWhats}>
+            <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.navBtnWhats} onClick={abrirWhatsapp}>
               <WaIcon size={14} color="#fff" />
               Fale conosco
             </a>
@@ -193,7 +193,7 @@ export default function Landing() {
               <Gift size={15} /> Indique e ganhe
             </Link>
             <div style={s.mobileDivider} />
-            <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.mobileBtnWhats}>
+            <a href={whatsappContato} target="_blank" rel="noreferrer" style={s.mobileBtnWhats} onClick={abrirWhatsapp}>
               <WaIcon size={14} color="#fff" /> Fale conosco
             </a>
             <button style={s.mobileBtnLogin} onClick={() => { setMenuAberto(false); ir() }}>
@@ -459,6 +459,7 @@ export default function Landing() {
               target="_blank"
               rel="noreferrer"
               style={s.footerBtnWhats}
+              onClick={abrirWhatsapp}
             >
               <WaIcon size={15} /> Fale conosco
             </a>
