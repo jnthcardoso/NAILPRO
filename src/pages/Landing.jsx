@@ -743,7 +743,7 @@ const s = {
   page: { background: 'var(--cream, #FBF6F8)', color: 'var(--text, #180712)', minHeight: '100vh', overflowX: 'hidden' },
 
   /* ── Navbar ── */
-  navbar: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: BERRY, transition: 'box-shadow 0.2s' },
+  navbar: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: BERRY, boxShadow: '0 2px 10px rgba(0,0,0,0.18)', transition: 'box-shadow 0.2s' },
   navbarScrolled: { boxShadow: '0 4px 24px rgba(0,0,0,0.25)' },
   navInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 64, maxWidth: 1100, margin: '0 auto' },
   // O "esconder no celular" é feito pela classe .lp-nav-links no <style> acima
