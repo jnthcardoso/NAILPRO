@@ -219,7 +219,7 @@ export default function Landing() {
             </p>
             <div className="hero-ctas-inner" style={{ ...s.heroCtas, justifyContent: 'flex-start' }}>
               <button style={s.ctaPrimary} onClick={() => navigate('/criar')}>Comece agora</button>
-              <button style={s.ctaGhost} onClick={() => scrollTo('planos')}>Ver planos</button>
+              <button style={s.ctaGhost} onClick={irPlanos}>Ver planos</button>
             </div>
             <div className="hero-nota-inner" style={{ ...s.heroNota, marginTop: 20 }}>
               "Finalmente sei quanto ganho de verdade." — Letícia, nail designer
@@ -383,7 +383,7 @@ export default function Landing() {
         <p style={s.ctaFinalSub}>Crie sua conta agora — com garantia de 7 dias.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button style={s.ctaPrimary} onClick={() => navigate('/criar')}>Comece agora</button>
-          <button style={{ ...s.ctaGhost, color: BERRY, borderColor: BERRY, background: 'transparent' }} onClick={() => scrollTo('planos')}>Ver planos</button>
+          <button style={{ ...s.ctaGhost, color: BERRY, borderColor: BERRY, background: 'transparent' }} onClick={irPlanos}>Ver planos</button>
         </div>
       </section>
 
