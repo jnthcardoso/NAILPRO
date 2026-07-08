@@ -159,7 +159,7 @@ export default function Landing() {
           {/* Links — desktop */}
           <nav style={s.navLinks} className="lp-nav-links">
             {NAV_LINKS.map(l => (
-              <button key={l.label} style={s.navLink} onClick={() => scrollTo(l.id)}>{l.label}</button>
+              <button key={l.label} style={s.navLink} onClick={() => l.id === 'planos' ? irPlanos() : scrollTo(l.id)}>{l.label}</button>
             ))}
             <Link to="/indicacao" style={s.navLinkIndica} title="Indique e ganhe">
               <Gift size={15} /> Indique e ganhe
@@ -185,7 +185,7 @@ export default function Landing() {
         {menuAberto && (
           <div style={s.mobileMenu}>
             {NAV_LINKS.map(l => (
-              <button key={l.label} style={s.mobileLink} onClick={() => { scrollTo(l.id); setMenuAberto(false) }}>
+              <button key={l.label} style={s.mobileLink} onClick={() => { l.id === 'planos' ? irPlanos() : scrollTo(l.id); setMenuAberto(false) }}>
                 {l.label}
               </button>
             ))}
