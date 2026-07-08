@@ -56,6 +56,16 @@ const signUp = async (email, password, name, indicadoPor) => {
     return { data, error }
   }
 
+  // Login/cadastro com Google — mesma chamada cobre os dois casos (o Supabase
+  // cria a conta automaticamente se o e-mail do Google ainda não existir).
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/app` },
+    })
+    return { error }
+  }
+
   const signOut = async () => { await supabase.auth.signOut() }
 
   // Envia e-mail com link para redefinir a senha
@@ -73,7 +83,7 @@ const signUp = async (email, password, name, indicadoPor) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword, updatePassword }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

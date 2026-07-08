@@ -3,11 +3,12 @@ import { Navigate, Link } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { LumenLogo } from '../components/common/Brand'
+import GoogleIcon from '../components/common/GoogleIcon'
 import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
 import { trackCadastro } from '../lib/analytics'
 
 export default function Login() {
-  const { user, signIn, signUp, resetPassword } = useAuth()
+  const { user, signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
   // Se vier com ?modo=cadastro (ex: botão "Começar grátis" da landing), abre signup direto
   const [mode, setMode] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -20,10 +21,23 @@ export default function Login() {
   })
   const [aceitouTermos, setAceitouTermos] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('') // mensagem de sucesso (ex: recuperação enviada)
 
   if (user) return <Navigate to="/app" replace />
+
+  const handleGoogle = async () => {
+    setError(''); setMsg('')
+    setGoogleLoading(true)
+    const { error } = await signInWithGoogle()
+    if (error) {
+      setError('Não foi possível continuar com o Google. Tente novamente.')
+      setGoogleLoading(false)
+    }
+    // Em caso de sucesso o navegador é redirecionado para o Google — não há
+    // necessidade de setGoogleLoading(false) aqui.
+  }
 
   const handleRecuperar = async (e) => {
     e.preventDefault()
@@ -117,6 +131,24 @@ export default function Login() {
               Criar conta
             </button>
           </div>
+        )}
+
+        {mode !== 'recuperar' && (
+          <>
+            <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
+              <GoogleIcon size={18} />
+              {googleLoading ? 'Redirecionando...' : mode === 'login' ? 'Entrar com Google' : 'Criar conta com Google'}
+            </button>
+            {mode === 'signup' && (
+              <p style={s.consentGoogle}>
+                Ao continuar, você concorda com os{' '}
+                <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
+                {' '}e a{' '}
+                <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
+              </p>
+            )}
+            <div style={s.divider}><span style={s.dividerLine} /><span style={s.dividerText}>ou</span><span style={s.dividerLine} /></div>
+          </>
         )}
 
         {mode === 'recuperar' ? (
@@ -305,6 +337,45 @@ const s = {
     color: 'var(--brand-dark-bg, #170D14)', 
     boxShadow: 'var(--shadow-gold)', 
     fontWeight: 800 
+  },
+  btnGoogle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
+    background: '#fff',
+    color: '#3c4043',
+    border: '1px solid rgba(0,0,0,0.1)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '10px 0',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: "'Bricolage Grotesque', sans-serif",
+    marginBottom: 4,
+  },
+  consentGoogle: {
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.55)',
+    lineHeight: 1.4,
+    textAlign: 'center',
+    margin: '4px 0 0',
+  },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    margin: '12px 0',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    background: 'rgba(255,255,255,0.12)',
+  },
+  dividerText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
   },
   form: { display: 'flex', flexDirection: 'column', gap: 8 },
   field: { display: 'flex', flexDirection: 'column', gap: 4 },
