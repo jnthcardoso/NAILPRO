@@ -64,15 +64,21 @@ export default function Login() {
 
   return (
     <div style={s.root}>
-      <div className="fade-in" style={s.card}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      <div className="fade-in auth-card" style={s.card}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <LumenLogo size={32} variant="reverso" layout="horizontal" />
         </div>
 
+        {mode === 'login' && (
+          <p style={s.switchTop}>
+            Não tem uma conta? <Link to="/criar" style={s.switchLink}>Criar conta</Link>
+          </p>
+        )}
+
         {mode === 'recuperar' ? (
           <>
-            <h1 style={s.title}>Redefinir senha</h1>
-            <p style={s.subtitle}>Enviamos um link para você criar uma nova senha</p>
+            <h1 style={{ ...s.title, textAlign: 'center', marginTop: 8 }}>Redefinir senha</h1>
+            <p style={{ ...s.subtitle, textAlign: 'center' }}>Enviamos um link para você criar uma nova senha</p>
             <form onSubmit={handleRecuperar} style={s.form}>
               <div style={s.field}>
                 <label htmlFor="rec-email" style={s.label}>E-mail</label>
@@ -98,59 +104,59 @@ export default function Login() {
             </form>
           </>
         ) : (
-          <>
-            <h1 style={s.title}>Entrar na Lumen</h1>
-            <p style={s.subtitle}>Acesse sua conta para continuar</p>
+          <div className="auth-columns">
+            <div className="auth-col-form">
+              <h1 style={s.title}>Entrar na Lumen</h1>
+              <p style={s.subtitle}>Acesse sua conta para continuar</p>
 
-            <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
-              <GoogleIcon size={18} />
-              {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
-            </button>
+              <form onSubmit={handleLogin} style={s.form}>
+                <div style={s.field}>
+                  <label htmlFor="login-email" style={s.label}>E-mail</label>
+                  <input
+                    id="login-email"
+                    style={s.input}
+                    type="email"
+                    placeholder="seu@email.com"
+                    autoComplete="email"
+                    required
+                    value={form.email}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
+                  />
+                </div>
+                <div style={s.field}>
+                  <label htmlFor="login-password" style={s.label}>Senha</label>
+                  <input
+                    id="login-password"
+                    style={s.input}
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    required
+                    value={form.password}
+                    onChange={e => setForm({ ...form, password: e.target.value })}
+                  />
+                </div>
+                <button type="button" style={s.esqueciBtn} onClick={() => irPara('recuperar')}>
+                  Esqueci minha senha
+                </button>
+                {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+                {msg && <div style={s.success}>{msg}</div>}
+                <button style={s.btn} type="submit" disabled={loading}>
+                  {loading ? 'Entrando...' : 'Entrar'}
+                </button>
+              </form>
+            </div>
 
-            <div style={s.divider}><span style={s.dividerLine} /><span style={s.dividerText}>ou</span><span style={s.dividerLine} /></div>
-
-            <form onSubmit={handleLogin} style={s.form}>
-              <div style={s.field}>
-                <label htmlFor="login-email" style={s.label}>E-mail</label>
-                <input
-                  id="login-email"
-                  style={s.input}
-                  type="email"
-                  placeholder="seu@email.com"
-                  autoComplete="email"
-                  required
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-              <div style={s.field}>
-                <label htmlFor="login-password" style={s.label}>Senha</label>
-                <input
-                  id="login-password"
-                  style={s.input}
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  required
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
-                />
-              </div>
-              <button type="button" style={s.esqueciBtn} onClick={() => irPara('recuperar')}>
-                Esqueci minha senha
+            <div className="auth-col-google">
+              <div style={s.googleCircle}><GoogleIcon size={22} /></div>
+              <h2 style={s.googleTitle}>Entrar mais rápido</h2>
+              <p style={s.googleText}>Use sua conta Google, sem precisar lembrar senha</p>
+              <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
+                <GoogleIcon size={18} />
+                {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
               </button>
-              {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
-              {msg && <div style={s.success}>{msg}</div>}
-              <button style={s.btn} type="submit" disabled={loading}>
-                {loading ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
-
-            <p style={s.switchRow}>
-              Não tem uma conta?{' '}
-              <Link to="/criar" style={s.switchLink}>Criar conta</Link>
-            </p>
-          </>
+            </div>
+          </div>
         )}
 
         <div style={{ textAlign: 'center', marginTop: 14 }}>

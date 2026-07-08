@@ -503,6 +503,47 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* Login/criar conta — 1 coluna empilhada no mobile, 2 colunas (form + Google)
+   lado a lado no desktop, sem precisar rolar a tela. */
+.auth-card {
+  width: 100%;
+  max-width: 390px;
+}
+.auth-columns {
+  display: flex;
+  flex-direction: column;
+}
+.auth-col-google {
+  display: none;
+}
+@media (min-width: 860px) {
+  .auth-card {
+    max-width: 720px;
+  }
+  .auth-columns {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .auth-col-form {
+    flex: 1;
+    min-width: 0;
+    padding-right: 36px;
+  }
+  .auth-col-google {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+    padding-left: 36px;
+    margin-left: 36px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
