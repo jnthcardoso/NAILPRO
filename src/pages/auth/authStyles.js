@@ -64,14 +64,7 @@ export const s = {
     fontSize: 14,
     fontWeight: 700,
     color: '#fff',
-    margin: 0,
-  },
-  googleText: {
-    fontSize: 12.5,
-    color: 'rgba(255,255,255,0.5)',
-    lineHeight: 1.5,
-    margin: 0,
-    maxWidth: 230,
+    margin: '0 0 4px',
   },
   btnGoogle: {
     display: 'flex',

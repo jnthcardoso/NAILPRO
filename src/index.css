@@ -504,10 +504,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Login/criar conta — 1 coluna empilhada no mobile, 2 colunas (form + Google)
-   lado a lado no desktop, sem precisar rolar a tela. */
-.auth-card {
+   lado a lado no desktop, sem precisar rolar a tela. Logo e o link de troca
+   (entrar/criar conta) ficam fora do card, soltos no fundo escuro da página. */
+.auth-wrap {
   width: 100%;
   max-width: 390px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.auth-card {
+  width: 100%;
 }
 .auth-columns {
   display: flex;
@@ -517,7 +524,7 @@ input:focus, select:focus, textarea:focus {
   display: none;
 }
 @media (min-width: 860px) {
-  .auth-card {
+  .auth-wrap {
     max-width: 720px;
   }
   .auth-columns {

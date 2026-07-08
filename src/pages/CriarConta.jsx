@@ -65,7 +65,8 @@ export default function CriarConta() {
         <ChevronLeft size={13} strokeWidth={2} />
         voltar ao site
       </Link>
-      <div className="fade-in auth-card" style={s.card}>
+
+      <div className="auth-wrap">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <LumenLogo size={32} variant="reverso" layout="horizontal" />
         </div>
@@ -76,113 +77,113 @@ export default function CriarConta() {
           </p>
         )}
 
-        {contaCriada ? (
-          <>
-            <h1 style={{ ...s.title, textAlign: 'center', marginTop: 8 }}>Confira seu e-mail</h1>
-            <p style={{ ...s.subtitle, textAlign: 'center' }}>Falta um passo para ativar sua conta</p>
-            <div style={s.success}>
-              Conta criada! Enviamos um link de confirmação para o seu e-mail. Confira sua caixa de entrada (e o spam) e clique no link para ativar a conta e entrar.
-            </div>
-            <Link to="/login" style={{ ...s.btn, display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 12, boxSizing: 'border-box' }}>
-              Ir para o login
-            </Link>
-          </>
-        ) : (
-          <div className="auth-columns">
-            <div className="auth-col-form">
-              <h1 style={s.title}>Criar conta na Lumen</h1>
-              <p style={s.subtitle}>Comece a organizar sua agenda em minutos</p>
+        <div className="fade-in auth-card" style={s.card}>
+          {contaCriada ? (
+            <>
+              <h1 style={{ ...s.title, textAlign: 'center', marginTop: 8 }}>Confira seu e-mail</h1>
+              <p style={{ ...s.subtitle, textAlign: 'center' }}>Falta um passo para ativar sua conta</p>
+              <div style={s.success}>
+                Conta criada! Enviamos um link de confirmação para o seu e-mail. Confira sua caixa de entrada (e o spam) e clique no link para ativar a conta e entrar.
+              </div>
+              <Link to="/login" style={{ ...s.btn, display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 12, boxSizing: 'border-box' }}>
+                Ir para o login
+              </Link>
+            </>
+          ) : (
+            <div className="auth-columns">
+              <div className="auth-col-form">
+                <h1 style={s.title}>Criar conta na Lumen</h1>
+                <p style={s.subtitle}>Comece a organizar sua agenda em minutos</p>
 
-              <form onSubmit={handle} style={s.form}>
-                <div style={s.field}>
-                  <label htmlFor="signup-name" style={s.label}>Seu nome</label>
-                  <input
-                    id="signup-name"
-                    style={s.input}
-                    type="text"
-                    placeholder="Ex: Camila Souza"
-                    autoComplete="name"
-                    required
-                    value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
-                  />
-                </div>
-                <div style={s.field}>
-                  <label htmlFor="signup-email" style={s.label}>E-mail</label>
-                  <input
-                    id="signup-email"
-                    style={s.input}
-                    type="email"
-                    placeholder="seu@email.com"
-                    autoComplete="email"
-                    required
-                    value={form.email}
-                    onChange={e => setForm({ ...form, email: e.target.value })}
-                  />
-                </div>
-                <div style={s.field}>
-                  <label htmlFor="signup-password" style={s.label}>Senha</label>
-                  <input
-                    id="signup-password"
-                    style={s.input}
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    required
-                    value={form.password}
-                    onChange={e => setForm({ ...form, password: e.target.value })}
-                  />
-                </div>
-                <div style={s.field}>
-                  <label htmlFor="signup-indicacao" style={s.label}>Quem te indicou? <span style={{ opacity: 0.6, fontWeight: 400 }}>(opcional)</span></label>
-                  <input
-                    id="signup-indicacao"
-                    style={s.input}
-                    type="text"
-                    placeholder="Nome ou WhatsApp de quem indicou"
-                    value={form.indicadoPor}
-                    onChange={e => setForm({ ...form, indicadoPor: e.target.value })}
-                  />
-                </div>
-                <label style={s.termosRow}>
-                  <input
-                    type="checkbox"
-                    checked={aceitouTermos}
-                    onChange={e => setAceitouTermos(e.target.checked)}
-                    style={s.checkbox}
-                  />
-                  <span>
-                    Li e aceito os{' '}
-                    <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
-                    {' '}e a{' '}
-                    <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
-                  </span>
-                </label>
-                {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
-                <button style={s.btn} type="submit" disabled={loading}>
-                  {loading ? 'Criando conta...' : 'Criar minha conta'}
+                <form onSubmit={handle} style={s.form}>
+                  <div style={s.field}>
+                    <label htmlFor="signup-name" style={s.label}>Seu nome</label>
+                    <input
+                      id="signup-name"
+                      style={s.input}
+                      type="text"
+                      placeholder="Ex: Camila Souza"
+                      autoComplete="name"
+                      required
+                      value={form.name}
+                      onChange={e => setForm({ ...form, name: e.target.value })}
+                    />
+                  </div>
+                  <div style={s.field}>
+                    <label htmlFor="signup-email" style={s.label}>E-mail</label>
+                    <input
+                      id="signup-email"
+                      style={s.input}
+                      type="email"
+                      placeholder="seu@email.com"
+                      autoComplete="email"
+                      required
+                      value={form.email}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
+                    />
+                  </div>
+                  <div style={s.field}>
+                    <label htmlFor="signup-password" style={s.label}>Senha</label>
+                    <input
+                      id="signup-password"
+                      style={s.input}
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      required
+                      value={form.password}
+                      onChange={e => setForm({ ...form, password: e.target.value })}
+                    />
+                  </div>
+                  <div style={s.field}>
+                    <label htmlFor="signup-indicacao" style={s.label}>Quem te indicou? <span style={{ opacity: 0.6, fontWeight: 400 }}>(opcional)</span></label>
+                    <input
+                      id="signup-indicacao"
+                      style={s.input}
+                      type="text"
+                      placeholder="Nome ou WhatsApp de quem indicou"
+                      value={form.indicadoPor}
+                      onChange={e => setForm({ ...form, indicadoPor: e.target.value })}
+                    />
+                  </div>
+                  <label style={s.termosRow}>
+                    <input
+                      type="checkbox"
+                      checked={aceitouTermos}
+                      onChange={e => setAceitouTermos(e.target.checked)}
+                      style={s.checkbox}
+                    />
+                    <span>
+                      Li e aceito os{' '}
+                      <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
+                      {' '}e a{' '}
+                      <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
+                    </span>
+                  </label>
+                  {error && <div role="alert" aria-live="assertive" style={s.error}>{error}</div>}
+                  <button style={s.btn} type="submit" disabled={loading}>
+                    {loading ? 'Criando conta...' : 'Criar minha conta'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="auth-col-google">
+                <div style={s.googleCircle}><GoogleIcon size={22} /></div>
+                <h2 style={s.googleTitle}>Comece em segundos</h2>
+                <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
+                  <GoogleIcon size={18} />
+                  {googleLoading ? 'Redirecionando...' : 'Criar conta com Google'}
                 </button>
-              </form>
+                <p style={s.consentGoogle}>
+                  Ao continuar, você concorda com os{' '}
+                  <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
+                  {' '}e a{' '}
+                  <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
+                </p>
+              </div>
             </div>
-
-            <div className="auth-col-google">
-              <div style={s.googleCircle}><GoogleIcon size={22} /></div>
-              <h2 style={s.googleTitle}>Comece em segundos</h2>
-              <p style={s.googleText}>Crie sua conta com o Google, sem precisar preencher formulário</p>
-              <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
-                <GoogleIcon size={18} />
-                {googleLoading ? 'Redirecionando...' : 'Criar conta com Google'}
-              </button>
-              <p style={s.consentGoogle}>
-                Ao continuar, você concorda com os{' '}
-                <Link to="/termos" target="_blank" style={s.linkTermos}>Termos de Uso</Link>
-                {' '}e a{' '}
-                <Link to="/privacidade" target="_blank" style={s.linkTermos}>Política de Privacidade</Link>.
-              </p>
-            </div>
-          </div>
-        )}
-
+          )}
+        </div>
       </div>
     </div>
   )
