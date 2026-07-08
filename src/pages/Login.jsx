@@ -114,7 +114,7 @@ export default function Login() {
           ) : (
             <div className="auth-columns">
               <div className="auth-col-form">
-                <h1 style={s.title}>Entrar na Lumen</h1>
+                <h1 style={s.title}>Entrar no Lumen</h1>
                 <p style={s.subtitle}>Acesse sua conta para continuar</p>
 
                 <form onSubmit={handleLogin} style={s.form}>

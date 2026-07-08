@@ -94,7 +94,7 @@ export default function CriarConta() {
           ) : (
             <div className="auth-columns">
               <div className="auth-col-form">
-                <h1 style={{ ...s.title, marginBottom: 20 }}>Criar conta na Lumen</h1>
+                <h1 style={{ ...s.title, marginBottom: 20 }}>Criar conta no Lumen</h1>
 
                 <form onSubmit={handle} style={s.form}>
                   <div style={s.field}>
