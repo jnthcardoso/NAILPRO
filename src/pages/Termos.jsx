@@ -40,7 +40,7 @@ export default function Termos() {
             <li>Toda nova conta recebe 14 (quatorze) dias de acesso gratuito, sem necessidade de cartão de crédito.</li>
             <li>Após o período de teste, é necessário assinar um plano pago para manter o acesso completo.</li>
             <li>Cada plano pode ser contratado em dois ciclos: <strong>mensal</strong> (cobrado todo mês, com renovação automática) ou <strong>anual</strong> (por um valor reduzido por mês; o total dos 12 meses pode ser <strong>parcelado em até 12× no cartão</strong>, garantindo o acesso por 12 meses. A renovação ao fim do período é feita mediante nova contratação).</li>
-            <li>O plano <strong>Solo</strong> inclui 1 login. O plano <strong>Pro</strong> inclui 1 login com todas as funcionalidades avançadas. O plano <strong>Salão</strong> inclui os logins de dona e recepcionista, com possibilidade de adicionar profissionais por valor mensal por usuário, conforme a <a href="/planos" style={s.link}>página de planos</a>.</li>
+            <li>O plano <strong>Solo</strong> inclui 1 login. O plano <strong>Pro</strong> inclui 1 login com todas as funcionalidades avançadas. O plano <strong>Salão</strong> inclui os logins de dona e recepcionista, com possibilidade de adicionar profissionais por valor mensal por usuário, conforme a <a href="/#planos" style={s.link}>página de planos</a>.</li>
             <li>Os pagamentos são processados de forma segura por gateway de pagamento (Asaas), no cartão de crédito. A Lumen não armazena os dados do seu cartão.</li>
           </ul>
 

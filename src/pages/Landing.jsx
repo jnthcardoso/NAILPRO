@@ -109,6 +109,12 @@ export default function Landing() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Rola até a seção do hash (ex.: veio de /termos com link para /#planos)
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '')
+    if (hash) scrollTo(hash)
+  }, [])
+
   const whatsappContato = linkWhatsAppCompleto(SUPORTE_WHATSAPP, 'Olá! Quero saber mais sobre a Lumen 💅')
 
   const abrirWhatsapp = (e) => { trackFaleConosco(); window.open(whatsappContato, '_blank') }
