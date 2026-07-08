@@ -4,13 +4,11 @@ export const s = {
   root: {
     position: 'relative',
     minHeight: '100vh',
-    height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: 'radial-gradient(circle at top, #2C1422 0%, var(--brand-dark-bg, #170D14) 100%)',
     padding: 20,
-    overflowY: 'auto',
   },
   card: {
     background: 'rgba(255, 255, 255, 0.03)',
@@ -56,7 +54,6 @@ export const s = {
     height: 44,
     borderRadius: '50%',
     background: 'rgba(255,255,255,0.06)',
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },

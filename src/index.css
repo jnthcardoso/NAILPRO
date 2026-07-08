@@ -64,6 +64,15 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Telas de login/criar conta: solta a altura fixa de html/body/#root pra
+   rolagem natural da página assumir (evita scroll aninhado que trava o
+   gesto de arrastar em mobile/PWA). Ver useAuthPageScroll. */
+body.auth-page-active,
+body.auth-page-active #root {
+  height: auto;
+  min-height: 100%;
+}
+
 /* iOS/Safari dá zoom automático ao tocar em campo com fonte < 16px e
    guarda esse zoom por site. Forçar 16px no mobile elimina o zoom travado. */
 @media (max-width: 768px) {
@@ -530,6 +539,12 @@ input:focus, select:focus, textarea:focus {
   padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+/* No mobile mostra só o botão do Google — ícone e título só aparecem
+   junto do layout de 2 colunas no desktop. */
+.auth-google-icon,
+.auth-google-title {
+  display: none;
+}
 @media (min-width: 860px) {
   .auth-wrap {
     max-width: 720px;
@@ -554,6 +569,12 @@ input:focus, select:focus, textarea:focus {
     padding-left: 36px;
     margin-left: 36px;
     border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .auth-google-icon {
+    display: flex;
+  }
+  .auth-google-title {
+    display: block;
   }
 }
 

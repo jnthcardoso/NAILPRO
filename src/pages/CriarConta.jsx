@@ -7,8 +7,10 @@ import GoogleIcon from '../components/common/GoogleIcon'
 import { validarEmail, validarSenha, validarNome } from '../lib/formatters'
 import { trackCadastro } from '../lib/analytics'
 import { s } from './auth/authStyles'
+import { useAuthPageScroll } from './auth/useAuthPageScroll'
 
 export default function CriarConta() {
+  useAuthPageScroll()
   const { user, signUp, signInWithGoogle } = useAuth()
   const [form, setForm] = useState(() => {
     // Pré-preenche "quem indicou" se a pessoa chegou por um link ?indicacao=...
@@ -167,8 +169,8 @@ export default function CriarConta() {
               </div>
 
               <div className="auth-col-google">
-                <div style={s.googleCircle}><GoogleIcon size={22} /></div>
-                <h2 style={s.googleTitle}>Comece em segundos</h2>
+                <div className="auth-google-icon" style={s.googleCircle}><GoogleIcon size={22} /></div>
+                <h2 className="auth-google-title" style={s.googleTitle}>Comece em segundos</h2>
                 <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
                   <GoogleIcon size={18} />
                   {googleLoading ? 'Redirecionando...' : 'Criar conta com Google'}

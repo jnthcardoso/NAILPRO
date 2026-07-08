@@ -6,8 +6,10 @@ import { LumenLogo } from '../components/common/Brand'
 import GoogleIcon from '../components/common/GoogleIcon'
 import { validarEmail, validarSenha } from '../lib/formatters'
 import { s } from './auth/authStyles'
+import { useAuthPageScroll } from './auth/useAuthPageScroll'
 
 export default function Login() {
+  useAuthPageScroll()
   const { user, signIn, signInWithGoogle, resetPassword } = useAuth()
 
   // Compat: links antigos usavam /login?modo=cadastro — manda pra tela dedicada,
@@ -154,8 +156,8 @@ export default function Login() {
               </div>
 
               <div className="auth-col-google">
-                <div style={s.googleCircle}><GoogleIcon size={22} /></div>
-                <h2 style={s.googleTitle}>Entrar mais rápido</h2>
+                <div className="auth-google-icon" style={s.googleCircle}><GoogleIcon size={22} /></div>
+                <h2 className="auth-google-title" style={s.googleTitle}>Entrar mais rápido</h2>
                 <button type="button" style={s.btnGoogle} onClick={handleGoogle} disabled={googleLoading}>
                   <GoogleIcon size={18} />
                   {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
