@@ -27,7 +27,7 @@ Lumen é um SaaS voltado para nail designers autônomas e salões de beleza que 
 ## Páginas principais
 
 - [Página inicial](https://lumengestaoempresarial.com.br/)
-- [Planos e preços](https://lumengestaoempresarial.com.br/planos)
+- [Planos e preços](https://lumengestaoempresarial.com.br/#planos)
 - [Entrar / Cadastrar](https://lumengestaoempresarial.com.br/login)
 - [Termos de uso](https://lumengestaoempresarial.com.br/termos)
 - [Política de privacidade](https://lumengestaoempresarial.com.br/privacidade)
