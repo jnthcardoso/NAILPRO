@@ -33,6 +33,10 @@ export function traduzErro(error, contexto = 'Algo deu errado. Tente novamente e
   }
 
   // ── Duplicidade / conflito ──
+  // WhatsApp já cadastrado no salão (índice único uq_clientes_salao_telefone_digitos).
+  if (/uq_clientes_salao_telefone|clientes_salao_telefone/.test(msg)) {
+    return 'Já existe uma cliente com esse WhatsApp neste salão.'
+  }
   if (/duplicate key|already exists|unique constraint|violates unique/.test(msg)) {
     return 'Esse registro já existe.'
   }
