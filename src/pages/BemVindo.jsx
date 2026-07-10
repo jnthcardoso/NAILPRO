@@ -34,7 +34,7 @@ const METAS_SUGERIDAS = [
 export default function BemVindo() {
   const { user } = useAuth()
   const { papel, salaoId } = useSalao()
-  const { erro: toastErro } = useToast()
+  const { confirmar, erro: toastErro } = useToast()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -93,6 +93,32 @@ export default function BemVindo() {
     }
   }
 
+  async function pularTudo() {
+    const ok = await confirmar({
+      titulo: 'Pular configuração inicial?',
+      mensagem: 'Você pode configurar tudo depois em Configurações.',
+      confirmarLabel: 'Sim, pular',
+      cancelarLabel: 'Continuar setup',
+    })
+    if (!ok) return
+    const { error } = await supabase.from('configuracoes').upsert({
+      user_id: user.id,
+      salao_id: salaoId,
+      onboarding_completo: true,
+    })
+    if (error) {
+      toastErro(traduzErro(error, 'Não foi possível salvar. Tente novamente.'))
+      return
+    }
+    // Se veio da landing com plano selecionado, vai para /planos
+    const temIntencao = !!sessionStorage.getItem('lumen_plano_intencao')
+    if (temIntencao) {
+      navigate('/planos', { replace: true, state: { onboardingJustCompleted: true } })
+    } else {
+      navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
+    }
+  }
+
   const totalSteps = 5
   const progresso = ((step + 1) / totalSteps) * 100
 
@@ -105,6 +131,7 @@ export default function BemVindo() {
           <div style={s.progressTrack}>
             <div style={{ ...s.progressFill, width: `${progresso}%` }} />
           </div>
+          <button style={s.skipBtn} onClick={pularTudo}>Pular</button>
         </div>
 
         {/* Passo 0: Boas-vindas */}
