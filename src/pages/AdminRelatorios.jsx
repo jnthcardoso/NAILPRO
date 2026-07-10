@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, TrendingUp, Filter, Activity, Crown } from 'lucide-react'
+import { BarChart3, TrendingUp, Filter, Activity, Crown, Bug } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { format, parseISO, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -42,13 +42,15 @@ export default function AdminRelatorios() {
   const [mensal, setMensal] = useState([])
   const [coorte, setCoorte] = useState([])
   const [saude, setSaude] = useState([])
+  const [conversao, setConversao] = useState(null)
+  const [erros, setErros] = useState([])
 
   useEffect(() => { carregar() }, [])
 
   async function carregar() {
     setLoading(true)
     setErro(null)
-    const [a, f, p, st, m, c, sa] = await Promise.all([
+    const [a, f, p, st, m, c, sa, cv, er] = await Promise.all([
       supabase.rpc('admin_rel_adocao'),
       supabase.rpc('admin_rel_funil'),
       supabase.rpc('admin_rel_planos'),
@@ -56,8 +58,10 @@ export default function AdminRelatorios() {
       supabase.rpc('admin_rel_mensal', { p_meses: 6 }),
       supabase.rpc('admin_rel_coorte', { p_meses: 6 }),
       supabase.rpc('admin_rel_saude'),
+      supabase.rpc('admin_rel_conversao'),
+      supabase.rpc('admin_listar_erros', { p_limit: 30 }),
     ])
-    const primeiroErro = [a, f, p, st, m, c, sa].find(r => r.error)
+    const primeiroErro = [a, f, p, st, m, c, sa, cv, er].find(r => r.error)
     if (primeiroErro) {
       setErro(primeiroErro.error.message || 'Erro ao carregar relatórios')
       setLoading(false)
@@ -70,6 +74,8 @@ export default function AdminRelatorios() {
     setMensal(m.data || [])
     setCoorte(c.data || [])
     setSaude(sa.data || [])
+    setConversao(cv.data?.[0] || null)
+    setErros(er.data || [])
     setLoading(false)
   }
 
@@ -97,17 +103,24 @@ export default function AdminRelatorios() {
           <BarChart3 size={16} color="var(--pink)" />
           <h3 style={s.cardTitle}>Adoção de funcionalidades</h3>
         </div>
-        <p style={s.cardSub}>De {adocao[0]?.total || 0} contas, quantas usam cada recurso.</p>
+        <p style={s.cardSub}>
+          De {adocao[0]?.total || 0} contas, quantas já usaram cada recurso (histórico) vs. quantas usaram
+          nos últimos 30 dias (engajamento real).
+        </p>
         <div style={s.barras}>
           {adocao.map(r => {
             const p = pct(r.usados, r.total)
+            const p30 = pct(r.usados_30d, r.total)
             return (
               <div key={r.recurso} className="rel-bar-row" style={s.barraLinha}>
                 <div className="rel-bar-label" style={s.barraLabel}>{r.recurso}</div>
                 <div className="rel-bar-track" style={s.barraTrack}>
-                  <div style={{ ...s.barraFill, width: `${p}%` }} />
+                  <div style={{ ...s.barraFill, width: `${p}%`, opacity: 0.35 }} />
+                  <div style={{ ...s.barraFill, width: `${p30}%`, position: 'absolute', top: 0, left: 0 }} />
                 </div>
-                <div className="rel-bar-val" style={s.barraVal}>{r.usados}<span style={s.barraValSub}>/{r.total} · {p}%</span></div>
+                <div className="rel-bar-val" style={s.barraVal}>
+                  {r.usados_30d}<span style={s.barraValSub}>/30d · {r.usados}/{r.total} histórico ({p}%)</span>
+                </div>
               </div>
             )
           })}
@@ -140,6 +153,31 @@ export default function AdminRelatorios() {
           })}
         </div>
       </section>
+
+      {/* ════ Conversão trial → pago ════ */}
+      {conversao && (
+        <section style={s.card}>
+          <div style={s.cardHead}>
+            <TrendingUp size={16} color="#15803D" />
+            <h3 style={s.cardTitle}>Conversão trial → pago</h3>
+          </div>
+          <p style={s.cardSub}>De quem cadastrou, quantas viraram pagantes de verdade e em quanto tempo.</p>
+          <div style={s.mrrTopo}>
+            <div>
+              <div style={{ ...s.mrrValor, color: '#15803D' }}>{conversao.taxa_conversao ?? 0}%</div>
+              <div style={s.mrrLabel}>
+                converteram ({conversao.total_convertidos} de {conversao.total_cadastros} cadastros)
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ ...s.mrrValor, fontSize: 20 }}>
+                {conversao.dias_medio_conversao != null ? `${conversao.dias_medio_conversao}d` : '—'}
+              </div>
+              <div style={s.mrrLabel}>tempo médio até converter</div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ════ ONDA 2 — Planos & MRR ════ */}
       <section style={s.card}>
@@ -272,6 +310,31 @@ export default function AdminRelatorios() {
         </div>
       </section>
 
+      {/* ════ Erros do app ════ */}
+      <section style={s.card}>
+        <div style={s.cardHead}>
+          <Bug size={16} color="#B91C1C" />
+          <h3 style={s.cardTitle}>Erros recentes</h3>
+        </div>
+        <p style={s.cardSub}>Últimos erros capturados no app, por conta. Se ninguém reclamar, você fica sabendo aqui mesmo.</p>
+        <div style={s.saudeLista}>
+          {erros.map(e => (
+            <div key={e.id} style={s.saudeItem}>
+              <span style={{ ...s.saudeDot, background: '#B91C1C' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={s.saudeNome}>
+                  {e.email || 'desconhecido'}
+                  {e.nome_salao && <span style={s.saudeSalao}> · {e.nome_salao}</span>}
+                </div>
+                <div style={s.saudeMeta}>{e.mensagem}</div>
+                <div style={s.saudeMeta}>{e.contexto} · {quando(e.created_at)}</div>
+              </div>
+            </div>
+          ))}
+          {erros.length === 0 && <div style={s.vazio}>Nenhum erro registrado. 🎉</div>}
+        </div>
+      </section>
+
     </div>
   )
 }
@@ -288,7 +351,7 @@ const s = {
   barras: { display: 'flex', flexDirection: 'column', gap: 9 },
   barraLinha: { display: 'grid', gridTemplateColumns: '130px 1fr auto', alignItems: 'center', gap: 10 },
   barraLabel: { fontSize: 11.5, color: 'var(--text2)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  barraTrack: { height: 8, background: 'var(--surface2, #F3F4F6)', borderRadius: 999, overflow: 'hidden' },
+  barraTrack: { height: 8, background: 'var(--surface2, #F3F4F6)', borderRadius: 999, overflow: 'hidden', position: 'relative' },
   barraFill: { height: '100%', background: 'var(--pink)', borderRadius: 999, transition: 'width 0.4s' },
   barraVal: { fontSize: 11, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" },
   barraValSub: { fontSize: 9.5, fontWeight: 500, color: 'var(--text3)', fontFamily: 'inherit' },

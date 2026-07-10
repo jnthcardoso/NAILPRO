@@ -1,5 +1,6 @@
 import { differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useNavigate } from 'react-router-dom'
 
 const ESTAGIOS = [
   { id: 'novo',       label: 'Novo',       color: '#1E40AF', bg: '#DBEAFE', desc: 'Cadastrou recentemente' },
@@ -16,7 +17,9 @@ function classificar(u) {
   // trialing ou pending
   if (u.total_clientes === 0 && dias <= 3) return 'novo'
   if (u.total_clientes === 0) return 'perdida'
-  if (u.total_clientes >= 5) return 'engajada'
+  // Engajada exige volume (5+ clientes) E atividade recente (30d) — não só volume acumulado.
+  const ativaRecente = u.ultima_atividade && differenceInDays(new Date(), new Date(u.ultima_atividade)) <= 30
+  if (u.total_clientes >= 5 && ativaRecente) return 'engajada'
   return 'explorando'
 }
 
@@ -26,6 +29,7 @@ function quando(ts) {
 }
 
 export default function AdminPipeline({ usuarios }) {
+  const navigate = useNavigate()
   const porEstagio = Object.fromEntries(ESTAGIOS.map(e => [e.id, []]))
   usuarios.filter(u => !u.cortesia || u.assinatura_status === 'active')
     .forEach(u => {
@@ -64,7 +68,7 @@ export default function AdminPipeline({ usuarios }) {
                   const nome = u.nome || u.email?.split('@')[0] || '?'
                   const dias = differenceInDays(new Date(), new Date(u.user_created_at))
                   return (
-                    <div key={u.user_id} style={s.card}>
+                    <div key={u.user_id} style={{ ...s.card, cursor: 'pointer' }} onClick={() => navigate(`/app/dev/conta/${u.user_id}`)}>
                       <div style={s.cardNome} title={u.email}>{nome}</div>
                       {u.nome_salao && <div style={s.cardSalao}>{u.nome_salao}</div>}
                       <div style={s.cardMeta}>

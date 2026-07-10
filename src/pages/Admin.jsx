@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
-import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3, Phone } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Shield, Crown, Search, MoreVertical, RefreshCw, StickyNote, UserX, Clock, Trash2, Gift, Activity, LogIn, Calendar, DollarSign, Users, Receipt, Target, BarChart3, Phone, UserSearch } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { format, differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -50,19 +51,10 @@ function precisaRenovarManual(u) {
   return differenceInDays(new Date(u.periodo_termina_em), new Date()) <= RENOVAR_DIAS
 }
 
-// Chave para notas internas salvas no localStorage (sem backend)
-const NOTAS_KEY = 'admin_notas_internas'
-
-function carregarNotas() {
-  try { return JSON.parse(localStorage.getItem(NOTAS_KEY) || '{}') } catch { return {} }
-}
-function salvarNotas(notas) {
-  try { localStorage.setItem(NOTAS_KEY, JSON.stringify(notas)) } catch {}
-}
-
 export default function Admin() {
   const { confirmar, sucesso, erro: toastErro } = useToast()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const isDev = user?.email === EMAIL_DEV
   const [usuarios, setUsuarios] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,7 +63,7 @@ export default function Admin() {
   const [acaoLoading, setAcaoLoading] = useState(false)
   const [filtro, setFiltro] = useState('todos')
   const [aba, setAba] = useState('assinaturas') // 'assinaturas' | 'inativos'
-  const [notas, setNotas] = useState(carregarNotas)
+  const [notas, setNotas] = useState({})
   const [notaEditando, setNotaEditando] = useState(null) // user_id sendo editado
   const [notaTexto, setNotaTexto] = useState('')
   const notaInputRef = useRef(null)
@@ -89,13 +81,17 @@ export default function Admin() {
 
   async function load() {
     setLoading(true)
-    const { data, error } = await supabase.rpc('admin_listar_usuarios')
+    const [{ data, error }, { data: notasData }] = await Promise.all([
+      supabase.rpc('admin_listar_usuarios'),
+      supabase.rpc('admin_listar_notas'),
+    ])
     if (error) {
       toastErro('Acesso negado ou erro: ' + error.message)
       setLoading(false)
       return
     }
     setUsuarios(data || [])
+    setNotas(Object.fromEntries((notasData || []).map(n => [n.user_id, n.texto])))
     setLoading(false)
   }
 
@@ -192,11 +188,13 @@ export default function Admin() {
     setAcaoUserId(null)
   }
 
-  function salvarNota(userId) {
-    const novasNotas = { ...notas, [userId]: notaTexto.trim() }
-    if (!notaTexto.trim()) delete novasNotas[userId]
+  async function salvarNota(userId) {
+    const texto = notaTexto.trim()
+    const { error } = await supabase.rpc('admin_salvar_nota', { p_user_id: userId, p_texto: texto })
+    if (error) { toastErro('Erro ao salvar nota: ' + error.message); return }
+    const novasNotas = { ...notas, [userId]: texto }
+    if (!texto) delete novasNotas[userId]
     setNotas(novasNotas)
-    salvarNotas(novasNotas)
     setNotaEditando(null)
     sucesso('Nota salva')
   }
@@ -410,6 +408,12 @@ export default function Admin() {
                 onClick={() => verAtividade(u)} disabled={acaoLoading}
               >
                 <Activity size={12} style={{ verticalAlign: -2 }} /> Ver atividade
+              </button>
+              <button
+                style={{ ...s.acaoBtn, background: '#EEF2FF', color: '#4338CA', border: '1px solid #C7D2FE' }}
+                onClick={() => navigate(`/app/dev/conta/${u.user_id}`)} disabled={acaoLoading}
+              >
+                <UserSearch size={12} style={{ verticalAlign: -2 }} /> Ver ficha completa
               </button>
               <button
                 style={{ ...s.acaoBtn, background: '#FEF9C3', color: '#92400E', border: '1px solid #FDE68A' }}

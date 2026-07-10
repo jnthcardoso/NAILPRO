@@ -26,6 +26,7 @@ const DevAlertas = lazy(() => import('./pages/DevAlertas'))
 const DevFeed = lazy(() => import('./pages/DevFeed'))
 const DevCRM = lazy(() => import('./pages/DevCRM'))
 const DevRelatorios = lazy(() => import('./pages/DevRelatorios'))
+const DevContaFicha = lazy(() => import('./pages/DevContaFicha'))
 const Equipe = lazy(() => import('./pages/Equipe'))
 const Avisos = lazy(() => import('./pages/Avisos'))
 const Termos = lazy(() => import('./pages/Termos'))
@@ -176,6 +177,7 @@ export default function App() {
               <Route path="dev/feed" element={<RequireAdmin><DevFeed /></RequireAdmin>} />
               <Route path="dev/crm" element={<RequireAdmin><DevCRM /></RequireAdmin>} />
               <Route path="dev/relatorios" element={<RequireAdmin><DevRelatorios /></RequireAdmin>} />
+              <Route path="dev/conta/:userId" element={<RequireAdmin><DevContaFicha /></RequireAdmin>} />
               <Route path="avisos" element={<Avisos />} />
             </Route>
           </Routes>

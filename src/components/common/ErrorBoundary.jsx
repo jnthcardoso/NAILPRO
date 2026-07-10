@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { registrarErro } from '../../lib/registrarErro'
 
 // Falha ao baixar um "pedaço" (chunk) de uma tela carregada sob demanda.
 // Acontece quando um deploy novo troca os nomes dos arquivos e o app aberto
@@ -47,7 +48,9 @@ export default class ErrorBoundary extends Component {
         sessionStorage.setItem('chunk_reload_ts', String(agora))
         limparCacheERecarregar()
       }
+      return
     }
+    registrarErro(error?.message, error?.stack, window.location.pathname)
   }
 
   render() {

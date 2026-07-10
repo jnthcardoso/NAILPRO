@@ -1,6 +1,7 @@
 import { differenceInDays, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { AlertTriangle, Clock, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import WaIcon from '../../components/common/WaIcon'
 
 function quando(ts) {
@@ -21,6 +22,7 @@ function linkWpp(wpp, texto) {
 }
 
 export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade, onAtivar }) {
+  const navigate = useNavigate()
   const pagantes  = usuarios.filter(u => u.assinatura_status === 'active' && !u.cortesia)
   const trials    = usuarios.filter(u => u.assinatura_status === 'trialing' && !u.cortesia)
   const ativos    = usuarios.filter(u => ['active', 'trialing'].includes(u.assinatura_status) && !u.cortesia)
@@ -81,6 +83,9 @@ export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade
                   </div>
                 </div>
                 <div style={s.acoes}>
+                  <button style={s.btnSecundario} onClick={() => navigate(`/app/dev/conta/${u.user_id}`)}>
+                    Ficha
+                  </button>
                   {wppLink && (
                     <a href={wppLink} target="_blank" rel="noreferrer" style={s.btnWpp}>
                       <WaIcon size={12} /> Wpp
@@ -125,6 +130,9 @@ export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade
                   </div>
                 </div>
                 <div style={s.acoes}>
+                  <button style={s.btnSecundario} onClick={() => navigate(`/app/dev/conta/${u.user_id}`)}>
+                    Ficha
+                  </button>
                   {wppLink && (
                     <a href={wppLink} target="_blank" rel="noreferrer" style={s.btnWpp}>
                       <WaIcon size={12} /> Wpp
@@ -163,6 +171,9 @@ export default function AdminAlertas({ usuarios, onEstenderTrial, onVerAtividade
                   </div>
                 </div>
                 <div style={s.acoes}>
+                  <button style={s.btnSecundario} onClick={() => navigate(`/app/dev/conta/${u.user_id}`)}>
+                    Ficha
+                  </button>
                   {wppLink && (
                     <a href={wppLink} target="_blank" rel="noreferrer" style={s.btnWpp}>
                       <WaIcon size={12} /> Wpp
