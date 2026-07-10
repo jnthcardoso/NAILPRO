@@ -14,6 +14,16 @@ const SERVICOS_SUGERIDOS = [
   'Manicure', 'Gel francês', 'Esmaltação', 'Nail art', 'Baby boomer', 'Encapsulamento'
 ]
 
+function whatsappValido(digits) {
+  if (digits.length !== 10 && digits.length !== 11) return false
+  const ddd = parseInt(digits.slice(0, 2), 10)
+  if (ddd < 11 || ddd > 99) return false
+  // celular (11 dígitos) começa com 9 depois do DDD; fixo (10 dígitos) não
+  if (digits.length === 11 && digits[2] !== '9') return false
+  if (digits.length === 10 && digits[2] === '9') return false
+  return true
+}
+
 const METAS_SUGERIDAS = [
   { valor: 2000, label: 'R$ 2.000', sub: 'iniciante' },
   { valor: 4000, label: 'R$ 4.000', sub: 'em crescimento' },
@@ -24,7 +34,7 @@ const METAS_SUGERIDAS = [
 export default function BemVindo() {
   const { user } = useAuth()
   const { papel, salaoId } = useSalao()
-  const { confirmar, erro: toastErro } = useToast()
+  const { erro: toastErro } = useToast()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -83,32 +93,6 @@ export default function BemVindo() {
     }
   }
 
-  async function pularTudo() {
-    const ok = await confirmar({
-      titulo: 'Pular configuração inicial?',
-      mensagem: 'Você pode configurar tudo depois em Configurações.',
-      confirmarLabel: 'Sim, pular',
-      cancelarLabel: 'Continuar setup',
-    })
-    if (!ok) return
-    const { error } = await supabase.from('configuracoes').upsert({
-      user_id: user.id,
-      salao_id: salaoId,
-      onboarding_completo: true,
-    })
-    if (error) {
-      toastErro(traduzErro(error, 'Não foi possível salvar. Tente novamente.'))
-      return
-    }
-    // Se veio da landing com plano selecionado, vai para /planos
-    const temIntencao = !!sessionStorage.getItem('lumen_plano_intencao')
-    if (temIntencao) {
-      navigate('/planos', { replace: true, state: { onboardingJustCompleted: true } })
-    } else {
-      navigate('/app', { replace: true, state: { onboardingJustCompleted: true } })
-    }
-  }
-
   const totalSteps = 5
   const progresso = ((step + 1) / totalSteps) * 100
 
@@ -121,7 +105,6 @@ export default function BemVindo() {
           <div style={s.progressTrack}>
             <div style={{ ...s.progressFill, width: `${progresso}%` }} />
           </div>
-          <button style={s.skipBtn} onClick={pularTudo}>Pular</button>
         </div>
 
         {/* Passo 0: Boas-vindas */}
@@ -194,15 +177,24 @@ export default function BemVindo() {
               autoFocus
               type="tel"
             />
-            <div style={s.hint}>Com DDD. Não publicamos seu número.</div>
+            <div style={{
+              ...s.hint,
+              color: form.whatsapp.replace(/\D/g, '').length > 0 && !whatsappValido(form.whatsapp.replace(/\D/g, ''))
+                ? 'var(--danger, #C0392B)'
+                : 'var(--text3)',
+            }}>
+              {form.whatsapp.replace(/\D/g, '').length > 0 && !whatsappValido(form.whatsapp.replace(/\D/g, ''))
+                ? 'Número inválido. Confira o DDD e a quantidade de dígitos.'
+                : 'Com DDD. Não publicamos seu número.'}
+            </div>
             <div style={s.btnRow}>
               <button style={s.btnGhost} onClick={() => setStep(1)}>
                 <ChevronLeft size={16} /> Voltar
               </button>
               <button
-                style={{ ...s.btnPrimary, opacity: form.whatsapp.replace(/\D/g,'').length >= 10 ? 1 : 0.5 }}
-                onClick={() => form.whatsapp.replace(/\D/g,'').length >= 10 && setStep(3)}
-                disabled={form.whatsapp.replace(/\D/g,'').length < 10}
+                style={{ ...s.btnPrimary, opacity: whatsappValido(form.whatsapp.replace(/\D/g, '')) ? 1 : 0.5 }}
+                onClick={() => whatsappValido(form.whatsapp.replace(/\D/g, '')) && setStep(3)}
+                disabled={!whatsappValido(form.whatsapp.replace(/\D/g, ''))}
               >
                 Continuar <ChevronRight size={16} />
               </button>
